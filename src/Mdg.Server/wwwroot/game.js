@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * English UI, Seamless Terrain & Dynamic Zoom System
+ * PoE Loot Drops, Loot Beams, Boss Top Health Bar, Web Audio SFX & Inventory Grid
  */
 
 (function () {
@@ -35,7 +35,61 @@
   };
 
   // ==========================================
-  // 1. ASSET LOADER (Clean Transparent PNGs)
+  // 1. WEB AUDIO API SYNTHESIZER (SFX)
+  // ==========================================
+  const AudioEngine = {
+    ctx: null,
+    init() {
+      if (!this.ctx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+      }
+    },
+    playTone(freq, type, duration, gain = 0.1) {
+      if (!this.ctx) return;
+      try {
+        const osc = this.ctx.createOscillator();
+        const gNode = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gNode.gain.setValueAtTime(gain, this.ctx.currentTime);
+        gNode.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+        osc.connect(gNode);
+        gNode.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+      } catch (e) {}
+    },
+    playLootDrop(rarity) {
+      this.init();
+      if (rarity === 'Unique') {
+        this.playTone(880, 'sine', 0.4, 0.18);
+        setTimeout(() => this.playTone(1320, 'sine', 0.6, 0.2), 80);
+      } else if (rarity === 'Rare' || rarity === 'Currency') {
+        this.playTone(720, 'triangle', 0.3, 0.15);
+        setTimeout(() => this.playTone(1080, 'sine', 0.4, 0.15), 60);
+      } else {
+        this.playTone(440, 'triangle', 0.2, 0.08);
+      }
+    },
+    playPickup() {
+      this.init();
+      this.playTone(580, 'sine', 0.15, 0.12);
+      setTimeout(() => this.playTone(880, 'sine', 0.25, 0.15), 50);
+    },
+    playHit(isCrit) {
+      this.init();
+      if (isCrit) {
+        this.playTone(180, 'sawtooth', 0.25, 0.2);
+        setTimeout(() => this.playTone(360, 'sine', 0.3, 0.15), 30);
+      } else {
+        this.playTone(120, 'square', 0.12, 0.08);
+      }
+    }
+  };
+
+  // ==========================================
+  // 2. ASSET LOADER
   // ==========================================
   const assets = {
     hero: new Image(),
@@ -59,7 +113,7 @@
   assets.props.src = '/assets/props_pack.png' + cacheBust;
 
   // ==========================================
-  // 2. ZONE DEFINITIONS (English)
+  // 3. ZONE DEFINITIONS
   // ==========================================
   const ZONES = {
     SanctuaryHaven: {
@@ -120,7 +174,7 @@
   let currentZone = ZONES[currentZoneId];
 
   // ==========================================
-  // 3. PLAYER STATE (PoE Stats)
+  // 4. PLAYER STATE & INVENTORY
   // ==========================================
   const player = {
     x: 2000,
@@ -140,6 +194,7 @@
     es: 100,
     maxEs: 100,
 
+    baseArmor: 250,
     armor: 500,
     evasion: 350,
     fireRes: 75,
@@ -150,10 +205,18 @@
     critMulti: 220,
 
     cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
-    maxCooldowns: { slash: 0.35, fireball: 1.0, frost: 2.5, meteor: 4.5, dash: 1.2 }
+    maxCooldowns: { slash: 0.35, fireball: 1.0, frost: 2.5, meteor: 4.5, dash: 1.2 },
+
+    equipped: {
+      Helm: { name: 'Crown of the Void', rarity: 'Unique', icon: '👑', stats: '+120 Energy Shield, +30% Chaos Res' },
+      BodyArmor: { name: 'Refined Plate', rarity: 'Rare', icon: '🛡️', stats: '+250 Armor, +15% All Res' },
+      MainHand: { name: 'Ancient Fireblade', rarity: 'Rare', icon: '🗡️', stats: '+40 Fire Damage, +20% Crit Multi' },
+      OffHand: { name: 'Guardian Shield', rarity: 'Magic', icon: '🛡️', stats: '+50 Armor, +10% Block Chance' }
+    },
+    bag: [] // Up to 12 items
   };
 
-  // Dynamic World Entities
+  // World Entities
   const monsters = [];
   const trainingDummies = [];
   const npcs = [];
@@ -162,13 +225,176 @@
   const projectiles = [];
   const particles = [];
   const floatingTexts = [];
+  const groundLoot = [];
 
   // Input State
   const keys = {};
   const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };
 
   // ==========================================
-  // 4. ZONE LOADING & WORLD GENERATION
+  // 5. LOOT DROP TABLE & GENERATOR
+  // ==========================================
+  const RARITY_COLORS = {
+    Normal: '#c8c8c8',
+    Magic: '#8888ff',
+    Rare: '#ffff77',
+    Unique: '#af6025',
+    Currency: '#aa9e82'
+  };
+
+  const POSSIBLE_LOOT = [
+    { name: 'Chaos Orb', baseType: 'Currency', rarity: 'Currency', icon: '🔮', mods: ['Reforges a rare item with new random modifiers'] },
+    { name: 'Orb of Alchemy', baseType: 'Currency', rarity: 'Currency', icon: '🧪', mods: ['Upgrades a normal item to a rare item'] },
+    { name: 'Exalted Orb', baseType: 'Currency', rarity: 'Currency', icon: '🌟', mods: ['Augments a rare item with a new random modifier'] },
+    { name: 'Orb of Fusing', baseType: 'Currency', rarity: 'Currency', icon: '🔗', mods: ['Reforges socket links on an item'] },
+    { name: 'Dragonbone Greataxe', baseType: 'Two Hand Axe', rarity: 'Rare', slot: 'MainHand', icon: '🪓', mods: ['+45 Physical Damage', '+35% Attack Speed', '+25% Crit Multi'] },
+    { name: 'Voidwalker Greaves', baseType: 'Boots', rarity: 'Rare', slot: 'Armor', icon: '👢', mods: ['+30% Movement Speed', '+80 Max Life', '+35% Fire Resistance'] },
+    { name: 'Crown of the Void', baseType: 'Hubris Circlet', rarity: 'Unique', slot: 'Helm', icon: '👑', mods: ['+120 Maximum Energy Shield', '+30% Chaos Resistance', 'Chaos Damage cannot bypass ES'] },
+    { name: 'Bloodseeker Blade', baseType: 'Hellblade', rarity: 'Unique', slot: 'MainHand', icon: '🗡️', mods: ['+50 Fire Damage', 'Instant Life Leech on Crit', 'Hits Ignite Enemies'] },
+    { name: 'Reinforced Kite Shield', baseType: 'Shield', rarity: 'Magic', slot: 'OffHand', icon: '🛡️', mods: ['+150 Armor', '+25% Cold Resistance'] }
+  ];
+
+  function dropMonsterLoot(x, y, isBoss) {
+    const dropCount = isBoss ? Math.floor(Math.random() * 3) + 4 : (Math.random() < 0.65 ? 1 : 0);
+
+    for (let i = 0; i < dropCount; i++) {
+      let itemTemplate;
+      if (isBoss && i === 0) {
+        // Guaranteed Unique or High Rare for Boss
+        itemTemplate = POSSIBLE_LOOT.find(it => it.rarity === 'Unique') || POSSIBLE_LOOT[4];
+      } else {
+        itemTemplate = POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)];
+      }
+
+      const dropAngle = Math.random() * Math.PI * 2;
+      const dropDistance = 40 + Math.random() * 80;
+      const targetX = x + Math.cos(dropAngle) * dropDistance;
+      const targetY = y + Math.sin(dropAngle) * dropDistance;
+
+      const lootItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        x: x,
+        y: y,
+        targetX: targetX,
+        targetY: targetY,
+        item: { ...itemTemplate },
+        bounceTimer: 0.5,
+        beamHeight: itemTemplate.rarity === 'Unique' ? 350 : (itemTemplate.rarity === 'Rare' || itemTemplate.rarity === 'Currency' ? 240 : 0)
+      };
+
+      groundLoot.push(lootItem);
+      AudioEngine.playLootDrop(itemTemplate.rarity);
+    }
+  }
+
+  function pickUpLoot(lootIndex) {
+    if (lootIndex < 0 || lootIndex >= groundLoot.length) return;
+    const loot = groundLoot[lootIndex];
+
+    if (player.bag.length >= 12) {
+      spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
+      return;
+    }
+
+    player.bag.push(loot.item);
+    groundLoot.splice(lootIndex, 1);
+
+    AudioEngine.playPickup();
+    spawnDamageNumber(player.x, player.y - 45, `+ ${loot.item.name}`, false, RARITY_COLORS[loot.item.rarity]);
+
+    // Flying particle effect
+    for (let i = 0; i < 8; i++) {
+      particles.push({
+        x: loot.x,
+        y: loot.y,
+        vx: (Math.random() - 0.5) * 120,
+        vy: (Math.random() - 0.5) * 120,
+        color: RARITY_COLORS[loot.item.rarity],
+        life: 0.3,
+        maxLife: 0.3,
+        size: 4
+      });
+    }
+
+    updateBackpackUI();
+  }
+
+  function updateBackpackUI() {
+    const grid = document.getElementById('backpack-grid');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < 12; i++) {
+      const slot = document.createElement('div');
+      const item = player.bag[i];
+
+      if (item) {
+        slot.className = `bag-slot rarity-${item.rarity}`;
+        slot.innerText = item.icon || '📦';
+        slot.title = `${item.name} (${item.rarity})`;
+
+        slot.addEventListener('mouseenter', e => showItemTooltip(e, item));
+        slot.addEventListener('mouseleave', hideItemTooltip);
+
+        slot.addEventListener('click', () => {
+          if (item.slot && player.equipped[item.slot]) {
+            // Swap gear
+            const prev = player.equipped[item.slot];
+            player.equipped[item.slot] = item;
+            player.bag[i] = prev;
+            AudioEngine.playPickup();
+            updateBackpackUI();
+            updateEquippedUI();
+          } else if (item.rarity === 'Currency') {
+            // Use currency
+            spawnDamageNumber(player.x, player.y - 40, `Used ${item.name}!`, true, '#e5c07b');
+            player.bag.splice(i, 1);
+            AudioEngine.playPickup();
+            updateBackpackUI();
+          }
+        });
+      } else {
+        slot.className = 'bag-slot empty-slot';
+        slot.innerText = '';
+      }
+
+      grid.appendChild(slot);
+    }
+
+    document.getElementById('bag-count-tag').innerText = `${player.bag.length} / 12`;
+  }
+
+  function updateEquippedUI() {
+    for (let slotKey in player.equipped) {
+      const item = player.equipped[slotKey];
+      const el = document.getElementById(`gear-name-${slotKey.toLowerCase()}`);
+      if (el && item) {
+        el.innerText = item.name;
+        el.style.color = RARITY_COLORS[item.rarity] || '#fff';
+      }
+    }
+  }
+
+  const tooltipEl = document.getElementById('item-tooltip');
+  function showItemTooltip(e, item) {
+    if (!tooltipEl || !item) return;
+    document.getElementById('tt-name').innerText = item.name;
+    document.getElementById('tt-name').style.color = RARITY_COLORS[item.rarity];
+    document.getElementById('tt-type').innerText = `${item.rarity} ${item.baseType || ''}`;
+
+    const modsEl = document.getElementById('tt-mods');
+    modsEl.innerHTML = (item.mods || []).map(m => `<div>• ${m}</div>`).join('');
+
+    tooltipEl.classList.remove('hidden');
+    tooltipEl.style.left = `${Math.min(window.innerWidth - 260, e.clientX + 16)}px`;
+    tooltipEl.style.top = `${Math.min(window.innerHeight - 180, e.clientY - 40)}px`;
+  }
+
+  function hideItemTooltip() {
+    if (tooltipEl) tooltipEl.classList.add('hidden');
+  }
+
+  // ==========================================
+  // 6. ZONE LOADING & WORLD INITIALIZATION
   // ==========================================
   function loadZone(zoneId, spawnX, spawnY) {
     if (!ZONES[zoneId]) return;
@@ -183,6 +409,7 @@
     projectiles.length = 0;
     particles.length = 0;
     floatingTexts.length = 0;
+    groundLoot.length = 0;
 
     player.x = spawnX !== undefined ? spawnX : 2000;
     player.y = spawnY !== undefined ? spawnY : 2000;
@@ -249,6 +476,9 @@
     document.querySelectorAll('.zone-node').forEach(node => {
       node.classList.toggle('active-node', node.getAttribute('data-zone') === currentZoneId);
     });
+
+    updateBackpackUI();
+    updateEquippedUI();
   }
 
   function showZoneBanner(title, sub) {
@@ -272,9 +502,9 @@
       vx: 0,
       vy: 0,
       type: type,
-      name: isBoss ? '🔥 Dark Shadow Fiend (Boss)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
-      maxLife: isBoss ? 1800 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
-      life: isBoss ? 1800 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
+      name: isBoss ? '🔥 Dark Shadow Fiend (Lord of the Crypt)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
+      maxLife: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
+      life: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
       armor: isBoss ? 600 : (type === 'skeleton' ? 350 : 100),
       fireRes: type === 'slime' ? 0 : (isBoss ? 50 : 30),
       coldRes: type === 'slime' ? 70 : (isBoss ? 40 : 10),
@@ -296,7 +526,7 @@
   }
 
   // ==========================================
-  // 5. COMBAT PIPELINE (PoE Mitigation)
+  // 7. COMBAT & MITIGATION PIPELINE
   // ==========================================
   function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
     if (!target.isAlive) return;
@@ -327,6 +557,8 @@
     }
     target.hurtTimer = 0.25;
 
+    AudioEngine.playHit(isCrit);
+
     const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : '#ffffff'));
     spawnDamageNumber(target.x, target.y - 30 * (target.scale || 1), totalDamage, isCrit, color);
 
@@ -347,6 +579,9 @@
       target.isAlive = false;
       target.life = 0;
       spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
+      
+      // Drop Loot!
+      dropMonsterLoot(target.x, target.y, target.type === 'boss');
     }
   }
 
@@ -364,7 +599,7 @@
   }
 
   // ==========================================
-  // 6. SKILLS
+  // 8. SKILLS
   // ==========================================
   function castSlash() {
     if (player.cooldowns.slash > 0) return;
@@ -552,7 +787,7 @@
   }
 
   // ==========================================
-  // 7. UPDATE LOOP & DYNAMIC ZOOM
+  // 9. UPDATE LOOP & BOSS HEALTH BAR
   // ==========================================
   let lastTime = performance.now();
   let frameCount = 0;
@@ -591,6 +826,7 @@
       player.animFrame = 0;
     }
 
+    // Portals
     portals.forEach(p => {
       const dist = Math.hypot(player.x - p.x, player.y - p.y);
       if (dist < 55) {
@@ -598,6 +834,17 @@
       }
     });
 
+    // Ground Loot Bounce Physics
+    groundLoot.forEach(loot => {
+      if (loot.bounceTimer > 0) {
+        loot.bounceTimer -= dt;
+        const progress = 1 - loot.bounceTimer / 0.5;
+        loot.x += (loot.targetX - loot.x) * 0.15;
+        loot.y += (loot.targetY - loot.y) * 0.15;
+      }
+    });
+
+    // Cooldowns & Regen
     for (let k in player.cooldowns) {
       if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
     }
@@ -661,9 +908,12 @@
       }
     }
 
-    // Monster AI
+    // Monster AI & Boss Bar Detection
+    let activeBoss = null;
     monsters.forEach(m => {
       if (!m.isAlive) return;
+      if (m.type === 'boss') activeBoss = m;
+
       if (m.hurtTimer > 0) m.hurtTimer -= dt;
       m.animTimer += dt * 5;
 
@@ -674,6 +924,17 @@
         m.y += Math.sin(angle) * m.speed * dt;
       }
     });
+
+    // Update Boss Top HUD
+    const bossHud = document.getElementById('boss-hud-bar');
+    if (activeBoss && activeBoss.isAlive && Math.hypot(player.x - activeBoss.x, player.y - activeBoss.y) < 950) {
+      bossHud.classList.remove('boss-hud-hide');
+      const hpPct = Math.max(0, (activeBoss.life / activeBoss.maxLife) * 100);
+      document.getElementById('boss-hp-fill').style.width = `${hpPct}%`;
+      document.getElementById('boss-hp-text').innerText = `${Math.round(activeBoss.life)} / ${activeBoss.maxLife} (${Math.round(hpPct)}%)`;
+    } else {
+      bossHud.classList.add('boss-hud-hide');
+    }
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const pt = particles[i];
@@ -715,7 +976,7 @@
   }
 
   // ==========================================
-  // 8. RENDERING
+  // 10. RENDERING (Loot Beams & Ground Cards)
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -743,6 +1004,11 @@
 
     trainingDummies.forEach(d => {
       renderList.push({ y: d.y, render: () => drawDummy(d) });
+    });
+
+    // Ground Loot (Rendered with Beams and Nameplates)
+    groundLoot.forEach((loot, idx) => {
+      renderList.push({ y: loot.y, render: () => drawGroundLoot(loot, idx) });
     });
 
     monsters.forEach(m => {
@@ -797,7 +1063,51 @@
     renderMinimap();
   }
 
-  // Draw Natural Seamless Terrain
+  // Draw Ground Loot Item Card + Vertical Loot Beam
+  function drawGroundLoot(loot, idx) {
+    ctx.save();
+    ctx.translate(loot.x, loot.y);
+
+    const rarityColor = RARITY_COLORS[loot.item.rarity] || '#ffffff';
+
+    // 1. Glowing Vertical Loot Beam for High-Tier Loot
+    if (loot.beamHeight > 0) {
+      const pulse = (Math.sin(performance.now() / 200) + 1) * 0.5;
+      const beamGrad = ctx.createLinearGradient(0, 0, 0, -loot.beamHeight);
+      beamGrad.addColorStop(0, rarityColor);
+      beamGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.4)');
+      beamGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      ctx.fillStyle = beamGrad;
+      ctx.fillRect(-3 - pulse * 2, -loot.beamHeight, 6 + pulse * 4, loot.beamHeight);
+    }
+
+    // 2. PoE Style Ground Nameplate Card
+    ctx.font = 'bold 10px "Outfit", sans-serif';
+    const text = `${loot.item.icon || '📦'} ${loot.item.name}`;
+    const textWidth = ctx.measureText(text).width;
+    const cardW = textWidth + 16;
+    const cardH = 22;
+
+    // Card Shadow & Background
+    ctx.fillStyle = 'rgba(10, 12, 16, 0.94)';
+    ctx.fillRect(-cardW / 2, -cardH / 2, cardW, cardH);
+
+    // Rarity Border
+    ctx.strokeStyle = rarityColor;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-cardW / 2, -cardH / 2, cardW, cardH);
+
+    // Label Text
+    ctx.fillStyle = rarityColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 0, 0);
+
+    ctx.restore();
+  }
+
+  // Draw Seamless Terrain
   function drawSeamlessTerrain() {
     const viewW = canvas.width / camera.zoom;
     const viewH = canvas.height / camera.zoom;
@@ -1088,6 +1398,11 @@
       mmCtx.fill();
     });
 
+    groundLoot.forEach(loot => {
+      mmCtx.fillStyle = RARITY_COLORS[loot.item.rarity] || '#ffffff';
+      mmCtx.fillRect(loot.x * scaleX - 1, loot.y * scaleY - 1, 3, 3);
+    });
+
     monsters.forEach(m => {
       if (m.isAlive) {
         mmCtx.fillStyle = m.type === 'boss' ? '#ffd700' : '#e06c75';
@@ -1121,7 +1436,7 @@
   }
 
   // ==========================================
-  // 9. INPUT & ZOOM LISTENERS
+  // 11. INPUT & INTERACTION LISTENERS
   // ==========================================
   window.addEventListener('wheel', e => {
     if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
@@ -1149,6 +1464,22 @@
     if (e.code === 'KeyM') toggleModal('worldmap-modal');
     if (e.code === 'KeyC') toggleModal('stats-modal');
     if (e.code === 'KeyI') toggleModal('inventory-modal');
+    
+    // 'F' key: Pick up closest ground loot
+    if (e.code === 'KeyF') {
+      let closestIdx = -1;
+      let minDistance = 120;
+      groundLoot.forEach((loot, idx) => {
+        const dist = Math.hypot(player.x - loot.x, player.y - loot.y);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIdx = idx;
+        }
+      });
+      if (closestIdx !== -1) {
+        pickUpLoot(closestIdx);
+      }
+    }
   });
 
   window.addEventListener('keyup', e => {
@@ -1162,6 +1493,27 @@
 
   window.addEventListener('mousedown', e => {
     if (e.button === 0 && e.target === canvas) {
+      AudioEngine.init();
+
+      // Check if clicking directly on a ground loot card
+      let clickedLootIdx = -1;
+      groundLoot.forEach((loot, idx) => {
+        const dist = Math.hypot(mouse.worldX - loot.x, mouse.worldY - loot.y);
+        if (dist < 40) {
+          clickedLootIdx = idx;
+        }
+      });
+
+      if (clickedLootIdx !== -1) {
+        // Move towards and pick up loot if close
+        const loot = groundLoot[clickedLootIdx];
+        const playerDist = Math.hypot(player.x - loot.x, player.y - loot.y);
+        if (playerDist < 140) {
+          pickUpLoot(clickedLootIdx);
+          return;
+        }
+      }
+
       mouse.isDown = true;
       castSlash();
     }

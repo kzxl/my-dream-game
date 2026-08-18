@@ -36,10 +36,92 @@ canvas#gameCanvas {
   cursor: crosshair;
 }
 
+/* ==========================================
+   BOSS EPIC HEALTH BAR (Top Center)
+   ========================================== */
+#boss-hud-bar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 520px;
+  max-width: 90vw;
+  background: rgba(15, 12, 20, 0.95);
+  border: 2px solid #e06c75;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(224, 108, 117, 0.35);
+  border-radius: 8px;
+  padding: 8px 16px 10px 16px;
+  z-index: 25;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.boss-hud-hide {
+  opacity: 0;
+  top: -60px !important;
+  pointer-events: none;
+  transform: translateX(-50%) scale(0.9) !important;
+}
+
+.boss-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.boss-skull { font-size: 16px; margin-right: 6px; }
+
+#boss-name-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #ffd700;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 3px #000;
+  flex: 1;
+}
+
+.boss-tag {
+  font-size: 9px;
+  color: #ff416c;
+  background: rgba(255, 65, 108, 0.2);
+  border: 1px solid #ff416c;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+.boss-bar-wrap {
+  position: relative;
+  height: 16px;
+  background: #251218;
+  border: 1px solid #7c2d37;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff416c, #e06c75, #ffd700);
+  box-shadow: 0 0 10px rgba(255, 65, 108, 0.8);
+  transition: width 0.15s ease-out;
+}
+
+.boss-hp-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px #000;
+  white-space: nowrap;
+}
+
 /* Zone Entry Banner Notification */
 #zone-banner {
   position: absolute;
-  top: 90px;
+  top: 85px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(18, 22, 28, 0.95);
@@ -68,7 +150,7 @@ canvas#gameCanvas {
 
 .zone-banner-hide {
   opacity: 0;
-  top: 60px !important;
+  top: 50px !important;
   transform: translateX(-50%) scale(0.85) !important;
 }
 
@@ -513,13 +595,18 @@ canvas#gameCanvas {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 420px;
+  width: 440px;
   background: #1e222b;
   border: 3px solid #61afef;
   border-radius: 8px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
   padding: 16px;
   z-index: 20;
+}
+
+.inv-modal-wide {
+  width: 620px !important;
+  max-width: 95vw;
 }
 
 .pixel-modal.hidden { display: none; }
@@ -559,10 +646,167 @@ canvas#gameCanvas {
 .res-chaos { color: #c678dd; }
 .gold-text { color: #d19a66; }
 
-.equipment-paperdoll { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-.equip-slot { background: #282c34; border: 2px solid #4b5263; padding: 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-.equip-slot.active-gear { border-color: #98c379; background: rgba(152, 195, 121, 0.1); }
-.inventory-hint { font-size: 11px; color: #abb2bf; font-style: italic; }
+/* ==========================================
+   INVENTORY & BACKPACK GRID
+   ========================================== */
+.inv-flex-body {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 14px;
+}
+
+.inv-section h4 {
+  font-size: 11px;
+  color: #e5c07b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.bag-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bag-count {
+  font-size: 10px;
+  color: #98c379;
+  background: rgba(152, 195, 121, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.equipment-paperdoll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.equip-slot {
+  background: #282c34;
+  border: 2px solid #4b5263;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.equip-slot:hover {
+  border-color: #61afef;
+}
+
+.equip-slot.active-gear {
+  border-color: #98c379;
+  background: rgba(152, 195, 121, 0.08);
+}
+
+.slot-title {
+  color: #abb2bf;
+  font-size: 11px;
+}
+
+.backpack-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bag-slot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: #21252b;
+  border: 2px solid #3e4451;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s;
+}
+
+.bag-slot:hover {
+  transform: scale(1.06);
+  border-color: #e5c07b;
+}
+
+.bag-slot.empty-slot {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bag-slot.empty-slot:hover {
+  transform: none;
+  border-color: #3e4451;
+}
+
+.rarity-Normal { border-color: #c8c8c8 !important; }
+.rarity-Magic { border-color: #8888ff !important; box-shadow: 0 0 6px rgba(136, 136, 255, 0.4); }
+.rarity-Rare { border-color: #ffff77 !important; box-shadow: 0 0 8px rgba(255, 255, 119, 0.5); }
+.rarity-Unique { border-color: #af6025 !important; box-shadow: 0 0 10px rgba(175, 96, 37, 0.6); }
+.rarity-Currency { border-color: #aa9e82 !important; box-shadow: 0 0 8px rgba(170, 158, 130, 0.5); }
+
+.inventory-footer {
+  margin-top: 12px;
+  border-top: 1px solid #3e4451;
+  padding-top: 8px;
+  font-size: 11px;
+  color: #abb2bf;
+  font-style: italic;
+}
+
+/* ==========================================
+   ITEM HOVER TOOLTIP
+   ========================================== */
+.item-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: rgba(18, 22, 28, 0.96);
+  border: 2px solid #e5c07b;
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 220px;
+  max-width: 300px;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(8px);
+}
+
+.item-tooltip.hidden { display: none; }
+
+.tt-header {
+  border-bottom: 1px solid #3e4451;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.tt-header h4 {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tt-header span {
+  font-size: 10px;
+  color: #abb2bf;
+}
+
+.tt-stats {
+  font-size: 12px;
+  color: #e5c07b;
+  margin-bottom: 4px;
+}
+
+.tt-mods {
+  font-size: 11px;
+  color: #8888ff;
+  line-height: 1.4;
+}
 
 #controls-hint {
   position: absolute;

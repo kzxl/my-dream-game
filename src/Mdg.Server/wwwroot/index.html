@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MDG: Aethelis - 2D ARPG Web Client & World Map</title>
-  <meta name="description" content="My Dream Game (MDG) - Pure C# Core Cross-Platform 2D Top-Down ARPG with Seamless Terrain & Dynamic Zoom" />
+  <title>MDG: Aethelis - 2D ARPG Web Client & Loot System</title>
+  <meta name="description" content="My Dream Game (MDG) - Pure C# Core Cross-Platform 2D Top-Down ARPG with PoE Loot Drops & Boss Battles" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
@@ -14,6 +14,19 @@
   <div id="game-container">
     <!-- Main Render Canvas -->
     <canvas id="gameCanvas"></canvas>
+
+    <!-- Boss Epic Health Bar (Top Center) -->
+    <div id="boss-hud-bar" class="boss-hud-hide">
+      <div class="boss-title-row">
+        <span class="boss-skull">💀</span>
+        <span id="boss-name-text">DARK SHADOW FIEND</span>
+        <span class="boss-tag">ANCIENT BOSS</span>
+      </div>
+      <div class="boss-bar-wrap">
+        <div id="boss-hp-fill" class="boss-hp-fill" style="width: 100%;"></div>
+        <span id="boss-hp-text" class="boss-hp-text">1,800 / 1,800 (100%)</span>
+      </div>
+    </div>
 
     <!-- Zone Entry Banner Notification -->
     <div id="zone-banner" class="zone-banner-hide">
@@ -172,26 +185,55 @@
       </div>
     </div>
 
-    <!-- Inventory / Equipment Drawer (Modal) -->
-    <div id="inventory-modal" class="pixel-modal hidden">
+    <!-- Equipment & Bag Drawer (Modal) -->
+    <div id="inventory-modal" class="pixel-modal inv-modal-wide hidden">
       <div class="modal-header">
-        <h3>EQUIPMENT & INVENTORY (PAPERDOLL)</h3>
+        <h3>EQUIPMENT & INVENTORY (PAPERDOLL & BAG)</h3>
         <button id="btn-close-inventory" class="close-btn">✖</button>
       </div>
-      <div class="modal-body">
-        <div class="equipment-paperdoll">
-          <div class="equip-slot" id="equip-helm" title="Golden Crown">👑 <span>Golden Crown (+15 All Res)</span></div>
-          <div class="equip-slot" id="equip-armor" title="Refined Plate">🛡️ <span>Refined Plate (+250 Armor)</span></div>
-          <div class="equip-slot active-gear" id="equip-weapon" title="Ancient Fireblade">🗡️ <span>Ancient Fireblade (+40 Fire)</span></div>
-          <div class="equip-slot active-gear" id="equip-shield" title="Guardian Shield">🛡️ <span>Guardian Shield (+50 Armor)</span></div>
+      <div class="modal-body inv-flex-body">
+        <!-- Left: Equipment Paperdoll -->
+        <div class="inv-section">
+          <h4>Equipped Gear</h4>
+          <div class="equipment-paperdoll">
+            <div class="equip-slot active-gear" id="equip-helm" data-slot="Helm">👑 <span class="slot-title">Helm:</span> <b id="gear-name-helm">Crown of Void</b></div>
+            <div class="equip-slot active-gear" id="equip-armor" data-slot="BodyArmor">🛡️ <span class="slot-title">Armor:</span> <b id="gear-name-armor">Refined Plate</b></div>
+            <div class="equip-slot active-gear" id="equip-weapon" data-slot="MainHand">🗡️ <span class="slot-title">Weapon:</span> <b id="gear-name-weapon">Fireblade</b></div>
+            <div class="equip-slot active-gear" id="equip-shield" data-slot="OffHand">🛡️ <span class="slot-title">Shield:</span> <b id="gear-name-shield">Guardian Shield</b></div>
+          </div>
         </div>
-        <p class="inventory-hint">💡 Click item slots to toggle equipment buffs live on the Core engine.</p>
+
+        <!-- Right: Backpack Grid (12 Slots) -->
+        <div class="inv-section">
+          <div class="bag-header-row">
+            <h4>Backpack (12 Slots)</h4>
+            <span id="bag-count-tag" class="bag-count">0 / 12</span>
+          </div>
+          <div id="backpack-grid" class="backpack-grid">
+            <!-- 12 Item Slots Generated Dynamically -->
+          </div>
+        </div>
+      </div>
+      <div class="inventory-footer">
+        <p>💡 <b>LMB</b> on ground loot or press <b>F</b> to pick up. <b>LMB</b> on bag item to equip / use.</p>
+      </div>
+    </div>
+
+    <!-- Item Hover Tooltip -->
+    <div id="item-tooltip" class="item-tooltip hidden">
+      <div id="tt-header" class="tt-header">
+        <h4 id="tt-name">Item Name</h4>
+        <span id="tt-type">Item Base Type</span>
+      </div>
+      <div id="tt-body" class="tt-body">
+        <div id="tt-stats" class="tt-stats"></div>
+        <div id="tt-mods" class="tt-mods"></div>
       </div>
     </div>
 
     <!-- Help & Controls Overlay -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>Mouse Wheel</b>: Zoom In/Out | <b>LMB</b>: Attack | <b>Q/W/E</b>: Skills | <b>Space</b>: Dash | <b>M</b>: World Map</span>
+      <span>🎮 <b>WASD</b>: Move | <b>Mouse Wheel</b>: Zoom | <b>LMB / F</b>: Attack / Pick Loot | <b>Q/W/E</b>: Skills | <b>Space</b>: Dash | <b>M/C/I</b>: Map / Stats / Bag</span>
     </div>
   </div>
 
