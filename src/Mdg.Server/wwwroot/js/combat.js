@@ -1,11 +1,10 @@
 /**
- * Combat Calculations, Damage Formulas & Skill Execution
+ * Combat Calculations, Support Gem Logic & Keystone Morph Skill Execution
  */
 
 import { player, monsters, trainingDummies, projectiles, particles, floatingTexts, mouse } from './state.js';
-import { SKILLS } from './data/skills.js';
+import { SKILLS, skillSocketBoard, isNodeAllocated } from './data/skills.js';
 import { AudioEngine } from './audio.js';
-import { addSkillExp } from './ui/skills-ui.js';
 import { dropMonsterLoot } from './main.js';
 
 export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
@@ -26,13 +25,14 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   const finalPhys = physDmg * (1 - physMitigation);
   const finalFire = (rawFire * multiplier) * (1 - (target.fireRes || 0) / 100);
   const finalCold = (rawCold * multiplier) * (1 - (target.coldRes || 0) / 100);
-  const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold));
+  const finalChaos = (rawChaos * multiplier) * (1 - (target.chaosRes || 0) / 100);
+  const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalChaos));
 
   if (target.life < 90000) target.life -= totalDamage;
   target.hurtTimer = 0.25;
 
   AudioEngine.playHit(isCrit);
-  const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : '#ffffff'));
+  const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : (rawChaos > 0 ? '#c678dd' : '#ffffff')));
   spawnDamageNumber(target.x, target.y - 30 * (target.scale || 1), totalDamage, isCrit, color);
 
   for (let i = 0; i < (isCrit ? 12 : 6); i++) {
@@ -41,7 +41,7 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
       y: target.y - 10,
       vx: (Math.random() - 0.5) * 200,
       vy: (Math.random() - 0.5) * 200,
-      color: rawFire > 0 ? '#ff5722' : '#00f2fe',
+      color: rawFire > 0 ? '#ff5722' : (rawCold > 0 ? '#00f2fe' : '#c678dd'),
       life: 0.35,
       maxLife: 0.35,
       size: 3 + Math.random() * 4
@@ -74,6 +74,7 @@ export function spawnDamageNumber(x, y, text, isCrit, color) {
   });
 }
 
+// 1. HEAVY SLASH (With Wind Blade & Rend Morphs)
 export function castSlash() {
   const s = SKILLS.slash;
   if (player.cooldowns.slash > 0) return;
@@ -93,6 +94,20 @@ export function castSlash() {
     if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, 0);
   });
 
+  // Keystone Morph: Wind Blade Wave
+  if (isNodeAllocated('slash', 'sl_morph_wave')) {
+    projectiles.push({
+      x: player.x,
+      y: player.y,
+      vx: Math.cos(angle) * 520,
+      vy: Math.sin(angle) * 520,
+      type: 'windblade',
+      damage: Math.round(dmg * 0.85),
+      radius: 20,
+      life: 0.75
+    });
+  }
+
   for (let i = 0; i < 12; i++) {
     const spread = angle + (Math.random() - 0.5) * 1.4;
     particles.push({
@@ -100,7 +115,7 @@ export function castSlash() {
       y: player.y + Math.sin(spread) * 30,
       vx: Math.cos(spread) * 160,
       vy: Math.sin(spread) * 160,
-      color: player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b',
+      color: isNodeAllocated('slash', 'sl_morph_wave') ? '#00f2fe' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b'),
       life: 0.22,
       maxLife: 0.22,
       size: 4
@@ -108,25 +123,64 @@ export function castSlash() {
   }
 }
 
+// 2. PYRO FIREBALL (With GMP Support & Nova Cataclysm Morph)
 export function castFireball() {
   const s = SKILLS.fireball;
   if (player.cooldowns.fireball > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
   player.cooldowns.fireball = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
-  const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
-  projectiles.push({
-    x: player.x,
-    y: player.y - 10,
-    vx: Math.cos(angle) * 480,
-    vy: Math.sin(angle) * 480,
-    type: 'fireball',
-    damage: s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0),
-    radius: s.baseRadius + (s.level - 1) * s.radiusPerLvl,
-    life: 1.6
-  });
+  const baseAngle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
+  const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+  const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl;
+
+  const hasNova = isNodeAllocated('fireball', 'fb_morph_nova');
+  const hasGmp = skillSocketBoard.fireball?.supports.includes('support_gmp');
+
+  if (hasNova) {
+    // 8 Fireballs in 360° Ring
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      projectiles.push({
+        x: player.x,
+        y: player.y - 10,
+        vx: Math.cos(a) * 440,
+        vy: Math.sin(a) * 440,
+        type: 'fireball',
+        damage: Math.round(dmg * 0.7),
+        radius: radius,
+        life: 1.2
+      });
+    }
+  } else if (hasGmp) {
+    // 3 Fireballs in Cone
+    [-0.22, 0, 0.22].forEach(offset => {
+      projectiles.push({
+        x: player.x,
+        y: player.y - 10,
+        vx: Math.cos(baseAngle + offset) * 480,
+        vy: Math.sin(baseAngle + offset) * 480,
+        type: 'fireball',
+        damage: Math.round(dmg * 0.85),
+        radius: radius,
+        life: 1.5
+      });
+    });
+  } else {
+    // Single Fireball
+    projectiles.push({
+      x: player.x,
+      y: player.y - 10,
+      vx: Math.cos(baseAngle) * 480,
+      vy: Math.sin(baseAngle) * 480,
+      type: 'fireball',
+      damage: dmg,
+      radius: radius,
+      life: 1.6
+    });
+  }
 }
 
+// 3. FROST NOVA (With Frost Shield & Glacial Vortex Morph)
 export function castFrostNova() {
   const s = SKILLS.frost;
   if (player.cooldowns.frost > 0 || player.mana < s.manaCost) return;
@@ -136,13 +190,31 @@ export function castFrostNova() {
   const novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
   const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
 
+  let hitsCount = 0;
   monsters.forEach(m => {
-    if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) <= novaRadius) dealDamage(m, 15, 0, dmg, 0, 0);
+    if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) <= novaRadius) {
+      dealDamage(m, 15, 0, dmg, 0, 0);
+      hitsCount++;
+
+      // Keystone Morph: Glacial Vortex Pull
+      if (isNodeAllocated('frost', 'fr_morph_vortex')) {
+        const pullAngle = Math.atan2(player.y - m.y, player.x - m.x);
+        m.x += Math.cos(pullAngle) * 120;
+        m.y += Math.sin(pullAngle) * 120;
+      }
+    }
   });
 
   trainingDummies.forEach(d => {
     if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0);
   });
+
+  // Major Node: Frost Shield Leech to Energy Shield
+  if (isNodeAllocated('frost', 'fr_shield') && hitsCount > 0) {
+    const esGained = hitsCount * 35;
+    player.es = Math.min(player.maxEs, player.es + esGained);
+    spawnDamageNumber(player.x, player.y - 45, `+${esGained} ES (Frost Shield)`, false, '#56b6c2');
+  }
 
   for (let a = 0; a < Math.PI * 2; a += 0.25) {
     particles.push({
@@ -150,7 +222,7 @@ export function castFrostNova() {
       y: player.y,
       vx: Math.cos(a) * 260,
       vy: Math.sin(a) * 260,
-      color: '#00f2fe',
+      color: isNodeAllocated('frost', 'fr_morph_vortex') ? '#c678dd' : '#00f2fe',
       life: 0.45,
       maxLife: 0.45,
       size: 6
@@ -158,6 +230,7 @@ export function castFrostNova() {
   }
 }
 
+// 4. CATACLYSM METEOR (With Meteor Shower Morph)
 export function castMeteor() {
   const s = SKILLS.meteor;
   if (player.cooldowns.meteor > 0 || player.mana < s.manaCost) return;
@@ -167,47 +240,58 @@ export function castMeteor() {
   const targetX = mouse.worldX;
   const targetY = mouse.worldY;
 
-  particles.push({
-    x: targetX,
-    y: targetY,
-    vx: 0,
-    vy: 0,
-    color: 'rgba(255, 65, 108, 0.45)',
-    life: 0.45,
-    maxLife: 0.45,
-    size: 50,
-    isRing: true
-  });
-
-  setTimeout(() => {
-    const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
-    const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
-
-    monsters.forEach(m => {
-      if (m.isAlive && Math.hypot(m.x - targetX, m.y - targetY) <= radius) dealDamage(m, 50, dmg, 0, 0, 30);
+  const dropSingleImpact = (x, y, delayMs) => {
+    particles.push({
+      x: x,
+      y: y,
+      vx: 0,
+      vy: 0,
+      color: 'rgba(255, 65, 108, 0.45)',
+      life: delayMs / 1000,
+      maxLife: delayMs / 1000,
+      size: 50,
+      isRing: true
     });
 
-    trainingDummies.forEach(d => {
-      if (Math.hypot(d.x - targetX, d.y - targetY) <= radius) dealDamage(d, 50, dmg, 0, 0, 30);
-    });
+    setTimeout(() => {
+      const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+      const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
 
-    for (let i = 0; i < 45; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const spd = 60 + Math.random() * 260;
-      particles.push({
-        x: targetX,
-        y: targetY,
-        vx: Math.cos(a) * spd,
-        vy: Math.sin(a) * spd,
-        color: Math.random() > 0.3 ? '#ff3b00' : '#ffd700',
-        life: 0.65,
-        maxLife: 0.65,
-        size: 6 + Math.random() * 6
+      monsters.forEach(m => {
+        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, 30);
       });
-    }
-  }, 420);
+
+      trainingDummies.forEach(d => {
+        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, 30);
+      });
+
+      for (let i = 0; i < 40; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const spd = 60 + Math.random() * 260;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          color: Math.random() > 0.3 ? '#ff3b00' : '#ffd700',
+          life: 0.65,
+          maxLife: 0.65,
+          size: 6 + Math.random() * 6
+        });
+      }
+    }, delayMs);
+  };
+
+  dropSingleImpact(targetX, targetY, 400);
+
+  // Keystone Morph: Meteor Shower
+  if (isNodeAllocated('meteor', 'met_morph_shower')) {
+    dropSingleImpact(targetX + 60, targetY - 40, 650);
+    dropSingleImpact(targetX - 50, targetY + 50, 900);
+  }
 }
 
+// 5. SHADOW DASH
 export function castDash() {
   const s = SKILLS.dash;
   if (player.cooldowns.dash > 0) return;

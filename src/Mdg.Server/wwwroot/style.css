@@ -187,10 +187,7 @@ canvas#gameCanvas {
   transition: transform 0.15s, border-color 0.15s;
 }
 
-.portrait-box:hover {
-  transform: scale(1.05);
-  border-color: #61afef;
-}
+.portrait-box:hover { transform: scale(1.05); border-color: #61afef; }
 
 .avatar-pixel {
   width: 38px;
@@ -230,21 +227,8 @@ canvas#gameCanvas {
   white-space: nowrap;
 }
 
-.bars-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.name-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2px;
-  gap: 6px;
-}
-
+.bars-container { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.name-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 6px; }
 .char-name { font-weight: 800; font-size: 13px; color: #fff; }
 
 .ascend-pulse-btn {
@@ -274,15 +258,7 @@ canvas#gameCanvas {
   font-weight: 600;
 }
 
-.bar-wrapper {
-  position: relative;
-  height: 12px;
-  background: #1e222b;
-  border: 1px solid #4b5263;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
+.bar-wrapper { position: relative; height: 12px; background: #1e222b; border: 1px solid #4b5263; border-radius: 3px; overflow: hidden; }
 .bar-fill { height: 100%; transition: width 0.15s ease-out; }
 .es-fill { background: linear-gradient(90deg, #56b6c2, #4facfe); }
 .life-fill { background: linear-gradient(90deg, #e06c75, #ff416c); }
@@ -301,33 +277,11 @@ canvas#gameCanvas {
 }
 
 /* Minimap */
-#minimap-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.minimap-header {
-  display: flex;
-  justify-content: space-between;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  color: #abb2bf;
-}
-
+#minimap-panel { position: absolute; top: 16px; right: 16px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.minimap-header { display: flex; justify-content: space-between; font-family: 'Press Start 2P', monospace; font-size: 8px; color: #abb2bf; }
 .fps-tag { color: #98c379; }
+#minimapCanvas { border: 1px solid #4b5263; border-radius: 3px; background: #1c2025; }
 
-#minimapCanvas {
-  border: 1px solid #4b5263;
-  border-radius: 3px;
-  background: #1c2025;
-}
-
-/* Zoom Controls */
 .zoom-controls {
   display: flex;
   align-items: center;
@@ -366,12 +320,7 @@ canvas#gameCanvas {
 
 .zoom-btn-reset:hover { background: #e5c07b; color: #1e1e1e; }
 
-.quick-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
+.quick-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .hud-btn {
   background: #282c34;
   border: 1px solid #4b5263;
@@ -390,14 +339,7 @@ canvas#gameCanvas {
 .highlight-btn:hover { background: #e5c07b; color: #1e1e1e; }
 
 /* Hotbar */
-#bottom-hotbar {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-}
-
+#bottom-hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; }
 .hotbar-slots {
   display: flex;
   gap: 8px;
@@ -429,7 +371,7 @@ canvas#gameCanvas {
   position: absolute;
   top: -6px;
   right: -6px;
-  background: #61afef;
+  background: #1abc9c;
   color: #1e1e1e;
   font-family: 'Press Start 2P', monospace;
   font-size: 7px;
@@ -462,26 +404,22 @@ canvas#gameCanvas {
   text-shadow: 1px 1px #000;
 }
 
-.mana-hint {
-  position: absolute;
-  bottom: 2px;
-  right: 4px;
-  font-size: 9px;
-  color: #61afef;
-  font-weight: bold;
-}
+.mana-hint { position: absolute; bottom: 2px; right: 4px; font-size: 9px; color: #61afef; font-weight: bold; }
 
 /* ==========================================
-   SKILL TREE & TAGS STYLING
+   SKILL GEM SOCKET BOARD & MASTERY TREE
    ========================================== */
 .skills-modal-wide {
-  width: 720px !important;
-  max-width: 95vw;
+  width: 820px !important;
+  max-width: 96vw;
+  background: #151821 !important;
+  border: 3px solid #1abc9c !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(26, 188, 156, 0.2) !important;
 }
 
 .skills-sp-banner {
-  background: #282c34;
-  border: 1px solid #e5c07b;
+  background: #202530;
+  border: 1px solid #3e4451;
   border-radius: 6px;
   padding: 8px 12px;
   margin-bottom: 12px;
@@ -495,106 +433,264 @@ canvas#gameCanvas {
 .skills-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 55vh;
+  gap: 14px;
+  max-height: 65vh;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.skill-upgrade-card {
-  background: #21252b;
+/* Socket Board Panel */
+.socket-board-panel {
+  background: #1b202c;
   border: 2px solid #3e4451;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: border-color 0.15s;
 }
 
-.skill-upgrade-card:hover { border-color: #61afef; }
-.suc-icon { font-size: 32px; min-width: 44px; text-align: center; }
-.suc-info { flex: 1; }
-
-.suc-name-row {
+.socket-board-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #1abc9c;
 }
 
-.suc-name { font-weight: 800; font-size: 13px; color: #fff; }
-.suc-level { font-family: 'Press Start 2P', monospace; font-size: 9px; color: #61afef; }
-
-/* Skill Tags Row */
-.skill-tags-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.tag-badge {
-  font-size: 8px;
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.tag-phys { background: rgba(229, 192, 123, 0.18); border: 1px solid #e5c07b; color: #e5c07b; }
-.tag-fire { background: rgba(255, 65, 108, 0.18); border: 1px solid #ff416c; color: #ff416c; }
-.tag-cold { background: rgba(0, 242, 254, 0.18); border: 1px solid #00f2fe; color: #00f2fe; }
-.tag-chaos { background: rgba(198, 120, 221, 0.18); border: 1px solid #c678dd; color: #c678dd; }
-.tag-movement { background: rgba(152, 195, 121, 0.18); border: 1px solid #98c379; color: #98c379; }
-.tag-spell { background: rgba(97, 175, 239, 0.18); border: 1px solid #61afef; color: #61afef; }
-.tag-aoe { background: rgba(209, 154, 102, 0.18); border: 1px solid #d19a66; color: #d19a66; }
-.tag-melee { background: rgba(175, 96, 37, 0.18); border: 1px solid #af6025; color: #ffd700; }
-.tag-attack { background: rgba(136, 136, 255, 0.18); border: 1px solid #8888ff; color: #8888ff; }
-
-.exp-rate-tag {
-  font-size: 8px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: #3b3620;
-  border: 1px solid #ffd700;
-  color: #ffd700;
-  margin-left: auto;
-}
-
-.suc-desc { font-size: 11px; color: #abb2bf; margin-bottom: 6px; }
-
-.suc-exp-bar-wrap {
-  position: relative;
-  height: 8px;
-  background: #1a1e24;
-  border: 1px solid #3e4451;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.suc-exp-fill { height: 100%; background: linear-gradient(90deg, #61afef, #00f2fe); transition: width 0.2s ease; }
-.suc-stats { font-size: 11px; color: #98c379; }
-
-.suc-btn {
-  background: #3b3620;
-  border: 1px solid #e5c07b;
-  color: #e5c07b;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-weight: bold;
+.socket-board-title small {
+  font-family: 'Outfit', sans-serif;
   font-size: 11px;
+  color: #abb2bf;
+}
+
+.socket-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.socket-slot-card {
+  background: #242938;
+  border: 2px solid #3e4451;
+  border-radius: 6px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.socket-slot-card:hover { border-color: #1abc9c; }
+.selected-socket-card { border-color: #ffd700 !important; box-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+.slot-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-size: 10px;
+}
+
+.slot-key-badge { background: #3b3620; border: 1px solid #e5c07b; color: #e5c07b; padding: 1px 4px; border-radius: 3px; font-weight: bold; }
+.slot-skill-name { font-weight: 700; font-size: 10px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60px; }
+.slot-gem-lvl { font-size: 9px; color: #1abc9c; font-weight: bold; }
+
+.slot-gem-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.active-gem-box {
+  width: 44px;
+  height: 44px;
+  background: #1a1e28;
+  border: 2px solid #1abc9c;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: inset 0 0 8px rgba(26, 188, 156, 0.3);
+}
+
+.support-links-row {
+  display: flex;
+  gap: 4px;
+}
+
+.support-gem-box {
+  width: 20px;
+  height: 20px;
+  background: #1a1e28;
+  border: 1px dashed #e67e22;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #e67e22;
+}
+
+.has-support { border-style: solid !important; background: rgba(230, 126, 34, 0.2); }
+
+.open-tree-btn {
+  width: 100%;
+  background: #2c3242;
+  border: 1px solid #4b5263;
+  color: #abb2bf;
+  padding: 3px 0;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
-  white-space: nowrap;
 }
 
-.suc-btn:hover:not(:disabled) { background: #e5c07b; color: #1e1e1e; }
-.suc-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: #4b5263; color: #abb2bf; }
+.open-tree-btn:hover, .active-tree-btn {
+  background: #1abc9c;
+  color: #1e1e1e;
+  border-color: #fff;
+}
+
+/* Interactive Mastery Tree Graph Section */
+.skill-tree-interactive-section {
+  background: #181c26;
+  border: 2px solid #3e4451;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tree-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #3e4451;
+  padding-bottom: 6px;
+}
+
+.tree-title-group { display: flex; align-items: center; gap: 12px; }
+.tree-title-text { font-family: 'Press Start 2P', monospace; font-size: 10px; color: #ffd700; }
+.tree-smp-badge { font-size: 11px; color: #98c379; }
+
+.respec-btn {
+  background: #3b2024;
+  border: 1px solid #e06c75;
+  color: #e06c75;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.respec-btn:hover { background: #e06c75; color: #fff; }
+
+.tree-graph-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  background: radial-gradient(circle at center, #202738 0%, #131722 100%);
+  border: 2px solid #282f42;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tree-links-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tree-nodes-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.tree-node-item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.node-minor { width: 34px; height: 34px; border: 2px solid #4b5263; background: #21252b; font-size: 12px; }
+.node-major { width: 44px; height: 44px; border: 2px solid #61afef; background: #1c2738; font-size: 16px; }
+.node-keystone {
+  width: 56px;
+  height: 56px;
+  border: 3px solid #ffd700;
+  background: #3a2e15;
+  font-size: 22px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.node-allocated {
+  border-color: #1abc9c !important;
+  background: #0f4c3a !important;
+  box-shadow: 0 0 16px rgba(26, 188, 156, 0.75) !important;
+  color: #fff;
+}
+
+.node-available {
+  border-color: #ffd700 !important;
+  animation: node-pulse 1.5s infinite;
+}
+
+@keyframes node-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.95); }
+  50% { transform: translate(-50%, -50%) scale(1.08); }
+  100% { transform: translate(-50%, -50%) scale(0.95); }
+}
+
+.node-locked { opacity: 0.4; cursor: not-allowed; }
+
+.node-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(14, 16, 22, 0.96);
+  border: 2px solid #e5c07b;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 200px;
+  max-width: 260px;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.node-tooltip b { color: #ffd700; font-size: 12px; }
+.node-tooltip span { color: #dcdfe4; }
+.node-tooltip small { color: #98c379; }
+
+.tree-node-item:hover .node-tooltip {
+  visibility: visible;
+}
 
 /* ==========================================
    INVENTORY & PAPERDOLL MODAL
@@ -611,13 +707,8 @@ canvas#gameCanvas {
 .inv-main-title { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #ffd700; }
 .inv-sub-title { font-size: 11px; color: #98c379; }
 
-.inv-content-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 16px;
-}
+.inv-content-grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
 
-/* Left Paperdoll Panel */
 .paperdoll-panel {
   background: #1c2029;
   border: 2px solid #3e4451;
@@ -665,24 +756,9 @@ canvas#gameCanvas {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
-.doll-slot-icon {
-  font-size: 26px;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.doll-slot-canvas {
-  width: 44px;
-  height: 44px;
-  image-rendering: pixelated;
-}
-
-.doll-slot-label {
-  font-size: 8px;
-  color: #8c92a4;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
+.doll-slot-icon { font-size: 26px; line-height: 1; margin-bottom: 4px; }
+.doll-slot-canvas { width: 44px; height: 44px; image-rendering: pixelated; }
+.doll-slot-label { font-size: 8px; color: #8c92a4; font-weight: 700; letter-spacing: 0.5px; }
 
 .slot-helm { grid-column: 1 / span 2; justify-self: center; width: 74px; }
 .slot-amulet { grid-column: 3; }
@@ -692,7 +768,6 @@ canvas#gameCanvas {
 .slot-ring { grid-column: 1; }
 .slot-boots { grid-column: 2 / span 2; justify-self: center; width: 74px; }
 
-/* Gear Summary Box */
 .gear-stats-summary {
   background: #14171e;
   border: 1px solid #3e4451;
@@ -700,31 +775,11 @@ canvas#gameCanvas {
   padding: 8px 10px;
 }
 
-.gss-title {
-  font-size: 9px;
-  font-weight: bold;
-  color: #98c379;
-  margin-bottom: 6px;
-  letter-spacing: 0.5px;
-}
-
-.gss-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 8px;
-  font-size: 11px;
-  color: #abb2bf;
-}
-
+.gss-title { font-size: 9px; font-weight: bold; color: #98c379; margin-bottom: 6px; letter-spacing: 0.5px; }
+.gss-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 11px; color: #abb2bf; }
 .gss-grid b { color: #ffd700; font-weight: 700; }
 
-/* Right Backpack Panel */
-.backpack-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+.backpack-panel { display: flex; flex-direction: column; gap: 10px; }
 .bag-toolbar {
   display: flex;
   justify-content: space-between;
@@ -736,7 +791,6 @@ canvas#gameCanvas {
 }
 
 .bag-tabs { display: flex; gap: 4px; }
-
 .bag-tab {
   background: #242933;
   border: 1px solid #4b5263;
@@ -813,6 +867,8 @@ canvas#gameCanvas {
 .rarity-Rare { border-color: #ffff77 !important; box-shadow: 0 0 10px rgba(255, 255, 119, 0.6); }
 .rarity-Unique { border-color: #af6025 !important; box-shadow: 0 0 12px rgba(175, 96, 37, 0.75); }
 .rarity-Currency { border-color: #aa9e82 !important; box-shadow: 0 0 8px rgba(170, 158, 130, 0.5); }
+.rarity-SkillGem { border-color: #1abc9c !important; box-shadow: 0 0 10px rgba(26, 188, 156, 0.65); }
+.rarity-SupportGem { border-color: #e67e22 !important; box-shadow: 0 0 10px rgba(230, 126, 34, 0.65); }
 
 /* PoE Tooltip */
 .item-tooltip-poe {

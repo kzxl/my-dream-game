@@ -1,5 +1,5 @@
 /**
- * Item Database, Rarities & Sprite Coordinates
+ * Item Database, Rarities & Sprite Coordinates (Including Skill Gems & Support Gems)
  */
 
 export const RARITY_COLORS = {
@@ -7,7 +7,9 @@ export const RARITY_COLORS = {
   Magic: '#8888ff',
   Rare: '#ffff77',
   Unique: '#af6025',
-  Currency: '#aa9e82'
+  Currency: '#aa9e82',
+  SkillGem: '#1abc9c',
+  SupportGem: '#e67e22'
 };
 
 export const ITEM_SPRITES = {
@@ -30,6 +32,115 @@ export const ITEM_SPRITES = {
 };
 
 export const POSSIBLE_LOOT = [
+  // --- ACTIVE SKILL GEMS ---
+  {
+    id: 'gem_fireball',
+    name: 'Pyro Fireball Gem',
+    baseType: 'Active Skill Gem',
+    category: 'skill_gem',
+    skillKey: 'fireball',
+    rarity: 'SkillGem',
+    icon: '🔥',
+    tags: ['fire', 'spell', 'projectile', 'aoe'],
+    primaryStats: { 'Mana Cost': '10 MP', 'Cast Time': 'Instant', 'Base Radius': '12px' },
+    mods: ['Socket into Skill Board (Q) to unlock Pyro Fireball', 'Unlocks Fireball Mastery Tree as it levels up'],
+    lore: 'An orb of crystallized elemental magma.'
+  },
+  {
+    id: 'gem_slash',
+    name: 'Heavy Slash Gem',
+    baseType: 'Active Skill Gem',
+    category: 'skill_gem',
+    skillKey: 'slash',
+    rarity: 'SkillGem',
+    icon: '⚔️',
+    tags: ['physical', 'melee', 'attack'],
+    primaryStats: { 'Attack Speed': '0.35s CD', 'Base Reach': '75px' },
+    mods: ['Socket into Skill Board (LMB) to unlock Heavy Slash', 'Unlocks Slash Mastery Tree & Blade Waves'],
+    lore: 'Imbued with the martial vigor of Sanctuary warriors.'
+  },
+  {
+    id: 'gem_frost',
+    name: 'Frost Nova Gem',
+    baseType: 'Active Skill Gem',
+    category: 'skill_gem',
+    skillKey: 'frost',
+    rarity: 'SkillGem',
+    icon: '❄️',
+    tags: ['cold', 'spell', 'aoe'],
+    primaryStats: { 'Mana Cost': '15 MP', 'Radius': '150px' },
+    mods: ['Socket into Skill Board (W) to unlock Frost Nova', 'Unlocks Freeze & Ice Vortex Morphs'],
+    lore: 'Radiates a permafrost chill.'
+  },
+  {
+    id: 'gem_meteor',
+    name: 'Cataclysm Meteor Gem',
+    baseType: 'Active Skill Gem',
+    category: 'skill_gem',
+    skillKey: 'meteor',
+    rarity: 'SkillGem',
+    icon: '☄️',
+    tags: ['fire', 'chaos', 'spell', 'aoe'],
+    primaryStats: { 'Mana Cost': '30 MP', 'Damage': '180 Fire + 30 Chaos' },
+    mods: ['Socket into Skill Board (E) to unlock Cataclysm Meteor', 'Unlocks Armageddon & Lava Pool Morphs'],
+    lore: 'A fragment of a fallen celestial star.'
+  },
+  {
+    id: 'gem_dash',
+    name: 'Shadow Dash Gem',
+    baseType: 'Active Skill Gem',
+    category: 'skill_gem',
+    skillKey: 'dash',
+    rarity: 'SkillGem',
+    icon: '💨',
+    tags: ['movement', 'chaos'],
+    primaryStats: { 'Distance': '190px', 'Cooldown': '1.2s' },
+    mods: ['Socket into Skill Board (SPACE) to unlock Shadow Dash', 'Unlocks Double Dash & Phase Shift'],
+    lore: 'Allows the bearer to slip between dimensional seams.'
+  },
+
+  // --- SUPPORT GEMS ---
+  {
+    id: 'support_gmp',
+    name: 'Greater Multiple Projectiles Support',
+    baseType: 'Support Gem',
+    category: 'support_gem',
+    supportKey: 'gmp',
+    rarity: 'SupportGem',
+    icon: '🔮',
+    allowedTags: ['projectile'],
+    primaryStats: { 'Mana Multiplier': '130%', 'Supported': 'Projectile Skills' },
+    mods: ['Supported Skills fire +2 additional Projectiles', '15% Less Damage per Projectile'],
+    lore: 'Splits arcane projectiles into a lethal volley.'
+  },
+  {
+    id: 'support_fire',
+    name: 'Infernal Combustion Support',
+    baseType: 'Support Gem',
+    category: 'support_gem',
+    supportKey: 'infernal',
+    rarity: 'SupportGem',
+    icon: '💥',
+    allowedTags: ['fire', 'spell', 'attack'],
+    primaryStats: { 'Mana Multiplier': '120%', 'Supported': 'Fire / Attack / Spell' },
+    mods: ['Supported Skills gain +40% Fire Damage', '+50% Chance to Ignite target for 3s'],
+    lore: 'Infuses hits with unquenchable infernal fuel.'
+  },
+  {
+    id: 'support_echo',
+    name: 'Spell Echo & Rapid Cast Support',
+    baseType: 'Support Gem',
+    category: 'support_gem',
+    supportKey: 'echo',
+    rarity: 'SupportGem',
+    icon: '⚡',
+    allowedTags: ['spell', 'attack', 'melee'],
+    primaryStats: { 'Mana Multiplier': '115%', 'Supported': 'All Active Skills' },
+    mods: ['+35% Increased Cast & Attack Speed', '10% Reduced Skill Cooldown'],
+    lore: 'Echoes the caster’s incantation in rapid succession.'
+  },
+
+  // --- EQUIPMENT & WEAPONS ---
   {
     id: 'bloodseeker_blade',
     name: 'Bloodseeker Hellblade',

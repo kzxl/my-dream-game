@@ -1,9 +1,9 @@
 /**
- * SQLite Save & Auto-Sync System
+ * SQLite Save & Auto-Sync System (With Skill Gems & Mastery Trees)
  */
 
 import { player } from './state.js';
-import { SKILLS } from './data/skills.js';
+import { SKILLS, skillSocketBoard, allocatedMasteryNodes } from './data/skills.js';
 import { updateBackpackUI, updatePaperdollUI } from './ui/inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { spawnDamageNumber } from './combat.js';
@@ -19,7 +19,9 @@ export async function saveToDatabase(silent = false) {
     skillsPayload[k] = {
       level: SKILLS[k].level,
       exp: SKILLS[k].exp,
-      expToNext: SKILLS[k].expToNext
+      expToNext: SKILLS[k].expToNext,
+      socketBoard: skillSocketBoard[k] || { activeGem: null, supports: [] },
+      allocatedNodes: Array.from(allocatedMasteryNodes[k] || [])
     };
   }
 
@@ -46,7 +48,6 @@ export async function saveToDatabase(silent = false) {
     backpackItems: player.bag
   };
 
-  // Local storage fallback backup
   try {
     localStorage.setItem('mdg_savegame_backup', JSON.stringify(payload));
   } catch (e) {}
@@ -100,6 +101,12 @@ export async function loadFromDatabase() {
           SKILLS[k].exp = data.skills[k].exp || 0;
           SKILLS[k].expToNext = data.skills[k].expToNext || 120;
         }
+        if (data.skills[k].socketBoard) {
+          skillSocketBoard[k] = data.skills[k].socketBoard;
+        }
+        if (data.skills[k].allocatedNodes) {
+          allocatedMasteryNodes[k] = new Set(data.skills[k].allocatedNodes);
+        }
       }
     }
 
@@ -121,7 +128,7 @@ export async function loadFromDatabase() {
   }
 }
 
-export function startAutoSave(intervalMs = 12000) {
+export function startAutoSave(intervalMs = 10000) {
   setInterval(() => {
     saveToDatabase(true);
   }, intervalMs);
