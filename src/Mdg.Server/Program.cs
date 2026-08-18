@@ -1,4 +1,8 @@
+using Mdg.Core.Features.Companion;
+using Mdg.Core.Features.Items;
+using Mdg.Core.Features.Items.Crafting;
 using Mdg.Core.Features.Maps;
+using Mdg.Core.Features.Progression;
 using Mdg.Server.Database;
 using Mdg.Server.Services;
 using Microsoft.AspNetCore.Builder;
@@ -6,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +24,11 @@ builder.Services.AddDbContextFactory<MdgDbContext>(options =>
 
 builder.Services.AddSingleton<GameDatabaseService>();
 builder.Services.AddSingleton<GameSessionService>();
+builder.Services.AddSingleton<CompanionManager>();
+builder.Services.AddSingleton<GenesisForgeBench>();
+builder.Services.AddSingleton<GenesisCraftingEngine>();
+builder.Services.AddSingleton<MapDeviceManager>();
+builder.Services.AddSingleton<DevotionTree>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
 var app = builder.Build();
@@ -63,13 +73,13 @@ app.MapDelete("/api/v1/characters/{id}", async (GameDatabaseService db, string i
 // SHARED STASH APIS
 app.MapGet("/api/v1/stash", async (GameDatabaseService db) =>
 {
-    var items = await db.GetSharedStashAsync();
-    return Results.Ok(items);
+    var data = await db.GetSharedStashAsync();
+    return Results.Ok(data ?? new { gear = new List<object>(), currency = new Dictionary<string, int>(), gems = new List<object>() });
 });
 
-app.MapPost("/api/v1/stash", async (GameDatabaseService db, List<object> items) =>
+app.MapPost("/api/v1/stash", async (GameDatabaseService db, JsonElement payload) =>
 {
-    var success = await db.SaveSharedStashAsync(items);
+    var success = await db.SaveSharedStashAsync(payload);
     return Results.Ok(new { success });
 });
 
@@ -94,4 +104,49 @@ app.MapPost("/api/v1/savegame/reset", async (GameDatabaseService db, string? cha
     return Results.Ok(new { success = true, message = "Savegame reset successfully" });
 });
 
+// GENESIS FORGE BENCH & CRAFTING APIS
+app.MapGet("/api/v1/craft/affixes", () =>
+{
+    return Results.Ok(new
+    {
+        prefixes = AffixPool.GetAvailablePrefixes(Array.Empty<string>()),
+        suffixes = AffixPool.GetAvailableSuffixes(Array.Empty<string>())
+    });
+});
+
+// MAP DEVICE & PINNACLE RIFT APIS
+app.MapPost("/api/v1/rifts/open", (MapDeviceManager mapDevice, RiftOpenRequest req) =>
+{
+    mapDevice.ClearSlots();
+    var map = new RiftMapEntity(req.ZoneName ?? "ForgottenCrypt", req.Tier, (ItemRarity)req.Rarity);
+    if (req.Affixes != null)
+    {
+        foreach (var aff in req.Affixes)
+        {
+            map.AddAffix(new RiftMapAffix(aff.Key, aff.Description, aff.QuantityBonus, aff.RarityBonus, aff.PackSizeBonus));
+        }
+    }
+
+    mapDevice.InsertPrimaryMap(map, out _);
+    if (req.Fragments != null)
+    {
+        foreach (var frag in req.Fragments)
+        {
+            mapDevice.InsertFragment(frag, out _);
+        }
+    }
+
+    var result = mapDevice.ActivateDevice();
+    return Results.Ok(result);
+});
+
+// CELESTIAL DEVOTION APIS
+app.MapGet("/api/v1/devotion/constellations", () =>
+{
+    return Results.Ok(DevotionTree.Constellations);
+});
+
 app.Run();
+
+public record RiftAffixDto(string Key, string Description, float QuantityBonus, float RarityBonus, float PackSizeBonus);
+public record RiftOpenRequest(string? ZoneName, int Tier, int Rarity, List<RiftAffixDto>? Affixes, List<string>? Fragments);
