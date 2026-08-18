@@ -75,11 +75,44 @@ graph TD
 
 ---
 
-## 4. Tích Hợp Backend C# & Đồng Bộ Client
+## 4. Hệ Thống 3 Tầng Phòng Thủ Quái Vật (Monster Defensive Layers: Resistance, Evasion & Block)
 
-1. **Quản lý AI State Machine trên Backend (`Mdg.Core`):**
-   * Quái vật lưu trữ danh sách `MonsterAffixes` và tính toán Aura định kỳ theo Tick Loop.
+Để tạo độ khó chiến thuật thực sự và khuyến khích người chơi xây dựng các cơ chế giảm kháng/chính xác cao, quái vật trong Aethelis được trang bị **3 tầng phòng thủ sinh động**:
+
+```mermaid
+graph TD
+    Hit[Đòn đánh của Player trúng mục tiêu] --> EvaCheck{1. Kiểm Tra Né Tránh (Evasion)?}
+    EvaCheck -->|Thành Công: 15-30% Chance| Miss[💨 Né Đòn: DODGED!<br>Không nhận sát thương & không bị văng lùi]
+    EvaCheck -->|Thất Bại| BlockCheck{2. Kiểm Tra Đỡ Đòn (Block)?}
+    BlockCheck -->|Thành Công: 25-40% Chance| Blocked[🛡️ Đỡ Đòn: BLOCKED!<br>Giảm 75% sát thương nhận vào + Tóe lửa khiên]
+    BlockCheck -->|Thất Bại| ResMitigation[3. Giảm Trừ Kháng Cự & Giáp<br>Áp dụng Elemental/Chaos Res & Armor]
+    Blocked --> ResMitigation
+    ResMitigation --> FinalDmg[Trừ vào Máu & Kích hoạt Ailments]
+```
+
+### 4.1. Bảng Phân Bổ Chỉ Số Phòng Thủ Theo Chủng Loại Quái
+
+| Chủng Loại Quái Vật | Kháng Nguyên Tố (Elemental Res) | Kháng Hỗn Loạn (Chaos Res) | Tỷ Lệ Né Tránh (Evasion) | Tỷ Lệ Đỡ Đòn (Block Chance) | Đặc Tính Phòng Thủ Nổi Bật |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Slime & Beast (Quái Nhầy / Sói)** | $15\%\text{ All}$ | $10\%$ | **$25\%$** | $0\%$ | Thân thể dẻo dai, dễ dàng uốn mình né tránh đòn đánh. |
+| **Goblin & Rogue (Tiểu Quỷ / Sát Thủ)**| $20\%\text{ All}$ | $15\%$ | **$30\%$** | $10\%$ | Cực kỳ nhanh nhẹn, né tránh liên tục và phản đòn chớp nhoáng. |
+| **Skeleton & Undead (Xương / Xác Sống)**| $25\%\text{ All}$ | $20\%$ | $5\%$ | **$25\%$** | Khung xương cứng cáp, mang khiên gỗ đỡ đòn. |
+| **Undead Knight (Hiệp Sĩ Tử Vong)** | $40\text{ Phys Armor}$ / $35\%\text{ Res}$ | $25\%$ | $10\%$ | **$40\%$** | Khiên tháp cự đại, chặn $75\%$ sát thương khi Block thành công. |
+| **Frost Golem (Người Đá Băng Giá)** | **$50\%\text{ Cold}$** / $20\%\text{ Fire}$ | $20\%$ | $0\%$ | **$30\%$** | Giáp băng dày cộp, miễn nhiễm đóng băng và kháng băng cực mạnh. |
+| **Fire Imp / Magma Golem** | **$50\%\text{ Fire}$** / $20\%\text{ Cold}$ | $20\%$ | $15\%$ | **$20\%$** | Nung đỏ dung nham, kháng lửa vượt trội. |
+| **Pinnacle Boss (Malakor / Vael / Ignis)**| **$55\% - 75\%\text{ Res}$** | **$35\%$** | **$20\%$** | **$35\%$** | Đầy đủ 3 tầng phòng ngự, đòi hỏi người chơi có đồ xuyên kháng. |
+
+---
+
+## 5. Lộ Trình Triển Khai & Kiểm Thử
+
+1. **Backend C# (`Mdg.Core/Features/Combat/`):**
+   * Định nghĩa `MonsterDefensiveLayer.cs` xử lý logic Evasion, Block và Resistance Mitigation.
+   * Viết unit tests kiểm thử độ chính xác của các công thức tính toán phòng thủ quái vật.
+2. **Frontend Client (`combat.js`, `main.js`, `renderer.js`):**
+   * Tích hợp kiểm tra Evasion & Block vào pipeline `dealDamage`.
+   * Hiển thị số nhảy `DODGED!` màu xám và `🛡️ BLOCKED!` màu vàng xanh khi quái kích hoạt phòng thủ.
+3. **Tích Hợp Backend C# & Đồng Bộ Client:**
+   * Quản lý AI State Machine trên Backend (`Mdg.Core`): Quái vật lưu trữ danh sách `MonsterAffixes` và tính toán Aura định kỳ theo Tick Loop.
    * Boss chuyển Phase thông qua sự kiện `BossPhaseChangedEvent`, gửi thông báo về Client để đổi nhạc nền (BGM) và hiệu ứng môi trường.
-2. **Hiển Thị Trực Quan Trên Client (`Mdg.Server/wwwroot`):**
-   * Thanh máu Boss hiển thị các vạch khấc phân tách Phase (65% và 25%).
-   * Quái Rare có vòng hào quang sáng dưới chân (Aura Ring) màu vàng kim và liệt kê các Icon Affix bên dưới tên quái.
+   * Hiển Thị Trực Quan Trên Client (`Mdg.Server/wwwroot`): Thanh máu Boss hiển thị các vạch khấc phân tách Phase (65% và 25%). Quái Rare có vòng hào quang sáng dưới chân (Aura Ring) màu vàng kim và liệt kê các Icon Affix bên dưới tên quái.

@@ -26,6 +26,34 @@ export function getMonsterLoreBonus(monsterType, isBoss = false) {
 export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
   if (!target.isAlive) return;
 
+  // 1. Monster Evasion / Dodge Check (Skip damage & knockback if dodged)
+  if (target.evasionChance && Math.random() * 100 < target.evasionChance) {
+    spawnDamageNumber(target.x, target.y - 35 * (target.scale || 1), 'DODGED!', false, '#a0a8b7');
+    AudioEngine.playTone(320, 'sine', 0.08, 0.05);
+    return;
+  }
+
+  // 2. Monster Shield / Weapon Block Check (75% damage mitigation)
+  let blockMultiplier = 1.0;
+  if (target.blockChance && Math.random() * 100 < target.blockChance) {
+    blockMultiplier = 0.25; // 75% Damage Reduction on Block
+    spawnDamageNumber(target.x, target.y - 45 * (target.scale || 1), '🛡️ BLOCKED!', true, '#e5c07b');
+    AudioEngine.playTone(160, 'square', 0.15, 0.12);
+
+    for (let i = 0; i < 8; i++) {
+      particles.push({
+        x: target.x,
+        y: target.y - 15,
+        vx: (Math.random() - 0.5) * 160,
+        vy: (Math.random() - 0.5) * 160,
+        color: '#ffd700',
+        life: 0.25,
+        maxLife: 0.25,
+        size: 3
+      });
+    }
+  }
+
   // Monster Lore Mastery Amplifications
   const lore = getMonsterLoreBonus(target.type || 'monster', target.type === 'boss');
   const effectiveCritChance = (player.critChance || 25) + lore.bonusCrit;
@@ -39,7 +67,7 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   }
 
   // Lore bonus extra damage against familiar monster species
-  multiplier *= (1.0 + lore.bonusDmg);
+  multiplier *= (1.0 + lore.bonusDmg) * blockMultiplier;
 
   // Shock Ailment (+30% damage multiplier)
   if (target.shockTimer > 0) {

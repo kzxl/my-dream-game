@@ -15,6 +15,16 @@ namespace Mdg.Core.Features.Combat
         public float WardShield { get; set; } = 0f;
         public float MaxWardShield { get; set; } = 0f;
 
+        // 3-Tier Defensive Layers
+        public float EvasionChance { get; set; } = 0f;
+        public float BlockChance { get; set; } = 0f;
+        public float BlockMitigation { get; set; } = 75f; // 75% damage reduction on successful block
+        public float Armor { get; set; } = 0f;
+        public float FireResistance { get; set; } = 0f;
+        public float ColdResistance { get; set; } = 0f;
+        public float LightningResistance { get; set; } = 0f;
+        public float ChaosResistance { get; set; } = 0f;
+
         public List<MonsterAffixType> Affixes { get; } = new();
 
         public bool IsAlive => CurrentHealth > 0;

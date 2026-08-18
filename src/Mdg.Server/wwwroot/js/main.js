@@ -170,6 +170,77 @@ export async function loadZone(zoneId, spawnX, spawnY) {
 
 export function spawnMonster(x, y, type = 'slime') {
   const isBoss = type === 'boss';
+
+  let mName = 'Toxic Slime';
+  let maxHp = 120;
+  let armor = 60;
+  let fireRes = 15;
+  let coldRes = 25;
+  let lightRes = 15;
+  let chaosRes = 10;
+  let evasionChance = 25;
+  let blockChance = 0;
+  let expVal = 35;
+  let baseSpd = 110;
+
+  if (type === 'wolf') {
+    mName = 'Shadow Direwolf';
+    maxHp = 180;
+    armor = 80;
+    fireRes = 20; coldRes = 20; lightRes = 20; chaosRes = 15;
+    evasionChance = 30; blockChance = 0;
+    expVal = 45; baseSpd = 160;
+  } else if (type === 'goblin') {
+    mName = 'Goblin Raider';
+    maxHp = 160;
+    armor = 110;
+    fireRes = 20; coldRes = 20; lightRes = 20; chaosRes = 15;
+    evasionChance = 35; blockChance = 10;
+    expVal = 40; baseSpd = 135;
+  } else if (type === 'skeleton') {
+    mName = 'Skeleton Guard';
+    maxHp = 240;
+    armor = 220;
+    fireRes = 25; coldRes = 25; lightRes = 25; chaosRes = 20;
+    evasionChance = 5; blockChance = 25;
+    expVal = 50; baseSpd = 100;
+  } else if (type === 'undead_knight') {
+    mName = 'Undead Dreadknight';
+    maxHp = 520;
+    armor = 420;
+    fireRes = 35; coldRes = 35; lightRes = 35; chaosRes = 25;
+    evasionChance = 10; blockChance = 40;
+    expVal = 95; baseSpd = 95;
+  } else if (type === 'frost_golem') {
+    mName = 'Glacial Frost Golem';
+    maxHp = 600;
+    armor = 480;
+    fireRes = 20; coldRes = 60; lightRes = 20; chaosRes = 20;
+    evasionChance = 0; blockChance = 30;
+    expVal = 110; baseSpd = 90;
+  } else if (type === 'fire_imp') {
+    mName = 'Infernal Fire Imp';
+    maxHp = 200;
+    armor = 100;
+    fireRes = 60; coldRes = 15; lightRes = 20; chaosRes = 20;
+    evasionChance = 25; blockChance = 10;
+    expVal = 55; baseSpd = 150;
+  } else if (type === 'magma_golem') {
+    mName = 'Magma Behemoth';
+    maxHp = 680;
+    armor = 500;
+    fireRes = 65; coldRes = 15; lightRes = 20; chaosRes = 20;
+    evasionChance = 5; blockChance = 30;
+    expVal = 130; baseSpd = 85;
+  } else if (isBoss) {
+    mName = '🔥 Dark Shadow Lord (Lord of Ruin)';
+    maxHp = 4800;
+    armor = 650;
+    fireRes = 60; coldRes = 60; lightRes = 60; chaosRes = 35;
+    evasionChance = 20; blockChance = 35;
+    expVal = 650; baseSpd = 145;
+  }
+
   monsters.push({
     id: Math.random().toString(36).substring(2, 9),
     x: x,
@@ -177,14 +248,18 @@ export function spawnMonster(x, y, type = 'slime') {
     vx: 0,
     vy: 0,
     type: type,
-    name: isBoss ? '🔥 Dark Shadow Fiend (Lord of Crypt)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
-    maxLife: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
-    life: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
-    armor: isBoss ? 600 : (type === 'skeleton' ? 350 : 100),
-    fireRes: type === 'slime' ? 0 : (isBoss ? 50 : 30),
-    coldRes: type === 'slime' ? 70 : (isBoss ? 40 : 10),
-    speed: isBoss ? 140 : (100 + Math.random() * 40),
-    expValue: isBoss ? 500 : (type === 'slime' ? 30 : 45),
+    name: mName,
+    maxLife: maxHp,
+    life: maxHp,
+    armor: armor,
+    fireRes: fireRes,
+    coldRes: coldRes,
+    lightRes: lightRes,
+    chaosRes: chaosRes,
+    evasionChance: evasionChance,
+    blockChance: blockChance,
+    speed: baseSpd + Math.random() * 20,
+    expValue: expVal,
     state: 'idle',
     animTimer: Math.random() * 10,
     isAlive: true,
