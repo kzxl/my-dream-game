@@ -1,9 +1,9 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Main Orchestrator & Game Loop
+ * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { WORLD_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
+import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
 import { ZONES } from './data/zones.js';
 import { POSSIBLE_LOOT } from './data/items.js';
 import { SKILLS } from './data/skills.js';
@@ -14,6 +14,7 @@ import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { showZoneBanner, setupUIListeners, toggleModal } from './ui/hud.js';
 import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
+import { MapGenerator } from './map-generator.js';
 
 window.keys = keys;
 
@@ -34,13 +35,25 @@ resize();
 
 let currentZoneId = 'SanctuaryHaven';
 let currentZone = ZONES[currentZoneId];
+let currentZoneMap = null;
 window.currentZoneId = currentZoneId;
 
-export function loadZone(zoneId, spawnX, spawnY) {
-  if (!ZONES[zoneId]) return;
+export async function loadZone(zoneId, spawnX, spawnY) {
   currentZoneId = zoneId;
-  currentZone = ZONES[zoneId];
+  currentZone = ZONES[zoneId] || { id: zoneId, name: zoneId, subtitle: '' };
   window.currentZoneId = currentZoneId;
+
+  // 1. Fetch Server-Authoritative Procedural Zone Map (with fallback)
+  try {
+    const res = await fetch(`/api/v1/zones/${zoneId}`);
+    if (res.ok) {
+      currentZoneMap = await res.json();
+    } else {
+      currentZoneMap = MapGenerator.generateZone(zoneId);
+    }
+  } catch {
+    currentZoneMap = MapGenerator.generateZone(zoneId);
+  }
 
   monsters.length = 0;
   trainingDummies.length = 0;
@@ -52,42 +65,35 @@ export function loadZone(zoneId, spawnX, spawnY) {
   floatingTexts.length = 0;
   groundLoot.length = 0;
 
-  player.x = spawnX !== undefined ? spawnX : 2000;
-  player.y = spawnY !== undefined ? spawnY : 2000;
+  player.x = spawnX !== undefined ? spawnX : (currentZoneMap.spawnX || 672);
+  player.y = spawnY !== undefined ? spawnY : (currentZoneMap.spawnY || 672);
 
-  currentZone.portals.forEach(p => portals.push({ ...p }));
-  if (currentZone.npcs) currentZone.npcs.forEach(n => npcs.push({ ...n }));
-  if (currentZone.dummies) {
-    currentZone.dummies.forEach(d => {
+  // 2. Load Elements from ZoneMap
+  if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
+  if (currentZoneMap.npcs) currentZoneMap.npcs.forEach(n => npcs.push({ ...n }));
+  if (currentZoneMap.dummies) {
+    currentZoneMap.dummies.forEach(d => {
       trainingDummies.push({ x: d.x, y: d.y, name: d.name, life: 99999, maxLife: 99999, armor: 200, isAlive: true, hurtTimer: 0 });
     });
   }
+  if (currentZoneMap.props) currentZoneMap.props.forEach(pr => props.push({ ...pr }));
 
-  if (currentZone.props && currentZone.props.length > 0) {
-    currentZone.props.forEach(pr => props.push({ ...pr }));
+  // 3. Spawn Monster Clusters
+  if (currentZoneMap.monsterSpawns && currentZoneMap.monsterSpawns.length > 0) {
+    currentZoneMap.monsterSpawns.forEach(sp => {
+      if (sp.type === 'boss') {
+        spawnMonster(sp.x, sp.y, 'boss');
+      } else {
+        spawnMonsterCluster(sp.x, sp.y, sp.count || 6, sp.type);
+      }
+    });
   }
 
-  const propCount = currentZone.id === 'ForgottenCrypt' ? 60 : 120;
-  for (let i = 0; i < propCount; i++) {
-    let type = currentZone.id === 'ForgottenCrypt' ? (Math.random() < 0.7 ? 'rock' : 'chest') : (Math.random() < 0.65 ? 'tree' : (Math.random() < 0.85 ? 'rock' : 'barrel'));
-    const px = Math.random() * (WORLD_SIZE - 400) + 200;
-    const py = Math.random() * (WORLD_SIZE - 400) + 200;
-    if (Math.hypot(px - 2000, py - 2000) > 200) props.push({ x: px, y: py, type: type });
-  }
-
-  if (currentZone.id === 'WhisperingPlains') {
-    spawnMonsterCluster(1200, 1200, 6);
-    spawnMonsterCluster(2800, 1400, 7);
-    spawnMonsterCluster(1800, 2800, 8);
-  } else if (currentZone.id === 'ForgottenCrypt') {
-    spawnMonsterCluster(1200, 1500, 8);
-    spawnMonsterCluster(2600, 2800, 10);
-    spawnMonster(3200, 2000, 'boss');
-  }
-
-  showZoneBanner(currentZone.name, currentZone.subtitle);
-  document.getElementById('hud-zone-tag').innerText = `📍 ${currentZone.name}`;
-  document.getElementById('minimap-zone-title').innerText = currentZone.name.toUpperCase();
+  // 4. Environmental Hazard Alert & Banner
+  const subText = currentZoneMap.hazard ? `⚠️ ${currentZoneMap.hazard.hazardName}: ${currentZoneMap.hazard.description}` : currentZoneMap.subtitle;
+  showZoneBanner(currentZoneMap.name, subText);
+  document.getElementById('hud-zone-tag').innerText = `📍 ${currentZoneMap.name} (${currentZoneMap.levelRange || 'Lv. 1+'})`;
+  document.getElementById('minimap-zone-title').innerText = currentZoneMap.name.toUpperCase();
 
   document.querySelectorAll('.zone-node').forEach(node => {
     node.classList.toggle('active-node', node.getAttribute('data-zone') === currentZoneId);
@@ -97,6 +103,14 @@ export function loadZone(zoneId, spawnX, spawnY) {
   updatePaperdollUI();
   updateSkillBadges();
   renderSkillUpgradeModal();
+}
+
+export function canWalk(x, y) {
+  if (!currentZoneMap || !currentZoneMap.grid) return true;
+  const tx = Math.floor(x / 48);
+  const ty = Math.floor(y / 48);
+  if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return false;
+  return currentZoneMap.grid[ty][tx] !== 1; // 1 = WALL
 }
 
 export function spawnMonster(x, y, type = 'slime') {
@@ -124,11 +138,13 @@ export function spawnMonster(x, y, type = 'slime') {
   });
 }
 
-export function spawnMonsterCluster(cx, cy, count) {
-  const types = currentZone.id === 'ForgottenCrypt' ? ['skeleton', 'goblin'] : ['slime', 'goblin'];
+export function spawnMonsterCluster(cx, cy, count, typeOverride) {
+  const types = typeOverride ? [typeOverride] : ['slime', 'goblin'];
   for (let i = 0; i < count; i++) {
     const type = types[Math.floor(Math.random() * types.length)];
-    spawnMonster(cx + (Math.random() - 0.5) * 320, cy + (Math.random() - 0.5) * 320, type);
+    const mx = cx + (Math.random() - 0.5) * 260;
+    const my = cy + (Math.random() - 0.5) * 260;
+    if (canWalk(mx, my)) spawnMonster(mx, my, type);
   }
 }
 
@@ -194,15 +210,21 @@ window.gainExp = function(amount) {
 let lastTime = performance.now();
 let frameCount = 0;
 let fpsTimer = 0;
+let hazardTickTimer = 0;
 
 function update(dt) {
   camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
 
+  // 1. Player Movement & Smooth Wall Slide Collision
   let mx = 0, my = 0;
-  if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
-  if (keys['KeyS'] || keys['ArrowDown']) my += 1;
-  if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
-  if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+  if (player.freezeTimer > 0) {
+    player.freezeTimer -= dt;
+  } else {
+    if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) my += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+  }
 
   player.isMoving = mx !== 0 || my !== 0;
   if (player.isMoving) {
@@ -216,8 +238,11 @@ function update(dt) {
       player.facing = my > 0 ? 'down' : 'up';
     }
 
-    player.x = Math.max(80, Math.min(WORLD_SIZE - 80, player.x + player.vx * dt));
-    player.y = Math.max(80, Math.min(WORLD_SIZE - 80, player.y + player.vy * dt));
+    const newX = player.x + player.vx * dt;
+    const newY = player.y + player.vy * dt;
+
+    if (canWalk(newX, player.y)) player.x = newX;
+    if (canWalk(player.x, newY)) player.y = newY;
 
     player.animTimer += dt * 8;
     player.animFrame = Math.floor(player.animTimer) % 4;
@@ -228,6 +253,47 @@ function update(dt) {
     player.animFrame = 0;
   }
 
+  // 2. Environmental Hazards & Biome Weather Ticks
+  hazardTickTimer += dt;
+  if (hazardTickTimer >= 1.0) {
+    hazardTickTimer = 0;
+
+    if (currentZoneId === 'MoltenCaldera' && player.fireRes < 75) {
+      const heatDmg = Math.max(5, Math.round((75 - player.fireRes) * 1.5));
+      player.life = Math.max(1, player.life - heatDmg);
+      spawnDamageNumber(player.x, player.y - 40, `-${heatDmg} 🔥 Heatwave!`, false, '#ff5722');
+    } else if (currentZoneId === 'SanctuaryHaven') {
+      player.life = Math.min(player.maxLife, player.life + player.maxLife * 0.05);
+      player.mana = Math.min(player.maxMana, player.mana + player.maxMana * 0.05);
+    }
+  }
+
+  // Weather Ambient Particles
+  if (currentZoneId === 'FrostpeakTundra' && Math.random() < 0.3) {
+    particles.push({
+      x: player.x + (Math.random() - 0.5) * 900,
+      y: player.y - 450,
+      vx: (Math.random() - 0.5) * 80,
+      vy: 120 + Math.random() * 80,
+      color: '#e2ecf5',
+      life: 2.5,
+      maxLife: 2.5,
+      size: 3
+    });
+  } else if (currentZoneId === 'MoltenCaldera' && Math.random() < 0.3) {
+    particles.push({
+      x: player.x + (Math.random() - 0.5) * 800,
+      y: player.y + 400,
+      vx: (Math.random() - 0.5) * 60,
+      vy: -100 - Math.random() * 60,
+      color: '#ff5722',
+      life: 2.0,
+      maxLife: 2.0,
+      size: 4
+    });
+  }
+
+  // 3. Portals & Loot
   portals.forEach(p => {
     if (Math.hypot(player.x - p.x, player.y - p.y) < 55) {
       loadZone(p.targetZone, p.targetX, p.targetY);
@@ -248,7 +314,7 @@ function update(dt) {
   player.mana = Math.min(player.maxMana, player.mana + 10 * dt);
   player.life = Math.min(player.maxLife, player.life + 4 * dt);
 
-  if (mouse.isDown && player.cooldowns.slash <= 0) {
+  if (mouse.isDown && player.cooldowns.slash <= 0 && player.freezeTimer <= 0) {
     castSlash();
   }
 
@@ -314,8 +380,18 @@ function update(dt) {
     const dist = Math.hypot(player.x - m.x, player.y - m.y);
     if (dist < 450 && dist > 35) {
       const angle = Math.atan2(player.y - m.y, player.x - m.x);
-      m.x += Math.cos(angle) * m.speed * dt;
-      m.y += Math.sin(angle) * m.speed * dt;
+      const nx = m.x + Math.cos(angle) * m.speed * dt;
+      const ny = m.y + Math.sin(angle) * m.speed * dt;
+      if (canWalk(nx, m.y)) m.x = nx;
+      if (canWalk(m.x, ny)) m.y = ny;
+    }
+
+    // Monster attacks player on contact
+    if (dist < 40 && Math.random() < 0.05) {
+      if (currentZoneId === 'FrostpeakTundra' && player.coldRes < 75 && Math.random() < 0.35) {
+        player.freezeTimer = 1.0;
+        spawnDamageNumber(player.x, player.y - 45, '❄️ FROZEN BY BLIZZARD!', true, '#00f2fe');
+      }
     }
   });
 
@@ -382,7 +458,7 @@ function gameLoop(now) {
   }
 
   update(dt);
-  renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone);
+  renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, currentZoneMap);
 
   requestAnimationFrame(gameLoop);
 }
@@ -411,6 +487,7 @@ window.addEventListener('keydown', e => {
     document.getElementById('inventory-modal')?.classList.add('hidden');
     document.getElementById('worldmap-modal')?.classList.add('hidden');
     document.getElementById('stats-modal')?.classList.add('hidden');
+    document.getElementById('character-roster-modal')?.classList.add('hidden');
   }
 
   if (e.code === 'KeyF') {
@@ -473,10 +550,6 @@ document.getElementById('slot-dash')?.addEventListener('click', castDash);
 document.querySelectorAll('.zone-node').forEach(node => {
   node.addEventListener('click', () => {
     const zone = node.getAttribute('data-zone');
-    if (zone === 'MoltenCaldera') {
-      alert('The Molten Caldera (Lv. 35+) is currently sealed by ancient magic!');
-      return;
-    }
     toggleModal('worldmap-modal');
     loadZone(zone);
     saveToDatabase(true);
@@ -485,7 +558,7 @@ document.querySelectorAll('.zone-node').forEach(node => {
 
 // Initialize UI and Game
 setupUIListeners();
-loadZone('SanctuaryHaven', 2000, 2000);
+loadZone('SanctuaryHaven');
 
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {

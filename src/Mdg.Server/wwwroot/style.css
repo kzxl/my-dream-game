@@ -1228,10 +1228,10 @@ canvas#gameCanvas {
 .node-plains .node-pulse { background: #e5c07b; box-shadow: 0 0 15px #e5c07b; }
 .node-crypt { top: 32%; left: 24%; }
 .node-crypt .node-pulse { background: #c678dd; box-shadow: 0 0 15px #c678dd; }
-.node-caldera { top: 30%; left: 74%; }
-.node-locked .node-lock { font-size: 20px; }
-.node-locked .node-label { border-color: #e06c75; color: #abb2bf; }
-.node-locked .node-label small { color: #e06c75; }
+.node-tundra { top: 22%; left: 48%; }
+.node-tundra .node-pulse { background: #00f2fe; box-shadow: 0 0 15px #00f2fe; }
+.node-caldera { top: 30%; left: 78%; }
+.node-caldera .node-pulse { background: #ff5722; box-shadow: 0 0 15px #ff5722; }
 
 .worldmap-footer { margin-top: 10px; font-size: 11px; color: #e5c07b; text-align: center; font-style: italic; }
 

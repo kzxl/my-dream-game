@@ -1,6 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
+using Mdg.Core.Features.Maps;
 using Mdg.Server.Database;
 using Mdg.Server.Services;
 using Microsoft.AspNetCore.Builder;
@@ -34,6 +32,13 @@ app.MapGet("/api/v1/health", () => new
     status = "Online",
     game = "My Dream Game (MDG) Server (EF Core)",
     tickRate = 30
+});
+
+// ZONE MAP GENERATION APIS
+app.MapGet("/api/v1/zones/{zoneId}", (string zoneId) =>
+{
+    var map = ZoneMapGenerator.GenerateZone(zoneId);
+    return Results.Ok(map);
 });
 
 // MULTI-CHARACTER ROSTER APIS

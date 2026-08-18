@@ -1,12 +1,12 @@
 /**
- * Canvas Rendering Pipeline
+ * Canvas Rendering Pipeline (With Procedural Map Tiles, Environmental Weather FX & Biome Hazard Visuals)
  */
 
-import { WORLD_SIZE, TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
+import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
 import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
 
-export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone) {
+export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
@@ -14,7 +14,7 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone) {
   ctx.scale(camera.zoom, camera.zoom);
   ctx.translate(-player.x, -player.y);
 
-  drawSeamlessTerrain(canvas, ctx, currentZone);
+  drawSeamlessTerrain(canvas, ctx, currentZone, zoneData);
 
   const renderList = [];
 
@@ -35,7 +35,7 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone) {
 
   // Projectiles
   projectiles.forEach(p => {
-    ctx.fillStyle = '#ff7849';
+    ctx.fillStyle = p.type === 'windblade' ? '#00f2fe' : '#ff7849';
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.radius || 12, 0, Math.PI * 2);
     ctx.fill();
@@ -61,7 +61,7 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone) {
 
   // Floating Damage Numbers
   floatingTexts.forEach(ft => {
-    ctx.font = ft.isCrit ? 'bold 16px "Press Start 2P", monospace' : 'bold 12px "Press Start 2P", monospace';
+    ctx.font = ft.isCrit ? 'bold 15px "Outfit", sans-serif' : 'bold 12px "Outfit", sans-serif';
     ctx.fillStyle = ft.color;
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 3;
@@ -71,7 +71,7 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone) {
 
   ctx.restore();
 
-  renderMinimap(minimapCanvas, mmCtx);
+  renderMinimap(minimapCanvas, mmCtx, zoneData);
 }
 
 export function drawGroundLoot(ctx, loot, idx) {
@@ -112,61 +112,127 @@ export function drawGroundLoot(ctx, loot, idx) {
   ctx.restore();
 }
 
-export function drawSeamlessTerrain(canvas, ctx, currentZone) {
+export function drawSeamlessTerrain(canvas, ctx, currentZone, zoneData) {
+  if (!zoneData || !zoneData.grid) return;
+
   const viewW = canvas.width / camera.zoom;
   const viewH = canvas.height / camera.zoom;
-  const startX = Math.max(0, Math.floor((player.x - viewW / 2) / TILE_SIZE) * TILE_SIZE);
-  const endX = Math.min(WORLD_SIZE, startX + viewW + TILE_SIZE * 2);
-  const startY = Math.max(0, Math.floor((player.y - viewH / 2) / TILE_SIZE) * TILE_SIZE);
-  const endY = Math.min(WORLD_SIZE, startY + viewH + TILE_SIZE * 2);
+  const tileSize = 48;
+
+  const startTileX = Math.max(0, Math.floor((player.x - viewW / 2) / tileSize) - 1);
+  const endTileX = Math.min(zoneData.widthInTiles, Math.ceil((player.x + viewW / 2) / tileSize) + 1);
+  const startTileY = Math.max(0, Math.floor((player.y - viewH / 2) / tileSize) - 1);
+  const endTileY = Math.min(zoneData.heightInTiles, Math.ceil((player.y + viewH / 2) / tileSize) + 1);
 
   const isCrypt = currentZone.id === 'ForgottenCrypt';
+  const isTundra = currentZone.id === 'FrostpeakTundra';
+  const isCaldera = currentZone.id === 'MoltenCaldera';
   const isHaven = currentZone.id === 'SanctuaryHaven';
+  const time = performance.now() / 1000;
 
-  ctx.fillStyle = isCrypt ? '#241b2f' : '#4d752c';
-  ctx.fillRect(startX - 10, startY - 10, endX - startX + 20, endY - startY + 20);
+  for (let y = startTileY; y < endTileY; y++) {
+    for (let x = startTileX; x < endTileX; x++) {
+      const tile = zoneData.grid[y][x];
+      const px = x * tileSize;
+      const py = y * tileSize;
 
-  for (let x = startX; x < endX; x += TILE_SIZE) {
-    for (let y = startY; y < endY; y += TILE_SIZE) {
       const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
       const rand = hash - Math.floor(hash);
 
-      if (isCrypt) {
-        if (rand > 0.6) {
-          ctx.fillStyle = '#2f233d';
-          ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
-        }
-        if (rand > 0.85) {
-          ctx.fillStyle = '#3d2e50';
-          ctx.fillRect(x + 14, y + 14, 12, 12);
-        }
-      } else if (isHaven) {
-        const distToCenter = Math.hypot(x - 2000, y - 2000);
-        if (distToCenter < 240) {
-          ctx.fillStyle = '#6b7280';
-          ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-          ctx.fillStyle = '#565d6b';
-          ctx.fillRect(x + 12, y + 12, 24, 24);
+      if (tile === 1) {
+        // WALL (3D Stone / Dungeon Wall with Shadow)
+        if (isCrypt) {
+          ctx.fillStyle = '#181424';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = '#2b213a';
+          ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 8);
+          ctx.fillStyle = '#3f3254';
+          ctx.fillRect(px + 4, py + 4, tileSize - 8, 4);
+        } else if (isCaldera) {
+          ctx.fillStyle = '#1c1316';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = '#3d1c1a';
+          ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+        } else if (isTundra) {
+          ctx.fillStyle = '#1e334a';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = '#3a5f85';
+          ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
         } else {
-          if (rand > 0.7) {
-            ctx.fillStyle = '#588334';
-            ctx.fillRect(x + 10, y + 12, 4, 8);
-            ctx.fillRect(x + 14, y + 10, 4, 10);
-          }
-          if (rand > 0.92) {
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(x + 24, y + 24, 5, 5);
-          }
+          ctx.fillStyle = '#1b2612';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = '#384d20';
+          ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 8);
+        }
+      } else if (tile === 2) {
+        // WATER OR LAVA OR FROZEN ICE
+        if (isCaldera) {
+          const lavaWave = Math.sin(time * 3 + x + y) * 0.2;
+          ctx.fillStyle = `rgb(${220 + lavaWave * 30}, ${60 + lavaWave * 20}, 20)`;
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = '#ffd700';
+          ctx.fillRect(px + 12, py + 12, 6, 6);
+        } else if (isTundra) {
+          ctx.fillStyle = '#00f2fe';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fillRect(px + 4, py + 4, tileSize - 8, tileSize - 8);
+        } else {
+          const wave = Math.sin(time * 2 + x * 0.5 + y) * 15;
+          ctx.fillStyle = `rgb(28, ${95 + wave}, 175)`;
+          ctx.fillRect(px, py, tileSize, tileSize);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.fillRect(px + 4, py + (time * 15 + x * 5) % tileSize, tileSize - 8, 3);
+        }
+      } else if (tile === 3) {
+        // COBBLESTONE PATH
+        ctx.fillStyle = isCrypt ? '#312940' : (isHaven ? '#6e6259' : (isTundra ? '#354d63' : '#5a6b47'));
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.strokeRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+      } else if (tile === 4) {
+        // TOWN PLAZA
+        ctx.fillStyle = '#596173';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.strokeStyle = '#434b59';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 1, py + 1, tileSize - 2, tileSize - 2);
+        if ((x + y) % 2 === 0) {
+          ctx.fillStyle = '#656e82';
+          ctx.fillRect(px + 8, py + 8, tileSize - 16, tileSize - 16);
         }
       } else {
-        if (rand > 0.65) {
-          ctx.fillStyle = '#598436';
-          ctx.fillRect(x + 8, y + 14, 4, 8);
-          ctx.fillRect(x + 14, y + 10, 4, 12);
-        }
-        if (rand > 0.90) {
-          ctx.fillStyle = rand > 0.95 ? '#ff416c' : '#ffd700';
-          ctx.fillRect(x + 22, y + 22, 6, 6);
+        // NATURAL FLOOR / DIRT / DUNGEON GROUND
+        if (isCrypt) {
+          ctx.fillStyle = rand > 0.5 ? '#241b2f' : '#2b2038';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          if (rand > 0.85) {
+            ctx.fillStyle = '#1c1524';
+            ctx.fillRect(px + 10, py + 10, 8, 8);
+          }
+        } else if (isCaldera) {
+          ctx.fillStyle = rand > 0.5 ? '#2b1b1f' : '#331d22';
+          ctx.fillRect(px, py, tileSize, tileSize);
+        } else if (isTundra) {
+          ctx.fillStyle = rand > 0.5 ? '#e2ecf5' : '#c8dceb';
+          ctx.fillRect(px, py, tileSize, tileSize);
+          if (rand > 0.8) {
+            ctx.fillStyle = '#a6c6e0';
+            ctx.fillRect(px + 12, py + 12, 10, 10);
+          }
+        } else {
+          // Lush Grass Field
+          ctx.fillStyle = rand > 0.6 ? '#4b7529' : (rand > 0.3 ? '#456d25' : '#3e6320');
+          ctx.fillRect(px, py, tileSize, tileSize);
+          if (rand > 0.8) {
+            ctx.fillStyle = '#5f9134';
+            ctx.fillRect(px + 6, py + 10, 3, 6);
+            ctx.fillRect(px + 10, py + 8, 3, 8);
+          }
+          if (rand > 0.94) {
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(px + 18, py + 18, 4, 4);
+          }
         }
       }
     }
@@ -211,6 +277,13 @@ export function drawPlayerClean(ctx) {
   ctx.fillStyle = titleColor;
   ctx.textAlign = 'center';
   ctx.fillText(`${player.gender === 'Male' ? '♂' : '♀'} ${player.classSpec} [Lv.${player.level}]`, 0, -42);
+
+  // Player Frozen Ice Aura
+  if (player.freezeTimer > 0) {
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-22, -48, 44, 68);
+  }
 
   ctx.restore();
 }
@@ -392,10 +465,24 @@ export function drawDummy(ctx, d) {
   ctx.restore();
 }
 
-export function renderMinimap(minimapCanvas, mmCtx) {
+export function renderMinimap(minimapCanvas, mmCtx, zoneData) {
   mmCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-  const scaleX = minimapCanvas.width / WORLD_SIZE;
-  const scaleY = minimapCanvas.height / WORLD_SIZE;
+  const worldW = zoneData?.worldWidth || 1920;
+  const worldH = zoneData?.worldHeight || 1920;
+  const scaleX = minimapCanvas.width / worldW;
+  const scaleY = minimapCanvas.height / worldH;
+
+  // Draw Wall obstacles on minimap
+  if (zoneData && zoneData.grid) {
+    mmCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    for (let y = 0; y < zoneData.heightInTiles; y++) {
+      for (let x = 0; x < zoneData.widthInTiles; x++) {
+        if (zoneData.grid[y][x] === 1) {
+          mmCtx.fillRect(x * 48 * scaleX, y * 48 * scaleY, 48 * scaleX, 48 * scaleY);
+        }
+      }
+    }
+  }
 
   portals.forEach(p => {
     mmCtx.fillStyle = '#c678dd';
