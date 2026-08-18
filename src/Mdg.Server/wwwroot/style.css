@@ -1288,3 +1288,238 @@ canvas#gameCanvas {
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* ==========================================
+   CAMPAIGN ACTS & WORLD MAP OVERHAUL STYLES
+   ========================================== */
+.worldmap-overhaul-box {
+  width: 95vw !important;
+  max-width: 1020px !important;
+  background: #141720 !important;
+  border: 4px solid #c6a258 !important;
+  border-radius: 12px !important;
+  padding: 18px !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.98), inset 0 0 30px rgba(198, 162, 88, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.wm-title-group { display: flex; flex-direction: column; gap: 2px; }
+.wm-main-title { font-family: 'Press Start 2P', monospace; font-size: 12px; color: #ffd700; }
+.wm-sub-title { font-size: 11px; color: #98c379; }
+
+/* Act Navigation Tabs */
+.act-nav-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.act-tab-btn {
+  background: #1b1f2b;
+  border: 2px solid #3e4451;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.act-tab-btn:hover { border-color: #ffd700; transform: translateY(-2px); }
+.active-act-tab {
+  background: linear-gradient(180deg, #2a3345, #1e2433) !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.35) !important;
+}
+
+.act-num { font-family: 'Press Start 2P', monospace; font-size: 9px; color: #e5c07b; }
+.act-name { font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; }
+
+/* Act Content Grid */
+.act-content-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 16px;
+}
+
+.act-map-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.act-art-banner {
+  height: 180px;
+  border-radius: 8px;
+  border: 2px solid #4b5263;
+  background-size: cover;
+  background-position: center;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), 0 8px 24px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.act-banner-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(20, 24, 33, 0.85);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.act-banner-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  margin-bottom: 4px;
+}
+
+.act-banner-sub {
+  font-size: 11px;
+  color: #abb2bf;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.act-boss-tag {
+  font-size: 10px;
+  color: #e06c75;
+  background: rgba(20, 24, 33, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.act-boss-tag b { color: #ffd700; }
+
+/* Zone Cards */
+.act-zones-list {
+  background: #1b1f2b;
+  border: 2px solid #3e4451;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.zone-cards-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.zone-card-item {
+  background: #242938;
+  border: 2px solid #3e4451;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.zone-card-item:hover { border-color: #61afef; transform: translateY(-2px); }
+.current-location-card { border-color: #98c379 !important; background: #223023 !important; }
+
+.zc-info { display: flex; flex-direction: column; gap: 2px; }
+.zc-title-row { display: flex; align-items: center; gap: 8px; }
+.zc-name { font-weight: 800; font-size: 12px; color: #fff; }
+.zc-lvl { font-size: 10px; color: #ffd700; font-weight: bold; }
+.zc-here-badge { background: #98c379; color: #1e1e1e; font-size: 8px; font-weight: 900; padding: 1px 4px; border-radius: 3px; }
+.zc-type { font-size: 9px; color: #61afef; font-style: italic; }
+.zc-desc { font-size: 10px; color: #abb2bf; margin-top: 2px; }
+
+.btn-fast-travel {
+  background: linear-gradient(90deg, #61afef, #00f2fe);
+  color: #1e1e1e;
+  border: none;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-fast-travel:hover { transform: scale(1.05); box-shadow: 0 0 12px rgba(0, 242, 254, 0.6); }
+
+/* Quests Panel */
+.act-quest-panel {
+  background: #1b1f2b;
+  border: 2px solid #3e4451;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quests-flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quest-entry-card {
+  background: #242938;
+  border: 1px solid #4b5263;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.quest-num-col {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffd700;
+  color: #1e1e1e;
+  font-weight: 900;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quest-details-col { display: flex; flex-direction: column; gap: 3px; }
+.quest-title-txt { font-weight: 800; font-size: 12px; color: #fff; }
+.quest-desc-txt { font-size: 11px; color: #abb2bf; line-height: 1.3; }
+.quest-reward-txt { font-size: 10px; color: #98c379; margin-top: 2px; }
+.quest-reward-txt b { color: #ffd700; }
+
+.act-lore-box {
+  background: #151821;
+  border: 1px dashed #e5c07b;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lore-title { font-size: 9px; font-weight: bold; color: #e5c07b; }
+.lore-txt { font-size: 10px; color: #abb2bf; font-style: italic; line-height: 1.4; }

@@ -8,6 +8,7 @@ import { spawnDamageNumber } from '../combat.js';
 import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js';
 import { saveToDatabase, renderCharacterRosterUI, createNewCharacter } from '../save-system.js';
+import { renderWorldMapUI } from './worldmap-ui.js';
 
 export function showZoneBanner(title, sub) {
   const banner = document.getElementById('zone-banner');
@@ -108,6 +109,7 @@ export function toggleModal(id) {
     if (id === 'skills-modal' && !el.classList.contains('hidden')) renderSkillUpgradeModal();
     if (id === 'stats-modal' && !el.classList.contains('hidden')) updateAttributesModal();
     if (id === 'character-roster-modal' && !el.classList.contains('hidden')) renderCharacterRosterUI();
+    if (id === 'worldmap-modal' && !el.classList.contains('hidden')) renderWorldMapUI();
     if (id === 'inventory-modal' && !el.classList.contains('hidden')) {
       updateBackpackUI();
       updatePaperdollUI();

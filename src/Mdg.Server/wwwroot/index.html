@@ -313,45 +313,18 @@
       </div>
     </div>
 
-    <!-- Fullscreen World Map Modal -->
+    <!-- Overhauled Fullscreen World Map & Campaign Acts Modal -->
     <div id="worldmap-modal" class="worldmap-modal-wrap hidden">
-      <div class="worldmap-content">
+      <div class="worldmap-content worldmap-overhaul-box">
         <div class="worldmap-header">
-          <h2>THE WORLD OF AETHELIS (THE FRACTURED REALM)</h2>
+          <div class="wm-title-group">
+            <span class="wm-main-title">🗺️ REALM OF AETHELIS • CAMPAIGN ATLAS</span>
+            <span class="wm-sub-title">Select an Act to view regional maps, waypoints, and story quests</span>
+          </div>
           <button id="btn-close-worldmap" class="close-btn">✖</button>
         </div>
-        <div class="worldmap-body">
-          <div class="worldmap-canvas-wrap">
-            <img id="img-world-map" src="/assets/aethelis_world_map.png" alt="Aethelis World Map" />
-            
-            <div class="zone-node node-haven active-node" id="node-haven" data-zone="SanctuaryHaven" title="Sanctuary Haven (Lv. 1-5)">
-              <div class="node-pulse"></div>
-              <span class="node-label">🌿 Sanctuary Haven<br><small>(Safe Haven)</small></span>
-            </div>
-
-            <div class="zone-node node-plains" id="node-plains" data-zone="WhisperingPlains" title="Whispering Plains (Lv. 5-15)">
-              <div class="node-pulse"></div>
-              <span class="node-label">🌾 Whispering Plains<br><small>(Hunting Grounds)</small></span>
-            </div>
-
-            <div class="zone-node node-crypt" id="node-crypt" data-zone="ForgottenCrypt" title="Forgotten Crypt (Lv. 15-25)">
-              <div class="node-pulse"></div>
-              <span class="node-label">🏰 Forgotten Crypt<br><small>(Shadow Lair)</small></span>
-            </div>
-
-            <div class="zone-node node-tundra" id="node-tundra" data-zone="FrostpeakTundra" title="Frostpeak Tundra (Lv. 20-30)">
-              <div class="node-pulse"></div>
-              <span class="node-label">❄️ Frostpeak Tundra<br><small>(Blizzard Hazard)</small></span>
-            </div>
-
-            <div class="zone-node node-caldera" id="node-caldera" data-zone="MoltenCaldera" title="Molten Caldera (Lv. 35-45)">
-              <div class="node-pulse"></div>
-              <span class="node-label">🌋 Molten Caldera<br><small>(Heatwave Hazard)</small></span>
-            </div>
-          </div>
-        </div>
-        <div class="worldmap-footer">
-          <span>💡 Click any unlocked region node to fast travel instantly.</span>
+        <div id="worldmap-overhaul-container" class="worldmap-dynamic-body">
+          <!-- Dynamically populated by worldmap-ui.js -->
         </div>
       </div>
     </div>
