@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Clean Transparent Sprites (Zero Grid Lines) & Multi-Zone System
+ * Seamless Natural Terrain, 4000x4000 World Map & Smooth Dynamic Zoom (In/Out)
  */
 
 (function () {
@@ -21,9 +21,18 @@
   window.addEventListener('resize', resize);
   resize();
 
-  const WORLD_SIZE = 2400;
-  const TILE_SIZE = 48;
-  const camera = { x: 0, y: 0 };
+  // World & Camera Settings (Expanded to 4000x4000)
+  const WORLD_SIZE = 4000;
+  const TILE_SIZE = 64;
+
+  const camera = {
+    x: 2000,
+    y: 2000,
+    zoom: 1.0,
+    targetZoom: 1.0,
+    minZoom: 0.45,
+    maxZoom: 2.0
+  };
 
   // ==========================================
   // 1. ASSET LOADER (Clean Transparent PNGs)
@@ -39,7 +48,6 @@
     assets.loaded++;
   }
 
-  // Use timestamp query to burst browser cache
   const cacheBust = '?v=' + Date.now();
   assets.hero.onload = onAssetLoad;
   assets.hero.src = '/assets/character_spritesheet.png' + cacheBust;
@@ -51,45 +59,45 @@
   assets.props.src = '/assets/props_pack.png' + cacheBust;
 
   // ==========================================
-  // 2. ZONE DEFINITIONS
+  // 2. ZONE DEFINITIONS (4000x4000 Layout)
   // ==========================================
   const ZONES = {
     SanctuaryHaven: {
       id: 'SanctuaryHaven',
       name: 'Sanctuary Haven',
-      subtitle: '🌿 Vùng Đất Khởi Đầu - Khu Vực An Toàn',
+      subtitle: '🌿 Vùng Đất Khởi Đầu - Thị Trấn An Toàn (4000x4000)',
       levelRange: 'Lv. 1-5',
       portals: [
-        { x: 1900, y: 1200, targetZone: 'WhisperingPlains', targetX: 400, targetY: 1200, name: '🌀 Đến Whispering Plains' }
+        { x: 3200, y: 2000, targetZone: 'WhisperingPlains', targetX: 600, targetY: 2000, name: '🌀 Đến Whispering Plains' }
       ],
       npcs: [
-        { x: 1100, y: 1120, name: 'Rèn Cổ (Blacksmith)', title: 'Thợ Rèn', color: '#e5c07b' },
-        { x: 1300, y: 1120, name: 'Học Giả Aethel (Sage)', title: 'Nhiệm Vụ', color: '#61afef' }
+        { x: 1900, y: 1900, name: 'Rèn Cổ (Blacksmith)', title: 'Thợ Rèn', color: '#e5c07b' },
+        { x: 2100, y: 1900, name: 'Học Giả Aethel (Sage)', title: 'Nhiệm Vụ', color: '#61afef' }
       ],
       props: [
-        { x: 1200, y: 1200, type: 'campfire' },
-        { x: 1040, y: 1100, type: 'chest' },
-        { x: 1080, y: 1160, type: 'barrel' },
-        { x: 1320, y: 1160, type: 'barrel' },
-        { x: 920, y: 920, type: 'tree' },
-        { x: 1480, y: 920, type: 'tree' },
-        { x: 800, y: 1350, type: 'rock' },
-        { x: 1600, y: 1350, type: 'rock' }
+        { x: 2000, y: 2000, type: 'campfire' },
+        { x: 1850, y: 1880, type: 'chest' },
+        { x: 1880, y: 1940, type: 'barrel' },
+        { x: 2120, y: 1940, type: 'barrel' },
+        { x: 1600, y: 1600, type: 'tree' },
+        { x: 2400, y: 1600, type: 'tree' },
+        { x: 1500, y: 2300, type: 'rock' },
+        { x: 2500, y: 2300, type: 'rock' }
       ],
       dummies: [
-        { x: 1120, y: 1320, name: 'Bù Nhìn Gỗ (Dummy 1)' },
-        { x: 1280, y: 1320, name: 'Bù Nhìn Gỗ (Dummy 2)' }
+        { x: 1900, y: 2150, name: 'Bù Nhìn Gỗ (Dummy 1)' },
+        { x: 2100, y: 2150, name: 'Bù Nhìn Gỗ (Dummy 2)' }
       ]
     },
 
     WhisperingPlains: {
       id: 'WhisperingPlains',
       name: 'Whispering Plains',
-      subtitle: '🌾 Đồng Cỏ Thì Thầm - Bãi Săn Quái Dã Ngoại',
+      subtitle: '🌾 Đồng Cỏ Thì Thầm - Bãi Săn Quái Bạt Ngàn (4000x4000)',
       levelRange: 'Lv. 5-15',
       portals: [
-        { x: 300, y: 1200, targetZone: 'SanctuaryHaven', targetX: 1800, targetY: 1200, name: '🌀 Về Sanctuary Haven' },
-        { x: 2100, y: 1200, targetZone: 'ForgottenCrypt', targetX: 400, targetY: 1200, name: '🌀 Cổng vào Forgotten Crypt' }
+        { x: 500, y: 2000, targetZone: 'SanctuaryHaven', targetX: 3000, targetY: 2000, name: '🌀 Về Sanctuary Haven' },
+        { x: 3500, y: 2000, targetZone: 'ForgottenCrypt', targetX: 600, targetY: 2000, name: '🌀 Cổng vào Forgotten Crypt' }
       ],
       props: [],
       dummies: []
@@ -98,10 +106,10 @@
     ForgottenCrypt: {
       id: 'ForgottenCrypt',
       name: 'Forgotten Crypt',
-      subtitle: '🏰 Hầm Ngục Cổ Đại - Hang Ổ Shadow Fiend Boss',
+      subtitle: '🏰 Hầm Ngục Cổ Đại - Hang Ổ Shadow Fiend Boss (4000x4000)',
       levelRange: 'Lv. 15-25',
       portals: [
-        { x: 300, y: 1200, targetZone: 'WhisperingPlains', targetX: 2000, targetY: 1200, name: '🌀 Thoát Khỏi Hầm Ngục' }
+        { x: 500, y: 2000, targetZone: 'WhisperingPlains', targetX: 3300, targetY: 2000, name: '🌀 Thoát Khỏi Hầm Ngục' }
       ],
       props: [],
       dummies: []
@@ -112,14 +120,14 @@
   let currentZone = ZONES[currentZoneId];
 
   // ==========================================
-  // 3. PLAYER STATE
+  // 3. PLAYER STATE (PoE Stats)
   // ==========================================
   const player = {
-    x: 1200,
-    y: 1200,
+    x: 2000,
+    y: 2000,
     vx: 0,
     vy: 0,
-    speed: 260,
+    speed: 280,
     facing: 'down',
     isMoving: false,
     animFrame: 0,
@@ -145,7 +153,7 @@
     maxCooldowns: { slash: 0.35, fireball: 1.0, frost: 2.5, meteor: 4.5, dash: 1.2 }
   };
 
-  // Dynamic Entities
+  // Dynamic World Entities
   const monsters = [];
   const trainingDummies = [];
   const npcs = [];
@@ -157,10 +165,10 @@
 
   // Input State
   const keys = {};
-  const mouse = { x: 0, y: 0, worldX: 0, worldY: 0, isDown: false };
+  const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };
 
   // ==========================================
-  // 4. ZONE LOADING & SPAWNING
+  // 4. ZONE LOADING & WORLD GENERATION
   // ==========================================
   function loadZone(zoneId, spawnX, spawnY) {
     if (!ZONES[zoneId]) return;
@@ -176,8 +184,8 @@
     particles.length = 0;
     floatingTexts.length = 0;
 
-    player.x = spawnX !== undefined ? spawnX : 1200;
-    player.y = spawnY !== undefined ? spawnY : 1200;
+    player.x = spawnX !== undefined ? spawnX : 2000;
+    player.y = spawnY !== undefined ? spawnY : 2000;
 
     currentZone.portals.forEach(p => portals.push({ ...p }));
 
@@ -200,33 +208,41 @@
       });
     }
 
+    // Generate Props across expanded 4000x4000 map
     if (currentZone.props && currentZone.props.length > 0) {
       currentZone.props.forEach(pr => props.push({ ...pr }));
-    } else {
-      const propCount = currentZone.id === 'ForgottenCrypt' ? 30 : 55;
-      for (let i = 0; i < propCount; i++) {
-        let type = 'tree';
-        if (currentZone.id === 'ForgottenCrypt') {
-          type = Math.random() < 0.65 ? 'rock' : 'chest';
-        } else {
-          type = Math.random() < 0.6 ? 'tree' : (Math.random() < 0.85 ? 'rock' : 'barrel');
-        }
-        props.push({
-          x: Math.random() * (WORLD_SIZE - 300) + 150,
-          y: Math.random() * (WORLD_SIZE - 300) + 150,
-          type: type
-        });
+    }
+
+    const propCount = currentZone.id === 'ForgottenCrypt' ? 60 : 120;
+    for (let i = 0; i < propCount; i++) {
+      let type = 'tree';
+      if (currentZone.id === 'ForgottenCrypt') {
+        type = Math.random() < 0.7 ? 'rock' : 'chest';
+      } else {
+        type = Math.random() < 0.65 ? 'tree' : (Math.random() < 0.85 ? 'rock' : 'barrel');
+      }
+
+      const px = Math.random() * (WORLD_SIZE - 400) + 200;
+      const py = Math.random() * (WORLD_SIZE - 400) + 200;
+
+      // Don't spawn props directly on center spawn
+      if (Math.hypot(px - 2000, py - 2000) > 200) {
+        props.push({ x: px, y: py, type: type });
       }
     }
 
+    // Spawn Monsters across Expanded Map
     if (currentZone.id === 'WhisperingPlains') {
-      spawnMonsterCluster(800, 900, 5);
-      spawnMonsterCluster(1500, 1400, 6);
-      spawnMonsterCluster(1200, 700, 4);
+      spawnMonsterCluster(1200, 1200, 6);
+      spawnMonsterCluster(2800, 1400, 7);
+      spawnMonsterCluster(1800, 2800, 8);
+      spawnMonsterCluster(3200, 2600, 6);
+      spawnMonsterCluster(1000, 3000, 5);
     } else if (currentZone.id === 'ForgottenCrypt') {
-      spawnMonsterCluster(800, 1100, 6);
-      spawnMonsterCluster(1300, 1300, 6);
-      spawnMonster(1800, 1200, 'boss');
+      spawnMonsterCluster(1200, 1500, 8);
+      spawnMonsterCluster(2200, 1200, 8);
+      spawnMonsterCluster(2600, 2800, 10);
+      spawnMonster(3200, 2000, 'boss'); // Boss in Throne Chamber
     }
 
     showZoneBanner(currentZone.name, currentZone.subtitle);
@@ -260,8 +276,8 @@
       vy: 0,
       type: type,
       name: isBoss ? '🔥 Dark Shadow Fiend (Boss)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
-      maxLife: isBoss ? 1500 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
-      life: isBoss ? 1500 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
+      maxLife: isBoss ? 1800 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
+      life: isBoss ? 1800 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
       armor: isBoss ? 600 : (type === 'skeleton' ? 350 : 100),
       fireRes: type === 'slime' ? 0 : (isBoss ? 50 : 30),
       coldRes: type === 'slime' ? 70 : (isBoss ? 40 : 10),
@@ -278,12 +294,12 @@
     const types = currentZone.id === 'ForgottenCrypt' ? ['skeleton', 'goblin'] : ['slime', 'goblin'];
     for (let i = 0; i < count; i++) {
       const type = types[Math.floor(Math.random() * types.length)];
-      spawnMonster(cx + (Math.random() - 0.5) * 240, cy + (Math.random() - 0.5) * 240, type);
+      spawnMonster(cx + (Math.random() - 0.5) * 320, cy + (Math.random() - 0.5) * 320, type);
     }
   }
 
   // ==========================================
-  // 5. COMBAT PIPELINE (PoE Math)
+  // 5. COMBAT PIPELINE (PoE Mitigation)
   // ==========================================
   function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
     if (!target.isAlive) return;
@@ -521,8 +537,8 @@
       dy /= len;
     }
 
-    player.x += dx * 180;
-    player.y += dy * 180;
+    player.x += dx * 190;
+    player.y += dy * 190;
 
     for (let i = 0; i < 8; i++) {
       particles.push({
@@ -539,13 +555,17 @@
   }
 
   // ==========================================
-  // 7. UPDATE LOOP
+  // 7. UPDATE LOOP & SMOOTH ZOOM
   // ==========================================
   let lastTime = performance.now();
   let frameCount = 0;
   let fpsTimer = 0;
 
   function update(dt) {
+    // Smooth Camera Zoom Interpolation
+    camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
+
+    // Movement
     let mx = 0, my = 0;
     if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
     if (keys['KeyS'] || keys['ArrowDown']) my += 1;
@@ -564,8 +584,8 @@
         player.facing = my > 0 ? 'down' : 'up';
       }
 
-      player.x = Math.max(60, Math.min(WORLD_SIZE - 60, player.x + player.vx * dt));
-      player.y = Math.max(60, Math.min(WORLD_SIZE - 60, player.y + player.vy * dt));
+      player.x = Math.max(80, Math.min(WORLD_SIZE - 80, player.x + player.vx * dt));
+      player.y = Math.max(80, Math.min(WORLD_SIZE - 80, player.y + player.vy * dt));
 
       player.animTimer += dt * 8;
       player.animFrame = Math.floor(player.animTimer) % 4;
@@ -576,13 +596,15 @@
       player.animFrame = 0;
     }
 
+    // Portals
     portals.forEach(p => {
       const dist = Math.hypot(player.x - p.x, player.y - p.y);
-      if (dist < 45) {
+      if (dist < 55) {
         loadZone(p.targetZone, p.targetX, p.targetY);
       }
     });
 
+    // Cooldowns & Regen
     for (let k in player.cooldowns) {
       if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
     }
@@ -593,10 +615,15 @@
       castSlash();
     }
 
-    camera.x = player.x - canvas.width / 2;
-    camera.y = player.y - canvas.height / 2;
-    camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, camera.x));
-    camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, camera.y));
+    // Camera follow player
+    camera.x = player.x;
+    camera.y = player.y;
+
+    // Recalculate Mouse World Coordinates with dynamic zoom
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    mouse.worldX = player.x + (mouse.x - centerX) / camera.zoom;
+    mouse.worldY = player.y + (mouse.y - centerY) / camera.zoom;
 
     // Projectiles
     for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -643,14 +670,14 @@
       }
     }
 
-    // Monsters AI
+    // Monster AI
     monsters.forEach(m => {
       if (!m.isAlive) return;
       if (m.hurtTimer > 0) m.hurtTimer -= dt;
       m.animTimer += dt * 5;
 
       const dist = Math.hypot(player.x - m.x, player.y - m.y);
-      if (dist < 400 && dist > 35) {
+      if (dist < 450 && dist > 35) {
         const angle = Math.atan2(player.y - m.y, player.x - m.x);
         m.x += Math.cos(angle) * m.speed * dt;
         m.y += Math.sin(angle) * m.speed * dt;
@@ -685,6 +712,8 @@
     document.getElementById('bar-mana').style.width = `${(player.mana / player.maxMana) * 100}%`;
     document.getElementById('text-mana').innerText = `MP: ${Math.round(player.mana)} / ${player.maxMana}`;
 
+    document.getElementById('zoom-level-text').innerText = `${Math.round(camera.zoom * 100)}%`;
+
     for (let k in player.cooldowns) {
       const el = document.getElementById(`cd-${k}`);
       if (el) {
@@ -695,16 +724,21 @@
   }
 
   // ==========================================
-  // 8. RENDER LOOP (Zero-Grid Sprites)
+  // 8. NATURAL TERRAIN & ZOOMED RENDERING
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    ctx.translate(-camera.x, -camera.y);
+    // Center camera on screen and apply dynamic zoom
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(camera.zoom, camera.zoom);
+    ctx.translate(-player.x, -player.y);
 
-    drawZoneGround();
+    // 1. Draw Seamless Natural Terrain (Zero Checkerboard)
+    drawSeamlessTerrain();
 
+    // 2. Y-Sorting Render Queue
     const renderList = [];
 
     portals.forEach(p => {
@@ -734,7 +768,7 @@
     renderList.sort((a, b) => a.y - b.y);
     renderList.forEach(item => item.render());
 
-    // Projectiles
+    // 3. Projectiles
     projectiles.forEach(p => {
       ctx.fillStyle = '#ff7849';
       ctx.beginPath();
@@ -746,7 +780,7 @@
       ctx.fill();
     });
 
-    // Particles
+    // 4. Particles
     particles.forEach(pt => {
       ctx.fillStyle = pt.color;
       if (pt.isRing) {
@@ -760,7 +794,7 @@
       }
     });
 
-    // Floating Text
+    // 5. Floating Damage Text
     floatingTexts.forEach(ft => {
       ctx.font = ft.isCrit ? 'bold 16px "Press Start 2P", monospace' : 'bold 12px "Press Start 2P", monospace';
       ctx.fillStyle = ft.color;
@@ -775,55 +809,79 @@
     renderMinimap();
   }
 
-  // Draw Seamless Ground
-  function drawZoneGround() {
-    const startX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
-    const endX = startX + canvas.width + TILE_SIZE * 2;
-    const startY = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE;
-    const endY = startY + canvas.height + TILE_SIZE * 2;
+  // Draw Natural Seamless Terrain (No Grid Lines, Soft Color Blends)
+  function drawSeamlessTerrain() {
+    const viewW = canvas.width / camera.zoom;
+    const viewH = canvas.height / camera.zoom;
+    const startX = Math.max(0, Math.floor((player.x - viewW / 2) / TILE_SIZE) * TILE_SIZE);
+    const endX = Math.min(WORLD_SIZE, startX + viewW + TILE_SIZE * 2);
+    const startY = Math.max(0, Math.floor((player.y - viewH / 2) / TILE_SIZE) * TILE_SIZE);
+    const endY = Math.min(WORLD_SIZE, startY + viewH + TILE_SIZE * 2);
 
     const isCrypt = currentZone.id === 'ForgottenCrypt';
     const isHaven = currentZone.id === 'SanctuaryHaven';
 
+    // 1. Fill base solid field for the whole visible screen first
+    ctx.fillStyle = isCrypt ? '#241b2f' : '#4d752c';
+    ctx.fillRect(startX - 10, startY - 10, endX - startX + 20, endY - startY + 20);
+
+    // 2. Draw organic features
     for (let x = startX; x < endX; x += TILE_SIZE) {
       for (let y = startY; y < endY; y += TILE_SIZE) {
         const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
         const rand = hash - Math.floor(hash);
 
         if (isCrypt) {
-          ctx.fillStyle = rand > 0.7 ? '#2a2238' : (rand > 0.4 ? '#332944' : '#221b2d');
-          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          ctx.strokeStyle = '#1a1424';
-          ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+          // Crypt: Dark slate tiles with subtle moss
+          if (rand > 0.6) {
+            ctx.fillStyle = '#2f233d';
+            ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+          }
+          if (rand > 0.85) {
+            ctx.fillStyle = '#3d2e50';
+            ctx.fillRect(x + 14, y + 14, 12, 12);
+          }
         } else if (isHaven) {
-          const distToCenter = Math.hypot(x - 1200, y - 1200);
-          if (distToCenter < 160) {
-            ctx.fillStyle = rand > 0.5 ? '#737988' : '#5e6573';
-            ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-            ctx.strokeStyle = '#4b5263';
-            ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+          // Sanctuary Haven: Cobblestone town plaza in center
+          const distToCenter = Math.hypot(x - 2000, y - 2000);
+          if (distToCenter < 240) {
+            ctx.fillStyle = '#6b7280';
+            ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            ctx.fillStyle = '#565d6b';
+            ctx.fillRect(x + 12, y + 12, 24, 24);
           } else {
-            ctx.fillStyle = rand > 0.8 ? '#4e752c' : (rand > 0.6 ? '#659138' : '#588031');
-            ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+            // Soft Meadow & subtle grass tufts
+            if (rand > 0.7) {
+              ctx.fillStyle = '#588334';
+              ctx.fillRect(x + 10, y + 12, 4, 8);
+              ctx.fillRect(x + 14, y + 10, 4, 10);
+            }
+            if (rand > 0.92) {
+              ctx.fillStyle = '#ffd700'; // Yellow daisy
+              ctx.fillRect(x + 24, y + 24, 5, 5);
+            }
           }
         } else {
-          ctx.fillStyle = rand > 0.82 ? '#4c7328' : (rand > 0.65 ? '#618c35' : '#557d2f');
-          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          if (rand > 0.92) {
-            ctx.fillStyle = rand > 0.96 ? '#ffd700' : '#e06c75';
-            ctx.fillRect(x + 16, y + 16, 4, 4);
+          // Whispering Plains: Seamless emerald wilderness
+          if (rand > 0.65) {
+            ctx.fillStyle = '#598436';
+            ctx.fillRect(x + 8, y + 14, 4, 8);
+            ctx.fillRect(x + 14, y + 10, 4, 12);
+          }
+          if (rand > 0.90) {
+            ctx.fillStyle = rand > 0.95 ? '#ff416c' : '#ffd700';
+            ctx.fillRect(x + 22, y + 22, 6, 6);
           }
         }
       }
     }
   }
 
-  // Draw Clean Player (4x4 Grid from character_spritesheet.png)
+  // Draw Clean Player
   function drawPlayerClean() {
     ctx.save();
     ctx.translate(player.x, player.y);
 
-    // Soft Shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.beginPath();
     ctx.ellipse(0, 20, 18, 8, 0, 0, Math.PI * 2);
@@ -834,18 +892,13 @@
       const frameW = img.naturalWidth / 4;
       const frameH = img.naturalHeight / 4;
 
-      let row = 0; // Down
+      let row = 0;
       let col = player.isMoving ? (player.animFrame % 3) : 0;
 
-      if (player.facing === 'down') {
-        row = 0;
-      } else if (player.facing === 'up') {
-        row = 1;
-      } else if (player.facing === 'right') {
-        row = 2;
-      } else if (player.facing === 'left') {
-        row = 3;
-      }
+      if (player.facing === 'down') row = 0;
+      else if (player.facing === 'up') row = 1;
+      else if (player.facing === 'right') row = 2;
+      else if (player.facing === 'left') row = 3;
 
       const sx = col * frameW;
       const sy = row * frameH;
@@ -866,7 +919,7 @@
     ctx.restore();
   }
 
-  // Draw Clean Monster (4x4 Grid from monsters_pack.png)
+  // Draw Clean Monster
   function drawMonsterClean(m) {
     ctx.save();
     ctx.translate(m.x, m.y);
@@ -887,19 +940,15 @@
       const isMoving = Math.floor(m.animTimer) % 2 === 1;
 
       if (m.type === 'slime') {
-        // Row 0, Col 0 (Idle) or Col 1 (Move)
         sx = (isMoving ? 1 : 0) * colW;
         sy = 0 * rowH;
       } else if (m.type === 'skeleton') {
-        // Row 0, Col 2 (Idle) or Col 3 (Walk)
         sx = (isMoving ? 3 : 2) * colW;
         sy = 0 * rowH;
       } else if (m.type === 'goblin') {
-        // Row 2, Col 0 (Idle) or Col 1 (Walk)
         sx = (isMoving ? 1 : 0) * colW;
         sy = 2 * rowH;
       } else {
-        // Boss (Shadow Fiend): Row 2, Col 2 or 3
         sx = (isMoving ? 3 : 2) * colW;
         sy = 2 * rowH;
       }
@@ -930,7 +979,7 @@
     ctx.restore();
   }
 
-  // Draw Clean Props from props_pack.png
+  // Draw Clean Props
   function drawPropClean(p) {
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -941,7 +990,6 @@
       const H = img.naturalHeight;
 
       if (p.type === 'tree') {
-        // Oak Tree (Top-Left: x: 0..58% W, y: 0..50% H)
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
         ctx.ellipse(0, 10, 36, 14, 0, 0, Math.PI * 2);
@@ -949,16 +997,12 @@
 
         ctx.drawImage(img, W * 0.05, H * 0.02, W * 0.55, H * 0.48, -55, -120, 110, 130);
       } else if (p.type === 'rock') {
-        // Mossy Boulder (Top-Right: x: 60%..98% W, y: 0..38% H)
         ctx.drawImage(img, W * 0.60, H * 0.01, W * 0.38, H * 0.36, -30, -26, 60, 52);
       } else if (p.type === 'barrel') {
-        // Barrel (Mid-Left: x: 0%..30% W, y: 38%..72% H)
         ctx.drawImage(img, W * 0.01, H * 0.38, W * 0.28, H * 0.34, -18, -20, 36, 42);
       } else if (p.type === 'chest') {
-        // Gold Chest (Mid-Right: x: 62%..90% W, y: 46%..72% H)
         ctx.drawImage(img, W * 0.64, H * 0.46, W * 0.26, H * 0.26, -22, -16, 44, 32);
       } else if (p.type === 'campfire') {
-        // Campfire (Bottom-Center: x: 35%..65% W, y: 70%..100% H)
         ctx.drawImage(img, W * 0.35, H * 0.70, W * 0.30, H * 0.28, -32, -32, 64, 64);
       }
     } else {
@@ -976,7 +1020,7 @@
 
     const pulse = (Math.sin(performance.now() / 250) + 1) * 0.5;
 
-    const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 36);
+    const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 38);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.4, '#c678dd');
     grad.addColorStop(0.8, '#61afef');
@@ -1050,11 +1094,13 @@
     ctx.restore();
   }
 
+  // Minimap with 4000x4000 Scaling
   function renderMinimap() {
     mmCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
     const scaleX = minimapCanvas.width / WORLD_SIZE;
     const scaleY = minimapCanvas.height / WORLD_SIZE;
 
+    // Portals
     portals.forEach(p => {
       mmCtx.fillStyle = '#c678dd';
       mmCtx.beginPath();
@@ -1062,6 +1108,7 @@
       mmCtx.fill();
     });
 
+    // Monsters
     monsters.forEach(m => {
       if (m.isAlive) {
         mmCtx.fillStyle = m.type === 'boss' ? '#ffd700' : '#e06c75';
@@ -1070,12 +1117,14 @@
       }
     });
 
+    // Player Dot
     mmCtx.fillStyle = '#61afef';
     mmCtx.beginPath();
     mmCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
     mmCtx.fill();
   }
 
+  // Main Loop
   function gameLoop(now) {
     const dt = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
@@ -1094,7 +1143,30 @@
     requestAnimationFrame(gameLoop);
   }
 
-  // Input Listeners
+  // ==========================================
+  // 9. INPUT & ZOOM LISTENERS
+  // ==========================================
+  // Mouse Wheel Zoom In / Out
+  window.addEventListener('wheel', e => {
+    // Only zoom when not scrolling inside modals
+    if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
+    
+    e.preventDefault();
+    const zoomFactor = -Math.sign(e.deltaY) * 0.15;
+    camera.targetZoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.targetZoom + zoomFactor));
+  }, { passive: false });
+
+  // Zoom Buttons
+  document.getElementById('btn-zoom-in').addEventListener('click', () => {
+    camera.targetZoom = Math.min(camera.maxZoom, camera.targetZoom + 0.25);
+  });
+  document.getElementById('btn-zoom-out').addEventListener('click', () => {
+    camera.targetZoom = Math.max(camera.minZoom, camera.targetZoom - 0.25);
+  });
+  document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+    camera.targetZoom = 1.0;
+  });
+
   window.addEventListener('keydown', e => {
     keys[e.code] = true;
     if (e.code === 'KeyQ') castFireball();
@@ -1113,8 +1185,6 @@
   window.addEventListener('mousemove', e => {
     mouse.x = e.clientX;
     mouse.y = e.clientY;
-    mouse.worldX = mouse.x + camera.x;
-    mouse.worldY = mouse.y + camera.y;
   });
 
   window.addEventListener('mousedown', e => {
@@ -1141,7 +1211,7 @@
   document.getElementById('btn-close-inventory').addEventListener('click', () => toggleModal('inventory-modal'));
 
   document.getElementById('btn-spawn-monster').addEventListener('click', () => {
-    spawnMonsterCluster(player.x + (Math.random() - 0.5) * 350, player.y + (Math.random() - 0.5) * 350, 4);
+    spawnMonsterCluster(player.x + (Math.random() - 0.5) * 400, player.y + (Math.random() - 0.5) * 400, 5);
   });
 
   document.querySelectorAll('.zone-node').forEach(node => {
@@ -1162,6 +1232,6 @@
   document.getElementById('slot-meteor').addEventListener('click', castMeteor);
   document.getElementById('slot-dash').addEventListener('click', castDash);
 
-  loadZone('SanctuaryHaven', 1200, 1200);
+  loadZone('SanctuaryHaven', 2000, 2000);
   requestAnimationFrame(gameLoop);
 })();

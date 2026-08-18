@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MDG: Aethelis - 2D ARPG Web Client & World Map</title>
-  <meta name="description" content="My Dream Game (MDG) - Pure C# Core Cross-Platform 2D Top-Down ARPG with World Map & Multi-Zone Dungeons" />
+  <meta name="description" content="My Dream Game (MDG) - Pure C# Core Cross-Platform 2D Top-Down ARPG with Seamless Terrain & Dynamic Zoom" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
@@ -50,17 +50,26 @@
       </div>
     </div>
 
-    <!-- Top Right: Minimap & Quick Actions -->
+    <!-- Top Right: Minimap, Zoom Controls & Quick Actions -->
     <div id="minimap-panel" class="pixel-panel">
       <div class="minimap-header">
         <span id="minimap-zone-title">HAVEN</span>
         <span id="fps-counter" class="fps-tag">60 FPS</span>
       </div>
-      <canvas id="minimapCanvas" width="140" height="100"></canvas>
+      <canvas id="minimapCanvas" width="150" height="110"></canvas>
+      
+      <!-- Zoom Controls -->
+      <div class="zoom-controls">
+        <button id="btn-zoom-in" class="zoom-btn" title="Phóng to (Scroll Up)">🔍 +</button>
+        <span id="zoom-level-text" class="zoom-tag">100%</span>
+        <button id="btn-zoom-out" class="zoom-btn" title="Thu nhỏ (Scroll Down)">🔍 -</button>
+        <button id="btn-zoom-reset" class="zoom-btn-reset" title="Mặc định">1x</button>
+      </div>
+
       <div class="quick-buttons">
-        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="Bản đồ thế giới Aethelis">🗺️ Map (M)</button>
-        <button id="btn-toggle-stats" class="hud-btn" title="Chỉ số nhân vật">📊 Stats (C)</button>
-        <button id="btn-toggle-inventory" class="hud-btn" title="Túi đồ & Trang bị">🎒 Bag (I)</button>
+        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="Bản đồ thế giới (M)">🗺️ Map (M)</button>
+        <button id="btn-toggle-stats" class="hud-btn" title="Chỉ số nhân vật (C)">📊 Stats (C)</button>
+        <button id="btn-toggle-inventory" class="hud-btn" title="Túi đồ & Trang bị (I)">🎒 Bag (I)</button>
         <button id="btn-spawn-monster" class="hud-btn" title="Spawn quái">⚔️ Spawn</button>
       </div>
     </div>
@@ -68,34 +77,29 @@
     <!-- Bottom Center: Hotbar & Skills -->
     <div id="bottom-hotbar">
       <div class="hotbar-slots">
-        <!-- Skill 1: Basic Attack / Slash -->
         <div class="skill-slot" id="slot-slash" data-key="LMB / 1">
           <div class="skill-icon icon-slash">⚔️</div>
           <div class="cooldown-overlay" id="cd-slash"></div>
           <span class="key-hint">LMB</span>
         </div>
-        <!-- Skill 2: Fireball -->
         <div class="skill-slot" id="slot-fireball" data-key="Q">
           <div class="skill-icon icon-fireball">🔥</div>
           <div class="cooldown-overlay" id="cd-fireball"></div>
           <span class="key-hint">Q</span>
           <span class="mana-hint">10 MP</span>
         </div>
-        <!-- Skill 3: Frost Nova -->
         <div class="skill-slot" id="slot-frost" data-key="W">
           <div class="skill-icon icon-frost">❄️</div>
           <div class="cooldown-overlay" id="cd-frost"></div>
           <span class="key-hint">W</span>
           <span class="mana-hint">15 MP</span>
         </div>
-        <!-- Skill 4: Meteor Strike -->
         <div class="skill-slot" id="slot-meteor" data-key="E">
           <div class="skill-icon icon-meteor">☄️</div>
           <div class="cooldown-overlay" id="cd-meteor"></div>
           <span class="key-hint">E</span>
           <span class="mana-hint">30 MP</span>
         </div>
-        <!-- Skill 5: Dash / Dodge -->
         <div class="skill-slot" id="slot-dash" data-key="Space">
           <div class="skill-icon icon-dash">💨</div>
           <div class="cooldown-overlay" id="cd-dash"></div>
@@ -115,7 +119,6 @@
           <div class="worldmap-canvas-wrap">
             <img id="img-world-map" src="/assets/aethelis_world_map.png" alt="Aethelis World Map" />
             
-            <!-- Interactive Zone Nodes -->
             <div class="zone-node node-haven active-node" id="node-haven" data-zone="SanctuaryHaven" title="Sanctuary Haven (Lv. 1-5)">
               <div class="node-pulse"></div>
               <span class="node-label">🌿 Sanctuary Haven<br><small>(Khu An Toàn)</small></span>
@@ -188,7 +191,7 @@
 
     <!-- Help & Controls Overlay -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Di chuyển | <b>Chuột trái</b>: Đánh thường | <b>Q, W, E</b>: Kỹ năng | <b>Space</b>: Lướt | <b>M</b>: Bản đồ thế giới | <b>C/I</b>: Stats / Bag</span>
+      <span>🎮 <b>WASD</b>: Di chuyển | <b>Cuộn chuột</b>: Zoom In/Out | <b>LMB</b>: Đánh thường | <b>Q/W/E</b>: Skill | <b>Space</b>: Dash | <b>M</b>: World Map</span>
     </div>
   </div>
 

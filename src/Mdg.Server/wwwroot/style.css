@@ -211,6 +211,58 @@ canvas#gameCanvas {
   background: #1c2025;
 }
 
+/* Zoom Controls Toolbar */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1e24;
+  border: 1px solid #3e4451;
+  border-radius: 4px;
+  padding: 3px 6px;
+  gap: 4px;
+}
+
+.zoom-btn {
+  background: #282c34;
+  border: 1px solid #4b5263;
+  color: #61afef;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zoom-btn:hover {
+  background: #61afef;
+  color: #1e1e1e;
+}
+
+.zoom-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #e5c07b;
+  flex: 1;
+  text-align: center;
+}
+
+.zoom-btn-reset {
+  background: #3b3620;
+  border: 1px solid #e5c07b;
+  color: #e5c07b;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.zoom-btn-reset:hover {
+  background: #e5c07b;
+  color: #1e1e1e;
+}
+
 .quick-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -318,9 +370,7 @@ canvas#gameCanvas {
   font-weight: bold;
 }
 
-/* ==========================================
-   WORLD MAP MODAL (Full Screen Interactive)
-   ========================================== */
+/* World Map Modal */
 .worldmap-modal-wrap {
   position: absolute;
   top: 0;
@@ -383,10 +433,8 @@ canvas#gameCanvas {
   width: 100%;
   height: auto;
   display: block;
-  image-rendering: auto;
 }
 
-/* Zone Nodes Overlay on World Map */
 .zone-node {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -437,7 +485,6 @@ canvas#gameCanvas {
   font-size: 9px;
 }
 
-/* Specific Positions on World Map */
 .node-haven { top: 78%; left: 78%; }
 .node-haven .node-pulse { background: #98c379; box-shadow: 0 0 15px #98c379; }
 
@@ -522,7 +569,8 @@ canvas#gameCanvas {
   bottom: 84px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #4b5263;
   padding: 4px 14px;
   border-radius: 20px;
   font-size: 11px;
