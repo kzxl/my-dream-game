@@ -371,24 +371,49 @@ export function drawMonsterClean(ctx, m) {
   ctx.ellipse(0, 16 * scale, 14 * scale, 6 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Render Boss from assets.bosses
+  // Render Boss from assets.bosses (4x4 Animated Spritesheet)
   if (m.type === 'boss' && assets.bosses.complete && assets.bosses.naturalWidth > 0) {
     const bImg = assets.bosses;
-    const bHalfW = bImg.naturalWidth / 2;
-    const bHalfH = bImg.naturalHeight / 2;
+    const colW = bImg.naturalWidth / 4;
+    const rowH = bImg.naturalHeight / 4;
 
-    let sx = 0, sy = 0;
+    let row = 0;
     if (m.name.includes('Cryomancer') || m.name.includes('Vael')) {
-      sx = bHalfW; sy = 0; // Top-Right
+      row = 1; // Row 1: Cryomancer Knight
     } else if (m.name.includes('Ignis') || m.name.includes('Tyrant')) {
-      sx = 0; sy = bHalfH; // Bottom-Left
+      row = 2; // Row 2: Molten Fire Tyrant
+    } else if (m.name.includes('Drake') || m.name.includes('Dragon') || m.name.includes('Storm')) {
+      row = 3; // Row 3: Thunder Dragon
     } else {
-      sx = 0; sy = 0; // Top-Left: Malakor
+      row = 0; // Row 0: Shadow Lord Malakor
     }
 
-    const dw = 78 * scale;
-    const dh = 78 * scale;
-    ctx.drawImage(bImg, sx, sy, bHalfW, bHalfH, -dw / 2, -dh + 22 * scale, dw, dh);
+    const animCol = Math.floor(m.animTimer * 1.8) % 4;
+    const sx = animCol * colW;
+    const sy = row * rowH;
+
+    const hoverY = (row === 0 || row === 3) ? Math.sin(performance.now() / 220) * 5 : 0;
+    const dw = 84 * scale;
+    const dh = 84 * scale;
+
+    // Boss Elemental Aura Glow
+    ctx.save();
+    if (row === 2) {
+      ctx.shadowColor = 'rgba(255, 87, 34, 0.65)';
+      ctx.shadowBlur = 16;
+    } else if (row === 1) {
+      ctx.shadowColor = 'rgba(0, 242, 254, 0.65)';
+      ctx.shadowBlur = 16;
+    } else if (row === 3) {
+      ctx.shadowColor = 'rgba(79, 172, 254, 0.65)';
+      ctx.shadowBlur = 16;
+    } else {
+      ctx.shadowColor = 'rgba(198, 120, 221, 0.65)';
+      ctx.shadowBlur = 16;
+    }
+
+    ctx.drawImage(bImg, sx, sy, colW, rowH, -dw / 2, -dh + 24 * scale + hoverY, dw, dh);
+    ctx.restore();
   } else if (assets.monsters.complete && assets.monsters.naturalWidth > 0) {
     const img = assets.monsters;
     const colW = img.naturalWidth / 4;
