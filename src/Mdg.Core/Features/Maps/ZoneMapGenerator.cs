@@ -32,6 +32,9 @@ public static class ZoneMapGenerator
             "ForgottenCrypt" => GenerateCrypt(),
             "StormpeakRidge" => GenerateStormpeak(),
             "VoidAbyss" => GenerateVoidAbyss(),
+            "ArenaCaldera" => GenerateArenaCaldera(),
+            "ArenaGlacial" => GenerateArenaGlacial(),
+            "ArenaVoid" => GenerateArenaVoid(),
             _ => GenerateHaven()
         };
     }
@@ -121,9 +124,11 @@ public static class ZoneMapGenerator
             },
             Npcs = new List<ZoneNpcDto>
             {
-                new() { X = (cx - 4) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Doran (Blacksmith)", Title = "Master Crafter", Color = "#e5c07b" },
-                new() { X = (cx + 4) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Elder Aethel", Title = "Sage of Aethelis", Color = "#61afef" },
-                new() { X = (cx - 4) * TILE_SIZE, Y = (cy + 3) * TILE_SIZE, Name = "Kaelen (Stash Keeper)", Title = "Shared Vault", Color = "#ffd700" }
+                new() { X = (cx - 4) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Doran (Blacksmith)", Title = "Master Blacksmith", Color = "#e5c07b" },
+                new() { X = cx * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Name = "Elder Aethel", Title = "High Elder Sage", Color = "#61afef" },
+                new() { X = (cx - 3) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Kaelen (Vault Keeper)", Title = "Keeper of the Vault", Color = "#98c379" },
+                new() { X = (cx + 3) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Lyra (Astromancer)", Title = "Astromancer of the Void", Color = "#c678dd" },
+                new() { X = (cx + 4) * TILE_SIZE, Y = (cy + 1) * TILE_SIZE, Name = "Mira (Beastmaster)", Title = "Companion Beastmaster", Color = "#00f2fe" }
             },
             Dummies = new List<ZoneDummyDto>
             {
@@ -134,7 +139,17 @@ public static class ZoneMapGenerator
             {
                 new() { X = cx * TILE_SIZE, Y = cy * TILE_SIZE, Type = "campfire" },
                 new() { X = (cx - 6) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Type = "chest" },
-                new() { X = (cx + 6) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Type = "barrel" }
+                new() { X = (cx + 6) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Type = "barrel" },
+                new() { X = (cx - 7) * TILE_SIZE, Y = (cy - 5) * TILE_SIZE, Type = "oak_tree" },
+                new() { X = (cx + 7) * TILE_SIZE, Y = (cy - 5) * TILE_SIZE, Type = "cherry_tree" },
+                new() { X = (cx - 7) * TILE_SIZE, Y = (cy + 5) * TILE_SIZE, Type = "cherry_tree" },
+                new() { X = (cx + 7) * TILE_SIZE, Y = (cy + 5) * TILE_SIZE, Type = "oak_tree" },
+                new() { X = (cx - 2) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Type = "flowers_gold" },
+                new() { X = (cx + 2) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Type = "flowers_blue" },
+                new() { X = (cx - 5) * TILE_SIZE, Y = (cy + 2) * TILE_SIZE, Type = "lush_bush" },
+                new() { X = (cx + 5) * TILE_SIZE, Y = (cy + 2) * TILE_SIZE, Type = "lush_bush" },
+                new() { X = (cx - 2) * TILE_SIZE, Y = (cy + 4) * TILE_SIZE, Type = "mossy_rock" },
+                new() { X = (cx + 2) * TILE_SIZE, Y = (cy + 4) * TILE_SIZE, Type = "mossy_rock" }
             }
         };
     }
@@ -221,6 +236,23 @@ public static class ZoneMapGenerator
             {
                 new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1800, TargetY = 960, Name = "🌿 Back to Haven" },
                 new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 220, TargetY = 1440, Name = "❄️ To Frostpeak Tundra" }
+            },
+            Npcs = new List<ZoneNpcDto>
+            {
+                new() { X = 280, Y = midY * TILE_SIZE + 60, Name = "Valen (Scout)", Title = "Trinh Sát Tiền Đồn", Color = "#e06c75" }
+            },
+            Props = new List<ZonePropDto>
+            {
+                new() { X = 600, Y = 1950, Type = "pine_tree" },
+                new() { X = 750, Y = 2000, Type = "autumn_tree" },
+                new() { X = 1200, Y = 1800, Type = "tall_grass" },
+                new() { X = 1400, Y = 1900, Type = "flowers_red" },
+                new() { X = 1600, Y = 2100, Type = "mossy_rock" },
+                new() { X = 2000, Y = 1900, Type = "pine_tree" },
+                new() { X = 2200, Y = 2200, Type = "autumn_tree" },
+                new() { X = 2500, Y = 1800, Type = "mushroom_glow" },
+                new() { X = 2800, Y = 2000, Type = "tall_grass" },
+                new() { X = 3100, Y = 1950, Type = "flowers_red" }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
@@ -626,6 +658,177 @@ public static class ZoneMapGenerator
                 new() { X = cx * TILE_SIZE, Y = cy * TILE_SIZE, Count = 1, Type = "boss" },
                 new() { X = (cx - 8) * TILE_SIZE, Y = (cy - 8) * TILE_SIZE, Count = 6, Type = "undead_knight" },
                 new() { X = (cx + 8) * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, Count = 6, Type = "fire_imp" }
+            }
+        };
+    }
+
+    // 8. ARENA CALDERA - PINNACLE ARENA (Tier 14: Ignis, The Molten Archon)
+    private static ZoneMapDto GenerateArenaCaldera()
+    {
+        const int w = 32, h = 32;
+        var grid = InitializeGrid(w, h, TILE_LAVA);
+        int cx = w / 2, cy = h / 2;
+
+        // Circular Obsidian Arena platform surrounded by boiling lava
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                float dist = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                if (dist <= 11f)
+                {
+                    grid[y][x] = TILE_BURNT_GROUND;
+                }
+                if (dist <= 8f)
+                {
+                    grid[y][x] = TILE_PLAZA;
+                }
+            }
+        }
+
+        // 4 Obsidian Cover Pillars (safe cover from Supernova)
+        grid[cy - 4][cx - 4] = TILE_ANCIENT_PILLAR;
+        grid[cy - 4][cx + 4] = TILE_ANCIENT_PILLAR;
+        grid[cy + 4][cx - 4] = TILE_ANCIENT_PILLAR;
+        grid[cy + 4][cx + 4] = TILE_ANCIENT_PILLAR;
+
+        return new ZoneMapDto
+        {
+            Id = "ArenaCaldera",
+            Name = "🌋 Caldera of Ignis (Pinnacle Arena)",
+            Subtitle = "Pinnacle Boss: Ignis, The Molten Archon",
+            Biome = ZoneBiomeType.MoltenCaldera,
+            LevelRange = "Lv. 80+ (Tier 14)",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = cx * TILE_SIZE,
+            SpawnY = (cy + 7) * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = cx * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 960, Name = "🏛️ Return to Haven" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "ignis_boss" },
+                new() { X = (cx - 5) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Count = 3, Type = "fire_imp" },
+                new() { X = (cx + 5) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Count = 3, Type = "fire_imp" }
+            }
+        };
+    }
+
+    // 9. ARENA GLACIAL - PINNACLE ARENA (Tier 15: Vael, The Frost Sovereign)
+    private static ZoneMapDto GenerateArenaGlacial()
+    {
+        const int w = 32, h = 32;
+        var grid = InitializeGrid(w, h, TILE_GLACIAL_ICE);
+        int cx = w / 2, cy = h / 2;
+
+        // Frozen Ancient Throne Room
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                float dist = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                if (dist <= 11f)
+                {
+                    grid[y][x] = TILE_DEEP_SNOW;
+                }
+                if (dist <= 8f)
+                {
+                    grid[y][x] = TILE_PLAZA;
+                }
+            }
+        }
+
+        // Frost Monoliths
+        grid[cy - 5][cx] = TILE_ANCIENT_PILLAR;
+        grid[cy + 5][cx] = TILE_ANCIENT_PILLAR;
+        grid[cy][cx - 5] = TILE_ANCIENT_PILLAR;
+        grid[cy][cx + 5] = TILE_ANCIENT_PILLAR;
+
+        return new ZoneMapDto
+        {
+            Id = "ArenaGlacial",
+            Name = "❄️ Throne of the Frost Sovereign (Pinnacle Arena)",
+            Subtitle = "Pinnacle Boss: Vael, The Frost Sovereign",
+            Biome = ZoneBiomeType.FrostpeakTundra,
+            LevelRange = "Lv. 82+ (Tier 15)",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = cx * TILE_SIZE,
+            SpawnY = (cy + 7) * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = cx * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 960, Name = "🏛️ Return to Haven" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "vael_boss" },
+                new() { X = (cx - 4) * TILE_SIZE, Y = cy * TILE_SIZE, Count = 3, Type = "frost_golem" },
+                new() { X = (cx + 4) * TILE_SIZE, Y = cy * TILE_SIZE, Count = 3, Type = "frost_golem" }
+            }
+        };
+    }
+
+    // 10. ARENA VOID - PINNACLE ARENA (Tier 16: Malakor, The Shadow Devourer)
+    private static ZoneMapDto GenerateArenaVoid()
+    {
+        const int w = 32, h = 32;
+        var grid = InitializeGrid(w, h, TILE_CHASM);
+        int cx = w / 2, cy = h / 2;
+
+        // Void Altar floating in the abyss
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                float dist = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                if (dist <= 10f)
+                {
+                    grid[y][x] = TILE_TOXIC_MIASMA;
+                }
+                if (dist <= 7.5f)
+                {
+                    grid[y][x] = TILE_PLAZA;
+                }
+            }
+        }
+
+        // Void Resonance Obelisks
+        grid[cy - 4][cx - 4] = TILE_ANCIENT_PILLAR;
+        grid[cy - 4][cx + 4] = TILE_ANCIENT_PILLAR;
+        grid[cy + 4][cx - 4] = TILE_ANCIENT_PILLAR;
+        grid[cy + 4][cx + 4] = TILE_ANCIENT_PILLAR;
+
+        return new ZoneMapDto
+        {
+            Id = "ArenaVoid",
+            Name = "🌌 Void Sanctum of Malakor (Pinnacle Arena Tier 16)",
+            Subtitle = "Pinnacle Boss: Malakor, The Shadow Devourer",
+            Biome = ZoneBiomeType.VoidAbyss,
+            LevelRange = "Lv. 85+ (Tier 16)",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = cx * TILE_SIZE,
+            SpawnY = (cy + 6) * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = cx * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 960, Name = "🏛️ Return to Haven" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "malakor_boss" },
+                new() { X = (cx - 5) * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 4, Type = "undead_knight" },
+                new() { X = (cx + 5) * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 4, Type = "undead_knight" }
             }
         };
     }
