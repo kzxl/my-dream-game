@@ -1,0 +1,46 @@
+## .NET Core / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+!packages/repositories.config
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.assets.json
+
+## Test Results
+TestResults/
+[Tt]est[Rr]esult*/
+
+## OS / IDE
+.DS_Store
+Thumbs.db
+*.swp
+*~
+*.bak
+*.tmp
