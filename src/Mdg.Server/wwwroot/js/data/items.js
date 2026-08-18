@@ -1,5 +1,5 @@
 /**
- * Item Database, Rarities & Sprite Coordinates (Including Skill Gems & Support Gems)
+ * MDG: Aethelis - Advanced Itemization, Base Types, Tiered Modifiers & Level-Gated Drop Engine (English)
  */
 
 export const RARITY_COLORS = {
@@ -7,9 +7,11 @@ export const RARITY_COLORS = {
   Magic: '#8888ff',
   Rare: '#ffff77',
   Unique: '#af6025',
+  Set: '#00e676',
   Currency: '#aa9e82',
   SkillGem: '#1abc9c',
-  SupportGem: '#e67e22'
+  SupportGem: '#e67e22',
+  Map: '#d4af37'
 };
 
 export const ITEM_SPRITES = {
@@ -31,339 +33,858 @@ export const ITEM_SPRITES = {
   amulet_diamond: { sx: 515, sy: 915, sw: 95, sh: 95 }
 };
 
-export const POSSIBLE_LOOT = [
-  // --- ACTIVE SKILL GEMS ---
+// ==========================================
+// 1. TIERED BASE EQUIPMENT TEMPLATES
+// ==========================================
+export const BASE_EQUIPMENT = [
+  // --- WEAPONS (MainHand) ---
   {
-    id: 'gem_fireball',
-    name: 'Pyro Fireball Gem',
-    baseType: 'Active Skill Gem',
-    category: 'skill_gem',
-    skillKey: 'fireball',
-    rarity: 'SkillGem',
-    icon: '🔥',
-    tags: ['fire', 'spell', 'projectile', 'aoe'],
-    primaryStats: { 'Mana Cost': '10 MP', 'Cast Time': 'Instant', 'Base Radius': '12px' },
-    mods: ['Socket into Skill Board (Q) to unlock Pyro Fireball', 'Unlocks Fireball Mastery Tree as it levels up'],
-    lore: 'An orb of crystallized elemental magma.'
+    tier: 1, requiredLevel: 1, category: 'weapon', slot: 'MainHand',
+    baseName: 'Rusty Iron Blade', icon: '🗡️', sprite: ITEM_SPRITES.sword_fire,
+    baseStats: { damage: 15, attackSpeed: 1.20, critChance: 5.0 },
+    lore: 'A weathered blade carried by novice explorers.'
   },
   {
-    id: 'gem_slash',
-    name: 'Heavy Slash Gem',
-    baseType: 'Active Skill Gem',
-    category: 'skill_gem',
-    skillKey: 'slash',
-    rarity: 'SkillGem',
-    icon: '⚔️',
-    tags: ['physical', 'melee', 'attack'],
-    primaryStats: { 'Attack Speed': '0.35s CD', 'Base Reach': '75px' },
-    mods: ['Socket into Skill Board (LMB) to unlock Heavy Slash', 'Unlocks Slash Mastery Tree & Blade Waves'],
-    lore: 'Imbued with the martial vigor of Sanctuary warriors.'
+    tier: 2, requiredLevel: 15, category: 'weapon', slot: 'MainHand',
+    baseName: 'Steel Broadsword', icon: '⚔️', sprite: ITEM_SPRITES.sword_crystal,
+    baseStats: { damage: 38, attackSpeed: 1.30, critChance: 6.5 },
+    lore: 'Tempered steel forged for standard guard garrisons.'
   },
   {
-    id: 'gem_frost',
-    name: 'Frost Nova Gem',
-    baseType: 'Active Skill Gem',
-    category: 'skill_gem',
-    skillKey: 'frost',
-    rarity: 'SkillGem',
-    icon: '❄️',
-    tags: ['cold', 'spell', 'aoe'],
-    primaryStats: { 'Mana Cost': '15 MP', 'Radius': '150px' },
-    mods: ['Socket into Skill Board (W) to unlock Frost Nova', 'Unlocks Freeze & Ice Vortex Morphs'],
-    lore: 'Radiates a permafrost chill.'
+    tier: 3, requiredLevel: 35, category: 'weapon', slot: 'MainHand',
+    baseName: 'Dragonbone Longsword', icon: '🗡️', sprite: ITEM_SPRITES.axe_dragon,
+    baseStats: { damage: 72, attackSpeed: 1.35, critChance: 7.5 },
+    lore: 'Carved from the dense skeletal remains of elder drakes.'
   },
   {
-    id: 'gem_meteor',
-    name: 'Cataclysm Meteor Gem',
-    baseType: 'Active Skill Gem',
-    category: 'skill_gem',
-    skillKey: 'meteor',
-    rarity: 'SkillGem',
-    icon: '☄️',
-    tags: ['fire', 'chaos', 'spell', 'aoe'],
-    primaryStats: { 'Mana Cost': '30 MP', 'Damage': '180 Fire + 30 Chaos' },
-    mods: ['Socket into Skill Board (E) to unlock Cataclysm Meteor', 'Unlocks Armageddon & Lava Pool Morphs'],
-    lore: 'A fragment of a fallen celestial star.'
+    tier: 4, requiredLevel: 55, category: 'weapon', slot: 'MainHand',
+    baseName: 'Obsidian Executioner', icon: '⚔️', sprite: ITEM_SPRITES.dagger_kris,
+    baseStats: { damage: 115, attackSpeed: 1.40, critChance: 8.5 },
+    lore: 'Honed from volcanic obsidian, capable of cleaving armor plates.'
   },
   {
-    id: 'gem_dash',
-    name: 'Shadow Dash Gem',
-    baseType: 'Active Skill Gem',
-    category: 'skill_gem',
-    skillKey: 'dash',
-    rarity: 'SkillGem',
-    icon: '💨',
-    tags: ['movement', 'chaos'],
-    primaryStats: { 'Distance': '190px', 'Cooldown': '1.2s' },
-    mods: ['Socket into Skill Board (SPACE) to unlock Shadow Dash', 'Unlocks Double Dash & Phase Shift'],
-    lore: 'Allows the bearer to slip between dimensional seams.'
+    tier: 5, requiredLevel: 72, category: 'weapon', slot: 'MainHand',
+    baseName: 'Colossus Greatsword of Ruin', icon: '👑', sprite: ITEM_SPRITES.staff_arcane,
+    baseStats: { damage: 175, attackSpeed: 1.45, critChance: 10.0 },
+    lore: 'A pinnacle weapon forged in the celestial core of Aethelis.'
   },
 
-  // --- SUPPORT GEMS ---
+  // --- BODY ARMOR ---
   {
-    id: 'support_gmp',
-    name: 'Greater Multiple Projectiles Support',
-    baseType: 'Support Gem',
-    category: 'support_gem',
-    supportKey: 'gmp',
-    rarity: 'SupportGem',
-    icon: '🔮',
-    allowedTags: ['projectile'],
-    primaryStats: { 'Mana Multiplier': '130%', 'Supported': 'Projectile Skills' },
-    mods: ['Supported Skills fire +2 additional Projectiles', '15% Less Damage per Projectile'],
-    lore: 'Splits arcane projectiles into a lethal volley.'
+    tier: 1, requiredLevel: 1, category: 'armor', slot: 'BodyArmor',
+    baseName: 'Padded Tunic', icon: '🛡️', sprite: ITEM_SPRITES.armor_robe,
+    baseStats: { armor: 35, es: 15, maxLife: 20 },
+    lore: 'Simple quilted cloth providing basic protection.'
   },
   {
-    id: 'support_fire',
-    name: 'Infernal Combustion Support',
-    baseType: 'Support Gem',
-    category: 'support_gem',
-    supportKey: 'infernal',
-    rarity: 'SupportGem',
-    icon: '💥',
-    allowedTags: ['fire', 'spell', 'attack'],
-    primaryStats: { 'Mana Multiplier': '120%', 'Supported': 'Fire / Attack / Spell' },
-    mods: ['Supported Skills gain +40% Fire Damage', '+50% Chance to Ignite target for 3s'],
-    lore: 'Infuses hits with unquenchable infernal fuel.'
+    tier: 2, requiredLevel: 15, category: 'armor', slot: 'BodyArmor',
+    baseName: 'Chainmail Hauberk', icon: '🛡️', sprite: ITEM_SPRITES.armor_plate,
+    baseStats: { armor: 130, es: 45, maxLife: 50 },
+    lore: 'Interlinked iron rings deflecting glancing slashes.'
   },
   {
-    id: 'support_echo',
-    name: 'Spell Echo & Rapid Cast Support',
-    baseType: 'Support Gem',
-    category: 'support_gem',
-    supportKey: 'echo',
-    rarity: 'SupportGem',
-    icon: '⚡',
-    allowedTags: ['spell', 'attack', 'melee'],
-    primaryStats: { 'Mana Multiplier': '115%', 'Supported': 'All Active Skills' },
-    mods: ['+35% Increased Cast & Attack Speed', '10% Reduced Skill Cooldown'],
-    lore: 'Echoes the caster’s incantation in rapid succession.'
+    tier: 3, requiredLevel: 35, category: 'armor', slot: 'BodyArmor',
+    baseName: 'Gladiator Plate Mail', icon: '🛡️', sprite: ITEM_SPRITES.armor_plate,
+    baseStats: { armor: 320, es: 95, maxLife: 90 },
+    lore: 'Heavy steel breastplate tested in arena combat.'
+  },
+  {
+    tier: 4, requiredLevel: 55, category: 'armor', slot: 'BodyArmor',
+    baseName: 'Crusader Carapace', icon: '🛡️', sprite: ITEM_SPRITES.armor_plate,
+    baseStats: { armor: 620, es: 180, maxLife: 150 },
+    lore: 'Imbued with blessed warding to repel demonic assaults.'
+  },
+  {
+    tier: 5, requiredLevel: 72, category: 'armor', slot: 'BodyArmor',
+    baseName: 'Astral Celestial Plate', icon: '👑', sprite: ITEM_SPRITES.armor_plate,
+    baseStats: { armor: 1100, es: 320, maxLife: 240 },
+    lore: 'Pinnacle celestial armor radiating sovereign resilience.'
   },
 
-  // --- EQUIPMENT & WEAPONS ---
+  // --- HELMS ---
+  {
+    tier: 1, requiredLevel: 1, category: 'armor', slot: 'Helm',
+    baseName: 'Leather Cap', icon: '👑', sprite: ITEM_SPRITES.helm_knight,
+    baseStats: { armor: 20, es: 10, maxLife: 10 },
+    lore: 'Toughened hide cap.'
+  },
+  {
+    tier: 2, requiredLevel: 15, category: 'armor', slot: 'Helm',
+    baseName: 'Iron Bascinet', icon: '👑', sprite: ITEM_SPRITES.helm_knight,
+    baseStats: { armor: 75, es: 25, maxLife: 30 },
+    lore: 'A sturdy iron helm with nose guard.'
+  },
+  {
+    tier: 3, requiredLevel: 35, category: 'armor', slot: 'Helm',
+    baseName: "Knight's Armet", icon: '👑', sprite: ITEM_SPRITES.helm_knight,
+    baseStats: { armor: 180, es: 60, maxLife: 60 },
+    lore: 'Full visage helmet worn by royal vanguard knights.'
+  },
+  {
+    tier: 4, requiredLevel: 55, category: 'armor', slot: 'Helm',
+    baseName: 'Royal Greathelm', icon: '👑', sprite: ITEM_SPRITES.helm_crown,
+    baseStats: { armor: 360, es: 120, maxLife: 100 },
+    lore: 'Inlaid with runic gold to enhance mental focus.'
+  },
+  {
+    tier: 5, requiredLevel: 72, category: 'armor', slot: 'Helm',
+    baseName: 'Crown of the Ascendant', icon: '👑', sprite: ITEM_SPRITES.helm_crown,
+    baseStats: { armor: 580, es: 210, maxLife: 160 },
+    lore: 'Coronet of the ancient void sovereigns.'
+  },
+
+  // --- SHIELDS (OffHand) ---
+  {
+    tier: 1, requiredLevel: 1, category: 'armor', slot: 'OffHand',
+    baseName: 'Splint Buckler', icon: '🛡️', sprite: ITEM_SPRITES.shield_dragon,
+    baseStats: { armor: 25, blockChance: 18 },
+    lore: 'Small lightweight wooden buckler.'
+  },
+  {
+    tier: 2, requiredLevel: 15, category: 'armor', slot: 'OffHand',
+    baseName: 'Reinforced Round Shield', icon: '🛡️', sprite: ITEM_SPRITES.shield_lion,
+    baseStats: { armor: 95, blockChance: 22 },
+    lore: 'Iron rimmed wooden shield.'
+  },
+  {
+    tier: 3, requiredLevel: 35, category: 'armor', slot: 'OffHand',
+    baseName: 'Imperial Tower Shield', icon: '🛡️', sprite: ITEM_SPRITES.shield_lion,
+    baseStats: { armor: 240, blockChance: 26 },
+    lore: 'Towering shield shielding the entire torso.'
+  },
+  {
+    tier: 4, requiredLevel: 55, category: 'armor', slot: 'OffHand',
+    baseName: 'Lionheart Crest Shield', icon: '🛡️', sprite: ITEM_SPRITES.shield_lion,
+    baseStats: { armor: 460, blockChance: 28 },
+    lore: 'Emblazoned with the roaring crest of Sanctuary.'
+  },
+  {
+    tier: 5, requiredLevel: 72, category: 'armor', slot: 'OffHand',
+    baseName: 'Aegis of the Celestial Sovereign', icon: '🛡️', sprite: ITEM_SPRITES.shield_dragon,
+    baseStats: { armor: 750, blockChance: 32 },
+    lore: 'Channels cosmic barriers to negate catastrophic blows.'
+  },
+
+  // --- BOOTS ---
+  {
+    tier: 1, requiredLevel: 1, category: 'armor', slot: 'Boots',
+    baseName: 'Rawhide Boots', icon: '👢', sprite: ITEM_SPRITES.boots_plate,
+    baseStats: { armor: 15, speed: 5 },
+    lore: 'Flexible leather boots for marching.'
+  },
+  {
+    tier: 2, requiredLevel: 15, category: 'armor', slot: 'Boots',
+    baseName: 'Steel Greaves', icon: '👢', sprite: ITEM_SPRITES.boots_plate,
+    baseStats: { armor: 70, speed: 10 },
+    lore: 'Armored shinguards.'
+  },
+  {
+    tier: 3, requiredLevel: 35, category: 'armor', slot: 'Boots',
+    baseName: 'Wyrmscale Treads', icon: '👢', sprite: ITEM_SPRITES.boots_plate,
+    baseStats: { armor: 160, speed: 15 },
+    lore: 'Reinforced with dragon scales for swift maneuvers.'
+  },
+  {
+    tier: 4, requiredLevel: 55, category: 'armor', slot: 'Boots',
+    baseName: 'Voidwalker Sabatons', icon: '👢', sprite: ITEM_SPRITES.boots_plate,
+    baseStats: { armor: 290, speed: 20 },
+    lore: 'Imbued with phase magic to step across hazards.'
+  },
+  {
+    tier: 5, requiredLevel: 72, category: 'armor', slot: 'Boots',
+    baseName: 'Windstrider Titan Stompers', icon: '👢', sprite: ITEM_SPRITES.boots_plate,
+    baseStats: { armor: 460, speed: 25 },
+    lore: 'Pinnacle boots granting unmatched stride and stability.'
+  },
+
+  // --- ACCESSORIES (Amulets & Rings) ---
+  {
+    tier: 1, requiredLevel: 1, category: 'armor', slot: 'Amulet',
+    baseName: 'Copper Medallion', icon: '📿', sprite: ITEM_SPRITES.amulet_heart,
+    baseStats: { maxLife: 15, maxMana: 10 },
+    lore: 'A modest good-luck pendant.'
+  },
+  {
+    tier: 3, requiredLevel: 35, category: 'armor', slot: 'Amulet',
+    baseName: 'Solar Medallion', icon: '📿', sprite: ITEM_SPRITES.amulet_diamond,
+    baseStats: { maxLife: 60, critMulti: 15 },
+    lore: 'Radiates a soothing celestial warmth.'
+  },
+  {
+    tier: 5, requiredLevel: 70, category: 'armor', slot: 'Amulet',
+    baseName: 'Amulet of the Celestial Void', icon: '📿', sprite: ITEM_SPRITES.amulet_diamond,
+    baseStats: { maxLife: 120, critMulti: 30, damage: 25 },
+    lore: 'Pinnacle amulet resonating with eternal constellations.'
+  },
+  {
+    tier: 1, requiredLevel: 1, category: 'armor', slot: 'Ring',
+    baseName: 'Iron Band', icon: '💍', sprite: ITEM_SPRITES.ring_ruby,
+    baseStats: { armor: 15, maxLife: 10 },
+    lore: 'A simple forged ring.'
+  },
+  {
+    tier: 3, requiredLevel: 35, category: 'armor', slot: 'Ring',
+    baseName: 'Glacial Signet Ring', icon: '💍', sprite: ITEM_SPRITES.ring_sapphire,
+    baseStats: { coldRes: 25, es: 45 },
+    lore: 'Cold to the touch, engraved with frost glyphs.'
+  },
+  {
+    tier: 5, requiredLevel: 70, category: 'armor', slot: 'Ring',
+    baseName: 'Opal Genesis Ring', icon: '💍', sprite: ITEM_SPRITES.ring_sapphire,
+    baseStats: { damage: 20, allRes: 15, critChance: 5 },
+    lore: 'Pinnacle ring forged from primordial Genesis crystal.'
+  }
+];
+
+// ==========================================
+// 2. TIERED AFFIX MODIFIER DEFINITIONS
+// ==========================================
+export const TIERED_MODIFIERS = [
+  // --- LIFE (Prefix) ---
+  { key: 'flat_life', type: 'prefix', tier: 5, minIlvl: 1,  minVal: 10, maxVal: 25,  label: 'to Maximum Life' },
+  { key: 'flat_life', type: 'prefix', tier: 4, minIlvl: 20, minVal: 26, maxVal: 45,  label: 'to Maximum Life' },
+  { key: 'flat_life', type: 'prefix', tier: 3, minIlvl: 40, minVal: 46, maxVal: 70,  label: 'to Maximum Life' },
+  { key: 'flat_life', type: 'prefix', tier: 2, minIlvl: 60, minVal: 71, maxVal: 95,  label: 'to Maximum Life' },
+  { key: 'flat_life', type: 'prefix', tier: 1, minIlvl: 75, minVal: 96, maxVal: 130, label: 'to Maximum Life' },
+
+  // --- PHYSICAL DAMAGE (Prefix - Weapons) ---
+  { key: 'flat_phys', type: 'prefix', tier: 5, minIlvl: 1,  minVal: 5,  maxVal: 12,  label: 'Physical Damage to Attacks' },
+  { key: 'flat_phys', type: 'prefix', tier: 4, minIlvl: 20, minVal: 13, maxVal: 22,  label: 'Physical Damage to Attacks' },
+  { key: 'flat_phys', type: 'prefix', tier: 3, minIlvl: 40, minVal: 23, maxVal: 38,  label: 'Physical Damage to Attacks' },
+  { key: 'flat_phys', type: 'prefix', tier: 2, minIlvl: 60, minVal: 39, maxVal: 55,  label: 'Physical Damage to Attacks' },
+  { key: 'flat_phys', type: 'prefix', tier: 1, minIlvl: 75, minVal: 56, maxVal: 80,  label: 'Physical Damage to Attacks' },
+
+  // --- ENERGY SHIELD (Prefix - Armor) ---
+  { key: 'flat_es', type: 'prefix', tier: 5, minIlvl: 1,  minVal: 15, maxVal: 30,  label: 'to Maximum Energy Shield' },
+  { key: 'flat_es', type: 'prefix', tier: 4, minIlvl: 20, minVal: 31, maxVal: 55,  label: 'to Maximum Energy Shield' },
+  { key: 'flat_es', type: 'prefix', tier: 3, minIlvl: 40, minVal: 56, maxVal: 85,  label: 'to Maximum Energy Shield' },
+  { key: 'flat_es', type: 'prefix', tier: 2, minIlvl: 60, minVal: 86, maxVal: 120, label: 'to Maximum Energy Shield' },
+  { key: 'flat_es', type: 'prefix', tier: 1, minIlvl: 75, minVal: 121, maxVal: 170, label: 'to Maximum Energy Shield' },
+
+  // --- FIRE RESISTANCE (Suffix) ---
+  { key: 'fire_res', type: 'suffix', tier: 5, minIlvl: 1,  minVal: 6,  maxVal: 12, label: 'to Fire Resistance' },
+  { key: 'fire_res', type: 'suffix', tier: 4, minIlvl: 20, minVal: 13, maxVal: 19, label: 'to Fire Resistance' },
+  { key: 'fire_res', type: 'suffix', tier: 3, minIlvl: 40, minVal: 20, maxVal: 27, label: 'to Fire Resistance' },
+  { key: 'fire_res', type: 'suffix', tier: 2, minIlvl: 60, minVal: 28, maxVal: 35, label: 'to Fire Resistance' },
+  { key: 'fire_res', type: 'suffix', tier: 1, minIlvl: 75, minVal: 36, maxVal: 45, label: 'to Fire Resistance' },
+
+  // --- COLD RESISTANCE (Suffix) ---
+  { key: 'cold_res', type: 'suffix', tier: 5, minIlvl: 1,  minVal: 6,  maxVal: 12, label: 'to Cold Resistance' },
+  { key: 'cold_res', type: 'suffix', tier: 4, minIlvl: 20, minVal: 13, maxVal: 19, label: 'to Cold Resistance' },
+  { key: 'cold_res', type: 'suffix', tier: 3, minIlvl: 40, minVal: 20, maxVal: 27, label: 'to Cold Resistance' },
+  { key: 'cold_res', type: 'suffix', tier: 2, minIlvl: 60, minVal: 28, maxVal: 35, label: 'to Cold Resistance' },
+  { key: 'cold_res', type: 'suffix', tier: 1, minIlvl: 75, minVal: 36, maxVal: 45, label: 'to Cold Resistance' },
+
+  // --- LIGHTNING RESISTANCE (Suffix) ---
+  { key: 'light_res', type: 'suffix', tier: 5, minIlvl: 1,  minVal: 6,  maxVal: 12, label: 'to Lightning Resistance' },
+  { key: 'light_res', type: 'suffix', tier: 4, minIlvl: 20, minVal: 13, maxVal: 19, label: 'to Lightning Resistance' },
+  { key: 'light_res', type: 'suffix', tier: 3, minIlvl: 40, minVal: 20, maxVal: 27, label: 'to Lightning Resistance' },
+  { key: 'light_res', type: 'suffix', tier: 2, minIlvl: 60, minVal: 28, maxVal: 35, label: 'to Lightning Resistance' },
+  { key: 'light_res', type: 'suffix', tier: 1, minIlvl: 75, minVal: 36, maxVal: 45, label: 'to Lightning Resistance' },
+
+  // --- ATTACK SPEED (Suffix) ---
+  { key: 'attack_speed', type: 'suffix', tier: 4, minIlvl: 15, minVal: 5,  maxVal: 8,  label: 'Increased Attack Speed' },
+  { key: 'attack_speed', type: 'suffix', tier: 3, minIlvl: 35, minVal: 9,  maxVal: 12, label: 'Increased Attack Speed' },
+  { key: 'attack_speed', type: 'suffix', tier: 2, minIlvl: 55, minVal: 13, maxVal: 16, label: 'Increased Attack Speed' },
+  { key: 'attack_speed', type: 'suffix', tier: 1, minIlvl: 75, minVal: 17, maxVal: 22, label: 'Increased Attack Speed' },
+
+  // --- CRITICAL MULTIPLIER (Suffix) ---
+  { key: 'crit_multi', type: 'suffix', tier: 4, minIlvl: 15, minVal: 15, maxVal: 22, label: 'to Critical Strike Multiplier' },
+  { key: 'crit_multi', type: 'suffix', tier: 3, minIlvl: 35, minVal: 23, maxVal: 32, label: 'to Critical Strike Multiplier' },
+  { key: 'crit_multi', type: 'suffix', tier: 2, minIlvl: 55, minVal: 33, maxVal: 42, label: 'to Critical Strike Multiplier' },
+  { key: 'crit_multi', type: 'suffix', tier: 1, minIlvl: 75, minVal: 43, maxVal: 55, label: 'to Critical Strike Multiplier' }
+];
+
+// ==========================================
+// 3. LEVEL-GATED & TIER-SCALED ITEM GENERATION ENGINE
+// ==========================================
+export function generateLootItem(monsterLevel = 1, isBoss = false, monsterRarity = 'normal') {
+  const iLvl = Math.max(1, monsterLevel) + (isBoss ? 3 : (monsterRarity === 'rare' ? 2 : (monsterRarity === 'champion' ? 1 : 0)));
+  const isChampion = monsterRarity === 'champion' || monsterRarity === 'magic';
+  const isRareMonster = monsterRarity === 'rare';
+
+  // 1. Roll Skill Gem & Support Gem Drop
+  const gemChance = isBoss ? 0.35 : (isRareMonster ? 0.18 : (isChampion ? 0.10 : 0.04));
+  const gemDropRoll = Math.random();
+  if (gemDropRoll < gemChance) {
+    const eligibleGems = SKILL_GEMS_DATABASE.filter(g => g.minIlvl <= iLvl);
+    if (eligibleGems.length > 0) {
+      const g = eligibleGems[Math.floor(Math.random() * eligibleGems.length)];
+      return {
+        id: 'gem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        gemId: g.id,
+        name: g.name,
+        baseType: g.baseType,
+        category: 'gem',
+        gemType: g.gemType,
+        skillKey: g.skillKey,
+        slot: 'Gem',
+        rarity: g.rarity,
+        color: g.color,
+        icon: g.icon,
+        iLvl: iLvl,
+        requiredLevel: g.requiredLevel,
+        description: g.description,
+        tags: g.tags
+      };
+    }
+  }
+
+  // 2. Currency, Consumable & Waystone Drops
+  const currencyChance = isBoss ? 0.35 : (isRareMonster ? 0.22 : (isChampion ? 0.16 : 0.10));
+  const specialRoll = Math.random();
+  if (specialRoll < currencyChance) {
+    return generateCurrencyDrop(iLvl);
+  }
+  if (specialRoll < currencyChance + 0.06 && iLvl >= 50) {
+    return generateMapKeystoneDrop(iLvl);
+  }
+
+  // 3. Filter Base Templates eligible for this iLvl (requiredLevel <= iLvl)
+  const eligibleBases = BASE_EQUIPMENT.filter(b => b.requiredLevel <= iLvl);
+  const base = eligibleBases.length > 0 
+    ? eligibleBases[Math.floor(Math.random() * eligibleBases.length)]
+    : BASE_EQUIPMENT[0];
+
+  // 4. Roll Rarity based on Monster Tier Matrix
+  let rarity = 'Normal';
+  const roll = Math.random() * 100;
+
+  if (isBoss) {
+    if (roll < 12) rarity = 'Unique';
+    else if (roll < 30) rarity = 'Set';
+    else if (roll < 85) rarity = 'Rare';
+    else rarity = 'Magic';
+  } else if (isRareMonster) {
+    if (roll < 5) rarity = 'Unique';
+    else if (roll < 13) rarity = 'Set';
+    else if (roll < 65) rarity = 'Rare';
+    else if (roll < 95) rarity = 'Magic';
+    else rarity = 'Normal';
+  } else if (isChampion) {
+    if (roll < 2) rarity = 'Unique';
+    else if (roll < 6) rarity = 'Set';
+    else if (roll < 30) rarity = 'Rare';
+    else if (roll < 75) rarity = 'Magic';
+    else rarity = 'Normal';
+  } else {
+    if (roll < 1.0) rarity = 'Unique';
+    else if (roll < 3.0) rarity = 'Set';
+    else if (roll < 13.0) rarity = 'Rare';
+    else if (roll < 45.0) rarity = 'Magic';
+    else rarity = 'Normal';
+  }
+
+  // Handle Unique
+  if (rarity === 'Unique') {
+    const unq = UNIQUE_LOOT.find(u => u.requiredLevel <= iLvl) || UNIQUE_LOOT[0];
+    return {
+      ...unq,
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      iLvl: iLvl
+    };
+  }
+
+  // Handle Set Items
+  if (rarity === 'Set') {
+    const eligibleSets = SET_ITEMS_DATABASE.filter(s => (s.requiredLevel || 1) <= iLvl);
+    const setTemplate = eligibleSets.length > 0 
+      ? eligibleSets[Math.floor(Math.random() * eligibleSets.length)]
+      : SET_ITEMS_DATABASE[0];
+    return {
+      ...setTemplate,
+      id: 'set_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      iLvl: iLvl,
+      sockets: Math.min(4, Math.max(1, Math.floor(Math.random() * (iLvl >= 50 ? 4 : (iLvl >= 25 ? 3 : 2))) + 1)),
+      links: 1
+    };
+  }
+
+  // 5. Calculate Socket Counts based on iLvl
+  let maxSockets = 2;
+  if (iLvl >= 50) maxSockets = 4;
+  else if (iLvl >= 25) maxSockets = 3;
+  const sockets = Math.floor(Math.random() * maxSockets) + 1;
+  const links = Math.min(sockets, Math.floor(Math.random() * sockets) + 1);
+
+  // 6. Determine Number of Modifiers by Rarity & iLvl
+  let maxMods = 0;
+  if (rarity === 'Magic') maxMods = Math.random() < 0.5 ? 1 : 2;
+  else if (rarity === 'Rare') {
+    if (iLvl < 20) maxMods = Math.floor(Math.random() * 2) + 2; // 2-3 mods
+    else if (iLvl < 50) maxMods = Math.floor(Math.random() * 2) + 3; // 3-4 mods
+    else if (iLvl < 70) maxMods = Math.floor(Math.random() * 2) + 4; // 4-5 mods
+    else maxMods = Math.floor(Math.random() * 3) + 4; // 4-6 mods (Endgame)
+  }
+
+  // 7. Roll Affix Modifiers from Eligible Tiers (minIlvl <= iLvl)
+  const eligibleMods = TIERED_MODIFIERS.filter(m => m.minIlvl <= iLvl);
+  const chosenMods = [];
+  const itemStats = { ...base.baseStats };
+  const usedKeys = new Set();
+
+  for (let i = 0; i < maxMods && eligibleMods.length > 0; i++) {
+    const availablePool = eligibleMods.filter(m => !usedKeys.has(m.key));
+    if (availablePool.length === 0) break;
+
+    const mod = availablePool[Math.floor(Math.random() * availablePool.length)];
+    usedKeys.add(mod.key);
+
+    const rollVal = Math.floor(Math.random() * (mod.maxVal - mod.minVal + 1)) + mod.minVal;
+    chosenMods.push(`+${rollVal}${mod.key.includes('res') || mod.key.includes('speed') || mod.key.includes('multi') ? '%' : ''} ${mod.label} (T${mod.tier})`);
+
+    if (mod.key === 'flat_life') itemStats.life = (itemStats.life || 0) + rollVal;
+    if (mod.key === 'flat_phys') itemStats.damage = (itemStats.damage || 0) + rollVal;
+    if (mod.key === 'flat_es') itemStats.es = (itemStats.es || 0) + rollVal;
+    if (mod.key === 'fire_res') itemStats.fireRes = (itemStats.fireRes || 0) + rollVal;
+    if (mod.key === 'cold_res') itemStats.coldRes = (itemStats.coldRes || 0) + rollVal;
+    if (mod.key === 'light_res') itemStats.lightRes = (itemStats.lightRes || 0) + rollVal;
+    if (mod.key === 'attack_speed') itemStats.attackSpeedBonus = (itemStats.attackSpeedBonus || 0) + rollVal;
+    if (mod.key === 'crit_multi') itemStats.critMulti = (itemStats.critMulti || 0) + rollVal;
+  }
+
+  let itemName = base.baseName;
+  if (rarity === 'Magic') {
+    itemName = `${chosenMods.length > 0 ? 'Enchanted ' : ''}${base.baseName}`;
+  } else if (rarity === 'Rare') {
+    const rarePrefixes = ['Apocalypse', 'Vengeance', 'Soul', 'Cataclysm', 'Grim', 'Dread', 'Immortal'];
+    const rareSuffixes = ['Bane', 'Grip', 'Edge', 'Ward', 'Hollow', 'Weave', 'Carapace'];
+    const rPre = rarePrefixes[Math.floor(Math.random() * rarePrefixes.length)];
+    const rSuf = rareSuffixes[Math.floor(Math.random() * rareSuffixes.length)];
+    itemName = `${rPre} ${rSuf} (${base.baseName})`;
+  }
+
+  return {
+    id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    name: itemName,
+    baseType: base.baseName,
+    category: base.category,
+    slot: base.slot,
+    rarity: rarity,
+    color: RARITY_COLORS[rarity] || '#fff',
+    iLvl: iLvl,
+    requiredLevel: base.requiredLevel,
+    icon: base.icon,
+    sprite: base.sprite,
+    sockets: sockets,
+    links: links,
+    stats: itemStats,
+    mods: chosenMods,
+    lore: base.lore
+  };
+}
+
+function generateCurrencyDrop(iLvl) {
+  const scrollChance = Math.random();
+  if (scrollChance < 0.16) {
+    return {
+      ...RESURRECTION_SCROLL,
+      id: 'scroll_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      stack: 1,
+      iLvl: iLvl
+    };
+  }
+
+  const currencies = [
+    { key: 'Aether Spark', desc: 'Normal ➔ Magic', icon: '🔵', color: '#8888ff' },
+    { key: 'Flux Catalyst', desc: 'Reroll Magic Mods', icon: '🔷', color: '#00f2fe' },
+    { key: 'Genesis Prism', desc: 'Normal ➔ Rare (4-6 Mods)', icon: '💎', color: '#ffd700' },
+    { key: 'Fracture Core', desc: 'Reroll Rare Mods (Chaos)', icon: '🔮', color: '#ff7700' },
+    { key: 'Socketing Core', desc: 'Reforge Sockets', icon: '⚪', color: '#98c379' },
+    { key: 'Harmonic Tether', desc: 'Reforge Links', icon: '🔗', color: '#c678dd' }
+  ];
+
+  if (iLvl >= 60) {
+    currencies.push({ key: 'Ascendant Catalyst', desc: 'Exalt Slam (Add Mod)', icon: '✨', color: '#ffd700' });
+    currencies.push({ key: 'Origin Matrix', desc: 'Divine Reroll Min-Max', icon: '👑', color: '#e5c07b' });
+  }
+
+  const c = currencies[Math.floor(Math.random() * currencies.length)];
+  return {
+    id: 'curr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    name: c.key,
+    baseType: 'Genesis Catalyst',
+    category: 'currency',
+    slot: 'Currency',
+    rarity: 'Currency',
+    color: c.color,
+    icon: c.icon,
+    iLvl: iLvl,
+    requiredLevel: 1,
+    description: c.desc,
+    stack: 1
+  };
+}
+
+function generateMapKeystoneDrop(iLvl) {
+  let tier = 1;
+  let name = '🌿 Verdant Hollow Map (Tier 1)';
+  let targetZone = 'WhisperingPlains';
+  let color = '#8888ff';
+
+  if (iLvl >= 80) {
+    tier = 16;
+    name = '🌌 Pinnacle Void Sanctum Map (Tier 16)';
+    targetZone = 'ArenaVoid';
+    color = '#c678dd';
+  } else if (iLvl >= 75) {
+    tier = 14;
+    name = '🌋 Pinnacle Caldera Map (Tier 14)';
+    targetZone = 'ArenaCaldera';
+    color = '#ff416c';
+  } else if (iLvl >= 65) {
+    tier = 5;
+    name = '💀 Forgotten Crypt Map (Tier 5)';
+    targetZone = 'ForgottenCrypt';
+    color = '#ffd700';
+  }
+
+  return {
+    id: 'map_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
+    name: name,
+    baseType: 'Endgame Map Key',
+    category: 'map',
+    slot: 'Map',
+    tier: tier,
+    targetZone: targetZone,
+    rarity: 'Unique',
+    color: color,
+    icon: '🗺️',
+    iLvl: iLvl,
+    requiredLevel: 68,
+    mods: [`+${tier * 10}% Increased Item Quantity (IIQ)`, `+${tier * 12}% Item Rarity (IIR)`]
+  };
+}
+
+// ==========================================
+// 4. ICONIC UNIQUE ITEMS POOL
+// ==========================================
+export const UNIQUE_LOOT = [
   {
     id: 'bloodseeker_blade',
     name: 'Bloodseeker Hellblade',
-    baseType: 'Exquisite Hellblade',
+    baseType: 'Colossus Greatsword of Ruin',
     category: 'weapon',
     slot: 'MainHand',
     rarity: 'Unique',
+    color: '#af6025',
+    requiredLevel: 68,
     icon: '🗡️',
     sprite: ITEM_SPRITES.sword_fire,
-    primaryStats: { 'Physical Damage': '82 - 145', 'Attack Speed': '1.45/s', 'Critical Chance': '8.5%' },
-    mods: ['+50 Fire Damage to Attacks', 'Instant 4% Life Leech on Critical Hit', 'Hits have 100% Chance to Ignite'],
+    stats: { damage: 185, attackSpeed: 1.45, critChance: 8.5 },
+    mods: ['+65 Fire Damage to Attacks (T1)', 'Instant 4% Life Leech on Critical Hit (T1)', 'Hits have 100% Chance to Ignite (T1)'],
     lore: 'Forged in the underworld pyres, it thirsts for demonic essence.'
   },
   {
     id: 'crown_of_void',
     name: 'Crown of the Void',
-    baseType: 'Hubris Circlet',
+    baseType: 'Crown of the Ascendant',
     category: 'armor',
     slot: 'Helm',
     rarity: 'Unique',
+    color: '#af6025',
+    requiredLevel: 70,
     icon: '👑',
     sprite: ITEM_SPRITES.helm_crown,
-    primaryStats: { 'Energy Shield': '+120', 'Armor': '+45' },
-    mods: ['+30% to Chaos Resistance', 'Chaos Damage cannot bypass Energy Shield', '+25 to Maximum Mana'],
+    stats: { es: 240, armor: 120, life: 90 },
+    mods: ['+35% to Chaos Resistance (T1)', 'Chaos Damage cannot bypass Energy Shield (T1)', '+50 to Maximum Mana (T1)'],
     lore: 'The gaze of the void shields the worthy and devours the weak.'
-  },
-  {
-    id: 'dragonbone_axe',
-    name: 'Dragonbone Greataxe',
-    baseType: 'Two Hand War Axe',
-    category: 'weapon',
-    slot: 'MainHand',
-    rarity: 'Rare',
-    icon: '🪓',
-    sprite: ITEM_SPRITES.axe_dragon,
-    primaryStats: { 'Physical Damage': '95 - 180', 'Critical Chance': '7.0%' },
-    mods: ['+45 Physical Damage', '+35% Increased Attack Speed', '+25% Critical Strike Multiplier'],
-    lore: 'Carved from the spine of an ancient wyrm.'
-  },
-  {
-    id: 'aegis_lion',
-    name: 'Lionheart Crest Shield',
-    baseType: 'Imperial Kite Shield',
-    category: 'armor',
-    slot: 'OffHand',
-    rarity: 'Rare',
-    icon: '🛡️',
-    sprite: ITEM_SPRITES.shield_lion,
-    primaryStats: { 'Armor': '+320', 'Block Chance': '28%' },
-    mods: ['+25% to Fire Resistance', '+25% to Cold Resistance', '+80 Maximum Life'],
-    lore: 'Emblazoned with the proud sigil of Sanctuary.'
-  },
-  {
-    id: 'juggernaut_plate',
-    name: 'Refined Juggernaut Plate',
-    baseType: 'Full Plate Mail',
-    category: 'armor',
-    slot: 'BodyArmor',
-    rarity: 'Rare',
-    icon: '🛡️',
-    sprite: ITEM_SPRITES.armor_plate,
-    primaryStats: { 'Armor': '+450', 'Movement Penalty': '-3%' },
-    mods: ['+120 Maximum Life', '+15% to All Elemental Resistances', '5% Additional Physical Damage Reduction'],
-    lore: 'Heavy steel tempered in dragon flame.'
-  },
-  {
-    id: 'voidwalker_sabatons',
-    name: 'Voidwalker Sabatons',
-    baseType: 'Armored Greaves',
-    category: 'armor',
-    slot: 'Boots',
-    rarity: 'Rare',
-    icon: '👢',
-    sprite: ITEM_SPRITES.boots_plate,
-    primaryStats: { 'Armor': '+120', 'Evasion': '+85' },
-    mods: ['+30% Increased Movement Speed', '+65 Maximum Life', '+35% to Fire Resistance'],
-    lore: 'Steps as light as shadow, as steadfast as iron.'
-  },
-  {
-    id: 'solar_amulet',
-    name: 'Solar Medallion',
-    baseType: 'Gold Amulet',
-    category: 'armor',
-    slot: 'Amulet',
-    rarity: 'Rare',
-    icon: '📿',
-    sprite: ITEM_SPRITES.amulet_diamond,
-    primaryStats: { 'All Attributes': '+15' },
-    mods: ['+22% Global Critical Strike Multiplier', '+30 Maximum Mana', '+20% Fire Damage'],
-    lore: 'Radiates a gentle, soothing warmth.'
-  },
-  {
-    id: 'sapphire_ring',
-    name: 'Glacial Signet Ring',
-    baseType: 'Sapphire Ring',
-    category: 'armor',
-    slot: 'Ring',
-    rarity: 'Magic',
-    icon: '💍',
-    sprite: ITEM_SPRITES.ring_sapphire,
-    primaryStats: { 'Cold Resistance': '+30%' },
-    mods: ['+45 Maximum Energy Shield', '+15% Cast Speed'],
-    lore: 'Cold to the touch.'
-  },
-  {
-    id: 'fracture_core',
-    name: 'Fracture Core',
-    baseType: 'Currency',
-    category: 'currency',
-    rarity: 'Currency',
-    icon: '🔮',
-    primaryStats: { 'Stack Size': '1 / 20' },
-    mods: ['Reforges a rare item with new random modifiers'],
-    lore: 'The fundamental currency of the fractured realms of Aethelis.'
-  },
-  {
-    id: 'ascendant_catalyst',
-    name: 'Ascendant Catalyst',
-    baseType: 'Currency',
-    category: 'currency',
-    rarity: 'Currency',
-    icon: '🌟',
-    primaryStats: { 'Stack Size': '1 / 10' },
-    mods: ['Augments a rare item with a new high-tier modifier'],
-    lore: 'Condensed primal energy capable of elevating mortal relics.'
-  },
-  {
-    id: 'genesis_prism',
-    name: 'Genesis Prism',
-    baseType: 'Currency',
-    category: 'currency',
-    rarity: 'Currency',
-    icon: '💎',
-    primaryStats: { 'Stack Size': '1 / 20' },
-    mods: ['Upgrades a normal item to a rare item with 4-6 modifiers'],
-    lore: 'Prismatic light refracted from the Genesis Core.'
-  },
-  {
-    id: 'aether_spark',
-    name: 'Aether Spark',
-    baseType: 'Currency',
-    category: 'currency',
-    rarity: 'Currency',
-    icon: '✨',
-    primaryStats: { 'Stack Size': '1 / 40' },
-    mods: ['Upgrades a normal item to a magic item'],
-    lore: 'A subtle spark of ancient cosmic ether.'
-  },
-  {
-    id: 'harmonic_tether',
-    name: 'Harmonic Tether',
-    baseType: 'Currency',
-    category: 'currency',
-    rarity: 'Currency',
-    icon: '🔗',
-    primaryStats: { 'Stack Size': '1 / 20' },
-    mods: ['Reforges the links between sockets on an item'],
-    lore: 'Resonates with celestial frequency to harmonize socket links.'
-  },
-  // --- ENDGAME RIFT MAP KEYSTONES ---
-  {
-    id: 'map_tier_1',
-    name: '🌿 Verdant Hollow Map (Tier 1)',
-    baseType: 'Endgame Map Key',
-    category: 'map',
-    tier: 1,
-    targetZone: 'WhisperingPlains',
-    rarity: 'Magic',
-    icon: '🗺️',
-    color: '#8888ff',
-    mods: ['+35% Increased Item Quantity (IIQ)', '+50% Increased Item Rarity (IIR)', 'Opens Portal to Ancient Hollows'],
-    lore: 'An etched keystone guiding the way into the Whispering Plains.'
-  },
-  {
-    id: 'map_tier_5',
-    name: '💀 Forgotten Crypt Map (Tier 5)',
-    baseType: 'Endgame Map Key',
-    category: 'map',
-    tier: 5,
-    targetZone: 'ForgottenCrypt',
-    rarity: 'Rare',
-    icon: '🗺️',
-    color: '#ffd700',
-    mods: ['+65% Increased Item Quantity (IIQ)', '+90% Increased Item Rarity (IIR)', '+20% Elite Monster Density'],
-    lore: 'A sealed stone key opening the forgotten tombs beneath Aethelis.'
-  },
-  {
-    id: 'map_tier_14',
-    name: '🌋 Pinnacle Caldera Map (Tier 14)',
-    baseType: 'Pinnacle Boss Key',
-    category: 'map',
-    tier: 14,
-    targetZone: 'ArenaCaldera',
-    rarity: 'Unique',
-    icon: '🗺️',
-    color: '#ff416c',
-    mods: ['Opens Ignis Ancient Boss Arena', '+120% IIQ', '+160% IIR'],
-    lore: 'A fiery keystone resonating with the primal magma of Ignis.'
-  },
-  {
-    id: 'map_tier_15',
-    name: '❄️ Pinnacle Glacial Chasm Map (Tier 15)',
-    baseType: 'Pinnacle Boss Key',
-    category: 'map',
-    tier: 15,
-    targetZone: 'ArenaGlacial',
-    rarity: 'Unique',
-    icon: '🗺️',
-    color: '#00f2fe',
-    mods: ['Opens Glacial Sovereign Vael Arena', '+130% IIQ', '+180% IIR'],
-    lore: 'An ice-crystal keystone piercing the eternal frozen realm.'
-  },
-  {
-    id: 'map_tier_16',
-    name: '🌌 Pinnacle Void Sanctum Map (Tier 16)',
-    baseType: 'Ultimate Pinnacle Key',
-    category: 'map',
-    tier: 16,
-    targetZone: 'ArenaVoid',
-    rarity: 'Unique',
-    icon: '🌌',
-    color: '#c678dd',
-    mods: ['Opens Malakor Void Citadel', '+150% IIQ', '+220% IIR', 'Guaranteed Mythic Loot Drops'],
-    lore: 'The supreme Void Keystone - the ultimate trial of Aethelis.'
   }
 ];
+
+// ==========================================
+// 5. ICONIC SET ITEMS & HIDDEN ATTRIBUTE SYNERGIES
+// ==========================================
+export const SET_DEFINITIONS = {
+  set_vanguard: {
+    id: 'set_vanguard',
+    name: 'Vanguard of the Sacred Sanctuary',
+    color: '#00e676',
+    pieces: [
+      { id: 'vanguard_crown', name: "Vanguard's Iron Crown", slot: 'Helm', icon: '👑', sprite: ITEM_SPRITES.helm_knight, reqLv: 25, iLvl: 30, baseStats: { armor: 95, maxLife: 45, es: 30 }, mods: ['+30 Maximum Life (T4)', '+15% Fire Resistance (T4)'] },
+      { id: 'vanguard_cuirass', name: "Vanguard's Aegis Cuirass", slot: 'BodyArmor', icon: '🛡️', sprite: ITEM_SPRITES.armor_plate, reqLv: 25, iLvl: 30, baseStats: { armor: 220, maxLife: 80, es: 60 }, mods: ['+55 Maximum Life (T3)', '+18% Cold Resistance (T4)', '+20% Total Armor (T3)'] },
+      { id: 'vanguard_crest', name: "Vanguard's Lion Crest", slot: 'OffHand', icon: '🛡️', sprite: ITEM_SPRITES.shield_lion, reqLv: 25, iLvl: 30, baseStats: { armor: 160, blockChance: 25, maxLife: 50 }, mods: ['+12% Chance to Block (T3)', '+20% Lightning Resistance (T3)'] },
+      { id: 'vanguard_greaves', name: "Vanguard's War Greaves", slot: 'Boots', icon: '👢', sprite: ITEM_SPRITES.boots_plate, reqLv: 25, iLvl: 30, baseStats: { armor: 90, speed: 12, maxLife: 35 }, mods: ['+15% Movement Speed (T3)', '+40 Maximum Life (T4)'] }
+    ],
+    bonuses: [
+      { count: 2, desc: '+180 to Maximum Life & +20% Total Armor', stats: { life: 180, armorPct: 20 } },
+      { count: 3, desc: '+25% to All Elemental Resistances & +12% Block Chance', stats: { allRes: 25, blockChance: 12 } },
+      { count: 4, desc: '★ [Hidden Synergy - Sacred Bastion]: Heavy Slash releases Triple Holy Blade Waves and absorbs 500 fatal damage.', hiddenSynergy: 'holy_blade_waves' }
+    ]
+  },
+
+  set_ignis: {
+    id: 'set_ignis',
+    name: "Ignis's Molten Juggernaut",
+    color: '#ff5722',
+    pieces: [
+      { id: 'ignis_cleaver', name: "Ignis's Magma Cleaver", slot: 'MainHand', icon: '🪓', sprite: ITEM_SPRITES.axe_dragon, reqLv: 45, iLvl: 55, baseStats: { damage: 110, attackSpeed: 1.35, critChance: 8.0 }, mods: ['+40 Fire Damage (T2)', '+25% Critical Strike Multiplier (T3)'] },
+      { id: 'ignis_carapace', name: "Ignis's Smoldering Carapace", slot: 'BodyArmor', icon: '🛡️', sprite: ITEM_SPRITES.armor_plate, reqLv: 45, iLvl: 55, baseStats: { armor: 480, maxLife: 120, es: 90 }, mods: ['+75 Maximum Life (T2)', '+30% Fire Resistance (T2)'] },
+      { id: 'ignis_treads', name: "Ignis's Lava Treads", slot: 'Boots', icon: '👢', sprite: ITEM_SPRITES.boots_plate, reqLv: 45, iLvl: 55, baseStats: { armor: 220, speed: 18 }, mods: ['+20% Movement Speed (T2)', '+25% Fire Resistance (T3)'] },
+      { id: 'ignis_signet', name: "Ignis's Blazing Signet", slot: 'Ring', icon: '💍', sprite: ITEM_SPRITES.ring_ruby, reqLv: 45, iLvl: 55, baseStats: { damage: 25, critMulti: 20 }, mods: ['+35 Fire Damage (T2)', '+30% Critical Multiplier (T2)'] }
+    ],
+    bonuses: [
+      { count: 2, desc: '+45 Fire Damage to Attacks & +35% Fire Resistance', stats: { damage: 45, fireRes: 35 } },
+      { count: 3, desc: '+22% Attack Speed & +40% Critical Strike Multiplier', stats: { attackSpeedBonus: 22, critMulti: 40 } },
+      { count: 4, desc: '★ [Hidden Synergy - Infernal Conflagration]: All Attacks have 35% chance to call down Raining Mini-Meteors & grants Ignite Immunity.', hiddenSynergy: 'raining_mini_meteors' }
+    ]
+  },
+
+  set_vael: {
+    id: 'set_vael',
+    name: 'Glacial Sovereign of Vael',
+    color: '#00f2fe',
+    pieces: [
+      { id: 'vael_spire', name: "Vael's Permafrost Spire", slot: 'MainHand', icon: '🪄', sprite: ITEM_SPRITES.staff_arcane, reqLv: 40, iLvl: 50, baseStats: { damage: 95, critChance: 9.0 }, mods: ['+45 Cold Damage to Spells (T2)', '+20% Cast Speed (T3)'] },
+      { id: 'vael_circlet', name: "Vael's Crystalline Circlet", slot: 'Helm', icon: '👑', sprite: ITEM_SPRITES.helm_crown, reqLv: 40, iLvl: 50, baseStats: { es: 140, armor: 60, maxMana: 50 }, mods: ['+60 Maximum Energy Shield (T3)', '+25% Cold Resistance (T3)'] },
+      { id: 'vael_vestment', name: "Vael's Frostweave Vestment", slot: 'BodyArmor', icon: '🛡️', sprite: ITEM_SPRITES.armor_robe, reqLv: 40, iLvl: 50, baseStats: { es: 260, armor: 140, maxLife: 70 }, mods: ['+95 Maximum Energy Shield (T2)', '+30% Cold Resistance (T2)'] },
+      { id: 'vael_tear', name: "Vael's Glacial Tear", slot: 'Amulet', icon: '📿', sprite: ITEM_SPRITES.amulet_diamond, reqLv: 40, iLvl: 50, baseStats: { maxMana: 60, coldRes: 30 }, mods: ['+25% Cold Spell Damage (T2)', '+20% Global Critical Chance (T3)'] }
+    ],
+    bonuses: [
+      { count: 2, desc: '+50 Cold Damage to Spells & +35% Cold Resistance', stats: { damage: 50, coldRes: 35 } },
+      { count: 3, desc: '+30% Frost Nova Area of Effect & +40% Freeze Duration', stats: { coldRes: 15 } },
+      { count: 4, desc: '★ [Hidden Synergy - Permafrost Shatter]: Frozen monsters shatter on death, detonating into 8 Piercing Ice Shards.', hiddenSynergy: 'ice_shards_shatter' }
+    ]
+  },
+
+  set_malakor: {
+    id: 'set_malakor',
+    name: "Malakor's Void Weaver",
+    color: '#c678dd',
+    pieces: [
+      { id: 'malakor_harvester', name: "Malakor's Void Harvester", slot: 'MainHand', icon: '🪄', sprite: ITEM_SPRITES.staff_arcane, reqLv: 68, iLvl: 80, baseStats: { damage: 165, critChance: 10.5 }, mods: ['+70 Chaos Damage to Spells (T1)', '+30% Cast Speed (T1)'] },
+      { id: 'malakor_oblivion', name: "Malakor's Crown of Oblivion", slot: 'Helm', icon: '👑', sprite: ITEM_SPRITES.helm_crown, reqLv: 68, iLvl: 80, baseStats: { es: 220, armor: 110, maxMana: 80 }, mods: ['+110 Maximum Energy Shield (T1)', '+35% Chaos Resistance (T1)'] },
+      { id: 'malakor_regalia', name: "Malakor's Astral Regalia", slot: 'BodyArmor', icon: '🛡️', sprite: ITEM_SPRITES.armor_robe, reqLv: 68, iLvl: 80, baseStats: { es: 420, armor: 260, maxLife: 110 }, mods: ['+150 Maximum Energy Shield (T1)', '+40% Chaos Resistance (T1)'] },
+      { id: 'malakor_walkers', name: "Malakor's Dimensional Walkers", slot: 'Boots', icon: '👢', sprite: ITEM_SPRITES.boots_plate, reqLv: 68, iLvl: 80, baseStats: { es: 160, armor: 100, speed: 22 }, mods: ['+22% Movement Speed (T1)', '+85 Maximum Energy Shield (T2)'] },
+      { id: 'malakor_eye', name: "Malakor's Void Eye Ring", slot: 'Ring', icon: '💍', sprite: ITEM_SPRITES.ring_ruby, reqLv: 68, iLvl: 80, baseStats: { damage: 35, allRes: 20 }, mods: ['+45 Chaos Damage (T1)', '+30% Critical Multiplier (T1)'] }
+    ],
+    bonuses: [
+      { count: 2, desc: '+200 Maximum Energy Shield & +25% Cast Speed', stats: { es: 200 } },
+      { count: 3, desc: '+50% Chaos Resistance & -20% Mana Cost of all Skills', stats: { allRes: 20 } },
+      { count: 5, desc: '★ [Hidden Synergy - Cosmic Singularity]: Fireball & Meteor trigger Gravitational Void Rifts pulling enemies in for 250 Chaos Dmg/s.', hiddenSynergy: 'cosmic_singularity' }
+    ]
+  }
+};
+
+/**
+ * Generate Flattened Set Items Pool for Drops
+ */
+export const SET_ITEMS_DATABASE = [];
+for (let sKey in SET_DEFINITIONS) {
+  const setDef = SET_DEFINITIONS[sKey];
+  setDef.pieces.forEach(p => {
+    SET_ITEMS_DATABASE.push({
+      id: 'set_' + p.id,
+      setId: setDef.id,
+      setName: setDef.name,
+      name: p.name,
+      baseType: p.name,
+      category: p.slot === 'MainHand' ? 'weapon' : 'armor',
+      slot: p.slot,
+      rarity: 'Set',
+      color: setDef.color,
+      requiredLevel: p.reqLv,
+      iLvl: p.iLvl,
+      icon: p.icon,
+      sprite: p.sprite,
+      sockets: 3,
+      links: 3,
+      stats: { ...p.baseStats },
+      mods: [...p.mods],
+      lore: `A consecrated relic belonging to the ${setDef.name} set.`
+    });
+  });
+}
+
+/**
+ * Calculate all active Set Bonuses & Hidden Synergies for a player
+ */
+export function getActiveSetBonuses(player) {
+  if (!player || !player.equipped) return { activeSets: [], totalBonusStats: {}, hiddenSynergies: [] };
+
+  const setPieceCounts = {};
+  const equippedItemNames = new Set();
+
+  for (let slot in player.equipped) {
+    const item = player.equipped[slot];
+    if (item && item.setId) {
+      setPieceCounts[item.setId] = (setPieceCounts[item.setId] || 0) + 1;
+      equippedItemNames.add(item.name);
+    }
+  }
+
+  const activeSets = [];
+  const totalBonusStats = {};
+  const hiddenSynergies = [];
+
+  for (let setId in setPieceCounts) {
+    const count = setPieceCounts[setId];
+    const setDef = SET_DEFINITIONS[setId];
+    if (!setDef) continue;
+
+    const activatedBonuses = [];
+    setDef.bonuses.forEach(b => {
+      if (count >= b.count) {
+        activatedBonuses.push(b);
+        if (b.stats) {
+          for (let st in b.stats) {
+            totalBonusStats[st] = (totalBonusStats[st] || 0) + b.stats[st];
+          }
+        }
+        if (b.hiddenSynergy) {
+          hiddenSynergies.push(b.hiddenSynergy);
+        }
+      }
+    });
+
+    activeSets.push({
+      setId: setId,
+      name: setDef.name,
+      color: setDef.color,
+      equippedCount: count,
+      totalCount: setDef.pieces.length,
+      activatedBonuses: activatedBonuses,
+      allBonuses: setDef.bonuses,
+      pieces: setDef.pieces
+    });
+  }
+
+  return { activeSets, totalBonusStats, hiddenSynergies };
+}
+
+// ==========================================
+// 6. SKILL & SUPPORT GEMS DATABASE (Pure Grinding Drops)
+// ==========================================
+export const SKILL_GEMS_DATABASE = [
+  {
+    id: 'gem_fireball',
+    name: 'Pyro Fireball Skill Gem',
+    baseType: 'Active Skill Gem',
+    category: 'gem',
+    gemType: 'active',
+    skillKey: 'fireball',
+    slot: 'Gem',
+    rarity: 'SkillGem',
+    color: '#1abc9c',
+    icon: '🔥',
+    minIlvl: 4,
+    requiredLevel: 3,
+    description: 'Socket in Q binding to unleash explosive Pyro Fireballs.',
+    tags: ['fire', 'spell', 'projectile', 'aoe']
+  },
+  {
+    id: 'gem_frost',
+    name: 'Frost Nova Skill Gem',
+    baseType: 'Active Skill Gem',
+    category: 'gem',
+    gemType: 'active',
+    skillKey: 'frost',
+    slot: 'Gem',
+    rarity: 'SkillGem',
+    color: '#1abc9c',
+    icon: '❄️',
+    minIlvl: 12,
+    requiredLevel: 10,
+    description: 'Socket in W binding to blast freezing 360° Frost Novas.',
+    tags: ['cold', 'spell', 'aoe']
+  },
+  {
+    id: 'gem_meteor',
+    name: 'Cataclysm Meteor Skill Gem',
+    baseType: 'Active Skill Gem',
+    category: 'gem',
+    gemType: 'active',
+    skillKey: 'meteor',
+    slot: 'Gem',
+    rarity: 'SkillGem',
+    color: '#ffd700',
+    minIlvl: 28,
+    requiredLevel: 25,
+    description: 'Socket in E binding to call down devastating Cataclysm Meteors.',
+    tags: ['fire', 'chaos', 'spell', 'aoe']
+  },
+  {
+    id: 'support_gmp',
+    name: 'Greater Multiple Projectiles Support',
+    baseType: 'Support Gem',
+    category: 'gem',
+    gemType: 'support',
+    slot: 'Gem',
+    rarity: 'SupportGem',
+    color: '#e67e22',
+    icon: '✨',
+    minIlvl: 18,
+    requiredLevel: 15,
+    description: 'Supported skills fire 3 additional projectiles with spread.',
+    tags: ['support', 'projectile']
+  },
+  {
+    id: 'support_fire',
+    name: 'Added Fire Damage Support',
+    baseType: 'Support Gem',
+    category: 'gem',
+    gemType: 'support',
+    slot: 'Gem',
+    rarity: 'SupportGem',
+    color: '#e67e22',
+    icon: '🔥',
+    minIlvl: 8,
+    requiredLevel: 6,
+    description: 'Grants +35% Added Fire Damage to supported skills.',
+    tags: ['support', 'fire']
+  },
+  {
+    id: 'support_echo',
+    name: 'Spell Echo Support',
+    baseType: 'Support Gem',
+    category: 'gem',
+    gemType: 'support',
+    slot: 'Gem',
+    rarity: 'SupportGem',
+    color: '#e67e22',
+    icon: '⚡',
+    minIlvl: 32,
+    requiredLevel: 28,
+    description: 'Supported spells repeat an additional time with +25% Cast Speed.',
+    tags: ['support', 'spell']
+  }
+];
+
+export const RESURRECTION_SCROLL = {
+  id: 'scroll_resurrection',
+  name: 'Scroll of Resurrection',
+  nameVi: 'Cuộn Giấy Hồi Sinh',
+  baseType: 'Consumable',
+  category: 'consumable',
+  slot: 'Consumable',
+  rarity: 'Magic',
+  color: '#ffd700',
+  icon: '📜',
+  stack: 1,
+  minIlvl: 1,
+  requiredLevel: 1,
+  lore: 'A blessed parchment infused with celestial vitality.',
+  description: 'Hồi sinh ngay tại chỗ với 100% Máu, Mana và 3.5s Bất Tử.'
+};
+
+export const POSSIBLE_LOOT = [
+  ...BASE_EQUIPMENT,
+  ...UNIQUE_LOOT,
+  ...SET_ITEMS_DATABASE,
+  ...SKILL_GEMS_DATABASE,
+  RESURRECTION_SCROLL
+];
+
+export async function fetchMasterItemsFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/items');
+    if (!res.ok) return;
+    const serverItems = await res.json();
+    if (Array.isArray(serverItems) && serverItems.length > 0) {
+      console.log(`[MasterData] Hydrated ${serverItems.length} item templates from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline item templates fallback:', e.message);
+  }
+}
+

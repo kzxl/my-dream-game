@@ -15,8 +15,8 @@ namespace Mdg.Core.Features.Items
             if (filterMode == LootFilterMode.Normal)
                 return true;
 
-            // Unique items and high currency are ALWAYS displayed across all filter tiers
-            if (item.Rarity == ItemRarity.Unique)
+            // Unique items, Set items, Gems and Consumables are ALWAYS displayed across all filter tiers
+            if (item.Rarity == ItemRarity.Unique || item.Rarity == ItemRarity.Set || item.Rarity == ItemRarity.Consumable || item.Rarity == ItemRarity.Gem)
                 return true;
 
             if (item.Rarity == ItemRarity.Currency)

@@ -9,7 +9,10 @@ namespace Mdg.Core.Features.Items
         Magic = 1,
         Rare = 2,
         Unique = 3,
-        Currency = 4
+        Currency = 4,
+        Set = 5,
+        Consumable = 6,
+        Gem = 7
     }
 
     public enum ItemSlot

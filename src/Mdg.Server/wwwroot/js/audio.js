@@ -27,10 +27,11 @@ export const AudioEngine = {
   },
   playLootDrop(rarity) {
     this.init();
-    if (rarity === 'Unique') {
+    if (rarity === 'Unique' || rarity === 'Set') {
       this.playTone(880, 'sine', 0.4, 0.18);
-      setTimeout(() => this.playTone(1320, 'sine', 0.6, 0.2), 80);
-    } else if (rarity === 'Rare' || rarity === 'Currency') {
+      setTimeout(() => this.playTone(1174.66, 'triangle', 0.45, 0.18), 60);
+      setTimeout(() => this.playTone(1320, 'sine', 0.6, 0.2), 120);
+    } else if (rarity === 'Rare' || rarity === 'Currency' || rarity === 'Consumable') {
       this.playTone(720, 'triangle', 0.3, 0.15);
       setTimeout(() => this.playTone(1080, 'sine', 0.4, 0.15), 60);
     } else {
@@ -62,5 +63,11 @@ export const AudioEngine = {
     this.init();
     this.playTone(659.25, 'sine', 0.2, 0.15);
     setTimeout(() => this.playTone(987.77, 'sine', 0.3, 0.18), 70);
+  },
+  playPortal() {
+    this.init();
+    this.playTone(320, 'sine', 0.2, 0.15);
+    setTimeout(() => this.playTone(480, 'sine', 0.25, 0.15), 100);
+    setTimeout(() => this.playTone(640, 'sine', 0.35, 0.2), 200);
   }
 };

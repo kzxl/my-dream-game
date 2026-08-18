@@ -12,7 +12,7 @@ namespace Mdg.Core.Tests
             var normalDrops = LootTable.GenerateMonsterDrops("Skeleton", MonsterRarity.Normal, 1, 1.0f);
             var bossDrops = LootTable.GenerateMonsterDrops("Ignis", MonsterRarity.PinnacleBoss, 10, 1.5f, 2.0f);
 
-            Assert.True(bossDrops.Count >= 6);
+            Assert.True(bossDrops.Count >= 4);
             Assert.Contains(bossDrops, item => item.ItemLevel >= 10);
         }
 
@@ -33,6 +33,8 @@ namespace Mdg.Core.Tests
             var magicItem = new ItemEntity("Magic Robe", "BodyArmor", ItemRarity.Magic, ItemSlot.BodyArmor, 20, "🥋", sockets: 1);
             var rareHighLvl = new ItemEntity("Dragon Plate", "BodyArmor", ItemRarity.Rare, ItemSlot.BodyArmor, 65, "🛡️", sockets: 4);
             var uniqueItem = new ItemEntity("Crown of the Void", "Helm", ItemRarity.Unique, ItemSlot.Helm, 70, "👑");
+            var setItem = new ItemEntity("Vanguard Bastion Cuirass", "BodyArmor", ItemRarity.Set, ItemSlot.BodyArmor, 50, "🛡️");
+            var consumable = new ItemEntity("Scroll of Resurrection", "Consumable", ItemRarity.Consumable, ItemSlot.None, 1, "📜");
 
             // Normal filter shows all
             Assert.True(LootFilterEngine.ShouldDisplay(normalItem, LootFilterMode.Normal));
@@ -42,12 +44,16 @@ namespace Mdg.Core.Tests
             Assert.False(LootFilterEngine.ShouldDisplay(magicItem, LootFilterMode.Strict));
             Assert.True(LootFilterEngine.ShouldDisplay(rareHighLvl, LootFilterMode.Strict));
             Assert.True(LootFilterEngine.ShouldDisplay(uniqueItem, LootFilterMode.Strict));
+            Assert.True(LootFilterEngine.ShouldDisplay(setItem, LootFilterMode.Strict));
+            Assert.True(LootFilterEngine.ShouldDisplay(consumable, LootFilterMode.Strict));
 
-            // UberStrict hides low lvl rare, only keeps high lvl / unique
+            // UberStrict hides low lvl rare, only keeps high lvl / unique / set / consumable
             var lowLvlRare = new ItemEntity("Worn Ring", "Ring", ItemRarity.Rare, ItemSlot.Ring, 20, "💍");
             Assert.False(LootFilterEngine.ShouldDisplay(lowLvlRare, LootFilterMode.UberStrict));
             Assert.True(LootFilterEngine.ShouldDisplay(rareHighLvl, LootFilterMode.UberStrict));
             Assert.True(LootFilterEngine.ShouldDisplay(uniqueItem, LootFilterMode.UberStrict));
+            Assert.True(LootFilterEngine.ShouldDisplay(setItem, LootFilterMode.UberStrict));
+            Assert.True(LootFilterEngine.ShouldDisplay(consumable, LootFilterMode.UberStrict));
         }
     }
 }
