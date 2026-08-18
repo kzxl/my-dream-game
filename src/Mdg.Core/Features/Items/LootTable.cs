@@ -46,17 +46,17 @@ namespace Mdg.Core.Features.Items
 
             if (roll < 60)
             {
-                // Currency
+                // Genesis Catalysts Currency
                 int currRoll = _rng.Next(4);
                 return currRoll switch
                 {
-                    0 => new ItemEntity("Chaos Orb", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🔮")
+                    0 => new ItemEntity("Fracture Core", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🔮")
                         .AddMod("Reforges a rare item with new random modifiers"),
-                    1 => new ItemEntity("Orb of Alchemy", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🧪")
+                    1 => new ItemEntity("Genesis Prism", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "💎")
                         .AddMod("Upgrades a normal item to a rare item"),
-                    2 => new ItemEntity("Exalted Orb", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🌟")
+                    2 => new ItemEntity("Ascendant Catalyst", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🌟")
                         .AddMod("Augments a rare item with a new random modifier"),
-                    _ => new ItemEntity("Orb of Fusing", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🔗")
+                    _ => new ItemEntity("Harmonic Tether", "Currency", ItemRarity.Currency, ItemSlot.None, 1, "🔗")
                         .AddMod("Reforges the links between sockets on an item")
                 };
             }

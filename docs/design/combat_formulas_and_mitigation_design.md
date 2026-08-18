@@ -137,14 +137,14 @@ $$\text{Elemental Damage Taken} = \text{Raw Elemental Damage} \times \big[ 1 - (
 * Mọi trang bị Rare/Unique được cấu thành từ **Tối đa 6 Dòng Chỉ Số (3 Tiền Tố - Prefixes + 3 Hậu Tố - Suffixes)**:
   * **Prefixes (Chỉ số công & phòng chính):** Flat Damage, % Phys Dmg, Max Life, Flat Armor, Energy Shield.
   * **Suffixes (Chỉ số phụ trợ):** Resistances (% Kháng), Critical Strike Chance/Multiplier, Attack/Cast Speed, Attribute Stats (Str/Dex/Int).
-* **Bàn Rèn Ma Thuật (Crafting Bench):** Dùng các ngọc *Chaos Orb*, *Exalted Orb*, *Orb of Alchemy* để xóa, đập lại dòng hoặc khóa tiền tố.
+* **Bàn Rèn Cổ Đại (Genesis Forge Bench):** Dùng các tinh thể *Fracture Core*, *Ascendant Catalyst*, *Genesis Prism*, *Flux Catalyst* để xóa, đập lại dòng hoặc khóa tiền tố.
 
 ---
 
-### 🌟 ĐỀ XUẤT 4: Bản Đồ Endgame Vực Sâu (Atlas / Rift Mapping System)
+### 🌟 ĐỀ XUẤT 4: Bản Đồ Endgame Vực Sâu (Atlas / Genesis Rift Mapping System)
 
-* **Bản Đồ Mảnh Vỡ (Map Tiers 1 - 16):** Người chơi nhặt được các tấm bản đồ cổ (Waystones/Maps).
-* **Roll Thuộc Tính Map:** Dùng ngọc để đập các dòng độ khó (Quái tăng $40\%$ Máu, Phản sát thương, Quái thêm 2 đạn) $\rightarrow$ Đổi lại tỷ lệ rơi đồ (Item Quantity & Rarity) tăng $150\% - 250\%$.
+* **Bản Đồ Mảnh Vỡ (Rift Map Tiers 1 - 16):** Người chơi nhặt được các tấm bản đồ cổ (Waystones/Maps).
+* **Roll Thuộc Tính Map:** Dùng *Genesis Prism* / *Fracture Core* để đập các dòng độ khó (Quái tăng $40\%$ Máu, Phản sát thương, Quái thêm 2 đạn) $\rightarrow$ Đổi lại tỷ lệ rơi đồ (Item Quantity & Rarity) tăng $150\% - 250\%$.
 * **Đấu Trường Boss Tối Thượng (Pinnacle Boss Arenas):** Mở cửa đền thờ đối đầu với các Á Thần (Arch-Fiend of Aethelis) rơi ra trang bị Unique độc bản.
 
 ---

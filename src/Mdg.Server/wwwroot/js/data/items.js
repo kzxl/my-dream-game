@@ -246,25 +246,58 @@ export const POSSIBLE_LOOT = [
     lore: 'Cold to the touch.'
   },
   {
-    id: 'chaos_orb',
-    name: 'Chaos Orb',
+    id: 'fracture_core',
+    name: 'Fracture Core',
     baseType: 'Currency',
     category: 'currency',
     rarity: 'Currency',
     icon: '🔮',
     primaryStats: { 'Stack Size': '1 / 20' },
     mods: ['Reforges a rare item with new random modifiers'],
-    lore: 'The fundamental currency of the exiled realms.'
+    lore: 'The fundamental currency of the fractured realms of Aethelis.'
   },
   {
-    id: 'exalted_orb',
-    name: 'Exalted Orb',
+    id: 'ascendant_catalyst',
+    name: 'Ascendant Catalyst',
     baseType: 'Currency',
     category: 'currency',
     rarity: 'Currency',
     icon: '🌟',
     primaryStats: { 'Stack Size': '1 / 10' },
     mods: ['Augments a rare item with a new high-tier modifier'],
-    lore: 'Precious gold imbued with ancestral virtue.'
+    lore: 'Condensed primal energy capable of elevating mortal relics.'
+  },
+  {
+    id: 'genesis_prism',
+    name: 'Genesis Prism',
+    baseType: 'Currency',
+    category: 'currency',
+    rarity: 'Currency',
+    icon: '💎',
+    primaryStats: { 'Stack Size': '1 / 20' },
+    mods: ['Upgrades a normal item to a rare item with 4-6 modifiers'],
+    lore: 'Prismatic light refracted from the Genesis Core.'
+  },
+  {
+    id: 'aether_spark',
+    name: 'Aether Spark',
+    baseType: 'Currency',
+    category: 'currency',
+    rarity: 'Currency',
+    icon: '✨',
+    primaryStats: { 'Stack Size': '1 / 40' },
+    mods: ['Upgrades a normal item to a magic item'],
+    lore: 'A subtle spark of ancient cosmic ether.'
+  },
+  {
+    id: 'harmonic_tether',
+    name: 'Harmonic Tether',
+    baseType: 'Currency',
+    category: 'currency',
+    rarity: 'Currency',
+    icon: '🔗',
+    primaryStats: { 'Stack Size': '1 / 20' },
+    mods: ['Reforges the links between sockets on an item'],
+    lore: 'Resonates with celestial frequency to harmonize socket links.'
   }
 ];

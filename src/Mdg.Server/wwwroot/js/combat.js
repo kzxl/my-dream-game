@@ -36,12 +36,22 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   if (target.life < 90000) target.life -= totalDamage;
   target.hurtTimer = 0.25;
 
+  // Dynamic Impact Knockback away from player
+  if (target.life < 90000 && target.speed !== undefined) {
+    const kAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    target.vx = (target.vx || 0) + Math.cos(kAngle) * 90;
+    target.vy = (target.vy || 0) + Math.sin(kAngle) * 90;
+  }
+
   // Ailment Proc Chances
   if (rawFire > 0 && (isCrit || isNodeAllocated('fireball', 'fb_ignite') || Math.random() < 0.4)) {
     applyIgnite(target, Math.round(totalDamage * 0.45));
   }
-  if (rawCold > 0 && (isCrit || Math.random() < 0.5)) {
-    applyFreeze(target, isNodeAllocated('frost', 'fr_freeze') ? 2.2 : 1.5);
+  if (rawCold > 0) {
+    applyChill(target, 2.0); // 45% Movement speed reduction
+    if (isCrit || isNodeAllocated('frost', 'fr_freeze')) {
+      applyFreeze(target, 0.5); // 0.5s balanced micro-stun
+    }
   }
   if (rawPhysical > 0 && isNodeAllocated('slash', 'sl_bleed')) {
     applyBleed(target, Math.round(totalDamage * 0.35));
@@ -83,6 +93,10 @@ export function applyIgnite(target, dotPerSec) {
   target.igniteDmg = dotPerSec;
 }
 
+export function applyChill(target, durationSec) {
+  target.chillTimer = durationSec;
+}
+
 export function applyFreeze(target, durationSec) {
   target.freezeTimer = durationSec;
 }
@@ -106,7 +120,10 @@ export function updateTargetAilments(target, dt) {
     }
   }
 
-  // 2. Freeze (Stunned)
+  // 2. Chill & Freeze
+  if (target.chillTimer > 0) {
+    target.chillTimer -= dt;
+  }
   if (target.freezeTimer > 0) {
     target.freezeTimer -= dt;
   }

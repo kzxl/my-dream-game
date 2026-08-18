@@ -31,19 +31,29 @@ graph TD
 
 | Cấp Độ Hiếm | Màu Sắc | Số Lượng Thuộc Tính (Affixes) | Ý Nghĩa / Mục Đích Sử Dụng |
 | :--- | :---: | :---: | :--- |
-| **Normal (Trắng)** | `#C8C8C8` | 0 Mod | Vật phẩm phôi (Base Item), dùng để đục lỗ hoặc nâng cấp bằng Orb. |
+| **Normal (Trắng)** | `#C8C8C8` | 0 Mod | Vật phẩm phôi (Base Item), dùng để đục lỗ hoặc nâng cấp bằng Tinh Thể Khởi Nguyên. |
 | **Magic (Xanh dương)** | `#8888FF` | 1-2 Mods (1 Prefix, 1 Suffix) | Giai đoạn đầu game, dễ rèn lại thuộc tính. |
 | **Rare (Vàng)** | `#FFFF77` | 3-6 Mods (Tối đa 3 Prefixes + 3 Suffixes) | Xương sống của trang bị mid/endgame. |
 | **Unique (Cam nâu)** | `#AF6025` | Thuộc tính cố định đặc dị | Không thể đổi mod, thay đổi cơ chế gameplay (Keystone Changer). |
-| **Currency (Xanh lục/Vàng)** | `#AA9E82` | Các loại ngọc rèn đúc | Vừa là tiền tệ giao dịch, vừa là nguyên liệu ép đồ trực tiếp. |
+| **Genesis Currency (Vàng kim)** | `#AA9E82` | Tinh thể rèn đúc & xúc tác | Vừa là tiền tệ giao dịch, vừa là nguyên liệu ép đồ trực tiếp. |
 
-### 2.2. Cơ chế Tiền Tệ Tác Động (Crafting Currency Orbs)
-* **Orb of Transmutation:** Nâng cấp đồ Trắng $\rightarrow$ đồ Xanh dương (Magic).
-* **Orb of Alteration:** Reroll lại toàn bộ dòng của đồ Xanh dương.
-* **Orb of Alchemy:** Nâng cấp đồ Trắng $\rightarrow$ đồ Vàng (Rare) với 4-6 dòng ngẫu nhiên.
-* **Chaos Orb:** Reroll lại toàn bộ dòng của đồ Vàng (Rare) - *Đơn vị tiền tệ chính trong giao dịch*.
-* **Exalted Orb:** Thêm 1 dòng ngẫu nhiên vào đồ Vàng chưa đủ 6 dòng.
-* **Jeweller's Orb & Orb of Fusing:** Thay đổi số lượng lỗ (Sockets) và nối chuỗi liên kết (Links).
+### 2.2. Hệ Thống Tiền Tệ & Tinh Thể Rèn Đúc (Genesis Crafting Catalysts & Resonators)
+
+| Tinh Thể Khởi Nguyên | Độ Hiếm (Drop Weight) | Tác Dụng Rèn Đúc | Vai Trò Kinh Tế (Sink / Faucet) |
+| :--- | :---: | :--- | :--- |
+| **Aether Spark** | $100$ (Common) | Đánh thức ma lực: Đồ Trắng $\rightarrow$ Đồ Xanh (Magic 1-2 mods). | Dễ nhặt ở đầu game, dùng chế đồ chuyển tiếp. |
+| **Flux Catalyst** | $80$ (Common) | Reroll lại toàn bộ dòng của đồ Xanh (Magic). | Tiêu hao khi roll đồ phôi đầu game hoặc bình máu (Flasks). |
+| **Genesis Prism** | $20$ (Uncommon) | Nâng cấp đồ Trắng $\rightarrow$ Đồ Vàng (Rare) với 4-6 dòng ngẫu nhiên. | Rèn trang bị Rare và ép tăng độ khó Map Endgame. |
+| **Fracture Core** | $10$ (Rare) | Reroll lại toàn bộ dòng của đồ Vàng (Rare). | **Đơn vị tiền tệ chuẩn trong giao dịch server** và phí bàn rèn. |
+| **Ascendant Catalyst** | $1.5$ (Very Rare) | Thêm 1 dòng ngẫu nhiên cực phẩm vào đồ Vàng chưa đủ 6 dòng. | Tiền tệ cao cấp cho việc hoàn thiện đồ End-game (Exalt Slam). |
+| **Origin Matrix** | $0.3$ (Ultra Rare) | Tái cân chỉnh giá trị số (Roll min-max) của các dòng hiện có. | Đỉnh cao hoàn thiện trang bị God-tier. |
+| **Socketing Core** | $30$ (Uncommon) | Thay đổi ngẫu nhiên số lượng rãnh khảm (Sockets 1-4). | Đục lỗ trang bị phục vụ gắn Skill Gems. |
+| **Harmonic Tether** | $15$ (Uncommon) | Tái thiết lập các liên kết chuỗi (Socket Links) giữa các rãnh khảm. | Kết nối Active Gem với nhiều Support Gems. |
+
+#### Cơ chế Tiêu Thụ Tiền Tệ Tránh Lạm Phát (Economy Sinks):
+1. **Genesis Forge (Bàn Rèn Cổ Đại):** Khóa Tiền tố (Prefix Lock) tốn $2\times$ *Fracture Core*, Chế tạo dòng cố định tốn $1\times$ *Ascendant Catalyst*.
+2. **Rift Infusion (Khuếch đại Bản Đồ):** Ép *Genesis Prism* / *Fracture Core* lên Rift Maps để tăng $+80\%$ Quantity đồ rơi.
+3. **Mastery Respec:** Dùng *Flux Catalyst* để tẩy và phân bổ lại điểm trên Cây Tinh Hoa Kỹ Năng.
 
 ### 2.3. Cấu trúc Thuộc tính (Affix Pool: Prefixes & Suffixes)
 Mỗi trang bị Rare có tối đa 3 Tiền tố (Prefix) và 3 Hậu tố (Suffix):
@@ -71,9 +81,9 @@ Mỗi trang bị Rare có tối đa 3 Tiền tố (Prefix) và 3 Hậu tố (Suf
 └──────────────────────────────────┬─────────────────────────────────────┘
                                    ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ TẦNG 3: ENDGAME ATLAS MAP SYSTEM (Hệ thống Rifts & Map Modifiers)      │
-│  - Đặt "Map Item" (Tier 1 -> 16) vào Thiết Bị Map (Map Device).        │
-│  - Ép Alch/Chaos lên Map Item để tăng độ khó và % Quantity rơi đồ:     │
+│ TẦNG 3: ENDGAME GENESIS RIFT SYSTEM (Hệ thống Rifts & Map Modifiers)   │
+│  - Đặt "Rift Map Item" (Tier 1 -> 16) vào Cổng Vực Thẳm (Map Device).  │
+│  - Ép Genesis Prism / Fracture Core lên Map để tăng độ khó và % Drop:  │
 │    + "Monsters reflect 15% Elemental Damage" (+20% Quantity)           │
 │    + "Monsters gain 100% Extra Physical as Fire" (+25% Rarity)         │
 │    + "Players have -20% to all Maximum Resistances" (+35% Pack Size)   │

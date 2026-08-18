@@ -13,21 +13,28 @@ let selectedTreeSkillKey = 'fireball';
 
 export function addSkillExp(skillKey, amount) {
   const s = SKILLS[skillKey];
-  if (!s || s.level >= s.maxLevel) return;
+  if (!s || s.level >= s.maxLevel || !amount || amount <= 0) return;
+  if (!s.expToNext || s.expToNext <= 0) s.expToNext = 120;
 
   const rate = getSkillExpMultiplier(skillKey, player);
   const gained = Math.round(amount * rate);
 
-  s.exp += gained;
-  while (s.exp >= s.expToNext && s.level < s.maxLevel) {
+  s.exp = (s.exp || 0) + gained;
+  let skillLeveled = false;
+  let loops = 0;
+  while (s.exp >= s.expToNext && s.level < s.maxLevel && loops < 50) {
+    loops++;
     s.exp -= s.expToNext;
     s.level++;
-    s.expToNext = Math.round(s.expToNext * 1.35);
+    s.expToNext = Math.max(50, Math.round(s.expToNext * 1.35));
+    skillLeveled = true;
     AudioEngine.playSkillLevelUp();
     spawnDamageNumber(player.x, player.y - 50, `${s.name} Lv.${s.level}! (+1 SMP)`, true, '#1abc9c');
+  }
+
+  if (skillLeveled) {
     updateSkillBadges();
     renderSkillUpgradeModal();
-    saveToDatabase(true);
   }
 }
 

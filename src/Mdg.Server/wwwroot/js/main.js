@@ -220,14 +220,21 @@ export function dropMonsterLoot(x, y, isBoss) {
 }
 
 window.gainExp = function(amount) {
-  player.currentExp += amount;
+  if (!amount || amount <= 0) return;
+  player.currentExp = (player.currentExp || 0) + amount;
+  if (!player.expToNext || player.expToNext <= 0) player.expToNext = 100;
+
   for (let k in SKILLS) addSkillExp(k, Math.round(amount * 0.8));
 
-  while (player.currentExp >= player.expToNext) {
+  let leveledUp = false;
+  let loops = 0;
+  while (player.currentExp >= player.expToNext && player.level < 100 && loops < 50) {
+    loops++;
     player.currentExp -= player.expToNext;
     player.level++;
     player.skillPoints++;
-    player.expToNext = Math.round(player.expToNext * 1.4);
+    player.expToNext = Math.max(50, Math.round(player.expToNext * 1.4));
+    leveledUp = true;
 
     player.maxLife += 20;
     player.life = player.maxLife;
@@ -237,15 +244,18 @@ window.gainExp = function(amount) {
     AudioEngine.playLevelUp();
     spawnDamageNumber(player.x, player.y - 60, `LEVEL UP (Lv.${player.level})! +1 SP`, true, '#ffd700');
 
-    document.getElementById('hud-level').innerText = `Lv.${player.level}`;
-    updateSkillBadges();
-    renderSkillUpgradeModal();
+    const hudLevel = document.getElementById('hud-level');
+    if (hudLevel) hudLevel.innerText = `Lv.${player.level}`;
 
     if (player.level >= 10 && player.classSpec === 'Novice') {
       document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
     }
+  }
 
-    saveToDatabase(true);
+  if (leveledUp) {
+    updateSkillBadges();
+    renderSkillUpgradeModal();
+    updateExpBar();
   }
 };
 
@@ -422,16 +432,33 @@ function update(dt) {
     if (m.type === 'boss') activeBoss = m;
 
     updateTargetAilments(m, dt);
-    if (m.freezeTimer > 0) return; // Stunned while frozen
+
+    // Dynamic Knockback Velocity Decay
+    if (m.vx || m.vy) {
+      const kx = m.x + (m.vx || 0) * dt;
+      const ky = m.y + (m.vy || 0) * dt;
+      if (canWalk(kx, m.y)) m.x = kx;
+      if (canWalk(m.x, ky)) m.y = ky;
+      m.vx = (m.vx || 0) * 0.85;
+      m.vy = (m.vy || 0) * 0.85;
+      if (Math.abs(m.vx) < 1) m.vx = 0;
+      if (Math.abs(m.vy) < 1) m.vy = 0;
+    }
+
+    if (m.freezeTimer > 0) {
+      m.animTimer += dt * 1;
+      return; // Stunned while frozen
+    }
 
     if (m.hurtTimer > 0) m.hurtTimer -= dt;
     m.animTimer += dt * 5;
 
+    const currentSpeed = m.chillTimer > 0 ? (m.speed * 0.55) : m.speed;
     const dist = Math.hypot(player.x - m.x, player.y - m.y);
     if (dist < 450 && dist > 35) {
       const angle = Math.atan2(player.y - m.y, player.x - m.x);
-      const nx = m.x + Math.cos(angle) * m.speed * dt;
-      const ny = m.y + Math.sin(angle) * m.speed * dt;
+      const nx = m.x + Math.cos(angle) * currentSpeed * dt;
+      const ny = m.y + Math.sin(angle) * currentSpeed * dt;
       if (canWalk(nx, m.y)) m.x = nx;
       if (canWalk(m.x, ny)) m.y = ny;
     }
