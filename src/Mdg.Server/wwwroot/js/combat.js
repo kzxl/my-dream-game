@@ -1,5 +1,5 @@
 /**
- * Combat Calculations, Support Gem Logic & Keystone Morph Skill Execution
+ * Combat Calculations, Ailments (Ignite, Freeze, Bleed, Shock), Support Gems & Keystone Morphs
  */
 
 import { player, monsters, trainingDummies, projectiles, particles, floatingTexts, mouse } from './state.js';
@@ -17,6 +17,11 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     multiplier = player.critMulti / 100;
   }
 
+  // Shock Ailment (+30% damage multiplier)
+  if (target.shockTimer > 0) {
+    multiplier *= 1.30;
+  }
+
   const physDmg = rawPhysical * multiplier;
   let physMitigation = 0;
   if (target.armor > 0 && physDmg > 0) {
@@ -30,6 +35,17 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
 
   if (target.life < 90000) target.life -= totalDamage;
   target.hurtTimer = 0.25;
+
+  // Ailment Proc Chances
+  if (rawFire > 0 && (isCrit || isNodeAllocated('fireball', 'fb_ignite') || Math.random() < 0.4)) {
+    applyIgnite(target, Math.round(totalDamage * 0.45));
+  }
+  if (rawCold > 0 && (isCrit || Math.random() < 0.5)) {
+    applyFreeze(target, isNodeAllocated('frost', 'fr_freeze') ? 2.2 : 1.5);
+  }
+  if (rawPhysical > 0 && isNodeAllocated('slash', 'sl_bleed')) {
+    applyBleed(target, Math.round(totalDamage * 0.35));
+  }
 
   AudioEngine.playHit(isCrit);
   const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : (rawChaos > 0 ? '#c678dd' : '#ffffff')));
@@ -58,6 +74,59 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     if (target.type === 'boss' && player.classSpec === 'Novice') {
       document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
     }
+  }
+}
+
+// Ailment Helper Applications
+export function applyIgnite(target, dotPerSec) {
+  target.igniteTimer = 3.5;
+  target.igniteDmg = dotPerSec;
+}
+
+export function applyFreeze(target, durationSec) {
+  target.freezeTimer = durationSec;
+}
+
+export function applyBleed(target, dotPerSec) {
+  target.bleedTimer = 4.0;
+  target.bleedDmg = dotPerSec;
+}
+
+// Update Ailments per Frame (DoT & Status Ticks)
+export function updateTargetAilments(target, dt) {
+  if (!target.isAlive) return;
+
+  // 1. Ignite Tick (Fire DoT)
+  if (target.igniteTimer > 0) {
+    target.igniteTimer -= dt;
+    const dot = Math.max(1, Math.round(target.igniteDmg * dt));
+    if (target.life < 90000) target.life -= dot;
+    if (Math.random() < 0.25) {
+      spawnDamageNumber(target.x, target.y - 20, `${dot} 🔥`, false, '#ff5722');
+    }
+  }
+
+  // 2. Freeze (Stunned)
+  if (target.freezeTimer > 0) {
+    target.freezeTimer -= dt;
+  }
+
+  // 3. Bleed Tick (Physical DoT - 3x if target is moving)
+  if (target.bleedTimer > 0) {
+    target.bleedTimer -= dt;
+    const isMoving = target.speed > 0 && target.state !== 'idle';
+    const dot = Math.max(1, Math.round(target.bleedDmg * (isMoving ? 3 : 1) * dt));
+    if (target.life < 90000) target.life -= dot;
+    if (Math.random() < 0.2) {
+      spawnDamageNumber(target.x, target.y - 20, `${dot} 🩸`, false, '#e06c75');
+    }
+  }
+
+  if (target.life <= 0 && target.life < 90000) {
+    target.isAlive = false;
+    target.life = 0;
+    window.gainExp(target.expValue || 35);
+    dropMonsterLoot(target.x, target.y, target.type === 'boss');
   }
 }
 
@@ -138,7 +207,6 @@ export function castFireball() {
   const hasGmp = skillSocketBoard.fireball?.supports.includes('support_gmp');
 
   if (hasNova) {
-    // 8 Fireballs in 360° Ring
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
       projectiles.push({
         x: player.x,
@@ -152,7 +220,6 @@ export function castFireball() {
       });
     }
   } else if (hasGmp) {
-    // 3 Fireballs in Cone
     [-0.22, 0, 0.22].forEach(offset => {
       projectiles.push({
         x: player.x,
@@ -166,7 +233,6 @@ export function castFireball() {
       });
     });
   } else {
-    // Single Fireball
     projectiles.push({
       x: player.x,
       y: player.y - 10,
@@ -196,7 +262,6 @@ export function castFrostNova() {
       dealDamage(m, 15, 0, dmg, 0, 0);
       hitsCount++;
 
-      // Keystone Morph: Glacial Vortex Pull
       if (isNodeAllocated('frost', 'fr_morph_vortex')) {
         const pullAngle = Math.atan2(player.y - m.y, player.x - m.x);
         m.x += Math.cos(pullAngle) * 120;
@@ -209,7 +274,6 @@ export function castFrostNova() {
     if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0);
   });
 
-  // Major Node: Frost Shield Leech to Energy Shield
   if (isNodeAllocated('frost', 'fr_shield') && hitsCount > 0) {
     const esGained = hitsCount * 35;
     player.es = Math.min(player.maxEs, player.es + esGained);
@@ -284,7 +348,6 @@ export function castMeteor() {
 
   dropSingleImpact(targetX, targetY, 400);
 
-  // Keystone Morph: Meteor Shower
   if (isNodeAllocated('meteor', 'met_morph_shower')) {
     dropSingleImpact(targetX + 60, targetY - 40, 650);
     dropSingleImpact(targetX - 50, targetY + 50, 900);

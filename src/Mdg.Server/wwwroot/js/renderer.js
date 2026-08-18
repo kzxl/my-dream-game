@@ -266,10 +266,23 @@ export function drawMonsterClean(ctx, m) {
   ctx.fillStyle = hpPct > 0.5 ? '#98c379' : '#e06c75';
   ctx.fillRect(-barW / 2 + 1, -34 * scale + 1, (barW - 2) * hpPct, 3);
 
+  // Ailment Badges Rendering (Ignite, Freeze, Bleed)
+  let ailmentIcons = '';
+  if (m.igniteTimer > 0) ailmentIcons += ' 🔥';
+  if (m.freezeTimer > 0) ailmentIcons += ' ❄️';
+  if (m.bleedTimer > 0) ailmentIcons += ' 🩸';
+
   ctx.font = m.type === 'boss' ? 'bold 11px "Outfit", sans-serif' : '9px "Outfit", sans-serif';
   ctx.fillStyle = m.type === 'boss' ? '#e5c07b' : '#abb2bf';
   ctx.textAlign = 'center';
-  ctx.fillText(m.name, 0, -38 * scale);
+  ctx.fillText(`${m.name}${ailmentIcons}`, 0, -38 * scale);
+
+  // Frozen ice crystal glow
+  if (m.freezeTimer > 0) {
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-20 * scale, -42 * scale, 40 * scale, 50 * scale);
+  }
 
   ctx.restore();
 }

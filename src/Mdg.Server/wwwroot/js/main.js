@@ -9,7 +9,7 @@ import { POSSIBLE_LOOT } from './data/items.js';
 import { SKILLS } from './data/skills.js';
 import { AudioEngine } from './audio.js';
 import { renderGame } from './renderer.js';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber } from './combat.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { showZoneBanner, setupUIListeners, toggleModal } from './ui/hud.js';
@@ -299,11 +299,14 @@ function update(dt) {
     }
   }
 
-  // Boss Health Bar
+  // Boss & Monster AI + Ailments
   let activeBoss = null;
   monsters.forEach(m => {
     if (!m.isAlive) return;
     if (m.type === 'boss') activeBoss = m;
+
+    updateTargetAilments(m, dt);
+    if (m.freezeTimer > 0) return; // Stunned while frozen
 
     if (m.hurtTimer > 0) m.hurtTimer -= dt;
     m.animTimer += dt * 5;

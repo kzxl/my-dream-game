@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Mdg.Server.Database;
 using Mdg.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -13,8 +15,11 @@ var builder = WebApplication.CreateBuilder(args);
 var dataDir = builder.Environment.ContentRootPath;
 var dbPath = Path.Combine(dataDir, "mdg_world.db");
 
-// Register Services
-builder.Services.AddSingleton(new GameDatabaseService(dbPath));
+// Register EF Core DbContextFactory & Services
+builder.Services.AddDbContextFactory<MdgDbContext>(options =>
+    options.UseSqlite($"Data Source={dbPath}"));
+
+builder.Services.AddSingleton<GameDatabaseService>();
 builder.Services.AddSingleton<GameSessionService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
@@ -27,11 +32,11 @@ app.UseStaticFiles();
 app.MapGet("/api/v1/health", () => new
 {
     status = "Online",
-    game = "My Dream Game (MDG) Server",
+    game = "My Dream Game (MDG) Server (EF Core)",
     tickRate = 30
 });
 
-// MULTI-CHARACTER APIS
+// MULTI-CHARACTER ROSTER APIS
 app.MapGet("/api/v1/characters", async (GameDatabaseService db) =>
 {
     var list = await db.GetAllCharactersAsync();
@@ -48,6 +53,19 @@ app.MapDelete("/api/v1/characters/{id}", async (GameDatabaseService db, string i
 {
     var success = await db.DeleteCharacterAsync(id);
     return success ? Results.Ok(new { success = true, id }) : Results.NotFound();
+});
+
+// SHARED STASH APIS
+app.MapGet("/api/v1/stash", async (GameDatabaseService db) =>
+{
+    var items = await db.GetSharedStashAsync();
+    return Results.Ok(items);
+});
+
+app.MapPost("/api/v1/stash", async (GameDatabaseService db, List<object> items) =>
+{
+    var success = await db.SaveSharedStashAsync(items);
+    return Results.Ok(new { success });
 });
 
 // SAVEGAME APIS

@@ -1,253 +1,204 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace Mdg.Server.Database;
 
 public sealed class GameDatabaseService
 {
-    private readonly string _connectionString;
+    private readonly IDbContextFactory<MdgDbContext> _contextFactory;
 
-    public GameDatabaseService(string dbPath)
+    public GameDatabaseService(IDbContextFactory<MdgDbContext> contextFactory)
     {
-        _connectionString = $"Data Source={dbPath}";
-        InitializeDatabase();
-    }
-
-    private void InitializeDatabase()
-    {
-        using var conn = new SqliteConnection(_connectionString);
-        conn.Open();
-
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE IF NOT EXISTS Characters (
-                Id TEXT PRIMARY KEY,
-                Name TEXT NOT NULL,
-                Gender TEXT NOT NULL DEFAULT 'Male',
-                ClassSpec TEXT NOT NULL DEFAULT 'Novice',
-                Level INTEGER NOT NULL DEFAULT 1,
-                CurrentExp INTEGER NOT NULL DEFAULT 0,
-                ExpToNext INTEGER NOT NULL DEFAULT 100,
-                SkillPoints INTEGER NOT NULL DEFAULT 3,
-                Life REAL NOT NULL DEFAULT 250,
-                MaxLife REAL NOT NULL DEFAULT 250,
-                Mana REAL NOT NULL DEFAULT 120,
-                MaxMana REAL NOT NULL DEFAULT 120,
-                Es REAL NOT NULL DEFAULT 100,
-                MaxEs REAL NOT NULL DEFAULT 100,
-                ZoneId TEXT NOT NULL DEFAULT 'SanctuaryHaven',
-                PositionX REAL NOT NULL DEFAULT 2000,
-                PositionY REAL NOT NULL DEFAULT 2000,
-                SkillsJson TEXT,
-                EquippedJson TEXT,
-                BackpackJson TEXT,
-                CreatedAt TEXT NOT NULL DEFAULT '',
-                UpdatedAt TEXT NOT NULL DEFAULT ''
-            );
-
-            CREATE TABLE IF NOT EXISTS SharedStash (
-                SlotIndex INTEGER PRIMARY KEY,
-                ItemJson TEXT NOT NULL,
-                UpdatedAt TEXT NOT NULL
-            );
-        ";
-        cmd.ExecuteNonQuery();
-
-        try
-        {
-            using var alterCmd = conn.CreateCommand();
-            alterCmd.CommandText = "ALTER TABLE Characters ADD COLUMN CreatedAt TEXT NOT NULL DEFAULT '';";
-            alterCmd.ExecuteNonQuery();
-        }
-        catch { }
+        _contextFactory = contextFactory;
+        using var db = _contextFactory.CreateDbContext();
+        db.Database.EnsureCreated();
     }
 
     public async Task<List<CharacterSummaryDto>> GetAllCharactersAsync()
     {
-        var list = new List<CharacterSummaryDto>();
-        using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync();
-
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT Id, Name, Gender, ClassSpec, Level, ZoneId, UpdatedAt FROM Characters ORDER BY UpdatedAt DESC";
-
-        using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
-        {
-            list.Add(new CharacterSummaryDto
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.Characters
+            .AsNoTracking()
+            .OrderByDescending(c => c.UpdatedAt)
+            .Select(c => new CharacterSummaryDto
             {
-                Id = reader.GetString(0),
-                Name = reader.GetString(1),
-                Gender = reader.GetString(2),
-                ClassSpec = reader.GetString(3),
-                Level = reader.GetInt32(4),
-                ZoneId = reader.GetString(5),
-                UpdatedAt = reader.GetString(6)
-            });
-        }
-
-        return list;
+                Id = c.Id,
+                Name = c.Name,
+                Gender = c.Gender,
+                ClassSpec = c.ClassSpec,
+                Level = c.Level,
+                ZoneId = c.ZoneId,
+                UpdatedAt = c.UpdatedAt
+            })
+            .ToListAsync();
     }
 
     public async Task<bool> CreateCharacterAsync(CharacterCreateDto dto)
     {
-        using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = new CharacterEntity
+        {
+            Id = dto.Id ?? Guid.NewGuid().ToString("N"),
+            Name = dto.Name,
+            Gender = dto.Gender ?? "Male",
+            ClassSpec = dto.ClassSpec ?? "Novice",
+            Level = 1,
+            CurrentExp = 0,
+            ExpToNext = 100,
+            SkillPoints = 3,
+            Life = 250,
+            MaxLife = 250,
+            Mana = 120,
+            MaxMana = 120,
+            Es = 100,
+            MaxEs = 100,
+            ZoneId = "SanctuaryHaven",
+            PositionX = 2000,
+            PositionY = 2000,
+            Skills = new(),
+            EquippedGear = new(),
+            BackpackItems = new(),
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        };
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            INSERT INTO Characters (
-                Id, Name, Gender, ClassSpec, Level, CurrentExp, ExpToNext, SkillPoints,
-                Life, MaxLife, Mana, MaxMana, Es, MaxEs, ZoneId, PositionX, PositionY,
-                SkillsJson, EquippedJson, BackpackJson, CreatedAt, UpdatedAt
-            ) VALUES (
-                $id, $name, $gender, $classSpec, 1, 0, 100, 3,
-                250, 250, 120, 120, 100, 100, 'SanctuaryHaven', 2000, 2000,
-                '{}', '{}', '[]', $now, $now
-            )";
-
-        cmd.Parameters.AddWithValue("$id", dto.Id ?? Guid.NewGuid().ToString("N"));
-        cmd.Parameters.AddWithValue("$name", dto.Name);
-        cmd.Parameters.AddWithValue("$gender", dto.Gender ?? "Male");
-        cmd.Parameters.AddWithValue("$classSpec", dto.ClassSpec ?? "Novice");
-        cmd.Parameters.AddWithValue("$now", DateTime.UtcNow.ToString("o"));
-
-        var rows = await cmd.ExecuteNonQueryAsync();
+        db.Characters.Add(entity);
+        var rows = await db.SaveChangesAsync();
         return rows > 0;
     }
 
     public async Task<bool> DeleteCharacterAsync(string characterId)
     {
-        using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.Characters.FindAsync(characterId);
+        if (entity is null) return false;
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM Characters WHERE Id = $id";
-        cmd.Parameters.AddWithValue("$id", characterId);
-
-        var rows = await cmd.ExecuteNonQueryAsync();
+        db.Characters.Remove(entity);
+        var rows = await db.SaveChangesAsync();
         return rows > 0;
     }
 
     public async Task<bool> SaveCharacterAsync(SaveGameDto data)
     {
-        using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var charId = data.CharacterId ?? "hero_default";
+        var entity = await db.Characters.FindAsync(charId);
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            INSERT INTO Characters (
-                Id, Name, Gender, ClassSpec, Level, CurrentExp, ExpToNext, SkillPoints,
-                Life, MaxLife, Mana, MaxMana, Es, MaxEs, ZoneId, PositionX, PositionY,
-                SkillsJson, EquippedJson, BackpackJson, CreatedAt, UpdatedAt
-            ) VALUES (
-                $id, $name, $gender, $classSpec, $level, $curExp, $expNext, $sp,
-                $life, $maxLife, $mana, $maxMana, $es, $maxEs, $zone, $posX, $posY,
-                $skills, $equipped, $backpack, $now, $now
-            )
-            ON CONFLICT(Id) DO UPDATE SET
-                Name = $name,
-                Gender = $gender,
-                ClassSpec = $classSpec,
-                Level = $level,
-                CurrentExp = $curExp,
-                ExpToNext = $expNext,
-                SkillPoints = $sp,
-                Life = $life,
-                MaxLife = $maxLife,
-                Mana = $mana,
-                MaxMana = $maxMana,
-                Es = $es,
-                MaxEs = $maxEs,
-                ZoneId = $zone,
-                PositionX = $posX,
-                PositionY = $posY,
-                SkillsJson = $skills,
-                EquippedJson = $equipped,
-                BackpackJson = $backpack,
-                UpdatedAt = $now;
-        ";
+        if (entity is null)
+        {
+            entity = new CharacterEntity
+            {
+                Id = charId,
+                CreatedAt = DateTime.UtcNow.ToString("o")
+            };
+            db.Characters.Add(entity);
+        }
 
-        cmd.Parameters.AddWithValue("$id", data.CharacterId ?? "hero_default");
-        cmd.Parameters.AddWithValue("$name", data.Name ?? "Novice Adventurer");
-        cmd.Parameters.AddWithValue("$gender", data.Gender ?? "Male");
-        cmd.Parameters.AddWithValue("$classSpec", data.ClassSpec ?? "Novice");
-        cmd.Parameters.AddWithValue("$level", data.Level);
-        cmd.Parameters.AddWithValue("$curExp", data.CurrentExp);
-        cmd.Parameters.AddWithValue("$expNext", data.ExpToNext);
-        cmd.Parameters.AddWithValue("$sp", data.SkillPoints);
-        cmd.Parameters.AddWithValue("$life", data.Life);
-        cmd.Parameters.AddWithValue("$maxLife", data.MaxLife);
-        cmd.Parameters.AddWithValue("$mana", data.Mana);
-        cmd.Parameters.AddWithValue("$maxMana", data.MaxMana);
-        cmd.Parameters.AddWithValue("$es", data.Es);
-        cmd.Parameters.AddWithValue("$maxEs", data.MaxEs);
-        cmd.Parameters.AddWithValue("$zone", data.ZoneId ?? "SanctuaryHaven");
-        cmd.Parameters.AddWithValue("$posX", data.PositionX);
-        cmd.Parameters.AddWithValue("$posY", data.PositionY);
-        cmd.Parameters.AddWithValue("$skills", JsonSerializer.Serialize(data.Skills ?? new()));
-        cmd.Parameters.AddWithValue("$equipped", JsonSerializer.Serialize(data.EquippedGear ?? new()));
-        cmd.Parameters.AddWithValue("$backpack", JsonSerializer.Serialize(data.BackpackItems ?? new()));
-        cmd.Parameters.AddWithValue("$now", DateTime.UtcNow.ToString("o"));
+        entity.Name = data.Name ?? "Novice Adventurer";
+        entity.Gender = data.Gender ?? "Male";
+        entity.ClassSpec = data.ClassSpec ?? "Novice";
+        entity.Level = data.Level;
+        entity.CurrentExp = data.CurrentExp;
+        entity.ExpToNext = data.ExpToNext;
+        entity.SkillPoints = data.SkillPoints;
+        entity.Life = data.Life;
+        entity.MaxLife = data.MaxLife;
+        entity.Mana = data.Mana;
+        entity.MaxMana = data.MaxMana;
+        entity.Es = data.Es;
+        entity.MaxEs = data.MaxEs;
+        entity.ZoneId = data.ZoneId ?? "SanctuaryHaven";
+        entity.PositionX = data.PositionX;
+        entity.PositionY = data.PositionY;
+        entity.Skills = data.Skills ?? new();
+        entity.EquippedGear = data.EquippedGear ?? new();
+        entity.BackpackItems = data.BackpackItems ?? new();
+        entity.UpdatedAt = DateTime.UtcNow.ToString("o");
 
-        var rows = await cmd.ExecuteNonQueryAsync();
+        var rows = await db.SaveChangesAsync();
         return rows > 0;
     }
 
     public async Task<SaveGameDto?> GetCharacterAsync(string characterId)
     {
-        using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var c = await db.Characters.AsNoTracking().FirstOrDefaultAsync(x => x.Id == characterId);
+        if (c is null) return null;
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT * FROM Characters WHERE Id = $id LIMIT 1";
-        cmd.Parameters.AddWithValue("$id", characterId);
-
-        using var reader = await cmd.ExecuteReaderAsync();
-        if (await reader.ReadAsync())
+        return new SaveGameDto
         {
-            return new SaveGameDto
+            CharacterId = c.Id,
+            Name = c.Name,
+            Gender = c.Gender,
+            ClassSpec = c.ClassSpec,
+            Level = c.Level,
+            CurrentExp = c.CurrentExp,
+            ExpToNext = c.ExpToNext,
+            SkillPoints = c.SkillPoints,
+            Life = c.Life,
+            MaxLife = c.MaxLife,
+            Mana = c.Mana,
+            MaxMana = c.MaxMana,
+            Es = c.Es,
+            MaxEs = c.MaxEs,
+            ZoneId = c.ZoneId,
+            PositionX = c.PositionX,
+            PositionY = c.PositionY,
+            Skills = c.Skills,
+            EquippedGear = c.EquippedGear,
+            BackpackItems = c.BackpackItems
+        };
+    }
+
+    public async Task<List<object>> GetSharedStashAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var list = await db.SharedStash.AsNoTracking().OrderBy(s => s.SlotIndex).ToListAsync();
+        var items = new List<object>();
+        foreach (var entry in list)
+        {
+            try
             {
-                CharacterId = reader.GetString(reader.GetOrdinal("Id")),
-                Name = reader.GetString(reader.GetOrdinal("Name")),
-                Gender = reader.GetString(reader.GetOrdinal("Gender")),
-                ClassSpec = reader.GetString(reader.GetOrdinal("ClassSpec")),
-                Level = reader.GetInt32(reader.GetOrdinal("Level")),
-                CurrentExp = reader.GetInt32(reader.GetOrdinal("CurrentExp")),
-                ExpToNext = reader.GetInt32(reader.GetOrdinal("ExpToNext")),
-                SkillPoints = reader.GetInt32(reader.GetOrdinal("SkillPoints")),
-                Life = reader.GetDouble(reader.GetOrdinal("Life")),
-                MaxLife = reader.GetDouble(reader.GetOrdinal("MaxLife")),
-                Mana = reader.GetDouble(reader.GetOrdinal("Mana")),
-                MaxMana = reader.GetDouble(reader.GetOrdinal("MaxMana")),
-                Es = reader.GetDouble(reader.GetOrdinal("Es")),
-                MaxEs = reader.GetDouble(reader.GetOrdinal("MaxEs")),
-                ZoneId = reader.GetString(reader.GetOrdinal("ZoneId")),
-                PositionX = reader.GetDouble(reader.GetOrdinal("PositionX")),
-                PositionY = reader.GetDouble(reader.GetOrdinal("PositionY")),
-                Skills = JsonSerializer.Deserialize<Dictionary<string, object>>(reader.GetString(reader.GetOrdinal("SkillsJson")) ?? "{}"),
-                EquippedGear = JsonSerializer.Deserialize<Dictionary<string, object>>(reader.GetString(reader.GetOrdinal("EquippedJson")) ?? "{}"),
-                BackpackItems = JsonSerializer.Deserialize<List<object>>(reader.GetString(reader.GetOrdinal("BackpackJson")) ?? "[]")
-            };
+                var parsed = JsonSerializer.Deserialize<object>(entry.ItemJson);
+                if (parsed != null) items.Add(parsed);
+            }
+            catch { }
+        }
+        return items;
+    }
+
+    public async Task<bool> SaveSharedStashAsync(List<object> items)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        db.SharedStash.RemoveRange(db.SharedStash);
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            db.SharedStash.Add(new SharedStashItemEntity
+            {
+                SlotIndex = i,
+                ItemJson = JsonSerializer.Serialize(items[i]),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            });
         }
 
-        return null;
+        await db.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> ResetSavegameAsync(string characterId = "hero_default")
     {
-        using var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync();
-
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM Characters WHERE Id = $id";
-        cmd.Parameters.AddWithValue("$id", characterId);
-
-        await cmd.ExecuteNonQueryAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.Characters.FindAsync(characterId);
+        if (entity is not null)
+        {
+            db.Characters.Remove(entity);
+            await db.SaveChangesAsync();
+        }
         return true;
     }
 }
