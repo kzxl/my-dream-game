@@ -175,6 +175,24 @@ namespace Mdg.Core.Features.Stats
         private void MarkDirty(StatType stat)
         {
             _dirtyStats.Add(stat);
+
+            // Invalidate dependent stats when max caps change
+            switch (stat)
+            {
+                case StatType.MaxFireResistance:
+                    _dirtyStats.Add(StatType.FireResistance);
+                    break;
+                case StatType.MaxColdResistance:
+                    _dirtyStats.Add(StatType.ColdResistance);
+                    break;
+                case StatType.MaxLightningResistance:
+                    _dirtyStats.Add(StatType.LightningResistance);
+                    break;
+                case StatType.MaxChaosResistance:
+                    _dirtyStats.Add(StatType.ChaosResistance);
+                    break;
+            }
+
             // Kích hoạt event thông báo
             float newVal = GetValue(stat);
             OnStatChanged?.Invoke(stat, newVal);

@@ -32,10 +32,15 @@ namespace Mdg.Core.Features.Items
         public ItemSlot Slot { get; set; }
         public int ItemLevel { get; set; }
         public string Icon { get; set; } = "📦";
+        public int Sockets { get; set; } = 0;
+        public int SocketLinks { get; set; } = 0;
+        public bool PrefixesLocked { get; set; } = false;
+        public bool SuffixesLocked { get; set; } = false;
+
         public List<string> ExplicitMods { get; } = new();
         public Dictionary<string, float> StatBonuses { get; } = new();
 
-        public ItemEntity(string name, string baseType, ItemRarity rarity, ItemSlot slot, int itemLevel = 1, string icon = "📦")
+        public ItemEntity(string name, string baseType, ItemRarity rarity, ItemSlot slot, int itemLevel = 1, string icon = "📦", int sockets = 0, int links = 0)
         {
             Name = name;
             BaseType = baseType;
@@ -43,6 +48,8 @@ namespace Mdg.Core.Features.Items
             Slot = slot;
             ItemLevel = itemLevel;
             Icon = icon;
+            Sockets = sockets;
+            SocketLinks = Math.Min(links, sockets);
         }
 
         public ItemEntity AddMod(string modText, string statKey = "", float value = 0)
@@ -53,6 +60,12 @@ namespace Mdg.Core.Features.Items
                 StatBonuses[statKey] = value;
             }
             return this;
+        }
+
+        public void ClearMods()
+        {
+            ExplicitMods.Clear();
+            StatBonuses.Clear();
         }
     }
 }
