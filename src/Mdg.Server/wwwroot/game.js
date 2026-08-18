@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Inventory Overhaul with Equipment Spritesheet, Paperdoll & PoE Tooltips
+ * Skill Attribute Tags & Dynamic EXP Multipliers (PoE / Grim Dawn Tag System)
  */
 
 (function () {
@@ -100,7 +100,7 @@
   };
 
   // ==========================================
-  // 2. ASSET LOADER (Equipment & Sprites)
+  // 2. ASSET LOADER
   // ==========================================
   const assets = {
     maleHero: new Image(),
@@ -132,7 +132,7 @@
   assets.props.src = '/assets/props_pack.png' + cacheBust;
 
   // ==========================================
-  // 3. EQUIPMENT & ITEM DATABASE WITH SPRITES
+  // 3. EQUIPMENT & ITEM DATABASE
   // ==========================================
   const RARITY_COLORS = {
     Normal: '#c8c8c8',
@@ -142,7 +142,6 @@
     Currency: '#aa9e82'
   };
 
-  // Sprite coordinate helpers in equipment_pack.png (1024x1024)
   const ITEM_SPRITES = {
     sword_fire: { sx: 820, sy: 5, sw: 95, sh: 95 },
     sword_crystal: { sx: 715, sy: 5, sw: 95, sh: 95 },
@@ -291,7 +290,6 @@
     }
   ];
 
-  // Helper to draw item sprite onto canvas
   function drawItemSpriteToCanvas(targetCanvas, spriteInfo) {
     if (!targetCanvas) return;
     const tCtx = targetCanvas.getContext('2d');
@@ -308,20 +306,140 @@
   }
 
   // ==========================================
-  // 4. SKILL DATABASE (Lv.1-20)
+  // 4. SKILL DATABASE WITH ATTRIBUTE TAGS
   // ==========================================
   const SKILLS = {
-    slash: { id: 'slash', name: 'Heavy Slash', icon: '⚔️', key: 'LMB', level: 1, maxLevel: 20, exp: 0, expToNext: 120, baseDmg: 50, dmgPerLvl: 10, baseCooldown: 0.35, cdReductionPerLvl: 0.008, baseReach: 75, reachPerLvl: 3, desc: 'Cleaves enemies in front with physical force.' },
-    fireball: { id: 'fireball', name: 'Pyro Fireball', icon: '🔥', key: 'Q', level: 1, maxLevel: 20, exp: 0, expToNext: 150, baseDmg: 85, dmgPerLvl: 15, baseCooldown: 1.0, cdReductionPerLvl: 0.02, baseRadius: 12, radiusPerLvl: 0.6, manaCost: 10, desc: 'Hurls an explosive projectile of fire.' },
-    frost: { id: 'frost', name: 'Frost Nova', icon: '❄️', key: 'W', level: 1, maxLevel: 20, exp: 0, expToNext: 180, baseDmg: 90, dmgPerLvl: 16, baseCooldown: 2.5, cdReductionPerLvl: 0.05, baseRadius: 150, radiusPerLvl: 6, manaCost: 15, desc: 'Blasts freezing frost in a 360-degree ring.' },
-    meteor: { id: 'meteor', name: 'Cataclysm Meteor', icon: '☄️', key: 'E', level: 1, maxLevel: 20, exp: 0, expToNext: 250, baseDmg: 180, dmgPerLvl: 30, baseCooldown: 4.5, cdReductionPerLvl: 0.08, baseRadius: 135, radiusPerLvl: 6, manaCost: 30, desc: 'Calls down a devastating celestial meteor.' },
-    dash: { id: 'dash', name: 'Shadow Dash', icon: '💨', key: 'Space', level: 1, maxLevel: 20, exp: 0, expToNext: 100, baseDistance: 190, distancePerLvl: 7, baseCooldown: 1.2, cdReductionPerLvl: 0.035, desc: 'Dashes with temporary invulnerability.' }
+    slash: {
+      id: 'slash',
+      name: 'Heavy Slash',
+      icon: '⚔️',
+      key: 'LMB',
+      tags: ['physical', 'melee', 'attack'],
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 120,
+      baseDmg: 50,
+      dmgPerLvl: 10,
+      baseCooldown: 0.35,
+      cdReductionPerLvl: 0.008,
+      baseReach: 75,
+      reachPerLvl: 3,
+      desc: 'Cleaves enemies in front with physical force.'
+    },
+    fireball: {
+      id: 'fireball',
+      name: 'Pyro Fireball',
+      icon: '🔥',
+      key: 'Q',
+      tags: ['fire', 'spell', 'aoe'],
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 150,
+      baseDmg: 85,
+      dmgPerLvl: 15,
+      baseCooldown: 1.0,
+      cdReductionPerLvl: 0.02,
+      baseRadius: 12,
+      radiusPerLvl: 0.6,
+      manaCost: 10,
+      desc: 'Hurls an explosive projectile of concentrated fire.'
+    },
+    frost: {
+      id: 'frost',
+      name: 'Frost Nova',
+      icon: '❄️',
+      key: 'W',
+      tags: ['cold', 'spell', 'aoe'],
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 180,
+      baseDmg: 90,
+      dmgPerLvl: 16,
+      baseCooldown: 2.5,
+      cdReductionPerLvl: 0.05,
+      baseRadius: 150,
+      radiusPerLvl: 6,
+      manaCost: 15,
+      desc: 'Blasts freezing frost in a 360-degree ring.'
+    },
+    meteor: {
+      id: 'meteor',
+      name: 'Cataclysm Meteor',
+      icon: '☄️',
+      key: 'E',
+      tags: ['fire', 'chaos', 'spell', 'aoe'],
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 250,
+      baseDmg: 180,
+      dmgPerLvl: 30,
+      baseCooldown: 4.5,
+      cdReductionPerLvl: 0.08,
+      baseRadius: 135,
+      radiusPerLvl: 6,
+      manaCost: 30,
+      desc: 'Calls down a devastating celestial meteor.'
+    },
+    dash: {
+      id: 'dash',
+      name: 'Shadow Dash',
+      icon: '💨',
+      key: 'Space',
+      tags: ['movement', 'chaos'],
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 100,
+      baseDistance: 190,
+      distancePerLvl: 7,
+      baseCooldown: 1.2,
+      cdReductionPerLvl: 0.035,
+      desc: 'Dashes with temporary invulnerability.'
+    }
   };
+
+  // Calculate dynamic skill EXP multiplier based on Tags + Class Affinity + Equipped Gear
+  function getSkillExpMultiplier(skillKey) {
+    const s = SKILLS[skillKey];
+    if (!s) return 1.0;
+
+    let multiplier = 1.0;
+    const tags = s.tags || [];
+
+    // Class Affinity Bonuses
+    if (player.classSpec === 'Vanguard') {
+      if (tags.includes('physical') || tags.includes('melee') || tags.includes('attack')) multiplier += 0.5;
+    } else if (player.classSpec === 'Arcanist') {
+      if (tags.includes('fire') || tags.includes('cold') || tags.includes('spell') || tags.includes('aoe')) multiplier += 0.6;
+    } else if (player.classSpec === 'ShadowRogue') {
+      if (tags.includes('chaos') || tags.includes('movement') || tags.includes('attack')) multiplier += 0.5;
+    }
+
+    // Gear Affinity Bonuses
+    for (let slotKey in player.equipped) {
+      const gear = player.equipped[slotKey];
+      if (gear && gear.mods) {
+        if (tags.includes('fire') && gear.mods.some(m => m.includes('Fire Damage'))) multiplier += 0.25;
+        if (tags.includes('chaos') && gear.mods.some(m => m.includes('Chaos'))) multiplier += 0.25;
+        if (tags.includes('cold') && gear.mods.some(m => m.includes('Cold'))) multiplier += 0.2;
+      }
+    }
+
+    return Math.max(0.5, multiplier);
+  }
 
   function addSkillExp(skillKey, amount) {
     const s = SKILLS[skillKey];
     if (!s || s.level >= s.maxLevel) return;
-    s.exp += amount;
+
+    const rate = getSkillExpMultiplier(skillKey);
+    const gained = Math.round(amount * rate);
+
+    s.exp += gained;
     while (s.exp >= s.expToNext && s.level < s.maxLevel) {
       s.exp -= s.expToNext;
       s.level++;
@@ -370,10 +488,13 @@
       const nextDmg = s.baseDmg ? Math.round(s.baseDmg + s.level * s.dmgPerLvl) : 0;
       const curCd = Math.max(0.2, (s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl)).toFixed(2);
       const expPct = Math.min(100, (s.exp / s.expToNext) * 100);
+      const expRate = getSkillExpMultiplier(k);
 
       let statLine = k === 'dash'
         ? `Distance: <b>${Math.round(s.baseDistance + (s.level - 1) * s.distancePerLvl)}px</b> | CD: <b>${curCd}s</b>`
         : `Damage: <b>${curDmg}</b> (Next: <b style="color:#ffd700;">${nextDmg}</b>) | CD: <b>${curCd}s</b>`;
+
+      const tagsHtml = (s.tags || []).map(t => `<span class="tag-badge tag-${t}">${t}</span>`).join('');
 
       card.innerHTML = `
         <div class="suc-icon">${s.icon}</div>
@@ -381,6 +502,10 @@
           <div class="suc-name-row">
             <span class="suc-name">${s.name} [${s.key}]</span>
             <span class="suc-level">Level ${s.level} / ${s.maxLevel}</span>
+          </div>
+          <div class="skill-tags-row">
+            ${tagsHtml}
+            <span class="exp-rate-tag" title="EXP Rate calculated from Class Affinity and Gear">⚡ ${expRate.toFixed(1)}x EXP Speed</span>
           </div>
           <div class="suc-desc">${s.desc}</div>
           <div class="suc-exp-bar-wrap" title="Skill EXP: ${s.exp} / ${s.expToNext}">
@@ -450,7 +575,7 @@
   let currentZone = ZONES[currentZoneId];
 
   // ==========================================
-  // 6. PLAYER STATE & EQUIPMENT PAPERDOLL
+  // 6. PLAYER STATE
   // ==========================================
   const player = {
     x: 2000,
@@ -477,8 +602,6 @@
     es: 100,
     maxEs: 100,
 
-    baseArmor: 250,
-    baseEvasion: 250,
     armor: 250,
     evasion: 250,
     fireRes: 75,
@@ -490,21 +613,20 @@
 
     cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
 
-    // Equipped gear paperdoll
     equipped: {
-      Helm: POSSIBLE_LOOT[1],      // Crown of Void
-      Amulet: POSSIBLE_LOOT[6],    // Solar Medallion
-      MainHand: POSSIBLE_LOOT[0],  // Bloodseeker Blade
-      BodyArmor: POSSIBLE_LOOT[4], // Juggernaut Plate
-      OffHand: POSSIBLE_LOOT[3],   // Lionheart Shield
-      Ring: POSSIBLE_LOOT[7],      // Glacial Signet Ring
-      Boots: POSSIBLE_LOOT[5]      // Voidwalker Sabatons
+      Helm: POSSIBLE_LOOT[1],
+      Amulet: POSSIBLE_LOOT[6],
+      MainHand: POSSIBLE_LOOT[0],
+      BodyArmor: POSSIBLE_LOOT[4],
+      OffHand: POSSIBLE_LOOT[3],
+      Ring: POSSIBLE_LOOT[7],
+      Boots: POSSIBLE_LOOT[5]
     },
     bag: [
-      POSSIBLE_LOOT[2], // Dragonbone Greataxe
-      POSSIBLE_LOOT[8], // Chaos Orb
-      POSSIBLE_LOOT[9], // Exalted Orb
-      POSSIBLE_LOOT[8]  // Chaos Orb
+      POSSIBLE_LOOT[2],
+      POSSIBLE_LOOT[8],
+      POSSIBLE_LOOT[9],
+      POSSIBLE_LOOT[8]
     ],
     bagFilter: 'all'
   };
@@ -564,19 +686,16 @@
 
         slot.addEventListener('click', () => {
           if (item.slot) {
-            // Equip Item
             const prev = player.equipped[item.slot];
             const realIndex = player.bag.indexOf(item);
             if (realIndex !== -1) {
-              if (prev) {
-                player.bag[realIndex] = prev;
-              } else {
-                player.bag.splice(realIndex, 1);
-              }
+              if (prev) player.bag[realIndex] = prev;
+              else player.bag.splice(realIndex, 1);
               player.equipped[item.slot] = item;
               AudioEngine.playPickup();
               updateBackpackUI();
               updatePaperdollUI();
+              renderSkillUpgradeModal();
               hideItemTooltip();
             }
           } else if (item.rarity === 'Currency') {
@@ -602,8 +721,6 @@
     const slots = ['Helm', 'Amulet', 'MainHand', 'BodyArmor', 'OffHand', 'Ring', 'Boots'];
     let totalAddedArmor = 0;
     let totalAddedES = 0;
-    let totalAddedPhys = 0;
-    let totalAddedFire = 0;
 
     slots.forEach(slotKey => {
       const item = player.equipped[slotKey];
@@ -635,6 +752,7 @@
             AudioEngine.playPickup();
             updatePaperdollUI();
             updateBackpackUI();
+            renderSkillUpgradeModal();
             hideItemTooltip();
           } else {
             spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
@@ -671,7 +789,6 @@
     }
   }
 
-  // PoE Item Tooltip
   const tooltipEl = document.getElementById('item-tooltip');
   function showItemTooltip(e, item) {
     if (!tooltipEl || !item) return;
@@ -843,6 +960,7 @@
 
     AudioEngine.playLevelUp();
     spawnDamageNumber(player.x, player.y - 60, `ASCENDED: ${spec.toUpperCase()}!`, true, '#ffd700');
+    renderSkillUpgradeModal();
   }
 
   // ==========================================
@@ -1402,7 +1520,6 @@
     renderList.sort((a, b) => a.y - b.y);
     renderList.forEach(item => item.render());
 
-    // Projectiles
     projectiles.forEach(p => {
       ctx.fillStyle = '#ff7849';
       ctx.beginPath();
@@ -1414,7 +1531,6 @@
       ctx.fill();
     });
 
-    // Particles
     particles.forEach(pt => {
       ctx.fillStyle = pt.color;
       if (pt.isRing) {
@@ -1428,7 +1544,6 @@
       }
     });
 
-    // Floating Text
     floatingTexts.forEach(ft => {
       ctx.font = ft.isCrit ? 'bold 16px "Press Start 2P", monospace' : 'bold 12px "Press Start 2P", monospace';
       ctx.fillStyle = ft.color;
@@ -1667,6 +1782,9 @@
       } else if (p.type === 'campfire') {
         ctx.drawImage(img, W * 0.35, H * 0.70, W * 0.30, H * 0.28, -32, -32, 64, 64);
       }
+    } else {
+      ctx.fillStyle = '#6b4f2c';
+      ctx.fillRect(-6, -10, 12, 24);
     }
 
     ctx.restore();
@@ -1795,7 +1913,7 @@
   }
 
   // ==========================================
-  // 14. INPUT & MODAL LISTENERS
+  // 14. INPUT LISTENERS
   // ==========================================
   window.addEventListener('wheel', e => {
     if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
@@ -1829,7 +1947,6 @@
     });
   });
 
-  // Filter Tabs
   document.querySelectorAll('.bag-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.bag-tab').forEach(t => t.classList.remove('active-tab'));
@@ -1839,7 +1956,6 @@
     });
   });
 
-  // Sort Backpack
   document.getElementById('btn-sort-bag').addEventListener('click', () => {
     const rarityPriority = { Unique: 1, Rare: 2, Magic: 3, Currency: 4, Normal: 5 };
     player.bag.sort((a, b) => (rarityPriority[a.rarity] || 9) - (rarityPriority[b.rarity] || 9));

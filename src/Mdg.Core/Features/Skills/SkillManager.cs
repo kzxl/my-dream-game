@@ -13,11 +13,28 @@ namespace Mdg.Core.Features.Skills
         Point = 4
     }
 
+    [Flags]
+    public enum SkillTag
+    {
+        None = 0,
+        Physical = 1 << 0,
+        Fire = 1 << 1,
+        Cold = 1 << 2,
+        Lightning = 1 << 3,
+        Chaos = 1 << 4,
+        Melee = 1 << 5,
+        Spell = 1 << 6,
+        AoE = 1 << 7,
+        Movement = 1 << 8,
+        Attack = 1 << 9
+    }
+
     public sealed class SkillDefinition
     {
         public string Id { get; }
         public string Name { get; }
         public SkillTargetType TargetType { get; }
+        public SkillTag Tags { get; }
         public float BaseCooldown { get; } // Seconds
         public float ManaCost { get; }
         public float CastTime { get; }
@@ -25,16 +42,32 @@ namespace Mdg.Core.Features.Skills
         public float Radius { get; }
         public DamagePayload BaseDamage { get; } = new();
 
-        public SkillDefinition(string id, string name, SkillTargetType targetType, float baseCooldown, float manaCost, float castTime = 0f, float range = 10f, float radius = 0f)
+        public SkillDefinition(
+            string id,
+            string name,
+            SkillTargetType targetType,
+            SkillTag tags,
+            float baseCooldown,
+            float manaCost,
+            float castTime = 0f,
+            float range = 10f,
+            float radius = 0f)
         {
             Id = id;
             Name = name;
             TargetType = targetType;
+            Tags = tags;
             BaseCooldown = MathF.Max(0f, baseCooldown);
             ManaCost = MathF.Max(0f, manaCost);
             CastTime = MathF.Max(0f, castTime);
             Range = range;
             Radius = radius;
+        }
+
+        // Backward compatibility constructor
+        public SkillDefinition(string id, string name, SkillTargetType targetType, float baseCooldown, float manaCost, float castTime = 0f, float range = 10f, float radius = 0f)
+            : this(id, name, targetType, SkillTag.None, baseCooldown, manaCost, castTime, range, radius)
+        {
         }
 
         public SkillDefinition AddDamage(DamageType type, float amount)
@@ -62,10 +95,37 @@ namespace Mdg.Core.Features.Skills
             Level = Math.Max(1, level);
         }
 
-        public void AddExp(long amount)
+        public float CalculateExpMultiplier(string classSpecialization, float fireBonus = 0f, float physBonus = 0f)
         {
-            if (Level >= MaxLevel || amount <= 0) return;
-            CurrentExp += amount;
+            float multiplier = 1.0f;
+            var tags = Definition.Tags;
+
+            // Class affinity bonuses
+            if (classSpecialization == "Vanguard")
+            {
+                if ((tags & (SkillTag.Physical | SkillTag.Melee | SkillTag.Attack)) != 0) multiplier += 0.5f;
+            }
+            else if (classSpecialization == "Arcanist")
+            {
+                if ((tags & (SkillTag.Fire | SkillTag.Cold | SkillTag.Lightning | SkillTag.Spell | SkillTag.AoE)) != 0) multiplier += 0.6f;
+            }
+            else if (classSpecialization == "ShadowRogue")
+            {
+                if ((tags & (SkillTag.Chaos | SkillTag.Movement | SkillTag.Attack)) != 0) multiplier += 0.5f;
+            }
+
+            // Elemental and stat affinity bonuses
+            if ((tags & SkillTag.Fire) != 0 && fireBonus > 0f) multiplier += fireBonus * 0.01f;
+            if ((tags & SkillTag.Physical) != 0 && physBonus > 0f) multiplier += physBonus * 0.01f;
+
+            return MathF.Max(0.5f, multiplier);
+        }
+
+        public void AddExp(long baseAmount, float multiplier = 1.0f)
+        {
+            if (Level >= MaxLevel || baseAmount <= 0) return;
+            long finalExp = (long)(baseAmount * MathF.Max(0.1f, multiplier));
+            CurrentExp += finalExp;
 
             while (CurrentExp >= ExpToNextLevel && Level < MaxLevel)
             {
