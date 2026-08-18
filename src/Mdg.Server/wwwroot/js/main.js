@@ -47,6 +47,18 @@ export function canWalk(x, y) {
   return tile !== 1 && tile !== 2 && tile !== 10 && tile !== 11; // 1 = Wall, 2 = Deep Water, 10 = Pillar, 11 = Chasm
 }
 
+export function isProjectileBlocked(x, y) {
+  if (!currentZoneMap || !currentZoneMap.grid) return false;
+  const tx = Math.floor(x / 48);
+  const ty = Math.floor(y / 48);
+  if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return true;
+  const tile = currentZoneMap.grid[ty][tx];
+  return tile === 1 || tile === 10; // 1 = Solid Wall, 10 = Solid Stone Pillar
+}
+
+window.canWalk = canWalk;
+window.isProjectileBlocked = isProjectileBlocked;
+
 export function findSafeWalkableCoord(reqX, reqY) {
   if (!currentZoneMap || !currentZoneMap.grid) return { x: reqX || 672, y: reqY || 672 };
   const mapW = currentZoneMap.worldWidth || (currentZoneMap.widthInTiles * 48) || 1344;
@@ -437,28 +449,39 @@ function update(dt) {
     p.life -= dt;
 
     let hit = false;
-    monsters.forEach(m => {
-      if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
-        dealDamage(m, 10, p.damage || 85, 0, 0, 0);
-        hit = true;
-      }
-    });
 
-    trainingDummies.forEach(d => {
-      if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
-        dealDamage(d, 10, p.damage || 85, 0, 0, 0);
-        hit = true;
-      }
-    });
+    // 1. Terrain Wall / Pillar Collision Check
+    if (isProjectileBlocked(p.x, p.y)) {
+      hit = true;
+      AudioEngine.playTone(180, 'triangle', 0.12, 0.08);
+    }
+
+    // 2. Monster & Dummy Hit Checks
+    if (!hit) {
+      monsters.forEach(m => {
+        if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
+          dealDamage(m, 10, p.damage || 85, 0, 0, 0);
+          hit = true;
+        }
+      });
+
+      trainingDummies.forEach(d => {
+        if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
+          dealDamage(d, 10, p.damage || 85, 0, 0, 0);
+          hit = true;
+        }
+      });
+    }
 
     if (hit || p.life <= 0) {
+      const impactColor = p.type === 'frost' ? '#00f2fe' : (p.type === 'windblade' ? '#ffd700' : '#ff5722');
       for (let k = 0; k < 12; k++) {
         particles.push({
           x: p.x,
           y: p.y,
           vx: (Math.random() - 0.5) * 180,
           vy: (Math.random() - 0.5) * 180,
-          color: '#ff5722',
+          color: impactColor,
           life: 0.3,
           maxLife: 0.3,
           size: 5

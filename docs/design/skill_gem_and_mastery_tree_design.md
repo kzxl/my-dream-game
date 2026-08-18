@@ -167,14 +167,16 @@ public sealed class SkillGemInstance
 
 ---
 
-## 6. Lộ Trình Triển Khai Thực Tế
+## 7. Lộ Trình Triển Khai & Kiểm Thử
 
-1. **Giai đoạn 1 (Core Data & Socketing):**
+1. **Client Engine (`main.js`, `combat.js`):**
+   * Hàm `isProjectileBlocked(x, y)` kiểm tra va chạm đạn với `TILE_WALL (1)` và `TILE_ANCIENT_PILLAR (10)`.
+   * Raymarch Step Collision trong `castDash()` dừng lướt an toàn trước tường.
+   * Xóa đạn đạo và sinh chùm hạt va chạm (Impact Collision Particles) khi đạn trúng tường.
+2. **Backend C# (`Mdg.Core/Features/Combat/`):**
+   * Module `SkillTerrainCollision.cs` xác thực tính hợp lệ của đường đạn trên Server.
    * Chuyển đổi 5 kỹ năng hiện tại sang dạng **Skill Gem Items** trong túi đồ/kho ngọc.
-   * Người chơi nhặt được Skill Gem mới mở khóa được ô Hotbar tương ứng.
-2. **Giai đoạn 2 (Mastery Tree UI & Nodes):**
-   * Thiết kế giao diện **Skill Mastery Tree Modal** (phím `K`), khi chọn 1 Skill Gem sẽ mở ra cây tài năng trực quan gồm các nút nối liên kết.
-   * Cho phép tăng điểm, thử nghiệm build và tẩy điểm (Respec).
 3. **Giai đoạn 3 (Support Gems & Morph VFX):**
+   * Thiết kế giao diện **Skill Mastery Tree Modal** (phím `K`), khi chọn 1 Skill Gem sẽ mở ra cây tài năng trực quan gồm các nút nối liên kết.
    * Tạo các Support Gems cơ bản (*Greater Multiple Projectiles, Added Fire, Chain*).
    * Cập nhật hiệu ứng hạt Particle & VFX trên Canvas phản ánh đúng nhánh build đã chọn (ví dụ: Fireball bắn ra 3 tia hoặc Frost Nova màu tím Chaos).

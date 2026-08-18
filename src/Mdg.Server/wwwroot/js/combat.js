@@ -439,19 +439,34 @@ export function castDash() {
   }
 
   const dist = s.baseDistance + (s.level - 1) * s.distancePerLvl;
-  player.x += dx * dist;
-  player.y += dy * dist;
+  let remainingDist = dist;
+  const stepSize = 14;
+
+  while (remainingDist > 0) {
+    const curStep = Math.min(stepSize, remainingDist);
+    const nx = player.x + dx * curStep;
+    const ny = player.y + dy * curStep;
+
+    if (window.canWalk && !window.canWalk(nx, ny)) {
+      AudioEngine.playTone(160, 'triangle', 0.1, 0.08);
+      break;
+    }
+
+    player.x = nx;
+    player.y = ny;
+    remainingDist -= curStep;
+  }
 
   for (let i = 0; i < 8; i++) {
     particles.push({
-      x: player.x - dx * (i * 20),
-      y: player.y - dy * (i * 20),
+      x: player.x - dx * (i * 15),
+      y: player.y - dy * (i * 15),
       vx: 0,
       vy: 0,
       color: 'rgba(255, 255, 255, 0.4)',
       life: 0.25,
       maxLife: 0.25,
-      size: 16
+      size: 14
     });
   }
 }
