@@ -1,0 +1,493 @@
+/**
+ * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
+ * Main Orchestrator & Game Loop
+ */
+
+import { WORLD_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
+import { ZONES } from './data/zones.js';
+import { POSSIBLE_LOOT } from './data/items.js';
+import { SKILLS } from './data/skills.js';
+import { AudioEngine } from './audio.js';
+import { renderGame } from './renderer.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber } from './combat.js';
+import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
+import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
+import { showZoneBanner, setupUIListeners, toggleModal } from './ui/hud.js';
+import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
+
+window.keys = keys;
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const minimapCanvas = document.getElementById('minimapCanvas');
+const mmCtx = minimapCanvas.getContext('2d');
+
+ctx.imageSmoothingEnabled = false;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let currentZoneId = 'SanctuaryHaven';
+let currentZone = ZONES[currentZoneId];
+window.currentZoneId = currentZoneId;
+
+export function loadZone(zoneId, spawnX, spawnY) {
+  if (!ZONES[zoneId]) return;
+  currentZoneId = zoneId;
+  currentZone = ZONES[zoneId];
+  window.currentZoneId = currentZoneId;
+
+  monsters.length = 0;
+  trainingDummies.length = 0;
+  npcs.length = 0;
+  portals.length = 0;
+  props.length = 0;
+  projectiles.length = 0;
+  particles.length = 0;
+  floatingTexts.length = 0;
+  groundLoot.length = 0;
+
+  player.x = spawnX !== undefined ? spawnX : 2000;
+  player.y = spawnY !== undefined ? spawnY : 2000;
+
+  currentZone.portals.forEach(p => portals.push({ ...p }));
+  if (currentZone.npcs) currentZone.npcs.forEach(n => npcs.push({ ...n }));
+  if (currentZone.dummies) {
+    currentZone.dummies.forEach(d => {
+      trainingDummies.push({ x: d.x, y: d.y, name: d.name, life: 99999, maxLife: 99999, armor: 200, isAlive: true, hurtTimer: 0 });
+    });
+  }
+
+  if (currentZone.props && currentZone.props.length > 0) {
+    currentZone.props.forEach(pr => props.push({ ...pr }));
+  }
+
+  const propCount = currentZone.id === 'ForgottenCrypt' ? 60 : 120;
+  for (let i = 0; i < propCount; i++) {
+    let type = currentZone.id === 'ForgottenCrypt' ? (Math.random() < 0.7 ? 'rock' : 'chest') : (Math.random() < 0.65 ? 'tree' : (Math.random() < 0.85 ? 'rock' : 'barrel'));
+    const px = Math.random() * (WORLD_SIZE - 400) + 200;
+    const py = Math.random() * (WORLD_SIZE - 400) + 200;
+    if (Math.hypot(px - 2000, py - 2000) > 200) props.push({ x: px, y: py, type: type });
+  }
+
+  if (currentZone.id === 'WhisperingPlains') {
+    spawnMonsterCluster(1200, 1200, 6);
+    spawnMonsterCluster(2800, 1400, 7);
+    spawnMonsterCluster(1800, 2800, 8);
+  } else if (currentZone.id === 'ForgottenCrypt') {
+    spawnMonsterCluster(1200, 1500, 8);
+    spawnMonsterCluster(2600, 2800, 10);
+    spawnMonster(3200, 2000, 'boss');
+  }
+
+  showZoneBanner(currentZone.name, currentZone.subtitle);
+  document.getElementById('hud-zone-tag').innerText = `📍 ${currentZone.name}`;
+  document.getElementById('minimap-zone-title').innerText = currentZone.name.toUpperCase();
+
+  document.querySelectorAll('.zone-node').forEach(node => {
+    node.classList.toggle('active-node', node.getAttribute('data-zone') === currentZoneId);
+  });
+
+  updateBackpackUI();
+  updatePaperdollUI();
+  updateSkillBadges();
+  renderSkillUpgradeModal();
+}
+
+export function spawnMonster(x, y, type = 'slime') {
+  const isBoss = type === 'boss';
+  monsters.push({
+    id: Math.random().toString(36).substring(2, 9),
+    x: x,
+    y: y,
+    vx: 0,
+    vy: 0,
+    type: type,
+    name: isBoss ? '🔥 Dark Shadow Fiend (Lord of Crypt)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
+    maxLife: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
+    life: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
+    armor: isBoss ? 600 : (type === 'skeleton' ? 350 : 100),
+    fireRes: type === 'slime' ? 0 : (isBoss ? 50 : 30),
+    coldRes: type === 'slime' ? 70 : (isBoss ? 40 : 10),
+    speed: isBoss ? 140 : (100 + Math.random() * 40),
+    expValue: isBoss ? 500 : (type === 'slime' ? 30 : 45),
+    state: 'idle',
+    animTimer: Math.random() * 10,
+    isAlive: true,
+    hurtTimer: 0,
+    scale: isBoss ? 1.8 : 1.2
+  });
+}
+
+export function spawnMonsterCluster(cx, cy, count) {
+  const types = currentZone.id === 'ForgottenCrypt' ? ['skeleton', 'goblin'] : ['slime', 'goblin'];
+  for (let i = 0; i < count; i++) {
+    const type = types[Math.floor(Math.random() * types.length)];
+    spawnMonster(cx + (Math.random() - 0.5) * 320, cy + (Math.random() - 0.5) * 320, type);
+  }
+}
+
+export function dropMonsterLoot(x, y, isBoss) {
+  const dropCount = isBoss ? Math.floor(Math.random() * 3) + 4 : (Math.random() < 0.65 ? 1 : 0);
+
+  for (let i = 0; i < dropCount; i++) {
+    let itemTemplate;
+    if (isBoss && i === 0) {
+      itemTemplate = POSSIBLE_LOOT.find(it => it.rarity === 'Unique') || POSSIBLE_LOOT[0];
+    } else {
+      itemTemplate = POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)];
+    }
+
+    const dropAngle = Math.random() * Math.PI * 2;
+    const dropDistance = 40 + Math.random() * 80;
+
+    groundLoot.push({
+      id: Math.random().toString(36).substring(2, 9),
+      x: x,
+      y: y,
+      targetX: x + Math.cos(dropAngle) * dropDistance,
+      targetY: y + Math.sin(dropAngle) * dropDistance,
+      item: { ...itemTemplate },
+      bounceTimer: 0.5,
+      beamHeight: itemTemplate.rarity === 'Unique' ? 350 : (itemTemplate.rarity === 'Rare' || itemTemplate.rarity === 'Currency' ? 240 : 0)
+    });
+
+    AudioEngine.playLootDrop(itemTemplate.rarity);
+  }
+}
+
+window.gainExp = function(amount) {
+  player.currentExp += amount;
+  for (let k in SKILLS) addSkillExp(k, Math.round(amount * 0.8));
+
+  while (player.currentExp >= player.expToNext) {
+    player.currentExp -= player.expToNext;
+    player.level++;
+    player.skillPoints++;
+    player.expToNext = Math.round(player.expToNext * 1.4);
+
+    player.maxLife += 20;
+    player.life = player.maxLife;
+    player.maxMana += 10;
+    player.mana = player.maxMana;
+
+    AudioEngine.playLevelUp();
+    spawnDamageNumber(player.x, player.y - 60, `LEVEL UP (Lv.${player.level})! +1 SP`, true, '#ffd700');
+
+    document.getElementById('hud-level').innerText = `Lv.${player.level}`;
+    updateSkillBadges();
+    renderSkillUpgradeModal();
+
+    if (player.level >= 10 && player.classSpec === 'Novice') {
+      document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
+    }
+
+    saveToDatabase(true);
+  }
+};
+
+let lastTime = performance.now();
+let frameCount = 0;
+let fpsTimer = 0;
+
+function update(dt) {
+  camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
+
+  let mx = 0, my = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
+  if (keys['KeyS'] || keys['ArrowDown']) my += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+
+  player.isMoving = mx !== 0 || my !== 0;
+  if (player.isMoving) {
+    const len = Math.hypot(mx, my);
+    player.vx = (mx / len) * player.speed;
+    player.vy = (my / len) * player.speed;
+
+    if (Math.abs(mx) > Math.abs(my)) {
+      player.facing = mx > 0 ? 'right' : 'left';
+    } else {
+      player.facing = my > 0 ? 'down' : 'up';
+    }
+
+    player.x = Math.max(80, Math.min(WORLD_SIZE - 80, player.x + player.vx * dt));
+    player.y = Math.max(80, Math.min(WORLD_SIZE - 80, player.y + player.vy * dt));
+
+    player.animTimer += dt * 8;
+    player.animFrame = Math.floor(player.animTimer) % 4;
+  } else {
+    player.vx = 0;
+    player.vy = 0;
+    player.animTimer += dt * 2;
+    player.animFrame = 0;
+  }
+
+  portals.forEach(p => {
+    if (Math.hypot(player.x - p.x, player.y - p.y) < 55) {
+      loadZone(p.targetZone, p.targetX, p.targetY);
+    }
+  });
+
+  groundLoot.forEach(loot => {
+    if (loot.bounceTimer > 0) {
+      loot.bounceTimer -= dt;
+      loot.x += (loot.targetX - loot.x) * 0.15;
+      loot.y += (loot.targetY - loot.y) * 0.15;
+    }
+  });
+
+  for (let k in player.cooldowns) {
+    if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
+  }
+  player.mana = Math.min(player.maxMana, player.mana + 10 * dt);
+  player.life = Math.min(player.maxLife, player.life + 4 * dt);
+
+  if (mouse.isDown && player.cooldowns.slash <= 0) {
+    castSlash();
+  }
+
+  camera.x = player.x;
+  camera.y = player.y;
+
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  mouse.worldX = player.x + (mouse.x - centerX) / camera.zoom;
+  mouse.worldY = player.y + (mouse.y - centerY) / camera.zoom;
+
+  // Projectiles
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+
+    let hit = false;
+    monsters.forEach(m => {
+      if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
+        dealDamage(m, 10, p.damage || 85, 0, 0, 0);
+        hit = true;
+      }
+    });
+
+    trainingDummies.forEach(d => {
+      if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
+        dealDamage(d, 10, p.damage || 85, 0, 0, 0);
+        hit = true;
+      }
+    });
+
+    if (hit || p.life <= 0) {
+      for (let k = 0; k < 12; k++) {
+        particles.push({
+          x: p.x,
+          y: p.y,
+          vx: (Math.random() - 0.5) * 180,
+          vy: (Math.random() - 0.5) * 180,
+          color: '#ff5722',
+          life: 0.3,
+          maxLife: 0.3,
+          size: 5
+        });
+      }
+      projectiles.splice(i, 1);
+    }
+  }
+
+  // Boss Health Bar
+  let activeBoss = null;
+  monsters.forEach(m => {
+    if (!m.isAlive) return;
+    if (m.type === 'boss') activeBoss = m;
+
+    if (m.hurtTimer > 0) m.hurtTimer -= dt;
+    m.animTimer += dt * 5;
+
+    const dist = Math.hypot(player.x - m.x, player.y - m.y);
+    if (dist < 450 && dist > 35) {
+      const angle = Math.atan2(player.y - m.y, player.x - m.x);
+      m.x += Math.cos(angle) * m.speed * dt;
+      m.y += Math.sin(angle) * m.speed * dt;
+    }
+  });
+
+  const bossHud = document.getElementById('boss-hud-bar');
+  if (activeBoss && activeBoss.isAlive && Math.hypot(player.x - activeBoss.x, player.y - activeBoss.y) < 950) {
+    bossHud.classList.remove('boss-hud-hide');
+    const hpPct = Math.max(0, (activeBoss.life / activeBoss.maxLife) * 100);
+    document.getElementById('boss-hp-fill').style.width = `${hpPct}%`;
+    document.getElementById('boss-hp-text').innerText = `${Math.round(activeBoss.life)} / ${activeBoss.maxLife} (${Math.round(hpPct)}%)`;
+  } else {
+    bossHud.classList.add('boss-hud-hide');
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.y += ft.vy * dt;
+    ft.life -= dt;
+    if (ft.life <= 0) floatingTexts.splice(i, 1);
+  }
+
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById('bar-es').style.width = `${(player.es / player.maxEs) * 100}%`;
+  document.getElementById('text-es').innerText = `ES: ${Math.round(player.es)} / ${player.maxEs}`;
+
+  document.getElementById('bar-life').style.width = `${(player.life / player.maxLife) * 100}%`;
+  document.getElementById('text-life').innerText = `HP: ${Math.round(player.life)} / ${player.maxLife}`;
+
+  document.getElementById('bar-mana').style.width = `${(player.mana / player.maxMana) * 100}%`;
+  document.getElementById('text-mana').innerText = `MP: ${Math.round(player.mana)} / ${player.maxMana}`;
+
+  document.getElementById('zoom-level-text').innerText = `${Math.round(camera.zoom * 100)}%`;
+
+  for (let k in player.cooldowns) {
+    const el = document.getElementById(`cd-${k}`);
+    if (el) {
+      const maxCd = SKILLS[k] ? SKILLS[k].baseCooldown : 1.0;
+      const pct = (player.cooldowns[k] / maxCd) * 100;
+      el.style.height = `${pct}%`;
+    }
+  }
+}
+
+function gameLoop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  frameCount++;
+  fpsTimer += dt;
+  if (fpsTimer >= 1.0) {
+    document.getElementById('fps-counter').innerText = `${frameCount} FPS`;
+    frameCount = 0;
+    fpsTimer = 0;
+  }
+
+  update(dt);
+  renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Window Event Listeners
+window.addEventListener('wheel', e => {
+  if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
+  e.preventDefault();
+  const zoomFactor = -Math.sign(e.deltaY) * 0.15;
+  camera.targetZoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.targetZoom + zoomFactor));
+}, { passive: false });
+
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'KeyQ') castFireball();
+  if (e.code === 'KeyW') castFrostNova();
+  if (e.code === 'KeyE') castMeteor();
+  if (e.code === 'Space') castDash();
+  if (e.code === 'KeyK') toggleModal('skills-modal');
+  if (e.code === 'KeyM') toggleModal('worldmap-modal');
+  if (e.code === 'KeyC') toggleModal('stats-modal');
+  if (e.code === 'KeyI') toggleModal('inventory-modal');
+  if (e.code === 'Escape') {
+    document.getElementById('ascension-modal')?.classList.add('hidden');
+    document.getElementById('skills-modal')?.classList.add('hidden');
+    document.getElementById('inventory-modal')?.classList.add('hidden');
+    document.getElementById('worldmap-modal')?.classList.add('hidden');
+    document.getElementById('stats-modal')?.classList.add('hidden');
+  }
+
+  if (e.code === 'KeyF') {
+    let closestIdx = -1;
+    let minDistance = 120;
+    groundLoot.forEach((loot, idx) => {
+      const dist = Math.hypot(player.x - loot.x, player.y - loot.y);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIdx = idx;
+      }
+    });
+    if (closestIdx !== -1) pickUpLoot(closestIdx);
+  }
+});
+
+window.addEventListener('keyup', e => {
+  keys[e.code] = false;
+});
+
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+window.addEventListener('mousedown', e => {
+  if (e.button === 0 && e.target === canvas) {
+    AudioEngine.init();
+
+    let clickedLootIdx = -1;
+    groundLoot.forEach((loot, idx) => {
+      if (Math.hypot(mouse.worldX - loot.x, mouse.worldY - loot.y) < 40) clickedLootIdx = idx;
+    });
+
+    if (clickedLootIdx !== -1) {
+      const loot = groundLoot[clickedLootIdx];
+      if (Math.hypot(player.x - loot.x, player.y - loot.y) < 140) {
+        pickUpLoot(clickedLootIdx);
+        return;
+      }
+    }
+
+    mouse.isDown = true;
+    castSlash();
+  }
+});
+
+window.addEventListener('mouseup', e => {
+  if (e.button === 0) mouse.isDown = false;
+});
+
+// Setup Hotbar Clicks
+document.getElementById('slot-slash')?.addEventListener('click', castSlash);
+document.getElementById('slot-fireball')?.addEventListener('click', castFireball);
+document.getElementById('slot-frost')?.addEventListener('click', castFrostNova);
+document.getElementById('slot-meteor')?.addEventListener('click', castMeteor);
+document.getElementById('slot-dash')?.addEventListener('click', castDash);
+
+// Setup World Map Fast Travel
+document.querySelectorAll('.zone-node').forEach(node => {
+  node.addEventListener('click', () => {
+    const zone = node.getAttribute('data-zone');
+    if (zone === 'MoltenCaldera') {
+      alert('The Molten Caldera (Lv. 35+) is currently sealed by ancient magic!');
+      return;
+    }
+    toggleModal('worldmap-modal');
+    loadZone(zone);
+    saveToDatabase(true);
+  });
+});
+
+// Initialize UI and Game
+setupUIListeners();
+loadZone('SanctuaryHaven', 2000, 2000);
+
+// Load previous savegame from SQLite DB and begin auto-save loop
+(async function initSave() {
+  await loadFromDatabase();
+  startAutoSave(10000);
+})();
+
+requestAnimationFrame(gameLoop);

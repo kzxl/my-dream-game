@@ -1,13 +1,16 @@
 using Mdg.Client.Adapter.ViewModels;
 using Mdg.Core.Common.Math;
 using Mdg.Core.Features.Combat;
+using Mdg.Server.Database;
 using Mdg.Server.Services;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<GameDatabaseService>();
 builder.Services.AddSingleton<GameSessionService>();
 builder.Services.AddSingleton<IGameSessionService>(sp => sp.GetRequiredService<GameSessionService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
@@ -26,6 +29,30 @@ app.UseStaticFiles();
 
 // Health Check
 app.MapGet("/api/v1/health", () => new { status = "Online", game = "My Dream Game (MDG) Server", tickRate = 30 });
+
+// ==========================================
+// SQLITE PERSISTENCE ENDPOINTS
+// ==========================================
+app.MapGet("/api/v1/savegame", async (GameDatabaseService db, string? characterId) =>
+{
+    var cid = string.IsNullOrWhiteSpace(characterId) ? "hero_default" : characterId;
+    var savegame = await db.LoadSaveGameAsync(cid);
+    return savegame != null ? Results.Ok(savegame) : Results.NotFound(new { message = "No savegame found" });
+});
+
+app.MapPost("/api/v1/savegame", async (SaveGameDto dto, GameDatabaseService db) =>
+{
+    if (string.IsNullOrWhiteSpace(dto.CharacterId)) dto.CharacterId = "hero_default";
+    await db.SaveGameAsync(dto);
+    return Results.Ok(new { success = true, timestamp = DateTime.UtcNow });
+});
+
+app.MapPost("/api/v1/savegame/reset", async (GameDatabaseService db, string? characterId) =>
+{
+    var cid = string.IsNullOrWhiteSpace(characterId) ? "hero_default" : characterId;
+    await db.ResetSaveGameAsync(cid);
+    return Results.Ok(new { success = true, message = "Savegame reset successfully" });
+});
 
 // 1. Tạo Character
 app.MapPost("/api/v1/characters", (CreateCharacterRequest req, IGameSessionService gameService) =>

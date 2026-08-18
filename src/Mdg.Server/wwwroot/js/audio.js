@@ -1,0 +1,66 @@
+/**
+ * Web Audio API Sound Synthesizer
+ */
+
+export const AudioEngine = {
+  ctx: null,
+  init() {
+    if (!this.ctx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioContext();
+    }
+  },
+  playTone(freq, type, duration, gain = 0.1) {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gNode = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gNode.gain.setValueAtTime(gain, this.ctx.currentTime);
+      gNode.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      osc.connect(gNode);
+      gNode.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) {}
+  },
+  playLootDrop(rarity) {
+    this.init();
+    if (rarity === 'Unique') {
+      this.playTone(880, 'sine', 0.4, 0.18);
+      setTimeout(() => this.playTone(1320, 'sine', 0.6, 0.2), 80);
+    } else if (rarity === 'Rare' || rarity === 'Currency') {
+      this.playTone(720, 'triangle', 0.3, 0.15);
+      setTimeout(() => this.playTone(1080, 'sine', 0.4, 0.15), 60);
+    } else {
+      this.playTone(440, 'triangle', 0.2, 0.08);
+    }
+  },
+  playPickup() {
+    this.init();
+    this.playTone(580, 'sine', 0.15, 0.12);
+    setTimeout(() => this.playTone(880, 'sine', 0.25, 0.15), 50);
+  },
+  playHit(isCrit) {
+    this.init();
+    if (isCrit) {
+      this.playTone(180, 'sawtooth', 0.25, 0.2);
+      setTimeout(() => this.playTone(360, 'sine', 0.3, 0.15), 30);
+    } else {
+      this.playTone(120, 'square', 0.12, 0.08);
+    }
+  },
+  playLevelUp() {
+    this.init();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((note, idx) => {
+      setTimeout(() => this.playTone(note, 'triangle', 0.35, 0.15), idx * 100);
+    });
+  },
+  playSkillLevelUp() {
+    this.init();
+    this.playTone(659.25, 'sine', 0.2, 0.15);
+    setTimeout(() => this.playTone(987.77, 'sine', 0.3, 0.18), 70);
+  }
+};

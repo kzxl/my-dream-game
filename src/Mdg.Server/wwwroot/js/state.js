@@ -1,0 +1,84 @@
+/**
+ * Global Game State & Collections
+ */
+
+import { POSSIBLE_LOOT } from './data/items.js';
+
+export const WORLD_SIZE = 4000;
+export const TILE_SIZE = 64;
+
+export const camera = {
+  x: 2000,
+  y: 2000,
+  zoom: 1.0,
+  targetZoom: 1.0,
+  minZoom: 0.45,
+  maxZoom: 2.0
+};
+
+export const player = {
+  x: 2000,
+  y: 2000,
+  vx: 0,
+  vy: 0,
+  speed: 280,
+  facing: 'down',
+  isMoving: false,
+  animFrame: 0,
+  animTimer: 0,
+
+  gender: 'Male',
+  classSpec: 'Novice',
+  level: 1,
+  currentExp: 0,
+  expToNext: 100,
+  skillPoints: 3,
+
+  life: 250,
+  maxLife: 250,
+  mana: 120,
+  maxMana: 120,
+  es: 100,
+  maxEs: 100,
+
+  armor: 250,
+  evasion: 250,
+  fireRes: 75,
+  coldRes: 75,
+  lightRes: 75,
+  chaosRes: 40,
+  critChance: 25,
+  critMulti: 200,
+
+  cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
+
+  equipped: {
+    Helm: POSSIBLE_LOOT[1],
+    Amulet: POSSIBLE_LOOT[6],
+    MainHand: POSSIBLE_LOOT[0],
+    BodyArmor: POSSIBLE_LOOT[4],
+    OffHand: POSSIBLE_LOOT[3],
+    Ring: POSSIBLE_LOOT[7],
+    Boots: POSSIBLE_LOOT[5]
+  },
+  bag: [
+    POSSIBLE_LOOT[2],
+    POSSIBLE_LOOT[8],
+    POSSIBLE_LOOT[9],
+    POSSIBLE_LOOT[8]
+  ],
+  bagFilter: 'all'
+};
+
+export const monsters = [];
+export const trainingDummies = [];
+export const npcs = [];
+export const portals = [];
+export const props = [];
+export const projectiles = [];
+export const particles = [];
+export const floatingTexts = [];
+export const groundLoot = [];
+
+export const keys = {};
+export const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };

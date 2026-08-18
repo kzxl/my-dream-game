@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MDG: Aethelis - 2D ARPG Web Client & Inventory Overhaul</title>
-  <meta name="description" content="My Dream Game (MDG) - ARPG with Custom Equipment Sprites, Paperdoll & PoE Inventory Grid" />
+  <title>MDG: Aethelis - 2D ARPG Web Client (Modular & SQLite)</title>
+  <meta name="description" content="My Dream Game (MDG) - ARPG with Modular JS Architecture & SQLite Save System" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -133,7 +133,7 @@
       </div>
     </div>
 
-    <!-- OVERHAULED INVENTORY & EQUIPMENT MODAL (Hotkey I) -->
+    <!-- INVENTORY & PAPERDOLL MODAL (Hotkey I) -->
     <div id="inventory-modal" class="pixel-modal inv-modal-overhaul hidden">
       <div class="modal-header">
         <div class="inv-title-group">
@@ -238,16 +238,10 @@
       </div>
       <div class="poe-separator"><span>✦</span></div>
       <div class="poe-tt-body">
-        <div id="tt-stats" class="poe-tt-stats">
-          <!-- Primary Attributes -->
-        </div>
+        <div id="tt-stats" class="poe-tt-stats"></div>
         <div class="poe-separator separator-sub"><span>✦</span></div>
-        <div id="tt-mods" class="poe-tt-mods">
-          <!-- Explicit Modifiers -->
-        </div>
-        <div id="tt-lore" class="poe-tt-lore">
-          <!-- Item Lore Text -->
-        </div>
+        <div id="tt-mods" class="poe-tt-mods"></div>
+        <div id="tt-lore" class="poe-tt-lore"></div>
       </div>
       <div class="poe-tt-footer">
         <span>[LMB] Equip to Slot &nbsp;|&nbsp; [RMB] Inspect</span>
@@ -264,16 +258,17 @@
         <span>Available Skill Points: <b id="sp-points-text" class="gold-text">3 SP</b></span>
         <small class="hint-small">Earn 1 SP per Character Level or level up skills naturally via combat EXP!</small>
       </div>
-      <div class="skills-grid" id="skills-upgrade-container">
-        <!-- Dynamic Skill Upgrade Cards -->
-      </div>
+      <div class="skills-grid" id="skills-upgrade-container"></div>
     </div>
 
-    <!-- Class Ascension Selection Modal -->
+    <!-- Class Ascension Selection Modal (With Close Button) -->
     <div id="ascension-modal" class="worldmap-modal-wrap hidden">
       <div class="ascension-card-box">
         <div class="ascension-header">
-          <h2>⭐ CHOOSE YOUR DESTINY (CLASS ASCENSION)</h2>
+          <div class="ascension-title-row">
+            <h2>⭐ CHOOSE YOUR DESTINY (CLASS ASCENSION)</h2>
+            <button id="btn-close-ascension" class="close-btn" title="Close (Choose Later)">✖</button>
+          </div>
           <p>You have proven your valor! Select a specialization to master your powers.</p>
         </div>
         <div class="ascension-grid">
@@ -378,17 +373,18 @@
           <div class="stat-row"><span>Movement Speed:</span> <b id="stat-speed">6.0 m/s</b></div>
           <div class="stat-row"><span>Critical Strike Chance:</span> <b id="stat-crit-chance">35.0%</b></div>
           <div class="stat-row"><span>Critical Multiplier:</span> <b id="stat-crit-multi">220% (2.2x)</b></div>
-          <div class="stat-row"><span>PoE Stat Formula:</span> <small class="gold-text">(Base + Flat) × Inc × More</small></div>
+          <div class="stat-row"><span>Database Persistence:</span> <b class="gold-text">SQLite (mdg_world.db)</b></div>
         </div>
       </div>
     </div>
 
-    <!-- Help & Controls Overlay -->
+    <!-- Controls Hint -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag & Gear | <b>K</b>: Skills | <b>Click Avatar</b>: ♂/♀ | <b>F</b>: Loot Pickup</span>
+      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>ESC</b>: Close Modals | <b>F</b>: Pickup | 💾 <b>Auto-Save</b>: SQLite</span>
     </div>
   </div>
 
-  <script src="game.js"></script>
+  <!-- Load Main ES Module -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

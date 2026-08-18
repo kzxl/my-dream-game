@@ -1,0 +1,144 @@
+/**
+ * HUD, Modals & User Interface Controller
+ */
+
+import { player, camera } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { spawnDamageNumber } from '../combat.js';
+import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
+import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js';
+import { saveToDatabase } from '../save-system.js';
+
+export function showZoneBanner(title, sub) {
+  const banner = document.getElementById('zone-banner');
+  if (!banner) return;
+  document.getElementById('zone-banner-title').innerText = title.toUpperCase();
+  document.getElementById('zone-banner-sub').innerText = sub;
+  banner.classList.remove('zone-banner-hide');
+  clearTimeout(banner._timeout);
+  banner._timeout = setTimeout(() => banner.classList.add('zone-banner-hide'), 3500);
+}
+
+export function setGender(newGender) {
+  player.gender = newGender;
+  const avatar = document.getElementById('hud-avatar');
+  const tag = document.getElementById('hud-gender-tag');
+
+  if (newGender === 'Female') {
+    avatar.classList.add('avatar-female');
+    tag.innerText = '♀ Female';
+    tag.style.color = '#ff79c6';
+  } else {
+    avatar.classList.remove('avatar-female');
+    tag.innerText = '♂ Male';
+    tag.style.color = '#61afef';
+  }
+  spawnDamageNumber(player.x, player.y - 40, `Hero: ${newGender}`, false, '#98c379');
+  saveToDatabase(true);
+}
+
+export function selectClassSpecialization(spec) {
+  player.classSpec = spec;
+  document.getElementById('ascension-modal').classList.add('hidden');
+  document.getElementById('btn-ascend-trigger').classList.add('hidden');
+
+  if (spec === 'Vanguard') {
+    player.armor += 300;
+    player.maxLife += 150;
+    player.life = player.maxLife;
+    document.getElementById('hud-name').innerText = `${player.gender === 'Male' ? 'Vanguard Knight' : 'Vanguard Valkyrie'}`;
+    document.getElementById('icon-slot-1').innerText = '🪓';
+    document.getElementById('icon-slot-4').innerText = '🛡️';
+  } else if (spec === 'Arcanist') {
+    player.maxEs += 200;
+    player.es = player.maxEs;
+    document.getElementById('hud-name').innerText = `${player.gender === 'Male' ? 'Grand Arcanist' : 'High Sorceress'}`;
+    document.getElementById('icon-slot-1').innerText = '✨';
+    document.getElementById('icon-slot-4').innerText = '☄️';
+  } else if (spec === 'ShadowRogue') {
+    player.evasion += 350;
+    player.critChance += 25;
+    document.getElementById('hud-name').innerText = `${player.gender === 'Male' ? 'Shadow Assassin' : 'Nightshade Rogue'}`;
+    document.getElementById('icon-slot-1').innerText = '🗡️';
+    document.getElementById('icon-slot-4').innerText = '💨';
+  }
+
+  AudioEngine.playLevelUp();
+  spawnDamageNumber(player.x, player.y - 60, `ASCENDED: ${spec.toUpperCase()}!`, true, '#ffd700');
+  renderSkillUpgradeModal();
+  saveToDatabase();
+}
+
+export function toggleModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.toggle('hidden');
+    if (id === 'skills-modal' && !el.classList.contains('hidden')) renderSkillUpgradeModal();
+    if (id === 'inventory-modal' && !el.classList.contains('hidden')) {
+      updateBackpackUI();
+      updatePaperdollUI();
+    }
+  }
+}
+
+export function setupUIListeners() {
+  // Zoom Controls
+  document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+    camera.targetZoom = Math.min(camera.maxZoom, camera.targetZoom + 0.25);
+  });
+  document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+    camera.targetZoom = Math.max(camera.minZoom, camera.targetZoom - 0.25);
+  });
+  document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
+    camera.targetZoom = 1.0;
+  });
+
+  // Gender Switch
+  document.getElementById('btn-toggle-gender')?.addEventListener('click', () => {
+    setGender(player.gender === 'Male' ? 'Female' : 'Male');
+  });
+
+  // Ascension Modal (Trigger & Close)
+  document.getElementById('btn-ascend-trigger')?.addEventListener('click', () => {
+    document.getElementById('ascension-modal')?.classList.remove('hidden');
+  });
+  document.getElementById('btn-close-ascension')?.addEventListener('click', () => {
+    document.getElementById('ascension-modal')?.classList.add('hidden');
+  });
+
+  document.querySelectorAll('.class-choice-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const spec = card.getAttribute('data-class');
+      selectClassSpecialization(spec);
+    });
+  });
+
+  // Inventory Filters
+  document.querySelectorAll('.bag-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.bag-tab').forEach(t => t.classList.remove('active-tab'));
+      tab.classList.add('active-tab');
+      player.bagFilter = tab.getAttribute('data-filter');
+      updateBackpackUI();
+    });
+  });
+
+  // Sort Bag
+  document.getElementById('btn-sort-bag')?.addEventListener('click', () => {
+    const rarityPriority = { Unique: 1, Rare: 2, Magic: 3, Currency: 4, Normal: 5 };
+    player.bag.sort((a, b) => (rarityPriority[a.rarity] || 9) - (rarityPriority[b.rarity] || 9));
+    AudioEngine.playPickup();
+    updateBackpackUI();
+    saveToDatabase(true);
+  });
+
+  // Modal Buttons
+  document.getElementById('btn-toggle-skills')?.addEventListener('click', () => toggleModal('skills-modal'));
+  document.getElementById('btn-close-skills')?.addEventListener('click', () => toggleModal('skills-modal'));
+  document.getElementById('btn-toggle-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
+  document.getElementById('btn-close-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
+  document.getElementById('btn-toggle-stats')?.addEventListener('click', () => toggleModal('stats-modal'));
+  document.getElementById('btn-close-stats')?.addEventListener('click', () => toggleModal('stats-modal'));
+  document.getElementById('btn-toggle-inventory')?.addEventListener('click', () => toggleModal('inventory-modal'));
+  document.getElementById('btn-close-inventory')?.addEventListener('click', () => toggleModal('inventory-modal'));
+}

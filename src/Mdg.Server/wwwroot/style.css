@@ -891,8 +891,9 @@ canvas#gameCanvas {
   align-items: center;
 }
 
-.ascension-header { text-align: center; margin-bottom: 20px; }
-.ascension-header h2 { font-family: 'Press Start 2P', monospace; font-size: 14px; color: #ffd700; margin-bottom: 6px; }
+.ascension-header { width: 100%; text-align: center; margin-bottom: 20px; }
+.ascension-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 6px; }
+.ascension-header h2 { font-family: 'Press Start 2P', monospace; font-size: 14px; color: #ffd700; flex: 1; text-align: center; }
 .ascension-header p { color: #98c379; font-size: 13px; }
 .ascension-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; }
 
