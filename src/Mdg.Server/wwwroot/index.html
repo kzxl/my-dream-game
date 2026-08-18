@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MDG: Aethelis - 2D ARPG Web Client & World Map</title>
+  <meta name="description" content="My Dream Game (MDG) - Pure C# Core Cross-Platform 2D Top-Down ARPG with World Map & Multi-Zone Dungeons" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-container">
+    <!-- Main Render Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Zone Entry Banner Notification -->
+    <div id="zone-banner" class="zone-banner-hide">
+      <h2 id="zone-banner-title">SANCTUARY HAVEN</h2>
+      <p id="zone-banner-sub">🌿 Vùng Đất Khởi Đầu - Khu Vực An Toàn</p>
+    </div>
+
+    <!-- Top Left HUD: Character Info & Globes -->
+    <div id="player-hud" class="pixel-panel">
+      <div class="portrait-box">
+        <div class="avatar-pixel"></div>
+        <span class="level-badge" id="hud-level">Lv.99</span>
+      </div>
+      <div class="bars-container">
+        <div class="name-row">
+          <span id="hud-name" class="char-name">Vanguard Hero</span>
+          <span class="zone-badge" id="hud-zone-tag">🌿 Sanctuary Haven</span>
+        </div>
+        <!-- Energy Shield Bar -->
+        <div class="bar-wrapper es-bar-wrap" id="wrap-es">
+          <div class="bar-fill es-fill" id="bar-es" style="width: 100%;"></div>
+          <span class="bar-text" id="text-es">ES: 100 / 100</span>
+        </div>
+        <!-- Life Bar -->
+        <div class="bar-wrapper life-bar-wrap">
+          <div class="bar-fill life-fill" id="bar-life" style="width: 100%;"></div>
+          <span class="bar-text" id="text-life">HP: 250 / 250</span>
+        </div>
+        <!-- Mana Bar -->
+        <div class="bar-wrapper mana-bar-wrap">
+          <div class="bar-fill mana-fill" id="bar-mana" style="width: 100%;"></div>
+          <span class="bar-text" id="text-mana">MP: 120 / 120</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Right: Minimap & Quick Actions -->
+    <div id="minimap-panel" class="pixel-panel">
+      <div class="minimap-header">
+        <span id="minimap-zone-title">HAVEN</span>
+        <span id="fps-counter" class="fps-tag">60 FPS</span>
+      </div>
+      <canvas id="minimapCanvas" width="140" height="100"></canvas>
+      <div class="quick-buttons">
+        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="Bản đồ thế giới Aethelis">🗺️ Map (M)</button>
+        <button id="btn-toggle-stats" class="hud-btn" title="Chỉ số nhân vật">📊 Stats (C)</button>
+        <button id="btn-toggle-inventory" class="hud-btn" title="Túi đồ & Trang bị">🎒 Bag (I)</button>
+        <button id="btn-spawn-monster" class="hud-btn" title="Spawn quái">⚔️ Spawn</button>
+      </div>
+    </div>
+
+    <!-- Bottom Center: Hotbar & Skills -->
+    <div id="bottom-hotbar">
+      <div class="hotbar-slots">
+        <!-- Skill 1: Basic Attack / Slash -->
+        <div class="skill-slot" id="slot-slash" data-key="LMB / 1">
+          <div class="skill-icon icon-slash">⚔️</div>
+          <div class="cooldown-overlay" id="cd-slash"></div>
+          <span class="key-hint">LMB</span>
+        </div>
+        <!-- Skill 2: Fireball -->
+        <div class="skill-slot" id="slot-fireball" data-key="Q">
+          <div class="skill-icon icon-fireball">🔥</div>
+          <div class="cooldown-overlay" id="cd-fireball"></div>
+          <span class="key-hint">Q</span>
+          <span class="mana-hint">10 MP</span>
+        </div>
+        <!-- Skill 3: Frost Nova -->
+        <div class="skill-slot" id="slot-frost" data-key="W">
+          <div class="skill-icon icon-frost">❄️</div>
+          <div class="cooldown-overlay" id="cd-frost"></div>
+          <span class="key-hint">W</span>
+          <span class="mana-hint">15 MP</span>
+        </div>
+        <!-- Skill 4: Meteor Strike -->
+        <div class="skill-slot" id="slot-meteor" data-key="E">
+          <div class="skill-icon icon-meteor">☄️</div>
+          <div class="cooldown-overlay" id="cd-meteor"></div>
+          <span class="key-hint">E</span>
+          <span class="mana-hint">30 MP</span>
+        </div>
+        <!-- Skill 5: Dash / Dodge -->
+        <div class="skill-slot" id="slot-dash" data-key="Space">
+          <div class="skill-icon icon-dash">💨</div>
+          <div class="cooldown-overlay" id="cd-dash"></div>
+          <span class="key-hint">SPACE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen World Map Modal (Aethelis World Map) -->
+    <div id="worldmap-modal" class="worldmap-modal-wrap hidden">
+      <div class="worldmap-content">
+        <div class="worldmap-header">
+          <h2>BẢN ĐỒ THẾ GIỚI AETHELIS (THE FRACTURED WORLD)</h2>
+          <button id="btn-close-worldmap" class="close-btn">✖</button>
+        </div>
+        <div class="worldmap-body">
+          <div class="worldmap-canvas-wrap">
+            <img id="img-world-map" src="/assets/aethelis_world_map.png" alt="Aethelis World Map" />
+            
+            <!-- Interactive Zone Nodes -->
+            <div class="zone-node node-haven active-node" id="node-haven" data-zone="SanctuaryHaven" title="Sanctuary Haven (Lv. 1-5)">
+              <div class="node-pulse"></div>
+              <span class="node-label">🌿 Sanctuary Haven<br><small>(Khu An Toàn)</small></span>
+            </div>
+
+            <div class="zone-node node-plains" id="node-plains" data-zone="WhisperingPlains" title="Whispering Plains (Lv. 5-15)">
+              <div class="node-pulse"></div>
+              <span class="node-label">🌾 Whispering Plains<br><small>(Bãi Săn Quái)</small></span>
+            </div>
+
+            <div class="zone-node node-crypt" id="node-crypt" data-zone="ForgottenCrypt" title="Forgotten Crypt (Lv. 15-25)">
+              <div class="node-pulse"></div>
+              <span class="node-label">🏰 Forgotten Crypt<br><small>(Hầm Ngục Boss)</small></span>
+            </div>
+
+            <div class="zone-node node-caldera node-locked" id="node-caldera" data-zone="MoltenCaldera" title="Molten Caldera (Lv. 35+ Khóa)">
+              <div class="node-lock">🔒</div>
+              <span class="node-label">🌋 Molten Caldera<br><small>(Sắp Ra Mắt)</small></span>
+            </div>
+          </div>
+        </div>
+        <div class="worldmap-footer">
+          <span>💡 Bấm vào một khu vực để dịch chuyển tức thời (Fast Travel Waypoint).</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Drawer (Modal) -->
+    <div id="stats-modal" class="pixel-modal hidden">
+      <div class="modal-header">
+        <h3>THUỘC TÍNH (PoE STATS)</h3>
+        <button id="btn-close-stats" class="close-btn">✖</button>
+      </div>
+      <div class="modal-body">
+        <div class="stat-group">
+          <h4>Phòng Thủ & Kháng Tính</h4>
+          <div class="stat-row"><span>Giáp (Armor):</span> <b id="stat-armor">500</b></div>
+          <div class="stat-row"><span>Né tránh (Evasion):</span> <b id="stat-evasion">350</b></div>
+          <div class="stat-row"><span>Kháng Lửa (Fire Res):</span> <b id="stat-fire-res" class="res-fire">75% (Cap)</b></div>
+          <div class="stat-row"><span>Kháng Băng (Cold Res):</span> <b id="stat-cold-res" class="res-cold">75% (Cap)</b></div>
+          <div class="stat-row"><span>Kháng Sét (Lightning Res):</span> <b id="stat-light-res" class="res-light">75% (Cap)</b></div>
+          <div class="stat-row"><span>Kháng Hỗn Mang (Chaos Res):</span> <b id="stat-chaos-res" class="res-chaos">40%</b></div>
+        </div>
+        <div class="stat-group">
+          <h4>Tấn Công & Chí Mạng</h4>
+          <div class="stat-row"><span>Tốc độ di chuyển:</span> <b id="stat-speed">6.0 m/s</b></div>
+          <div class="stat-row"><span>Chí mạng (Crit Chance):</span> <b id="stat-crit-chance">35.0%</b></div>
+          <div class="stat-row"><span>Sát thương Chí mạng:</span> <b id="stat-crit-multi">220% (2.2x)</b></div>
+          <div class="stat-row"><span>Công thức PoE:</span> <small class="gold-text">(Base + Flat) × Inc × More</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory / Equipment Drawer (Modal) -->
+    <div id="inventory-modal" class="pixel-modal hidden">
+      <div class="modal-header">
+        <h3>TRANG BỊ & TÚI ĐỒ (PAPERDOLL)</h3>
+        <button id="btn-close-inventory" class="close-btn">✖</button>
+      </div>
+      <div class="modal-body">
+        <div class="equipment-paperdoll">
+          <div class="equip-slot" id="equip-helm" title="Mũ Chiến Binh">👑 <span>Mũ Giáp Vàng</span></div>
+          <div class="equip-slot" id="equip-armor" title="Giáp Thân">🛡️ <span>Thiết Giáp Tinh Luyện</span></div>
+          <div class="equip-slot active-gear" id="equip-weapon" title="Vũ Khí">🗡️ <span>Hỏa Kiếm Cổ Đại (+40 Fire)</span></div>
+          <div class="equip-slot active-gear" id="equip-shield" title="Khiên">🛡️ <span>Khiên Hộ Vệ (+50 Armor)</span></div>
+        </div>
+        <p class="inventory-hint">💡 Bấm vào ô trang bị để bật/tắt buff thử nghiệm trực tiếp lên Core.</p>
+      </div>
+    </div>
+
+    <!-- Help & Controls Overlay -->
+    <div id="controls-hint">
+      <span>🎮 <b>WASD</b>: Di chuyển | <b>Chuột trái</b>: Đánh thường | <b>Q, W, E</b>: Kỹ năng | <b>Space</b>: Lướt | <b>M</b>: Bản đồ thế giới | <b>C/I</b>: Stats / Bag</span>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -13,16 +13,24 @@ builder.Services.AddSingleton<IGameSessionService>(sp => sp.GetRequiredService<G
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
 
 var app = builder.Build();
 
+app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 // Health Check
-app.MapGet("/", () => new { status = "Online", game = "My Dream Game (MDG) Server", tickRate = 30 });
+app.MapGet("/api/v1/health", () => new { status = "Online", game = "My Dream Game (MDG) Server", tickRate = 30 });
 
 // 1. Tạo Character
 app.MapPost("/api/v1/characters", (CreateCharacterRequest req, IGameSessionService gameService) =>
 {
-    var character = gameService.CreateCharacter(req.Name);
+    var character = gameService.CreateCharacter(string.IsNullOrWhiteSpace(req.Name) ? "Hero" : req.Name);
     var vm = new CharacterViewModel(character);
     return Results.Ok(new
     {
@@ -32,6 +40,8 @@ app.MapPost("/api/v1/characters", (CreateCharacterRequest req, IGameSessionServi
         maxLife = vm.MaxLife,
         mana = vm.CurrentMana,
         maxMana = vm.MaxMana,
+        energyShield = vm.CurrentEnergyShield,
+        maxEnergyShield = vm.MaxEnergyShield,
         skills = vm.GetSkillStatuses()
     });
 });
@@ -54,6 +64,8 @@ app.MapGet("/api/v1/characters/{id:guid}", (Guid id, IGameSessionService gameSer
         maxMana = vm.MaxMana,
         energyShield = vm.CurrentEnergyShield,
         maxEnergyShield = vm.MaxEnergyShield,
+        armor = vm.Armor,
+        evasion = vm.Evasion,
         resists = new
         {
             fire = vm.FireResistance,
@@ -82,7 +94,7 @@ app.MapPost("/api/v1/characters/{id:guid}/cast-skill", (Guid id, CastSkillReques
     });
 });
 
-app.Run();
+app.Run("http://localhost:5123");
 
 public record CreateCharacterRequest(string Name);
 public record CastSkillRequest(string SkillId, float TargetX, float TargetY);
