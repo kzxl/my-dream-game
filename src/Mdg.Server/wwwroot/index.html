@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MDG: Aethelis - 2D ARPG Web Client & Class Ascension</title>
-  <meta name="description" content="My Dream Game (MDG) - Pure C# Core ARPG with Gender Selection & Class Ascension" />
+  <title>MDG: Aethelis - 2D ARPG Web Client & Skill Leveling</title>
+  <meta name="description" content="My Dream Game (MDG) - Pure C# Core ARPG with Gender Selection, Class Ascension & Skill Leveling" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
@@ -83,43 +83,68 @@
 
       <div class="quick-buttons">
         <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map (M)">🗺️ Map (M)</button>
+        <button id="btn-toggle-skills" class="hud-btn highlight-btn" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
         <button id="btn-toggle-stats" class="hud-btn" title="Attributes (C)">📊 Stats (C)</button>
         <button id="btn-toggle-inventory" class="hud-btn" title="Inventory (I)">🎒 Bag (I)</button>
-        <button id="btn-spawn-monster" class="hud-btn" title="Spawn Monsters">⚔️ Spawn</button>
       </div>
     </div>
 
-    <!-- Bottom Center: Hotbar & Skills -->
+    <!-- Bottom Center: Hotbar & Skills with Level Badges -->
     <div id="bottom-hotbar">
       <div class="hotbar-slots">
+        <!-- Slot 1: Slash -->
         <div class="skill-slot" id="slot-slash" data-key="LMB / 1">
           <div class="skill-icon icon-slash" id="icon-slot-1">⚔️</div>
           <div class="cooldown-overlay" id="cd-slash"></div>
           <span class="key-hint">LMB</span>
+          <span class="skill-lvl-badge" id="lvl-badge-slash">Lv.1</span>
         </div>
+        <!-- Slot 2: Fireball -->
         <div class="skill-slot" id="slot-fireball" data-key="Q">
           <div class="skill-icon icon-fireball" id="icon-slot-2">🔥</div>
           <div class="cooldown-overlay" id="cd-fireball"></div>
           <span class="key-hint">Q</span>
           <span class="mana-hint">10 MP</span>
+          <span class="skill-lvl-badge" id="lvl-badge-fireball">Lv.1</span>
         </div>
+        <!-- Slot 3: Frost Nova -->
         <div class="skill-slot" id="slot-frost" data-key="W">
           <div class="skill-icon icon-frost" id="icon-slot-3">❄️</div>
           <div class="cooldown-overlay" id="cd-frost"></div>
           <span class="key-hint">W</span>
           <span class="mana-hint">15 MP</span>
+          <span class="skill-lvl-badge" id="lvl-badge-frost">Lv.1</span>
         </div>
+        <!-- Slot 4: Meteor -->
         <div class="skill-slot" id="slot-meteor" data-key="E">
           <div class="skill-icon icon-meteor" id="icon-slot-4">☄️</div>
           <div class="cooldown-overlay" id="cd-meteor"></div>
           <span class="key-hint">E</span>
           <span class="mana-hint">30 MP</span>
+          <span class="skill-lvl-badge" id="lvl-badge-meteor">Lv.1</span>
         </div>
+        <!-- Slot 5: Dash -->
         <div class="skill-slot" id="slot-dash" data-key="Space">
           <div class="skill-icon icon-dash">💨</div>
           <div class="cooldown-overlay" id="cd-dash"></div>
           <span class="key-hint">SPACE</span>
+          <span class="skill-lvl-badge" id="lvl-badge-dash">Lv.1</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Skills Tree & Level Upgrade Modal (Hotkey K) -->
+    <div id="skills-modal" class="pixel-modal skills-modal-wide hidden">
+      <div class="modal-header">
+        <h3>⚡ SKILL TREE & LEVEL UPGRADE (GEM MASTERY)</h3>
+        <button id="btn-close-skills" class="close-btn">✖</button>
+      </div>
+      <div class="skills-sp-banner">
+        <span>Available Skill Points: <b id="sp-points-text" class="gold-text">3 SP</b></span>
+        <small class="hint-small">Earn 1 SP per Character Level or level up skills naturally via combat EXP!</small>
+      </div>
+      <div class="skills-grid" id="skills-upgrade-container">
+        <!-- Dynamic Skill Upgrade Cards -->
       </div>
     </div>
 
@@ -285,7 +310,7 @@
 
     <!-- Help & Controls Overlay -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>Click Avatar</b>: Switch ♂/♀ | <b>LMB/F</b>: Attack/Loot | <b>Q/W/E</b>: Skills | <b>M/C/I</b>: Map/Stats/Bag</span>
+      <span>🎮 <b>WASD</b>: Move | <b>K</b>: Skill Levels | <b>Click Avatar</b>: ♂/♀ | <b>LMB/F</b>: Attack/Loot | <b>M/C/I</b>: Map/Stats/Bag</span>
     </div>
   </div>
 

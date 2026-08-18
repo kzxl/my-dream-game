@@ -22,7 +22,7 @@ namespace Mdg.Core.Features.Skills
         public float ManaCost { get; }
         public float CastTime { get; }
         public float Range { get; }
-        public float Radius { get; } // Bán kính AoE (nếu có)
+        public float Radius { get; }
         public DamagePayload BaseDamage { get; } = new();
 
         public SkillDefinition(string id, string name, SkillTargetType targetType, float baseCooldown, float manaCost, float castTime = 0f, float range = 10f, float radius = 0f)
@@ -47,9 +47,14 @@ namespace Mdg.Core.Features.Skills
     public sealed class SkillInstance
     {
         public SkillDefinition Definition { get; }
-        public int Level { get; set; } = 1;
+        public int Level { get; private set; } = 1;
+        public int MaxLevel { get; } = 20;
+        public long CurrentExp { get; private set; } = 0;
+        public long ExpToNextLevel => Level * 120L;
         public float CurrentCooldown { get; set; }
         public bool IsReady => CurrentCooldown <= 0f;
+
+        public event Action<int>? OnSkillLevelUp;
 
         public SkillInstance(SkillDefinition definition, int level = 1)
         {
@@ -57,9 +62,40 @@ namespace Mdg.Core.Features.Skills
             Level = Math.Max(1, level);
         }
 
+        public void AddExp(long amount)
+        {
+            if (Level >= MaxLevel || amount <= 0) return;
+            CurrentExp += amount;
+
+            while (CurrentExp >= ExpToNextLevel && Level < MaxLevel)
+            {
+                CurrentExp -= ExpToNextLevel;
+                Level++;
+                OnSkillLevelUp?.Invoke(Level);
+            }
+        }
+
+        public bool LevelUp()
+        {
+            if (Level >= MaxLevel) return false;
+            Level++;
+            OnSkillLevelUp?.Invoke(Level);
+            return true;
+        }
+
+        public float GetScaledCooldown()
+        {
+            return MathF.Max(0.2f, Definition.BaseCooldown - (Level - 1) * 0.02f);
+        }
+
+        public float GetScaledManaCost()
+        {
+            return Definition.ManaCost + (Level - 1) * 1.5f;
+        }
+
         public void TriggerCooldown()
         {
-            CurrentCooldown = Definition.BaseCooldown;
+            CurrentCooldown = GetScaledCooldown();
         }
 
         public void UpdateCooldown(float deltaTime)
@@ -118,9 +154,9 @@ namespace Mdg.Core.Features.Skills
                 return false;
             }
 
-            if (currentMana < skill.Definition.ManaCost)
+            if (currentMana < skill.GetScaledManaCost())
             {
-                failureReason = $"Not enough mana (Required: {skill.Definition.ManaCost}, Current: {currentMana}).";
+                failureReason = $"Not enough mana (Required: {skill.GetScaledManaCost():F0}, Current: {currentMana:F0}).";
                 return false;
             }
 
@@ -136,7 +172,7 @@ namespace Mdg.Core.Features.Skills
             }
 
             var skill = _skills[request.SkillId];
-            currentMana -= skill.Definition.ManaCost;
+            currentMana -= skill.GetScaledManaCost();
             skill.TriggerCooldown();
 
             OnSkillCasted?.Invoke(skill, request);

@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Gender Selection (Male/Female), Leveling & Class Ascension System
+ * Skill Leveling System (Lv.1-20), Skill Points (SP) & Real-time Scaling
  */
 
 (function () {
@@ -21,7 +21,6 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // World & Camera Settings (4000x4000)
   const WORLD_SIZE = 4000;
   const TILE_SIZE = 64;
 
@@ -92,11 +91,16 @@
       notes.forEach((note, idx) => {
         setTimeout(() => this.playTone(note, 'triangle', 0.35, 0.15), idx * 100);
       });
+    },
+    playSkillLevelUp() {
+      this.init();
+      this.playTone(659.25, 'sine', 0.2, 0.15);
+      setTimeout(() => this.playTone(987.77, 'sine', 0.3, 0.18), 70);
     }
   };
 
   // ==========================================
-  // 2. ASSET LOADER (Male & Female Sprites)
+  // 2. ASSET LOADER
   // ==========================================
   const assets = {
     maleHero: new Image(),
@@ -124,7 +128,194 @@
   assets.props.src = '/assets/props_pack.png' + cacheBust;
 
   // ==========================================
-  // 3. ZONE DEFINITIONS
+  // 3. SKILL SYSTEM & LEVELING DATABASE (Lv.1-20)
+  // ==========================================
+  const SKILLS = {
+    slash: {
+      id: 'slash',
+      name: 'Heavy Slash',
+      icon: '⚔️',
+      key: 'LMB',
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 120,
+      baseDmg: 50,
+      dmgPerLvl: 10,
+      baseCooldown: 0.35,
+      cdReductionPerLvl: 0.008,
+      baseReach: 75,
+      reachPerLvl: 3,
+      desc: 'Cleaves enemies in front with weapon damage and physical force.'
+    },
+    fireball: {
+      id: 'fireball',
+      name: 'Pyro Fireball',
+      icon: '🔥',
+      key: 'Q',
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 150,
+      baseDmg: 85,
+      dmgPerLvl: 15,
+      baseCooldown: 1.0,
+      cdReductionPerLvl: 0.02,
+      baseRadius: 12,
+      radiusPerLvl: 0.6,
+      manaCost: 10,
+      desc: 'Hurls an explosive projectile of concentrated fire at target.'
+    },
+    frost: {
+      id: 'frost',
+      name: 'Frost Nova',
+      icon: '❄️',
+      key: 'W',
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 180,
+      baseDmg: 90,
+      dmgPerLvl: 16,
+      baseCooldown: 2.5,
+      cdReductionPerLvl: 0.05,
+      baseRadius: 150,
+      radiusPerLvl: 6,
+      manaCost: 15,
+      desc: 'Blasts freezing frost in a 360-degree ring around the caster.'
+    },
+    meteor: {
+      id: 'meteor',
+      name: 'Cataclysm Meteor',
+      icon: '☄️',
+      key: 'E',
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 250,
+      baseDmg: 180,
+      dmgPerLvl: 30,
+      baseCooldown: 4.5,
+      cdReductionPerLvl: 0.08,
+      baseRadius: 135,
+      radiusPerLvl: 6,
+      manaCost: 30,
+      desc: 'Calls down a celestial meteor that devastates target ground.'
+    },
+    dash: {
+      id: 'dash',
+      name: 'Shadow Dash',
+      icon: '💨',
+      key: 'Space',
+      level: 1,
+      maxLevel: 20,
+      exp: 0,
+      expToNext: 100,
+      baseDistance: 190,
+      distancePerLvl: 7,
+      baseCooldown: 1.2,
+      cdReductionPerLvl: 0.035,
+      desc: 'Dashes instantly through space with temporary invulnerability.'
+    }
+  };
+
+  function addSkillExp(skillKey, amount) {
+    const s = SKILLS[skillKey];
+    if (!s || s.level >= s.maxLevel) return;
+
+    s.exp += amount;
+    while (s.exp >= s.expToNext && s.level < s.maxLevel) {
+      s.exp -= s.expToNext;
+      s.level++;
+      s.expToNext = Math.round(s.expToNext * 1.35);
+
+      AudioEngine.playSkillLevelUp();
+      spawnDamageNumber(player.x, player.y - 50, `${s.name} Lv.${s.level}!`, true, '#61afef');
+
+      updateSkillBadges();
+      renderSkillUpgradeModal();
+    }
+  }
+
+  function levelUpSkillWithPoint(skillKey) {
+    if (player.skillPoints <= 0) return;
+    const s = SKILLS[skillKey];
+    if (!s || s.level >= s.maxLevel) return;
+
+    player.skillPoints--;
+    s.level++;
+    s.exp = 0;
+    s.expToNext = Math.round(s.expToNext * 1.35);
+
+    AudioEngine.playSkillLevelUp();
+    spawnDamageNumber(player.x, player.y - 50, `${s.name} Lv.${s.level}!`, true, '#ffd700');
+
+    updateSkillBadges();
+    renderSkillUpgradeModal();
+  }
+
+  function updateSkillBadges() {
+    for (let k in SKILLS) {
+      const badge = document.getElementById(`lvl-badge-${k}`);
+      if (badge) {
+        badge.innerText = `Lv.${SKILLS[k].level}`;
+      }
+    }
+    const spEl = document.getElementById('sp-points-text');
+    if (spEl) spEl.innerText = `${player.skillPoints} SP`;
+  }
+
+  function renderSkillUpgradeModal() {
+    const container = document.getElementById('skills-upgrade-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let k in SKILLS) {
+      const s = SKILLS[k];
+      const card = document.createElement('div');
+      card.className = 'skill-upgrade-card';
+
+      const curDmg = s.baseDmg ? Math.round(s.baseDmg + (s.level - 1) * s.dmgPerLvl) : 0;
+      const nextDmg = s.baseDmg ? Math.round(s.baseDmg + s.level * s.dmgPerLvl) : 0;
+      const curCd = Math.max(0.2, (s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl)).toFixed(2);
+      const expPct = Math.min(100, (s.exp / s.expToNext) * 100);
+
+      let statLine = '';
+      if (k === 'dash') {
+        const curDist = Math.round(s.baseDistance + (s.level - 1) * s.distancePerLvl);
+        statLine = `Distance: <b>${curDist}px</b> | Cooldown: <b>${curCd}s</b>`;
+      } else {
+        statLine = `Damage: <b>${curDmg}</b> (Next: <b style="color:#ffd700;">${nextDmg}</b>) | Cooldown: <b>${curCd}s</b>`;
+      }
+
+      card.innerHTML = `
+        <div class="suc-icon">${s.icon}</div>
+        <div class="suc-info">
+          <div class="suc-name-row">
+            <span class="suc-name">${s.name} [${s.key}]</span>
+            <span class="suc-level">Level ${s.level} / ${s.maxLevel}</span>
+          </div>
+          <div class="suc-desc">${s.desc}</div>
+          <div class="suc-exp-bar-wrap" title="Skill EXP: ${s.exp} / ${s.expToNext}">
+            <div class="suc-exp-fill" style="width: ${expPct}%;"></div>
+          </div>
+          <div class="suc-stats">${statLine}</div>
+        </div>
+        <button class="suc-btn" ${player.skillPoints <= 0 || s.level >= s.maxLevel ? 'disabled' : ''} data-skill="${k}">
+          ${s.level >= s.maxLevel ? 'MAX' : '➕ Upgrade (+1 SP)'}
+        </button>
+      `;
+
+      card.querySelector('.suc-btn').addEventListener('click', () => {
+        levelUpSkillWithPoint(k);
+      });
+
+      container.appendChild(card);
+    }
+  }
+
+  // ==========================================
+  // 4. ZONE DEFINITIONS
   // ==========================================
   const ZONES = {
     SanctuaryHaven: {
@@ -185,7 +376,7 @@
   let currentZone = ZONES[currentZoneId];
 
   // ==========================================
-  // 4. CHARACTER STATE & PROGRESSION
+  // 5. CHARACTER STATE
   // ==========================================
   const player = {
     x: 2000,
@@ -198,11 +389,12 @@
     animFrame: 0,
     animTimer: 0,
 
-    gender: 'Male', // 'Male' or 'Female'
-    classSpec: 'Novice', // 'Novice', 'Vanguard', 'Arcanist', 'ShadowRogue'
+    gender: 'Male',
+    classSpec: 'Novice',
     level: 1,
     currentExp: 0,
     expToNext: 100,
+    skillPoints: 3, // Start with 3 Skill Points for testing!
 
     life: 250,
     maxLife: 250,
@@ -221,7 +413,6 @@
     critMulti: 200,
 
     cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
-    maxCooldowns: { slash: 0.35, fireball: 1.0, frost: 2.5, meteor: 4.5, dash: 1.2 },
 
     equipped: {
       Helm: { name: 'Crown of the Void', rarity: 'Unique', icon: '👑', mods: ['+120 ES', '+30% Chaos Res'] },
@@ -243,18 +434,24 @@
   const floatingTexts = [];
   const groundLoot = [];
 
-  // Input State
   const keys = {};
   const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };
 
   // ==========================================
-  // 5. PROGRESSION & CLASS ASCENSION LOGIC
+  // 6. PROGRESSION & CLASS ASCENSION
   // ==========================================
   function gainExp(amount) {
     player.currentExp += amount;
+    
+    // Distribute Skill EXP to all active skills
+    for (let k in SKILLS) {
+      addSkillExp(k, Math.round(amount * 0.8));
+    }
+
     while (player.currentExp >= player.expToNext) {
       player.currentExp -= player.expToNext;
       player.level++;
+      player.skillPoints++; // +1 SP per Level Up
       player.expToNext = Math.round(player.expToNext * 1.4);
 
       player.maxLife += 20;
@@ -263,11 +460,12 @@
       player.mana = player.maxMana;
 
       AudioEngine.playLevelUp();
-      spawnDamageNumber(player.x, player.y - 60, 'LEVEL UP!', true, '#ffd700');
+      spawnDamageNumber(player.x, player.y - 60, `LEVEL UP (Lv.${player.level})! +1 SP`, true, '#ffd700');
 
       document.getElementById('hud-level').innerText = `Lv.${player.level}`;
+      updateSkillBadges();
+      renderSkillUpgradeModal();
 
-      // Check Ascension milestone at Lv. 10
       if (player.level >= 10 && player.classSpec === 'Novice') {
         document.getElementById('btn-ascend-trigger').classList.remove('hidden');
       }
@@ -322,7 +520,7 @@
   }
 
   // ==========================================
-  // 6. LOOT DROP TABLE
+  // 7. LOOT DROP TABLE
   // ==========================================
   const RARITY_COLORS = {
     Normal: '#c8c8c8',
@@ -464,7 +662,7 @@
   }
 
   // ==========================================
-  // 7. ZONE LOADING
+  // 8. ZONE LOADING
   // ==========================================
   function loadZone(zoneId, spawnX, spawnY) {
     if (!ZONES[zoneId]) return;
@@ -549,6 +747,8 @@
 
     updateBackpackUI();
     updateEquippedUI();
+    updateSkillBadges();
+    renderSkillUpgradeModal();
   }
 
   function showZoneBanner(title, sub) {
@@ -597,7 +797,7 @@
   }
 
   // ==========================================
-  // 8. COMBAT PIPELINE
+  // 9. COMBAT & SCALING PIPELINE
   // ==========================================
   function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
     if (!target.isAlive) return;
@@ -654,7 +854,6 @@
       gainExp(target.expValue || 35);
       dropMonsterLoot(target.x, target.y, target.type === 'boss');
 
-      // Defeating boss unlocks ascension if not unlocked
       if (target.type === 'boss' && player.classSpec === 'Novice') {
         document.getElementById('btn-ascend-trigger').classList.remove('hidden');
       }
@@ -675,23 +874,25 @@
   }
 
   // ==========================================
-  // 9. SKILLS
+  // 10. SKILLS WITH LEVEL SCALING
   // ==========================================
   function castSlash() {
+    const s = SKILLS.slash;
     if (player.cooldowns.slash > 0) return;
-    player.cooldowns.slash = player.maxCooldowns.slash;
+    player.cooldowns.slash = Math.max(0.18, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
     const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
-    const reach = player.classSpec === 'Vanguard' ? 95 : 75;
+    const reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
     const slashX = player.x + Math.cos(angle) * 40;
     const slashY = player.y + Math.sin(angle) * 40;
+
+    const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Vanguard' ? 35 : 0);
 
     monsters.forEach(m => {
       if (m.isAlive) {
         const dist = Math.hypot(m.x - slashX, m.y - slashY);
         if (dist < reach) {
-          const phys = player.classSpec === 'Vanguard' ? 85 : 50;
-          dealDamage(m, phys, 20, 0, 0, 0);
+          dealDamage(m, dmg, 20, 0, 0, 0);
         }
       }
     });
@@ -699,7 +900,7 @@
     trainingDummies.forEach(d => {
       const dist = Math.hypot(d.x - slashX, d.y - slashY);
       if (dist < reach) {
-        dealDamage(d, 50, 20, 0, 0, 0);
+        dealDamage(d, dmg, 20, 0, 0, 0);
       }
     });
 
@@ -719,9 +920,10 @@
   }
 
   function castFireball() {
-    if (player.cooldowns.fireball > 0 || player.mana < 10) return;
-    player.mana -= 10;
-    player.cooldowns.fireball = player.maxCooldowns.fireball;
+    const s = SKILLS.fireball;
+    if (player.cooldowns.fireball > 0 || player.mana < s.manaCost) return;
+    player.mana -= s.manaCost;
+    player.cooldowns.fireball = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
     const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
     projectiles.push({
@@ -730,22 +932,26 @@
       vx: Math.cos(angle) * 480,
       vy: Math.sin(angle) * 480,
       type: 'fireball',
-      radius: player.classSpec === 'Arcanist' ? 16 : 12,
+      damage: s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0),
+      radius: s.baseRadius + (s.level - 1) * s.radiusPerLvl,
       life: 1.6
     });
   }
 
   function castFrostNova() {
-    if (player.cooldowns.frost > 0 || player.mana < 15) return;
-    player.mana -= 15;
-    player.cooldowns.frost = player.maxCooldowns.frost;
+    const s = SKILLS.frost;
+    if (player.cooldowns.frost > 0 || player.mana < s.manaCost) return;
+    player.mana -= s.manaCost;
+    player.cooldowns.frost = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
-    const novaRadius = player.classSpec === 'Arcanist' ? 190 : 150;
+    const novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+    const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+
     monsters.forEach(m => {
       if (m.isAlive) {
         const dist = Math.hypot(m.x - player.x, m.y - player.y);
         if (dist <= novaRadius) {
-          dealDamage(m, 15, 0, 90, 0, 0);
+          dealDamage(m, 15, 0, dmg, 0, 0);
         }
       }
     });
@@ -753,7 +959,7 @@
     trainingDummies.forEach(d => {
       const dist = Math.hypot(d.x - player.x, d.y - player.y);
       if (dist <= novaRadius) {
-        dealDamage(d, 15, 0, 90, 0, 0);
+        dealDamage(d, 15, 0, dmg, 0, 0);
       }
     });
 
@@ -772,9 +978,10 @@
   }
 
   function castMeteor() {
-    if (player.cooldowns.meteor > 0 || player.mana < 30) return;
-    player.mana -= 30;
-    player.cooldowns.meteor = player.maxCooldowns.meteor;
+    const s = SKILLS.meteor;
+    if (player.cooldowns.meteor > 0 || player.mana < s.manaCost) return;
+    player.mana -= s.manaCost;
+    player.cooldowns.meteor = Math.max(2.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
     const targetX = mouse.worldX;
     const targetY = mouse.worldY;
@@ -792,12 +999,14 @@
     });
 
     setTimeout(() => {
-      const radius = player.classSpec === 'Arcanist' ? 175 : 135;
+      const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+      const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+
       monsters.forEach(m => {
         if (m.isAlive) {
           const dist = Math.hypot(m.x - targetX, m.y - targetY);
           if (dist <= radius) {
-            dealDamage(m, 50, 180, 0, 0, 30);
+            dealDamage(m, 50, dmg, 0, 0, 30);
           }
         }
       });
@@ -805,7 +1014,7 @@
       trainingDummies.forEach(d => {
         const dist = Math.hypot(d.x - targetX, d.y - targetY);
         if (dist <= radius) {
-          dealDamage(d, 50, 180, 0, 0, 30);
+          dealDamage(d, 50, dmg, 0, 0, 30);
         }
       });
 
@@ -827,8 +1036,9 @@
   }
 
   function castDash() {
+    const s = SKILLS.dash;
     if (player.cooldowns.dash > 0) return;
-    player.cooldowns.dash = player.maxCooldowns.dash;
+    player.cooldowns.dash = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
     let dx = 0, dy = 0;
     if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
@@ -846,8 +1056,9 @@
       dy /= len;
     }
 
-    player.x += dx * 190;
-    player.y += dy * 190;
+    const dist = s.baseDistance + (s.level - 1) * s.distancePerLvl;
+    player.x += dx * dist;
+    player.y += dy * dist;
 
     for (let i = 0; i < 8; i++) {
       particles.push({
@@ -864,7 +1075,7 @@
   }
 
   // ==========================================
-  // 10. UPDATE LOOP
+  // 11. UPDATE LOOP
   // ==========================================
   let lastTime = performance.now();
   let frameCount = 0;
@@ -948,7 +1159,7 @@
         if (m.isAlive && !hit) {
           const d = Math.hypot(m.x - p.x, m.y - p.y);
           if (d < 28 * (m.scale || 1)) {
-            dealDamage(m, 10, 85, 0, 0, 0);
+            dealDamage(m, 10, p.damage || 85, 0, 0, 0);
             hit = true;
           }
         }
@@ -958,7 +1169,7 @@
         if (!hit) {
           const dist = Math.hypot(d.x - p.x, d.y - p.y);
           if (dist < 28) {
-            dealDamage(d, 10, 85, 0, 0, 0);
+            dealDamage(d, 10, p.damage || 85, 0, 0, 0);
             hit = true;
           }
         }
@@ -981,7 +1192,7 @@
       }
     }
 
-    // Monster AI & Boss Bar
+    // Boss Bar
     let activeBoss = null;
     monsters.forEach(m => {
       if (!m.isAlive) return;
@@ -1041,14 +1252,15 @@
     for (let k in player.cooldowns) {
       const el = document.getElementById(`cd-${k}`);
       if (el) {
-        const pct = (player.cooldowns[k] / player.maxCooldowns[k]) * 100;
+        const maxCd = SKILLS[k] ? SKILLS[k].baseCooldown : 1.0;
+        const pct = (player.cooldowns[k] / maxCd) * 100;
         el.style.height = `${pct}%`;
       }
     }
   }
 
   // ==========================================
-  // 11. RENDERING
+  // 12. RENDERING
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1097,11 +1309,11 @@
     projectiles.forEach(p => {
       ctx.fillStyle = '#ff7849';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.radius || 12, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#ffe066';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius * 0.6, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, (p.radius || 12) * 0.6, 0, Math.PI * 2);
       ctx.fill();
     });
 
@@ -1235,7 +1447,7 @@
     }
   }
 
-  // Draw Clean Player (Male or Female Hero)
+  // Draw Player
   function drawPlayerClean() {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -1503,7 +1715,7 @@
   }
 
   // ==========================================
-  // 12. INPUT LISTENERS & ASCENSION MODAL
+  // 13. INPUT & MODAL CONTROLS
   // ==========================================
   window.addEventListener('wheel', e => {
     if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
@@ -1522,12 +1734,10 @@
     camera.targetZoom = 1.0;
   });
 
-  // Toggle Gender when clicking avatar box
   document.getElementById('btn-toggle-gender').addEventListener('click', () => {
     setGender(player.gender === 'Male' ? 'Female' : 'Male');
   });
 
-  // Open Ascension Modal
   document.getElementById('btn-ascend-trigger').addEventListener('click', () => {
     document.getElementById('ascension-modal').classList.remove('hidden');
   });
@@ -1545,6 +1755,7 @@
     if (e.code === 'KeyW') castFrostNova();
     if (e.code === 'KeyE') castMeteor();
     if (e.code === 'Space') castDash();
+    if (e.code === 'KeyK') toggleModal('skills-modal');
     if (e.code === 'KeyM') toggleModal('worldmap-modal');
     if (e.code === 'KeyC') toggleModal('stats-modal');
     if (e.code === 'KeyI') toggleModal('inventory-modal');
@@ -1606,9 +1817,16 @@
 
   function toggleModal(id) {
     const el = document.getElementById(id);
-    if (el) el.classList.toggle('hidden');
+    if (el) {
+      el.classList.toggle('hidden');
+      if (id === 'skills-modal' && !el.classList.contains('hidden')) {
+        renderSkillUpgradeModal();
+      }
+    }
   }
 
+  document.getElementById('btn-toggle-skills').addEventListener('click', () => toggleModal('skills-modal'));
+  document.getElementById('btn-close-skills').addEventListener('click', () => toggleModal('skills-modal'));
   document.getElementById('btn-toggle-worldmap').addEventListener('click', () => toggleModal('worldmap-modal'));
   document.getElementById('btn-close-worldmap').addEventListener('click', () => toggleModal('worldmap-modal'));
   document.getElementById('btn-toggle-stats').addEventListener('click', () => toggleModal('stats-modal'));
