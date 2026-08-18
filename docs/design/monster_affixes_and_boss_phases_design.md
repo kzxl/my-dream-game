@@ -45,6 +45,46 @@ Quái vật Rare/Elite sẽ ngẫu nhiên sở hữu từ **2 đến 4 thuộc t
 | **Temporal Snare** | ⏳ | Tạo vòng từ trường làm giảm $40\%$ tốc độ chạy và tốc đánh của người chơi trong bán kính 250px. | Dùng kỹ năng lướt (`Space Dash`) thoát ra khỏi vòng từ trường. |
 | **Gargantuan** | 🪨 | Tăng $+80\%$ Máu, $+30\%$ Sát thương vật lý nhưng giảm $20\%$ tốc độ di chuyển. | Thả diều (Kiting) từ xa, khai thác tốc độ chậm chạp của quái. |
 
+### 2.3. Hệ Thống Mod Bản Đồ Vực Thẳm (Rift Map Affixes & Risk-Reward Scaling)
+
+Các bản đồ Endgame (Rifts) được cường hóa bởi hệ thống **Map Affixes** (`RiftMapAffix.cs`), tác động đồng thời lên toàn bộ quái vật trong bản đồ và thưởng thêm phần trăm Rơi Đồ / Độ Hiếm / Mật Độ Quái:
+
+| Key Map Affix | Mô Tả Hiệu Ứng Lên Quái & Người Chơi | Bonus IIQ (Số Lượng) | Bonus IIR (Độ Hiếm) | Bonus Pack Size (Mật Độ) |
+| :--- | :--- | :---: | :---: | :---: |
+| `extra_fire` | Quái vật gây thêm $+40\%$ Sát thương Hỏa | $+20\%$ | $+25\%$ | $0\%$ |
+| `extra_cold` | Quái vật gây thêm $+40\%$ Sát thương Băng | $+20\%$ | $+25\%$ | $0\%$ |
+| `extra_lightning` | Quái vật gây thêm $+40\%$ Sát thương Sét | $+20\%$ | $+25\%$ | $0\%$ |
+| `pack_size` | Tăng $+30\%$ số lượng quái mỗi đàn & $+20\%$ quái Magic | $+15\%$ | $+30\%$ | $+30\%$ |
+| `minus_res` | Người chơi bị giảm $-20\%$ Kháng tất cả Nguyên tố | $+35\%$ | $+50\%$ | $+15\%$ |
+| `reflect_phys` | Quái vật phản lại $15\%$ Sát thương nhận vào | $+25\%$ | $+35\%$ | $0\%$ |
+| `monster_speed` | Quái vật tăng $+30\%$ Tốc độ di chuyển & Tốc đánh | $+20\%$ | $+30\%$ | $+20\%$ |
+| `boss_frenzy` | Trùm bản đồ tăng $+60\%$ Máu & $+25\%$ Bán kính chiêu | $+30\%$ | $+45\%$ | $0\%$ |
+
+---
+
+### 2.4. Cơ Chế Chia Sẻ Hào Quang Quái Tinh Anh (Rare Minion Aura Sharing)
+
+Quái Rare mang theo một bầy tiểu quái (Minion Pack $4 - 8$ con) và **chia sẻ hào quang cường hóa** cho đàn đệ tử:
+1. **Bán kính Hào quang:** $350\text{px}$ xung quanh quái Rare.
+2. **Hiệu ứng truyền tải:**
+   - Nếu Rare có `Magma Conduit` $\rightarrow$ Đàn đệ tử nhận thêm $+20\%$ Fire Damage và để lại vệt lửa nhỏ khi chết.
+   - Nếu Rare có `Aether Ward` $\rightarrow$ Đàn đệ tử nhận thêm $+25\%$ Armor & $+15\%$ All Resistances.
+   - Nếu Rare có `Temporal Snare` $\rightarrow$ Đàn đệ tử tăng $+15\%$ tốc chạy khi áp sát người chơi.
+3. **Quy tắc ưu tiên chiến thuật:** Tiêu diệt quái Rare chủ đàn sẽ ngay lập tức **hủy bỏ toàn bộ Hào quang**, khiến đàn tiểu quái suy yếu và bị choáng $0.5$s.
+
+---
+
+### 2.5. Bảng Tương Tác Xếp Chồng Combo Mod Quái (Affix Stacking Synergies)
+
+Khi quái Rare roll trúng các cặp Mod đặc thù, sức mạnh và cơ chế phòng thủ sẽ cộng hưởng theo cấp số nhân:
+
+| Combo Affixes | Tên Hiệu Ứng Cộng Hưởng | Hệ Quả Thực Chiến | Chiến Thuật Đối Phó |
+| :--- | :---: | :--- | :--- |
+| **Gargantuan + Aether Ward** | *The Immovable Colossus* | Máu $\times 1.8$ kết hợp Khiên $50\%$ Máu $\implies$ Lượng EHP (Effective HP) tăng hơn **$300\%$**. | Phải có kỹ năng DPS đơn mục tiêu cực cao và xuyên giáp/kháng. |
+| **Magma Conduit + Static Discharge** | *Elemental Overload* | Sát thương hỗn hợp Lửa + Sét và liên tục phóng tia phản đòn khi bị tấn công dồn dập. | Giữ khoảng cách tầm xa, không dùng đòn đánh nhanh nếu kháng thấp. |
+| **Frostpulse + Temporal Snare** | *Absolute Zero Trap* | Vừa làm chậm $40\%$ diện rộng vừa bắn sóng băng $25\%$ đóng băng. | Bắt buộc phải có Dash và bình giải Băng (Unfreeze Flask). |
+| **Vampiric Leech + Gargantuan** | *Immortal Behemoth* | Lượng máu cực lớn hồi $5\%$ mỗi đòn trúng. Nếu người chơi đứng im cận chiến sẽ không thể hạ được. | Thả diều liên tục, tuyệt đối không để quái đánh trúng. |
+
 ---
 
 ## 3. Kiến Trúc Trận Đánh Trùm Tối Thượng (Pinnacle Boss Design)
