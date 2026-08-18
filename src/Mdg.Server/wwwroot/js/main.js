@@ -313,12 +313,50 @@ function update(dt) {
     player.animFrame = 0;
   }
 
-  // 2. Environmental Hazards & Biome Weather Ticks
+  // 2. Environmental Hazards & Tile-Based Ground Hazards
   hazardTickTimer += dt;
-  if (hazardTickTimer >= 1.0) {
+  if (hazardTickTimer >= 0.8) {
     hazardTickTimer = 0;
 
-    if (currentZoneId === 'MoltenCaldera' && player.fireRes < 75) {
+    // Check Player's Current Tile
+    const pTileX = Math.floor(player.x / 48);
+    const pTileY = Math.floor(player.y / 48);
+    const pTile = currentZoneMap?.grid?.[pTileY]?.[pTileX];
+
+    // Direct Tile Hazard Damage
+    if (pTile === 2 || pTile === 5) {
+      // Lava Ground (Tile 2 or 5)
+      const lavaDmg = Math.max(8, Math.round(40 * (1 - (player.fireRes || 0) / 100)));
+      player.life = Math.max(1, player.life - lavaDmg);
+      spawnDamageNumber(player.x, player.y - 45, `-${lavaDmg} 🔥 Lava Burn!`, true, '#ff3d00');
+
+      // Splash Lava Sparks under player feet
+      for (let i = 0; i < 4; i++) {
+        particles.push({
+          x: player.x + (Math.random() - 0.5) * 20,
+          y: player.y + (Math.random() - 0.5) * 10,
+          vx: (Math.random() - 0.5) * 60,
+          vy: -50 - Math.random() * 40,
+          color: '#ff7849',
+          life: 0.6,
+          maxLife: 0.6,
+          size: 3
+        });
+      }
+    } else if (pTile === 6) {
+      // Toxic Miasma Tile
+      const toxicDmg = Math.max(6, Math.round(30 * (1 - (player.chaosRes || 0) / 100)));
+      player.life = Math.max(1, player.life - toxicDmg);
+      spawnDamageNumber(player.x, player.y - 45, `-${toxicDmg} ☠️ Toxic Ground!`, false, '#c678dd');
+    } else if (pTile === 7) {
+      // Deep Glacial Ice Tile
+      const iceDmg = Math.max(4, Math.round(20 * (1 - (player.coldRes || 0) / 100)));
+      player.life = Math.max(1, player.life - iceDmg);
+      spawnDamageNumber(player.x, player.y - 45, `-${iceDmg} ❄️ Deep Frost!`, false, '#4facfe');
+    }
+
+    // Biome Ambient Heat / Peace
+    if (currentZoneId === 'MoltenCaldera' && player.fireRes < 75 && pTile !== 2 && pTile !== 5) {
       const heatDmg = Math.max(5, Math.round((75 - player.fireRes) * 1.5));
       player.life = Math.max(1, player.life - heatDmg);
       spawnDamageNumber(player.x, player.y - 40, `-${heatDmg} 🔥 Heatwave!`, false, '#ff5722');

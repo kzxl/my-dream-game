@@ -11,6 +11,10 @@ public static class ZoneMapGenerator
     public const int TILE_WATER_LAVA = 2;
     public const int TILE_PATH = 3;
     public const int TILE_PLAZA = 4;
+    public const int TILE_LAVA = 5;
+    public const int TILE_TOXIC_MIASMA = 6;
+    public const int TILE_GLACIAL_ICE = 7;
+    public const int TILE_ELECTRIC_GROUND = 8;
 
     public static ZoneMapDto GenerateZone(string zoneId)
     {

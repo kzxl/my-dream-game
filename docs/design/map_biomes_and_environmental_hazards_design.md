@@ -55,6 +55,28 @@ $$\text{Flask Recovery Multiplier} = \min\left(1.0, 0.7 + 0.3 \times \frac{\text
 
 ---
 
+### 3.4. Cơ Chế Trừ HP Khi Bước Vào Ô Địa Hình Nguy Hiểm (Tile-Based Hazardous Ground)
+
+Bên cạnh hiệu ứng thời tiết chung của toàn Biome, người chơi và quái vật khi **bước chân trực tiếp vào các ô địa hình đặc thù (Hazard Tiles)** sẽ bị trừ máu và dính hiệu ứng theo thời gian thực:
+
+```mermaid
+graph TD
+    Step[Người chơi di chuyển vào Tọa độ Tile (tx, ty)] --> Check{Loại Ô Địa Hình?}
+    Check -->|TILE_LAVA = 5| L[🔥 Vũng Dung Nham Sôi Sục<br>Chịu 40 Fire Damage/s + Thiêu Đốt Ignite]
+    Check -->|TILE_TOXIC_MIASMA = 6| P[☠️ Bãi Chướng Khí Độc Tố<br>Chịu 30 Chaos Damage/s + Giảm 40% Hồi Bình Máu]
+    Check -->|TILE_GLACIAL_ICE = 7| I[❄️ Băng Trơn Vực Thẳm<br>Chịu 20 Cold Damage/s + Giảm 50% Tốc Độ Di Chuyển]
+    Check -->|TILE_ELECTRIC_GROUND = 8| E[⚡ Vết Nứt Sét Tĩnh Điện<br>Chịu 25 Lightning Damage/s + Dính Hiệu Ứng Shock +25%]
+```
+
+| Loại Ô Địa Hình | Mã Tile | Sát Thương Cơ Bản / Giây | Công Thức Giảm Trừ Kháng Cự | Hiệu Ứng Trạng Thái Đi Kèm (Status Ailment) |
+| :--- | :---: | :---: | :--- | :--- |
+| **Lava Ground (Dung Nham)** | `5` | $40\text{ Fire Dmg/s}$ | $\text{Dmg} = 40 \times \left(1 - \frac{\text{FireRes}}{100}\right)$ | Bị **Ignite** (cháy liên tục trong $2.0\text{s}$ sau khi rời khỏi ô). |
+| **Toxic Miasma (Bãi Độc)** | `6` | $30\text{ Chaos Dmg/s}$ | $\text{Dmg} = 30 \times \left(1 - \frac{\text{ChaosRes}}{100}\right)$ | Bỏ qua Khiên Năng Lượng (trừ thẳng vào Máu), giảm $-40\%$ hồi phục bình máu. |
+| **Glacial Ice (Băng Giá)** | `7` | $20\text{ Cold Dmg/s}$ | $\text{Dmg} = 20 \times \left(1 - \frac{\text{ColdRes}}{100}\right)$ | Làm chậm tốc độ chạy $-50\%$ (Chilled). Nếu $\text{ColdRes} < 50\%$, có $25\%$ cơ hội Đóng băng $1\text{s}$. |
+| **Static Ground (Sét Điện)** | `8` | $25\text{ Lightning Dmg/s}$ | $\text{Dmg} = 25 \times \left(1 - \frac{\text{LightningRes}}{100}\right)$ | Gây trạng thái **Shock** (tăng $+25\%$ toàn bộ sát thương nhận vào). |
+
+---
+
 ## 4. Hệ Thống Bản Đồ Ngẫu Nhiên Đa Tầng (Endgame Map Affixes - Atlas Modifiers)
 
 Sau khi hoàn thành cốt truyện cơ bản, người chơi có thể nhặt các bản đồ **Atlas Maps** (Map Tiers 1-16) và dùng Orb để đập dòng (Craft Map Affixes) tăng độ khó để nhận bội số đồ rơi cực khủng:
