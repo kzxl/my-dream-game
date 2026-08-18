@@ -167,6 +167,14 @@ export function castSlash() {
   player.cooldowns.slash = Math.max(0.18, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
   const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
+  if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
+    player.facing = Math.cos(angle) > 0 ? 'right' : 'left';
+  } else {
+    player.facing = Math.sin(angle) > 0 ? 'down' : 'up';
+  }
+  player.isAttacking = true;
+  player.attackTimer = 0.18;
+
   const reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
   const slashX = player.x + Math.cos(angle) * 40;
   const slashY = player.y + Math.sin(angle) * 40;

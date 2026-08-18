@@ -12,9 +12,18 @@ export const TILE_SIZE = 48;
 export const TILE_TYPES = {
   FLOOR: 0,
   WALL: 1,
-  WATER_LAVA: 2,
+  WATER_DEEP: 2,
   PATH: 3,
-  PLAZA: 4
+  PLAZA: 4,
+  LAVA: 5,
+  TOXIC_MIASMA: 6,
+  GLACIAL_ICE: 7,
+  ELECTRIC_GROUND: 8,
+  SHALLOW_WATER_SAND: 9,
+  ANCIENT_PILLAR: 10,
+  CHASM: 11,
+  DEEP_SNOW: 12,
+  BURNT_GROUND: 13
 };
 
 export class MapGenerator {

@@ -24,8 +24,11 @@ export const player = {
   speed: 280,
   facing: 'down',
   isMoving: false,
+  isAttacking: false,
   animFrame: 0,
   animTimer: 0,
+  freezeTimer: 0,
+  attackTimer: 0,
 
   gender: 'Male',
   classSpec: 'Novice',

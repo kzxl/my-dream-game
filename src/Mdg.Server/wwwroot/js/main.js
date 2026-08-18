@@ -43,7 +43,8 @@ export function canWalk(x, y) {
   const tx = Math.floor(x / 48);
   const ty = Math.floor(y / 48);
   if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return false;
-  return currentZoneMap.grid[ty][tx] !== 1; // 1 = WALL
+  const tile = currentZoneMap.grid[ty][tx];
+  return tile !== 1 && tile !== 2 && tile !== 10 && tile !== 11; // 1 = Wall, 2 = Deep Water, 10 = Pillar, 11 = Chasm
 }
 
 export function findSafeWalkableCoord(reqX, reqY) {
@@ -409,10 +410,14 @@ function update(dt) {
   for (let k in player.cooldowns) {
     if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
   }
+  if (player.attackTimer > 0) {
+    player.attackTimer -= dt;
+    if (player.attackTimer <= 0) player.isAttacking = false;
+  }
   player.mana = Math.min(player.maxMana, player.mana + 10 * dt);
   player.life = Math.min(player.maxLife, player.life + 4 * dt);
 
-  if (mouse.isDown && player.cooldowns.slash <= 0 && player.freezeTimer <= 0) {
+  if (mouse.isDown && (player.cooldowns.slash || 0) <= 0 && (player.freezeTimer || 0) <= 0) {
     castSlash();
   }
 

@@ -34,7 +34,10 @@ export function addSkillExp(skillKey, amount) {
 
   if (skillLeveled) {
     updateSkillBadges();
-    renderSkillUpgradeModal();
+    const modal = document.getElementById('skills-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      renderSkillUpgradeModal();
+    }
   }
 }
 

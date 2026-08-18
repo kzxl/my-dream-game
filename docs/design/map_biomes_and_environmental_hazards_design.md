@@ -1,43 +1,63 @@
-# Đặc Tả Thiết Kế Hệ Thống Map Biomes, Sinh Địa Hình Ngẫu Nhiên & Hiệu Ứng Môi Trường (Environmental Hazards)
-
-## 1. Tổng Quan Kiến Trúc (Architecture Overview)
-
-Hệ thống Bản đồ trong **My Dream Game (MDG)** được thiết kế theo tiêu chuẩn **Server-Authoritative Procedural Generation** kết hợp cơ chế **Environmental Hazards & Resistance Checks** (kiểm tra chỉ số kháng cự của nhân vật trước môi trường khắc nghiệt).
-
 ```mermaid
 graph TD
     subgraph Server["🖥️ Mdg.Server & Mdg.Core"]
-        Gen[ZoneMapGenerator - C#] --> BiomeCfg[Biome & Hazard Configuration]
-        Gen --> Layout[BSP Dungeon / Cellular Automata Grid]
+        Noise[Multi-Octave Simplex Noise & Spline Curves] --> Gen[ZoneMapGenerator - C#]
+        BSP[Organic BSP with Beveled Rooms & Pillars] --> Gen
+        Fissure[Spiderweb Fissure Propagation - Lava/Ice] --> Gen
+        Gen --> Layout[14 Tile Types Grid Matrix]
         Gen --> API["REST API: GET /api/v1/zones/{zoneId}"]
     end
 
     subgraph Client["🌐 Web Client Engine"]
         API --> Loader[Map & Zone Loader]
         Loader --> GridCollision[2D Tile Collision & Smooth Slide]
+        Loader --> DynamicTileRenderer[Multi-Layered Animated Tile Visuals]
         Loader --> ParticleEnv[Environmental Particle FX: Snow / Embers / Miasma]
-        Loader --> HazardTicker[Environmental Hazard Loop vs Player Resistances]
+        Loader --> HazardTicker[Hazardous Ground Ticker vs Player Resistances]
     end
 ```
 
 ---
 
-## 2. Phân Loại 6 Biome Môi Trường & Hiệu Ứng Đặc Trưng (Map Types & Biomes)
+## 2. Hệ Thống 14 Phân Loại Ô Địa Hình Đa Dạng (Expanded 14 Tile Types Matrix)
 
-Mỗi Zone trong thế giới Aethelis thuộc về một **Biome Type** riêng biệt, mang các hiệu ứng môi trường tác động trực tiếp lên người chơi và quái vật:
+Để loại bỏ cảm giác khối vuông cơ học đơn điệu, thế giới Aethelis sử dụng ma trận **14 loại Tile địa hình sinh động**:
 
-| Biome Type | Icon | Tên Bản Đồ | Thuật Toán Sinh Map | Hiệu Ứng Môi Trường (Environmental Hazard) | Yêu Cầu Kháng Cự (Resistance Check) |
-| :--- | :---: | :--- | :--- | :--- | :--- |
-| **Sanctuary / Town** | 🌿 | **Sanctuary Haven** | Town Plaza & Perimeter Walls | `Breeze of Peace`: Tăng $+5\%$ HP/Mana Regen mỗi giây. Không có quái nguy hiểm. | Không yêu cầu |
-| **Wild Plains** | 🌾 | **Whispering Plains** | Cellular Automata & Winding River | `Wild Winds`: Quái vật có tốc độ di chuyển tăng $+15\%$. Cỏ cây cản tầm nhìn nhẹ. | Kháng Cơ Bản |
-| **Frostpeak Glacier** | ❄️ | **Frostpeak Tundra** | Glacial Crevasses & Ice Caves | `Permafrost Blizzard`: Bão tuyết lạnh giá làm chậm $-20\%$ Action Speed. Khi bị quái đánh, có **$35\%$ cơ hội bị Đóng Băng (Frozen)** $1.0\text{s}$. | **Cold Resistance $\ge 75\%$** (Triệt tiêu hoàn toàn tỷ lệ đóng băng môi trường). |
-| **Molten Caldera** | 🔥 | **Molten Caldera** | Magma Rivers & Obsidian Islands | `Scorching Heatwave`: Đất nóng bốc hơi nung đỏ. Người chơi bị dính sát thương Hỏa DoT liên tục. | **Fire Resistance $\ge 75\%$** (Nếu dưới 75%, chịu $(75 - \text{FireRes}) \times 2.5$ Fire Dmg/s). |
-| **Forgotten Crypt** | 🏰 | **Forgotten Crypt** | BSP Room-and-Corridor Dungeon | `Curse of Miasma`: Chướng khí độc và âm khí bóng tối. Giảm $-30\%$ khả năng hồi phục từ bình máu (Flask Recovery). | **Chaos Resistance $\ge 50\%$** (Giúp thanh lọc chướng khí, hồi phục bình thường). |
-| **Stormpeak Crags** | ⚡ | **Stormpeak Ridge** | High Mountain Peaks & Thunder Paths | `Static Overload`: Sấm sét giáng ngẫu nhiên từ bầu trời. Nếu trúng đòn sét sẽ bị `Shock` nhận thêm $+35\%$ sát thương. | **Lightning Resistance $\ge 75\%$** (Giảm thời gian Shock và sát thương lôi giáng). |
+| Mã Tile | Tên Địa Hình | Đặc Tính Vật Lý | Tác Động Gameplay & Hiệu Ứng |
+| :---: | :--- | :---: | :--- |
+| `0` | **Natural Floor (Đất/Cỏ tự nhiên)** | Đi lại tự do | Nền tảng cơ bản theo Biome (Cỏ xanh, Tuyết trắng, Tro núi lửa). |
+| `1` | **Solid Wall (Vách đá / Tường thành)**| Cản hoàn toàn | Đổ bóng 3D, chặn tầm nhìn và đường bay của đạn thẳng. |
+| `2` | **Deep Water (Nước sâu)** | Không thể đi | Sông ngòi tự nhiên, phản chiếu ánh sáng và bọt sóng chuyển động. |
+| `3` | **Worn Cobblestone Path (Đường mòn)** | Tăng $+10\%$ Tốc chạy | Lối mòn đá cổ dẫn thẳng tới các cổng Portal dịch chuyển. |
+| `4` | **Ancient Plaza (Quảng trường)** | Khu vực an toàn | Gạch đá hoa cương lát tâm thị trấn Sanctuary Haven. |
+| `5` | **Molten Lava (Dung Nham Sôi Sục)** | Địa hình nguy hiểm | **Chịu 40 Fire Dmg/s** (giảm theo Fire Res) + Dính thiêu đốt Ignite. |
+| `6` | **Toxic Miasma Bog (Bãi Chướng Khí)** | Địa hình nguy hiểm | **Chịu 30 Chaos Dmg/s** + Giảm $40\%$ hiệu lực hồi máu bình Flask. |
+| `7` | **Glacial Slippery Ice (Băng Trơn)**| Địa hình nguy hiểm | **Chịu 20 Cold Dmg/s** + Làm chậm $-50\%$ tốc độ chạy (Chilled). |
+| `8` | **Static Electric Ground (Sét Điện)**| Địa hình nguy hiểm | **Chịu 25 Lightning Dmg/s** + Dính hiệu ứng Shock $+25\%$ sát thương. |
+| `9` | **Shallow Sand & Shoals (Bãi Cát Nông)**| Đi lại tự do | Bờ cát ven sông/bờ hồ, làm mềm ranh giới giữa đất liền và nước sâu. |
+| `10`| **Ancient Stone Pillar (Cột Đá Cổ)** | Cản đạn & di chuyển | Trụ đá phế tích cổ đại dùng làm điểm ẩn nấp (Cover) trước đòn bắn của quái. |
+| `11`| **Abyssal Chasm (Vực Thẳm Không Đáy)**| Không thể đi | Vực sâu hun hút trong Stormpeak Ridge và Hầm ngục Forgotten Crypt. |
+| `12`| **Deep Snow Drift (Tuyết Dày)** | Làm chậm $-15\%$ | Đụn tuyết dày tích tụ ở sườn núi Frostpeak Tundra. |
+| `13`| **Scorched Earth (Đất Cháy Xém)** | Đi lại tự do | Vết tàn tích cháy đen xung quanh các miệng núi lửa và bãi dung nham. |
 
 ---
 
-## 3. Công Thức Tính Toán Sát Thương & Tỷ Lệ Hiệu Ứng Môi Trường
+## 3. Thuật Toán Sinh Địa Hình Tự Nhiên & Hữu Cơ (Organic Procedural Algorithms)
+
+1. **Plains & Rivers (Sông Ngòi Uốn Khúc Hữu Cơ):**
+   - Sử dụng **Cubic Spline Interpolation** kết hợp **Perlin Noise** tạo dòng sông uốn khúc mềm mại thay vì sóng sin cố định.
+   - Tự động sinh bãi cát bồi (`TILE_SHALLOW_WATER_SAND`) và 2-3 cây cầu đá/gỗ tự nhiên bắc qua các điểm thắt cổ chai hẹp nhất của dòng sông.
+2. **Volcanic Spiderweb Fissures (Vết Nứt Nham Thạch Núi Lửa):**
+   - Áp dụng thuật toán **Random Walk Branching (Fissure Propagation)** để các dòng dung nham nứt nẻ lan tỏa từ trung tâm miệng núi lửa ra các nhánh phụ.
+   - Bao quanh các dòng dung nham là dải đất cháy xém (`TILE_BURNT_GROUND`) tạo độ chân thật.
+3. **Organic Crypt Dungeon (Hầm Ngục Đẽo Góc & Cột Đá Cổ):**
+   - Thuật toán **BSP** kết hợp **Cellular Corner Smoothing**: Các phòng không còn là hình hộp vuông vức mà được vát góc, đục hốc tường và bố trí các cụm cột đá cổ (`TILE_ANCIENT_PILLAR`) để che chắn.
+4. **Glacial Ridges & Crevasses (Sườn Băng & Đụn Tuyết):**
+   - Sử dụng **Simplex Ridge Noise** sinh các rãnh nứt băng tuyết hiểm trở xen kẽ các dải tuyết dày (`TILE_DEEP_SNOW`).
+
+---
+
+## 4. Công Thức Tính Toán Sát Thương & Tỷ Lệ Hiệu Ứng Môi Trường
 
 ### 3.1. Cơ Chế Đóng Băng Bão Tuyết (Frostpeak Hazard)
 $$\text{Freeze Chance on Hit} = \max\left(0\%, 40\% \times \left(1 - \frac{\text{Cold Resistance}}{75\%}\right)\right)$$

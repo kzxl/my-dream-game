@@ -188,25 +188,12 @@ export function drawSeamlessTerrain(canvas, ctx, currentZone, zoneData) {
           ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 8);
         }
       } else if (tile === 2) {
-        // WATER OR LAVA OR FROZEN ICE
-        if (isCaldera) {
-          const lavaWave = Math.sin(time * 3 + x + y) * 0.2;
-          ctx.fillStyle = `rgb(${220 + lavaWave * 30}, ${60 + lavaWave * 20}, 20)`;
-          ctx.fillRect(px, py, tileSize, tileSize);
-          ctx.fillStyle = '#ffd700';
-          ctx.fillRect(px + 12, py + 12, 6, 6);
-        } else if (isTundra) {
-          ctx.fillStyle = '#00f2fe';
-          ctx.fillRect(px, py, tileSize, tileSize);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.fillRect(px + 4, py + 4, tileSize - 8, tileSize - 8);
-        } else {
-          const wave = Math.sin(time * 2 + x * 0.5 + y) * 15;
-          ctx.fillStyle = `rgb(28, ${95 + wave}, 175)`;
-          ctx.fillRect(px, py, tileSize, tileSize);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-          ctx.fillRect(px + 4, py + (time * 15 + x * 5) % tileSize, tileSize - 8, 3);
-        }
+        // DEEP WATER
+        const wave = Math.sin(time * 2 + x * 0.5 + y) * 15;
+        ctx.fillStyle = `rgb(28, ${95 + wave}, 175)`;
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.fillRect(px + 4, py + (time * 15 + x * 5) % tileSize, tileSize - 8, 3);
       } else if (tile === 3) {
         // COBBLESTONE PATH
         ctx.fillStyle = isCrypt ? '#312940' : (isHaven ? '#6e6259' : (isTundra ? '#354d63' : '#5a6b47'));
@@ -224,8 +211,69 @@ export function drawSeamlessTerrain(canvas, ctx, currentZone, zoneData) {
           ctx.fillStyle = '#656e82';
           ctx.fillRect(px + 8, py + 8, tileSize - 16, tileSize - 16);
         }
+      } else if (tile === 5) {
+        // MOLTEN LAVA (Hazard)
+        const lavaWave = Math.sin(time * 3 + x + y) * 20;
+        ctx.fillStyle = `rgb(${225 + lavaWave}, 60, 20)`;
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(px + 8 + Math.sin(time * 4 + x) * 4, py + 8 + Math.cos(time * 4 + y) * 4, 8, 8);
+      } else if (tile === 6) {
+        // TOXIC MIASMA BOG (Hazard)
+        const bubble = Math.sin(time * 2.5 + x * 2 + y) * 10;
+        ctx.fillStyle = `rgb(${45 + bubble}, 18, 55)`;
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = '#8bc34a';
+        ctx.fillRect(px + 12, py + 12, 6, 6);
+      } else if (tile === 7) {
+        // GLACIAL SLIPPERY ICE (Hazard)
+        ctx.fillStyle = '#00f2fe';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fillRect(px + 4, py + 4, tileSize - 8, 3);
+        ctx.fillRect(px + 10, py + 14, tileSize - 20, 2);
+      } else if (tile === 8) {
+        // STATIC ELECTRIC GROUND (Hazard)
+        ctx.fillStyle = '#1a2238';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        if (Math.random() < 0.25) {
+          ctx.fillStyle = '#4facfe';
+          ctx.fillRect(px + Math.random() * 36, py + Math.random() * 36, 12, 2);
+        }
+      } else if (tile === 9) {
+        // SHALLOW SAND & SHOALS
+        ctx.fillStyle = '#c2a677';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = 'rgba(28, 95, 175, 0.2)';
+        ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+      } else if (tile === 10) {
+        // ANCIENT STONE PILLAR (Obstacle / Cover)
+        ctx.fillStyle = '#10141d';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = '#3a4454';
+        ctx.fillRect(px + 6, py + 4, tileSize - 12, tileSize - 8);
+        ctx.fillStyle = '#65738a';
+        ctx.fillRect(px + 4, py + 2, tileSize - 8, 6);
+      } else if (tile === 11) {
+        // ABYSSAL CHASM
+        ctx.fillStyle = '#0a0812';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = 'rgba(75, 40, 120, 0.2)';
+        ctx.fillRect(px + 4, py + 4, tileSize - 8, tileSize - 8);
+      } else if (tile === 12) {
+        // DEEP SNOW DRIFT
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = '#d0e3f2';
+        ctx.fillRect(px + 6, py + 6, tileSize - 12, tileSize - 12);
+      } else if (tile === 13) {
+        // SCORCHED EARTH
+        ctx.fillStyle = '#241a18';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = '#ff5722';
+        ctx.fillRect(px + 14, py + 14, 4, 4);
       } else {
-        // NATURAL FLOOR / DIRT / DUNGEON GROUND
+        // NATURAL FLOOR / DIRT / DUNGEON GROUND (Tile 0)
         if (isCrypt) {
           ctx.fillStyle = rand > 0.5 ? '#241b2f' : '#2b2038';
           ctx.fillRect(px, py, tileSize, tileSize);
