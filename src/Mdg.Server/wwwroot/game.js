@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Asset-Driven Sprite Rendering & PoE Combat Core Simulation
+ * Clean Transparent PNG Sprites & Seamless Ground Rendering
  */
 
 (function () {
@@ -11,7 +11,6 @@
   const minimapCanvas = document.getElementById('minimapCanvas');
   const mmCtx = minimapCanvas.getContext('2d');
 
-  // Pixelated rendering settings
   ctx.imageSmoothingEnabled = false;
 
   function resize() {
@@ -28,14 +27,13 @@
   const camera = { x: 0, y: 0 };
 
   // ==========================================
-  // 1. ASSET LOADER (Sprite Sheets & Tileset)
+  // 1. ASSET LOADER (Transparent PNGs)
   // ==========================================
   const assets = {
     hero: new Image(),
     monsters: new Image(),
     tileset: new Image(),
-    loaded: 0,
-    total: 3
+    loaded: 0
   };
 
   function onAssetLoad() {
@@ -43,13 +41,13 @@
   }
 
   assets.hero.onload = onAssetLoad;
-  assets.hero.src = '/assets/character_spritesheet.jpg';
+  assets.hero.src = '/assets/character_spritesheet.png';
 
   assets.monsters.onload = onAssetLoad;
-  assets.monsters.src = '/assets/monsters_pack.jpg';
+  assets.monsters.src = '/assets/monsters_pack.png';
 
   assets.tileset.onload = onAssetLoad;
-  assets.tileset.src = '/assets/world_tileset.jpg';
+  assets.tileset.src = '/assets/world_tileset.png';
 
   // ==========================================
   // 2. PLAYER STATE (PoE Stats & Logic)
@@ -60,12 +58,11 @@
     vx: 0,
     vy: 0,
     speed: 260,
-    facing: 'down', // 'down', 'up', 'left', 'right'
+    facing: 'down',
     isMoving: false,
     animFrame: 0,
     animTimer: 0,
 
-    // Resources
     life: 250,
     maxLife: 250,
     mana: 120,
@@ -73,7 +70,6 @@
     es: 100,
     maxEs: 100,
 
-    // PoE Stats
     armor: 500,
     evasion: 350,
     fireRes: 75,
@@ -93,7 +89,6 @@
   const particles = [];
   const floatingTexts = [];
   const props = [];
-  const lights = [];
 
   // Input State
   const keys = {};
@@ -103,31 +98,29 @@
   // 3. WORLD INITIALIZATION
   // ==========================================
   function initWorld() {
-    // Spawn Environment Props
-    for (let i = 0; i < 90; i++) {
+    // Spawn Props with varied positions
+    for (let i = 0; i < 70; i++) {
       const typeRoll = Math.random();
       let type = 'tree';
-      if (typeRoll < 0.45) type = 'tree';
+      if (typeRoll < 0.50) type = 'tree';
       else if (typeRoll < 0.75) type = 'rock';
       else if (typeRoll < 0.90) type = 'barrel';
       else type = 'chest';
 
       props.push({
-        x: Math.random() * (WORLD_SIZE - 200) + 100,
-        y: Math.random() * (WORLD_SIZE - 200) + 100,
-        type: type,
-        variant: Math.floor(Math.random() * 3)
+        x: Math.random() * (WORLD_SIZE - 300) + 150,
+        y: Math.random() * (WORLD_SIZE - 300) + 150,
+        type: type
       });
     }
 
     // Central Campfire
-    props.push({ x: 1280, y: 1220, type: 'campfire', variant: 0 });
-    lights.push({ x: 1280, y: 1220, radius: 160, color: 'rgba(255, 140, 0, 0.35)' });
+    props.push({ x: 1260, y: 1200, type: 'campfire' });
 
     // Initial Monster Encounters
-    spawnMonsterCluster(1400, 1100, 4);
-    spawnMonsterCluster(950, 1350, 5);
-    spawnMonster(1600, 1400, 'boss'); // Dark Shadow Fiend Boss!
+    spawnMonsterCluster(1420, 1100, 4);
+    spawnMonsterCluster(980, 1350, 5);
+    spawnMonster(1650, 1400, 'boss');
   }
 
   function spawnMonster(x, y, type = 'slime') {
@@ -158,12 +151,12 @@
     const types = ['slime', 'skeleton', 'goblin'];
     for (let i = 0; i < count; i++) {
       const type = types[Math.floor(Math.random() * types.length)];
-      spawnMonster(cx + (Math.random() - 0.5) * 220, cy + (Math.random() - 0.5) * 220, type);
+      spawnMonster(cx + (Math.random() - 0.5) * 240, cy + (Math.random() - 0.5) * 240, type);
     }
   }
 
   // ==========================================
-  // 4. COMBAT & DAMAGE PIPELINE (PoE Math)
+  // 4. COMBAT PIPELINE (PoE Mitigation)
   // ==========================================
   function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
     if (!target.isAlive) return;
@@ -175,7 +168,6 @@
       multiplier = player.critMulti / 100;
     }
 
-    // Armor Mitigation: Armor / (Armor + 5 * RawDamage)
     const physDmg = rawPhysical * multiplier;
     let physMitigation = 0;
     if (target.armor > 0 && physDmg > 0) {
@@ -193,11 +185,9 @@
     target.life -= totalDamage;
     target.hurtTimer = 0.25;
 
-    // Floating text
     const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : '#ffffff'));
     spawnDamageNumber(target.x, target.y - 30 * (target.scale || 1), totalDamage, isCrit, color);
 
-    // Particle blood / sparks
     for (let i = 0; i < (isCrit ? 12 : 6); i++) {
       particles.push({
         x: target.x,
@@ -232,7 +222,7 @@
   }
 
   // ==========================================
-  // 5. SKILLS EXECUTION
+  // 5. SKILLS
   // ==========================================
   function castSlash() {
     if (player.cooldowns.slash > 0) return;
@@ -247,12 +237,11 @@
       if (m.isAlive) {
         const dist = Math.hypot(m.x - slashX, m.y - slashY);
         if (dist < reach) {
-          dealDamage(m, 50, 20, 0, 0, 0); // Physical + Fire
+          dealDamage(m, 50, 20, 0, 0, 0);
         }
       }
     });
 
-    // Slash Arc Visual
     for (let i = 0; i < 12; i++) {
       const spread = angle + (Math.random() - 0.5) * 1.4;
       particles.push({
@@ -322,7 +311,6 @@
     const targetX = mouse.worldX;
     const targetY = mouse.worldY;
 
-    // Target AoE indicator
     particles.push({
       x: targetX,
       y: targetY,
@@ -346,7 +334,6 @@
         }
       });
 
-      // Explosion sparks
       for (let i = 0; i < 45; i++) {
         const a = Math.random() * Math.PI * 2;
         const spd = 60 + Math.random() * 260;
@@ -409,7 +396,6 @@
   let fpsTimer = 0;
 
   function update(dt) {
-    // 1. Movement
     let mx = 0, my = 0;
     if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
     if (keys['KeyS'] || keys['ArrowDown']) my += 1;
@@ -440,7 +426,6 @@
       player.animFrame = Math.floor(player.animTimer) % 3;
     }
 
-    // 2. Cooldowns & Regen
     for (let k in player.cooldowns) {
       if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
     }
@@ -451,13 +436,12 @@
       castSlash();
     }
 
-    // 3. Camera Follow
     camera.x = player.x - canvas.width / 2;
     camera.y = player.y - canvas.height / 2;
     camera.x = Math.max(0, Math.min(WORLD_SIZE - canvas.width, camera.x));
     camera.y = Math.max(0, Math.min(WORLD_SIZE - canvas.height, camera.y));
 
-    // 4. Projectiles
+    // Projectiles
     for (let i = projectiles.length - 1; i >= 0; i--) {
       const p = projectiles[i];
       p.x += p.vx * dt;
@@ -492,11 +476,10 @@
       }
     }
 
-    // 5. Monster AI
+    // Monster AI
     monsters.forEach(m => {
       if (!m.isAlive) return;
       if (m.hurtTimer > 0) m.hurtTimer -= dt;
-
       m.animTimer += dt * 6;
 
       const dist = Math.hypot(player.x - m.x, player.y - m.y);
@@ -507,7 +490,6 @@
       }
     });
 
-    // 6. Particles & Floating Texts
     for (let i = particles.length - 1; i >= 0; i--) {
       const pt = particles[i];
       pt.x += pt.vx * dt;
@@ -546,7 +528,7 @@
   }
 
   // ==========================================
-  // 7. SPRITE SLICING & RENDERING ENGINE
+  // 7. RENDERING (Seamless Grass & Transparent PNGs)
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -554,28 +536,24 @@
     ctx.save();
     ctx.translate(-camera.x, -camera.y);
 
-    // 1. Draw Tileset Ground (Tile Grid)
-    drawTilemapGround();
+    // 1. Draw Seamless Pixel-Art Ground (Clean Grass & Paths)
+    drawSeamlessGround();
 
-    // 2. Depth / Y-Sorting Queue
+    // 2. Y-Sorting Render Queue
     const renderList = [];
 
-    // Props (Trees, Rocks, Campfire)
     props.forEach(p => {
-      renderList.push({ y: p.y, render: () => drawPropSprite(p) });
+      renderList.push({ y: p.y, render: () => drawPropPng(p) });
     });
 
-    // Monsters
     monsters.forEach(m => {
       if (m.isAlive) {
-        renderList.push({ y: m.y, render: () => drawMonsterSprite(m) });
+        renderList.push({ y: m.y, render: () => drawMonsterPng(m) });
       }
     });
 
-    // Player
-    renderList.push({ y: player.y, render: () => drawPlayerSprite() });
+    renderList.push({ y: player.y, render: () => drawPlayerPng() });
 
-    // Sort Top-Down
     renderList.sort((a, b) => a.y - b.y);
     renderList.forEach(item => item.render());
 
@@ -605,7 +583,7 @@
       }
     });
 
-    // 5. Floating Damage Text
+    // 5. Floating Text
     floatingTexts.forEach(ft => {
       ctx.font = ft.isCrit ? 'bold 16px "Press Start 2P", monospace' : 'bold 12px "Press Start 2P", monospace';
       ctx.fillStyle = ft.color;
@@ -617,40 +595,50 @@
 
     ctx.restore();
 
-    // 6. Minimap
     renderMinimap();
   }
 
-  // Draw Ground with Tileset or Rich Pixel Background
-  function drawTilemapGround() {
+  // Seamless Pixel-Art Grass & Dirt Tilemap (No White Grid Borders!)
+  function drawSeamlessGround() {
     const startX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
     const endX = startX + canvas.width + TILE_SIZE * 2;
     const startY = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE;
     const endY = startY + canvas.height + TILE_SIZE * 2;
-
-    const hasTileset = assets.tileset.complete && assets.tileset.naturalWidth > 0;
 
     for (let x = startX; x < endX; x += TILE_SIZE) {
       for (let y = startY; y < endY; y += TILE_SIZE) {
         const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
         const rand = hash - Math.floor(hash);
 
-        if (hasTileset) {
-          // Slice grass tile from world_tileset.jpg (top-left region)
-          const tileIdx = Math.floor(rand * 4);
-          const sx = 58 + (tileIdx * 90);
-          const sy = 60;
-          ctx.drawImage(assets.tileset, sx, sy, 85, 85, x, y, TILE_SIZE, TILE_SIZE);
+        // Base Grass Palette
+        if (rand > 0.82) {
+          ctx.fillStyle = '#4c7328'; // Dark shade
+        } else if (rand > 0.65) {
+          ctx.fillStyle = '#618c35'; // Vibrant blade
         } else {
-          ctx.fillStyle = rand > 0.8 ? '#4e6d2f' : (rand > 0.6 ? '#65883d' : '#587a35');
-          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+          ctx.fillStyle = '#557d2f'; // Primary grass
+        }
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+        // Grass Tufts & Flower details
+        if (rand > 0.90) {
+          // Yellow / Red Flower
+          ctx.fillStyle = rand > 0.95 ? '#ffd700' : '#e06c75';
+          ctx.fillRect(x + 16, y + 16, 4, 4);
+          ctx.fillStyle = '#3e5c1e';
+          ctx.fillRect(x + 18, y + 20, 2, 4);
+        } else if (rand > 0.78) {
+          // Tiny Grass Blade
+          ctx.fillStyle = '#6fa13d';
+          ctx.fillRect(x + 8, y + 12, 2, 6);
+          ctx.fillRect(x + 12, y + 10, 2, 8);
         }
       }
     }
   }
 
-  // Draw Player from character_spritesheet.jpg
-  function drawPlayerSprite() {
+  // Draw Player from Transparent character_spritesheet.png
+  function drawPlayerPng() {
     ctx.save();
     ctx.translate(player.x, player.y);
 
@@ -660,33 +648,27 @@
     ctx.ellipse(0, 20, 18, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const hasSprite = assets.hero.complete && assets.hero.naturalWidth > 0;
+    const img = assets.hero;
+    if (img.complete && img.naturalWidth > 0) {
+      const frameW = img.naturalWidth / 6;
+      const frameH = img.naturalHeight / 4;
 
-    if (hasSprite) {
-      const img = assets.hero;
-      const totalW = img.naturalWidth;
-      const totalH = img.naturalHeight;
-
-      // 6 Columns per row, 4 Rows (Idle, Walk Down, Walk Up, Walk Side)
-      const frameW = totalW / 6;
-      const frameH = totalH / 4;
-
-      let row = 1; // Walk Down
+      let row = 1;
       let col = player.animFrame;
 
       if (!player.isMoving) {
-        row = 0; // Idle
+        row = 0;
         col = player.facing === 'right' ? 3 : (player.facing === 'left' ? 4 : (player.facing === 'up' ? 1 : 0));
       } else {
         if (player.facing === 'down') row = 1;
         else if (player.facing === 'up') row = 2;
-        else row = 3; // Left or Right
+        else row = 3;
       }
 
       const sx = col * frameW;
       const sy = row * frameH;
-      const destW = 54;
-      const destH = 54;
+      const destW = 56;
+      const destH = 56;
 
       if (player.facing === 'left') {
         ctx.scale(-1, 1);
@@ -696,9 +678,8 @@
         ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
       }
     } else {
-      // Fallback
       ctx.fillStyle = '#2b5c8f';
-      ctx.fillRect(-10, -10, 20, 22);
+      ctx.fillRect(-12, -12, 24, 24);
     }
 
     // Nameplate
@@ -710,41 +691,36 @@
     ctx.restore();
   }
 
-  // Draw Monster from monsters_pack.jpg
-  function drawMonsterSprite(m) {
+  // Draw Monster from Transparent monsters_pack.png
+  function drawMonsterPng(m) {
     ctx.save();
     ctx.translate(m.x, m.y);
 
-    // Shadow
     const scale = m.scale || 1.2;
+
+    // Shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
     ctx.ellipse(0, 16 * scale, 14 * scale, 6 * scale, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const hasSprite = assets.monsters.complete && assets.monsters.naturalWidth > 0;
+    const img = assets.monsters;
+    if (img.complete && img.naturalWidth > 0) {
+      const colW = img.naturalWidth / 7;
+      const rowH = img.naturalHeight / 4;
 
-    if (hasSprite) {
-      const img = assets.monsters;
-      const totalW = img.naturalWidth;
-      const totalH = img.naturalHeight;
-
-      // 7 Columns, 4 Rows (Toxic Slime, Skeleton Warrior, Goblin Scout, Dark Shadow Fiend)
-      const colW = totalW / 7;
-      const rowH = totalH / 4;
-
-      let row = 0; // Slime
+      let row = 0;
       if (m.type === 'skeleton') row = 1;
       else if (m.type === 'goblin') row = 2;
       else if (m.type === 'boss') row = 3;
 
-      let col = Math.floor(m.animTimer) % 2; // Walk 1 & 2
-      if (m.hurtTimer > 0) col = 5; // Damage frame
+      let col = Math.floor(m.animTimer) % 2;
+      if (m.hurtTimer > 0) col = 5;
 
       const sx = col * colW;
       const sy = row * rowH;
-      const dw = 48 * scale;
-      const dh = 48 * scale;
+      const dw = 50 * scale;
+      const dh = 50 * scale;
 
       ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
     } else {
@@ -764,37 +740,35 @@
 
     // Name Tag
     ctx.font = m.type === 'boss' ? 'bold 11px "Outfit", sans-serif' : '9px "Outfit", sans-serif';
-    ctx.fillStyle = m.type === 'boss' ? '#e5c07b' : '#abb2bf';
+    ctx.fillStyle = m.type === 'boss' ? '#ffd700' : '#abb2bf';
     ctx.textAlign = 'center';
     ctx.fillText(m.name, 0, -36 * scale);
 
     ctx.restore();
   }
 
-  // Draw Props (Trees, Rocks, Campfire) from world_tileset.jpg
-  function drawPropSprite(p) {
+  // Draw Props from Transparent world_tileset.png
+  function drawPropPng(p) {
     ctx.save();
     ctx.translate(p.x, p.y);
 
-    const hasTileset = assets.tileset.complete && assets.tileset.naturalWidth > 0;
-
-    if (hasTileset) {
-      const img = assets.tileset;
-
+    const img = assets.tileset;
+    if (img.complete && img.naturalWidth > 0) {
       if (p.type === 'tree') {
-        // Oak Tree (x: 60..250, y: 520..720 on tileset)
+        // Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, 10, 36, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.drawImage(img, 60, 520, 175, 200, -50, -110, 100, 120);
       } else if (p.type === 'rock') {
-        // Mossy Boulder (x: 60..190, y: 730..850)
         ctx.drawImage(img, 60, 735, 130, 115, -28, -24, 56, 48);
       } else if (p.type === 'campfire') {
-        // Campfire (x: 520..650, y: 750..880)
         ctx.drawImage(img, 520, 755, 130, 125, -30, -30, 60, 60);
       } else if (p.type === 'chest') {
-        // Treasure Chest (x: 700..800, y: 880..940)
         ctx.drawImage(img, 700, 885, 100, 60, -22, -14, 44, 28);
       } else {
-        // Barrel
         ctx.drawImage(img, 385, 735, 60, 65, -15, -18, 30, 34);
       }
     } else {
@@ -811,7 +785,6 @@
     const scaleX = minimapCanvas.width / WORLD_SIZE;
     const scaleY = minimapCanvas.height / WORLD_SIZE;
 
-    // Monsters
     monsters.forEach(m => {
       if (m.isAlive) {
         mmCtx.fillStyle = m.type === 'boss' ? '#ffd700' : '#e06c75';
@@ -820,14 +793,13 @@
       }
     });
 
-    // Player
     mmCtx.fillStyle = '#61afef';
     mmCtx.beginPath();
     mmCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
     mmCtx.fill();
   }
 
-  // Game Loop
+  // Main Loop
   function gameLoop(now) {
     const dt = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
@@ -879,7 +851,6 @@
     if (e.button === 0) mouse.isDown = false;
   });
 
-  // UI Modals
   function toggleModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden');
@@ -900,7 +871,6 @@
   document.getElementById('slot-meteor').addEventListener('click', castMeteor);
   document.getElementById('slot-dash').addEventListener('click', castDash);
 
-  // Initialize
   initWorld();
   requestAnimationFrame(gameLoop);
 })();
