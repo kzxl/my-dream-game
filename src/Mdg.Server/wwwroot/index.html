@@ -34,9 +34,9 @@
       <p id="zone-banner-sub">🌿 Starting Town - Safe Haven</p>
     </div>
 
-    <!-- Top Left HUD: Character Info & Globes -->
-    <div id="player-hud" class="pixel-panel">
-      <div class="portrait-box" id="btn-toggle-gender" title="Click to Switch Gender (Male / Female)">
+    <!-- Top Left HUD: Character Info, Portrait & Status Orbs/Bars -->
+    <div id="player-hud" class="pixel-panel hud-overhaul-panel">
+      <div class="portrait-box hud-portrait-locked" id="hud-portrait-wrap" title="Character Hero Portrait (Gender locked at creation)">
         <div class="avatar-pixel" id="hud-avatar"></div>
         <span class="level-badge" id="hud-level">Lv.1</span>
         <span class="gender-tag" id="hud-gender-tag">♂ Male</span>
@@ -65,13 +65,15 @@
       </div>
     </div>
 
-    <!-- Top Right: Minimap, Zoom Controls & Quick Actions -->
-    <div id="minimap-panel" class="pixel-panel">
+    <!-- Top Right: Minimap, Zoom Controls & Quick Hub -->
+    <div id="minimap-panel" class="pixel-panel minimap-overhaul-panel">
       <div class="minimap-header">
-        <span id="minimap-zone-title">HAVEN</span>
-        <span id="fps-counter" class="fps-tag">60 FPS</span>
+        <span id="minimap-zone-title">🌿 HAVEN</span>
+        <div class="minimap-meta-tags">
+          <span id="fps-counter" class="fps-tag">60 FPS</span>
+        </div>
       </div>
-      <canvas id="minimapCanvas" width="150" height="110"></canvas>
+      <canvas id="minimapCanvas" width="160" height="110"></canvas>
       
       <!-- Zoom Controls -->
       <div class="zoom-controls">
@@ -83,15 +85,34 @@
 
       <div class="quick-buttons">
         <button id="btn-toggle-roster" class="hud-btn highlight-btn" title="Character Roster (Select / Create Hero)">👥 Heroes</button>
-        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map (M)">🗺️ Map (M)</button>
+        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map & Campaign Atlas (M)">🗺️ Map (M)</button>
         <button id="btn-toggle-skills" class="hud-btn highlight-btn" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
-        <button id="btn-toggle-inventory" class="hud-btn highlight-btn" title="Inventory (I)">🎒 Bag (I)</button>
-        <button id="btn-toggle-stats" class="hud-btn" title="Attributes (C)">📊 Stats (C)</button>
+        <button id="btn-toggle-inventory" class="hud-btn highlight-btn" title="Inventory & Equipment (I)">🎒 Bag (I)</button>
+        <button id="btn-toggle-stats" class="hud-btn" title="Character Attributes (C)">📊 Stats (C)</button>
       </div>
     </div>
 
-    <!-- Bottom Center: Hotbar & Skills with Level Badges -->
-    <div id="bottom-hotbar">
+    <!-- Bottom Center: Hotbar, Flasks & Skills -->
+    <div id="bottom-hotbar" class="bottom-hotbar-overhaul">
+      <!-- Left Wing: Quick Potions / Flasks -->
+      <div class="flask-slots-group">
+        <div class="flask-slot" id="slot-flask-1" data-key="1" title="Life Flask (Restores HP)">
+          <div class="flask-icon">🍷</div>
+          <span class="flask-key">1</span>
+        </div>
+        <div class="flask-slot" id="slot-flask-2" data-key="2" title="Mana Flask (Restores MP)">
+          <div class="flask-icon">🧪</div>
+          <span class="flask-key">2</span>
+        </div>
+        <div class="flask-slot" id="slot-flask-3" data-key="3" title="Quicksilver Flask (+40% Movement Speed)">
+          <div class="flask-icon">⚡</div>
+          <span class="flask-key">3</span>
+        </div>
+      </div>
+
+      <div class="hotbar-divider"></div>
+
+      <!-- Center: Main Combat Skills -->
       <div class="hotbar-slots">
         <!-- Slot 1: Slash -->
         <div class="skill-slot" id="slot-slash" data-key="LMB / 1">
@@ -132,6 +153,12 @@
           <span class="skill-lvl-badge" id="lvl-badge-dash">Lv.1</span>
         </div>
       </div>
+    </div>
+
+    <!-- Bottom Fullscreen Experience Progression Bar -->
+    <div id="bottom-exp-container" title="Experience Progress">
+      <div id="bottom-exp-fill" style="width: 0%;"></div>
+      <span id="bottom-exp-text">EXP: 0 / 100 (0.0%)</span>
     </div>
 
     <!-- INVENTORY & PAPERDOLL MODAL (Hotkey I) -->

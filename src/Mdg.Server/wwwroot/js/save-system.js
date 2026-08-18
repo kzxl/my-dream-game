@@ -6,7 +6,7 @@ import { player } from './state.js';
 import { SKILLS, skillSocketBoard, allocatedMasteryNodes } from './data/skills.js';
 import { updateBackpackUI, updatePaperdollUI } from './ui/inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
-import { updateAttributesModal } from './ui/hud.js';
+import { updateAttributesModal, updateHudAvatar, updateExpBar } from './ui/hud.js';
 import { spawnDamageNumber } from './combat.js';
 
 export let activeCharacterId = localStorage.getItem('mdg_active_char_id') || 'hero_default';
@@ -226,6 +226,9 @@ export async function loadFromDatabase(charId) {
     if (hudLevel) hudLevel.innerText = `Lv.${player.level}`;
     const hudName = document.getElementById('hud-name');
     if (hudName) hudName.innerText = data.name || 'Novice Adventurer';
+
+    updateHudAvatar();
+    updateExpBar();
 
     return true;
   } catch (err) {

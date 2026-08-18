@@ -12,7 +12,7 @@ import { renderGame } from './renderer.js';
 import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
-import { showZoneBanner, setupUIListeners, toggleModal } from './ui/hud.js';
+import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar } from './ui/hud.js';
 import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
 import { MapGenerator } from './map-generator.js';
 
@@ -433,7 +433,10 @@ function updateHUD() {
   document.getElementById('bar-mana').style.width = `${(player.mana / player.maxMana) * 100}%`;
   document.getElementById('text-mana').innerText = `MP: ${Math.round(player.mana)} / ${player.maxMana}`;
 
+  document.getElementById('hud-level').innerText = `Lv.${player.level}`;
   document.getElementById('zoom-level-text').innerText = `${Math.round(camera.zoom * 100)}%`;
+
+  updateExpBar();
 
   for (let k in player.cooldowns) {
     const el = document.getElementById(`cd-${k}`);
@@ -563,6 +566,7 @@ loadZone('SanctuaryHaven');
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {
   await loadFromDatabase();
+  updateHudAvatar();
   startAutoSave(10000);
 })();
 
