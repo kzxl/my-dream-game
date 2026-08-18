@@ -1,11 +1,8 @@
-/**
- * Canvas Rendering Pipeline (With Procedural Map Tiles, Environmental Weather FX & Biome Hazard Visuals)
- */
-
 import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
 import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
 import { getMonsterLoreBonus } from './combat.js';
+import { companion } from './companion.js';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.fillStyle = '#0c0e14';
@@ -31,6 +28,9 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   });
 
   renderList.push({ y: player.y, render: () => drawPlayerClean(ctx) });
+  if (!companion.isDeliveringToTown) {
+    renderList.push({ y: companion.y, render: () => drawCompanion(ctx) });
+  }
 
   renderList.sort((a, b) => a.y - b.y);
   renderList.forEach(item => item.render());
@@ -487,25 +487,101 @@ export function drawPropClean(ctx, p) {
   ctx.save();
   ctx.translate(p.x, p.y);
 
+  // 1. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
+  const natImg = assets.nature;
+  if (natImg.complete && natImg.naturalWidth > 0) {
+    const cellSize = 128;
+    let col = -1, row = -1;
+    let dw = 64, dh = 64, offX = -32, offY = -52;
+
+    if (p.type === 'oak_tree' || p.type === 'tree') {
+      col = 0; row = 0; dw = 110; dh = 110; offX = -55; offY = -95;
+    } else if (p.type === 'pine_tree') {
+      col = 1; row = 0; dw = 100; dh = 110; offX = -50; offY = -95;
+    } else if (p.type === 'cherry_tree') {
+      col = 2; row = 0; dw = 110; dh = 110; offX = -55; offY = -95;
+    } else if (p.type === 'autumn_tree') {
+      col = 3; row = 0; dw = 110; dh = 110; offX = -55; offY = -95;
+    } else if (p.type === 'bush' || p.type === 'lush_bush') {
+      col = 0; row = 1; dw = 58; dh = 58; offX = -29; offY = -42;
+    } else if (p.type === 'tall_grass') {
+      col = 1; row = 1; dw = 52; dh = 52; offX = -26; offY = -40;
+    } else if (p.type === 'flowers_red') {
+      col = 2; row = 1; dw = 48; dh = 48; offX = -24; offY = -38;
+    } else if (p.type === 'flowers_blue') {
+      col = 3; row = 1; dw = 48; dh = 48; offX = -24; offY = -38;
+    } else if (p.type === 'flowers_gold') {
+      col = 0; row = 2; dw = 52; dh = 52; offX = -26; offY = -40;
+    } else if (p.type === 'mushroom_glow') {
+      col = 1; row = 2; dw = 50; dh = 50; offX = -25; offY = -38;
+    } else if (p.type === 'mossy_rock' || p.type === 'rock') {
+      col = 2; row = 2; dw = 60; dh = 52; offX = -30; offY = -38;
+    } else if (p.type === 'crystal_spire') {
+      col = 3; row = 2; dw = 56; dh = 68; offX = -28; offY = -56;
+    }
+
+    if (col !== -1 && row !== -1) {
+      ctx.drawImage(
+        natImg,
+        col * cellSize, row * cellSize, cellSize, cellSize,
+        offX, offY, dw, dh
+      );
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 2. Fallback to Legacy Props Sheet (barrel, chest, campfire)
   const img = assets.props;
   if (img.complete && img.naturalWidth > 0) {
     const W = img.naturalWidth;
     const H = img.naturalHeight;
 
-    if (p.type === 'tree') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    if (p.type === 'map_device') {
+      const now = performance.now() / 300;
+      // Ancient Stone Platform
+      ctx.fillStyle = '#1b2230';
+      ctx.strokeStyle = '#00f2fe';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(0, 10, 36, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 10, 42, 18, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.drawImage(img, W * 0.05, H * 0.02, W * 0.55, H * 0.48, -55, -120, 110, 130);
-    } else if (p.type === 'rock') {
-      ctx.drawImage(img, W * 0.60, H * 0.01, W * 0.38, H * 0.36, -30, -26, 60, 52);
+      ctx.stroke();
+
+      // Rotating Rune Arcs
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 10, 32 + Math.sin(now) * 3, 14, now * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Cosmic Glowing Core
+      const coreGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 20);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.5, '#00f2fe');
+      coreGrad.addColorStop(1, 'rgba(127, 0, 255, 0)');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 18 + Math.sin(now * 2) * 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      ctx.font = 'bold 9px "Outfit", sans-serif';
+      ctx.fillStyle = '#00f2fe';
+      ctx.textAlign = 'center';
+      ctx.fillText('🌌 [F] Map Device', 0, -32);
+
+      ctx.restore();
+      return;
     } else if (p.type === 'barrel') {
       ctx.drawImage(img, W * 0.01, H * 0.38, W * 0.28, H * 0.34, -18, -20, 36, 42);
     } else if (p.type === 'chest') {
       ctx.drawImage(img, W * 0.64, H * 0.46, W * 0.26, H * 0.26, -22, -16, 44, 32);
     } else if (p.type === 'campfire') {
       ctx.drawImage(img, W * 0.35, H * 0.70, W * 0.30, H * 0.28, -32, -32, 64, 64);
+    } else {
+      ctx.fillStyle = '#6b4f2c';
+      ctx.fillRect(-6, -10, 12, 24);
     }
   } else {
     ctx.fillStyle = '#6b4f2c';
@@ -518,29 +594,94 @@ export function drawPropClean(ctx, p) {
 export function drawPortal(ctx, p) {
   ctx.save();
   ctx.translate(p.x, p.y);
+  const now = performance.now();
 
-  const pulse = (Math.sin(performance.now() / 250) + 1) * 0.5;
-  const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 38);
-  grad.addColorStop(0, '#ffffff');
-  grad.addColorStop(0.4, '#c678dd');
-  grad.addColorStop(0.8, '#61afef');
-  grad.addColorStop(1, 'rgba(97, 175, 239, 0)');
+  if (p.isRift) {
+    // --- SPATIAL RIFT / DIMENSIONAL FRACTURE ANIMATION ---
+    const t = now / 150;
+    const riftColor = p.color || '#00f2fe';
 
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(0, 0, 32 + pulse * 6, 0, Math.PI * 2);
-  ctx.fill();
+    // 1. Cosmic Void Swirl Aura
+    const auraGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 55);
+    auraGrad.addColorStop(0, '#ffffff');
+    auraGrad.addColorStop(0.3, riftColor);
+    auraGrad.addColorStop(0.7, '#7f00ff');
+    auraGrad.addColorStop(1, 'rgba(127, 0, 255, 0)');
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 52 + Math.sin(t * 1.5) * 6, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.strokeStyle = '#e5c07b';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, 0, 24, 0, Math.PI * 2);
-  ctx.stroke();
+    // 2. Spatial Jagged Tear / Fracture Shape
+    ctx.save();
+    ctx.rotate(Math.sin(t * 0.5) * 0.15);
+    ctx.fillStyle = '#0a0515';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = riftColor;
+    ctx.shadowBlur = 15;
 
-  ctx.font = '10px "Outfit", sans-serif';
-  ctx.fillStyle = '#e5c07b';
-  ctx.textAlign = 'center';
-  ctx.fillText(p.name, 0, -36);
+    ctx.beginPath();
+    ctx.moveTo(0, -45);
+    ctx.lineTo(12 + Math.sin(t * 2) * 5, -20);
+    ctx.lineTo(24 + Math.cos(t * 2) * 6, 0);
+    ctx.lineTo(10 + Math.sin(t * 3) * 4, 25);
+    ctx.lineTo(0, 45);
+    ctx.lineTo(-10 + Math.cos(t * 2) * 4, 22);
+    ctx.lineTo(-22 + Math.sin(t * 2) * 5, 0);
+    ctx.lineTo(-12 + Math.cos(t * 3) * 4, -22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Rotating Electric Lightning Arcs
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 4; i++) {
+      const angle = (t + i * (Math.PI / 2)) % (Math.PI * 2);
+      const dist = 32 + Math.sin(t * 3 + i) * 10;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(angle) * (dist * 0.5) + (Math.random() - 0.5) * 8, Math.sin(angle) * (dist * 0.5) + (Math.random() - 0.5) * 8);
+      ctx.lineTo(Math.cos(angle) * dist, Math.sin(angle) * dist);
+      ctx.stroke();
+    }
+
+    // 4. Rift Title & Interaction Label
+    ctx.font = 'bold 11px "Outfit", sans-serif';
+    ctx.fillStyle = '#ffd700';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, 0, -56);
+    ctx.font = '9px "Outfit", sans-serif';
+    ctx.fillStyle = '#00f2fe';
+    ctx.fillText('[F] Enter Rift', 0, -42);
+
+  } else {
+    // --- STANDARD WORLD PORTAL ---
+    const pulse = (Math.sin(now / 250) + 1) * 0.5;
+    const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 38);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, '#c678dd');
+    grad.addColorStop(0.8, '#61afef');
+    grad.addColorStop(1, 'rgba(97, 175, 239, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 32 + pulse * 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#e5c07b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.font = '10px "Outfit", sans-serif';
+    ctx.fillStyle = '#e5c07b';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, 0, -36);
+  }
 
   ctx.restore();
 }
@@ -549,10 +690,18 @@ export function drawNpc(ctx, n) {
   ctx.save();
   ctx.translate(n.x, n.y);
 
+  // NPC Aura Glow Ring on Ground
+  const auraColor = n.color || '#ffd700';
   ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.beginPath();
-  ctx.ellipse(0, 18, 16, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 18, 20, 8, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.strokeStyle = auraColor;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(0, 18, 22, 9, 0, 0, Math.PI * 2);
+  ctx.stroke();
 
   const img = assets.npcs;
   if (img.complete && img.naturalWidth > 0) {
@@ -561,27 +710,36 @@ export function drawNpc(ctx, n) {
 
     let sx = 0, sy = 0;
     if (n.name.includes('Doran') || n.name.includes('Blacksmith')) {
-      sx = halfW; sy = 0; // Top-Right
-    } else if (n.name.includes('Kaelen') || n.name.includes('Stash')) {
-      sx = 0; sy = halfH; // Bottom-Left
+      sx = halfW; sy = 0; // Top-Right (Smith)
+    } else if (n.name.includes('Kaelen') || n.name.includes('Vault') || n.name.includes('Stash')) {
+      sx = 0; sy = halfH; // Bottom-Left (Vault Keeper)
+    } else if (n.name.includes('Lyra') || n.name.includes('Astromancer') || n.name.includes('Valen')) {
+      sx = halfW; sy = halfH; // Bottom-Right (Astromancer/Scout)
     } else {
-      sx = 0; sy = 0; // Top-Left: Elder Aethel
+      sx = 0; sy = 0; // Top-Left (Elder Sage / Beastmaster)
     }
 
-    const dw = 58;
-    const dh = 58;
+    const dw = 60;
+    const dh = 60;
     ctx.drawImage(img, sx, sy, halfW, halfH, -dw / 2, -dh + 18, dw, dh);
   } else {
     ctx.fillStyle = n.color || '#e5c07b';
-    ctx.fillRect(-8, -12, 16, 24);
+    ctx.fillRect(-10, -14, 20, 28);
   }
 
+  // NPC Title & Name Tag
   ctx.font = 'bold 10px "Outfit", sans-serif';
-  ctx.fillStyle = '#ffd700';
+  ctx.fillStyle = auraColor;
   ctx.textAlign = 'center';
-  ctx.fillText(`«${n.title}»`, 0, -42);
+  ctx.fillText(`«${n.title}»`, 0, -44);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(n.name, 0, -30);
+  ctx.fillText(n.name, 0, -31);
+
+  // Interaction prompt hint indicator
+  ctx.font = '8px "Outfit", sans-serif';
+  ctx.fillStyle = '#ffd700';
+  ctx.fillText('[F] Talk', 0, -56);
+
   ctx.restore();
 }
 
@@ -659,3 +817,55 @@ export function renderMinimap(minimapCanvas, mmCtx, zoneData) {
   mmCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
   mmCtx.fill();
 }
+
+export function drawCompanion(ctx) {
+  ctx.save();
+  ctx.translate(companion.x, companion.y);
+
+  // 1. Companion Glowing Aura Ring on ground
+  const auraColor = companion.activeAura === 'swift_wings' ? 'rgba(0, 242, 254, 0.35)' :
+                   (companion.activeAura === 'aegis_shell' ? 'rgba(255, 215, 0, 0.35)' : 'rgba(198, 120, 221, 0.35)');
+  
+  ctx.fillStyle = auraColor;
+  ctx.beginPath();
+  ctx.ellipse(0, 10, 14, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Glowing Sprite Orb (Floating Sprite)
+  const floatOffset = Math.sin(companion.hoverTimer) * 4;
+  
+  // Outer Glow
+  const grad = ctx.createRadialGradient(0, floatOffset, 2, 0, floatOffset, 12);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.4, companion.activeAura === 'swift_wings' ? '#00f2fe' : (companion.activeAura === 'aegis_shell' ? '#ffd700' : '#c678dd'));
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, floatOffset, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Core Star
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(0, floatOffset, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Small Fairy Wings
+  const wingAngle = Math.sin(companion.hoverTimer * 4) * 0.4;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.beginPath();
+  ctx.ellipse(-6, floatOffset - 2, 6, 3, -wingAngle, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(6, floatOffset - 2, 6, 3, wingAngle, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Title Label
+  ctx.font = 'bold 9px "Outfit", sans-serif';
+  ctx.fillStyle = '#00f2fe';
+  ctx.textAlign = 'center';
+  ctx.fillText('🐾 ' + companion.name, 0, floatOffset - 16);
+
+  ctx.restore();
+}
+

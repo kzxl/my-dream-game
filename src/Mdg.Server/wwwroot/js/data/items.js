@@ -299,5 +299,71 @@ export const POSSIBLE_LOOT = [
     primaryStats: { 'Stack Size': '1 / 20' },
     mods: ['Reforges the links between sockets on an item'],
     lore: 'Resonates with celestial frequency to harmonize socket links.'
+  },
+  // --- ENDGAME RIFT MAP KEYSTONES ---
+  {
+    id: 'map_tier_1',
+    name: '🌿 Verdant Hollow Map (Tier 1)',
+    baseType: 'Endgame Map Key',
+    category: 'map',
+    tier: 1,
+    targetZone: 'WhisperingPlains',
+    rarity: 'Magic',
+    icon: '🗺️',
+    color: '#8888ff',
+    mods: ['+35% Increased Item Quantity (IIQ)', '+50% Increased Item Rarity (IIR)', 'Opens Portal to Ancient Hollows'],
+    lore: 'An etched keystone guiding the way into the Whispering Plains.'
+  },
+  {
+    id: 'map_tier_5',
+    name: '💀 Forgotten Crypt Map (Tier 5)',
+    baseType: 'Endgame Map Key',
+    category: 'map',
+    tier: 5,
+    targetZone: 'ForgottenCrypt',
+    rarity: 'Rare',
+    icon: '🗺️',
+    color: '#ffd700',
+    mods: ['+65% Increased Item Quantity (IIQ)', '+90% Increased Item Rarity (IIR)', '+20% Elite Monster Density'],
+    lore: 'A sealed stone key opening the forgotten tombs beneath Aethelis.'
+  },
+  {
+    id: 'map_tier_14',
+    name: '🌋 Pinnacle Caldera Map (Tier 14)',
+    baseType: 'Pinnacle Boss Key',
+    category: 'map',
+    tier: 14,
+    targetZone: 'ArenaCaldera',
+    rarity: 'Unique',
+    icon: '🗺️',
+    color: '#ff416c',
+    mods: ['Opens Ignis Ancient Boss Arena', '+120% IIQ', '+160% IIR'],
+    lore: 'A fiery keystone resonating with the primal magma of Ignis.'
+  },
+  {
+    id: 'map_tier_15',
+    name: '❄️ Pinnacle Glacial Chasm Map (Tier 15)',
+    baseType: 'Pinnacle Boss Key',
+    category: 'map',
+    tier: 15,
+    targetZone: 'ArenaGlacial',
+    rarity: 'Unique',
+    icon: '🗺️',
+    color: '#00f2fe',
+    mods: ['Opens Glacial Sovereign Vael Arena', '+130% IIQ', '+180% IIR'],
+    lore: 'An ice-crystal keystone piercing the eternal frozen realm.'
+  },
+  {
+    id: 'map_tier_16',
+    name: '🌌 Pinnacle Void Sanctum Map (Tier 16)',
+    baseType: 'Ultimate Pinnacle Key',
+    category: 'map',
+    tier: 16,
+    targetZone: 'ArenaVoid',
+    rarity: 'Unique',
+    icon: '🌌',
+    color: '#c678dd',
+    mods: ['Opens Malakor Void Citadel', '+150% IIQ', '+220% IIR', 'Guaranteed Mythic Loot Drops'],
+    lore: 'The supreme Void Keystone - the ultimate trial of Aethelis.'
   }
 ];

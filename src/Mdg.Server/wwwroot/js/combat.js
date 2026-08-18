@@ -139,6 +139,51 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     });
   }
 
+  // Devotion Proc: Phoenix Firestorm on Crit
+  if (isCrit && player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('ph_proc')) {
+    spawnDamageNumber(target.x, target.y - 65, '🔥 PHOENIX FIRESTORM!', true, '#ff7700');
+    monsters.forEach(m => {
+      if (m !== target && m.isAlive && Math.hypot(m.x - target.x, m.y - target.y) <= 150) {
+        dealDamage(m, 0, 180, 0, 0, 0, false, { x: target.x, y: target.y });
+      }
+    });
+    for (let i = 0; i < 15; i++) {
+      particles.push({
+        x: target.x + (Math.random() - 0.5) * 40,
+        y: target.y + (Math.random() - 0.5) * 40,
+        vx: (Math.random() - 0.5) * 120,
+        vy: -80 - Math.random() * 100,
+        color: '#ff5722',
+        life: 0.5,
+        maxLife: 0.5,
+        size: 4
+      });
+    }
+  }
+
+  // Devotion Proc: Chain Lightning on Hit (25% chance)
+  if (player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('tl_proc') && Math.random() < 0.25) {
+    spawnDamageNumber(target.x, target.y - 50, '⚡ CHAIN LIGHTNING!', true, '#ffd700');
+    let chained = 0;
+    monsters.forEach(m => {
+      if (m !== target && m.isAlive && chained < 3 && Math.hypot(m.x - target.x, m.y - target.y) <= 220) {
+        dealDamage(m, 0, 0, 0, 140, 0, false, { x: target.x, y: target.y });
+        chained++;
+      }
+    });
+  }
+
+  // Devotion Proc: Glacial Barrier on Low Life (< 35% HP)
+  if (player.life > 0 && player.life < player.maxLife * 0.35 && player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('fw_proc')) {
+    if (!player.glacialBarrierCooldown) {
+      player.glacialBarrierCooldown = true;
+      player.es = Math.min(player.maxEs + 400, player.es + 400);
+      spawnDamageNumber(player.x, player.y - 50, '❄️ GLACIAL BARRIER +400 ES!', true, '#00f2fe');
+      AudioEngine.playTone(587, 'sine', 0.3, 0.2);
+      setTimeout(() => { player.glacialBarrierCooldown = false; }, 15000);
+    }
+  }
+
   if (target.life <= 0 && target.life < 90000) {
     handleMonsterDefeated(target);
   }
@@ -150,6 +195,15 @@ export function handleMonsterDefeated(target) {
   target.isAlive = false;
   target.life = 0;
   spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
+
+  // Devotion Proc: Void Siphon on Kill (Heal 10% HP & ES)
+  if (player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('vr_proc')) {
+    const healHp = Math.round(player.maxLife * 0.10);
+    const healEs = Math.round(player.maxEs * 0.10);
+    player.life = Math.min(player.maxLife, player.life + healHp);
+    player.es = Math.min(player.maxEs, player.es + healEs);
+    spawnDamageNumber(player.x, player.y - 65, `☠️ VOID SIPHON +${healHp} HP`, false, '#c678dd');
+  }
 
   // Keystone / Node: Ice Shatter
   if ((target.freezeTimer > 0 || target.chillTimer > 0) && isNodeAllocated('frost', 'fr_shatter')) {

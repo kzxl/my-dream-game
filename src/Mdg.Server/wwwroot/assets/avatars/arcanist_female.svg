@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="arcaneBg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#4e2169"/>
+      <stop offset="60%" stop-color="#240c36"/>
+      <stop offset="100%" stop-color="#0e0416"/>
+    </radialGradient>
+    <linearGradient id="arcaneSilk" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c678dd"/>
+      <stop offset="50%" stop-color="#8038a8"/>
+      <stop offset="100%" stop-color="#3d1457"/>
+    </linearGradient>
+    <linearGradient id="arcaneRuneGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="50%" stop-color="#c678dd"/>
+      <stop offset="100%" stop-color="#ff79c6"/>
+    </linearGradient>
+    <filter id="arcGlow">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background with Magic Circle -->
+  <rect width="128" height="128" rx="14" fill="url(#arcaneBg)" />
+  <circle cx="64" cy="64" r="54" fill="none" stroke="url(#arcaneRuneGlow)" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.6" />
+  <circle cx="64" cy="64" r="46" fill="none" stroke="#00f2fe" stroke-width="1" opacity="0.4" />
+
+  <!-- Purple Mystical Hair -->
+  <path d="M26 38 C14 70, 20 110, 32 128 L96 128 C108 110, 114 70, 102 38 Z" fill="#602882" />
+
+  <!-- Robe & High Arcane Collar -->
+  <path d="M14 128 C20 98, 44 88, 54 86 L74 86 C84 88, 108 98, 114 128 Z" fill="url(#arcaneSilk)" />
+  <path d="M38 78 L64 96 L90 78 L80 128 L48 128 Z" fill="#2d1040" stroke="url(#arcaneRuneGlow)" stroke-width="1.5" />
+
+  <!-- Arcane Gem Brooch -->
+  <polygon points="64,88 70,96 64,104 58,96" fill="#00f2fe" filter="url(#arcGlow)" />
+
+  <!-- Face Base -->
+  <path d="M46 44 C46 32, 82 32, 82 44 C82 66, 76 76, 64 78 C52 76, 46 66, 46 44 Z" fill="#fae0d0" />
+
+  <!-- Glowing Arcane Forehead Rune -->
+  <circle cx="64" cy="38" r="2.5" fill="#00f2fe" filter="url(#arcGlow)" />
+  <path d="M64 32 L64 44 M58 38 L70 38" stroke="#ff79c6" stroke-width="1" filter="url(#arcGlow)" />
+
+  <!-- Soft Violet Bangs -->
+  <path d="M44 40 C52 26, 76 26, 84 40 C76 34, 52 34, 44 40 Z" fill="#9d4edd" />
+  <path d="M42 44 C40 62, 46 72, 48 76 C44 68, 42 54, 44 44 Z" fill="#7b2cbf" />
+  <path d="M86 44 C88 62, 82 72, 80 76 C84 68, 86 54, 84 44 Z" fill="#7b2cbf" />
+
+  <!-- Mystical Glowing Purple Eyes -->
+  <ellipse cx="55" cy="52" rx="4" ry="2.5" fill="#180b24" />
+  <circle cx="55" cy="52" r="2" fill="#ff79c6" filter="url(#arcGlow)" />
+  <ellipse cx="73" cy="52" rx="4" ry="2.5" fill="#180b24" />
+  <circle cx="73" cy="52" r="2" fill="#ff79c6" filter="url(#arcGlow)" />
+  <path d="M60 67 Q64 70 68 67 Z" fill="#b05282" />
+
+  <!-- Orbiting Arcane Sparks -->
+  <circle cx="32" cy="48" r="1.5" fill="#00f2fe" filter="url(#arcGlow)" />
+  <circle cx="98" cy="42" r="2" fill="#ff79c6" filter="url(#arcGlow)" />
+  <circle cx="92" cy="80" r="1.5" fill="#00f2fe" filter="url(#arcGlow)" />
+</svg>

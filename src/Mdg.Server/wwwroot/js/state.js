@@ -30,12 +30,21 @@ export const player = {
   freezeTimer: 0,
   attackTimer: 0,
 
+  id: 'hero_default',
+  name: 'The Unbound',
   gender: 'Male',
   classSpec: 'Novice',
   level: 1,
   currentExp: 0,
   expToNext: 100,
   skillPoints: 3,
+
+  devotionPoints: 8,
+  allocatedDevotionNodes: ['ph_1', 'fw_1'],
+
+  speedBonusPct: 0,
+  armorBonusPct: 0,
+  resBonusFlat: 0,
 
   life: 250,
   maxLife: 250,

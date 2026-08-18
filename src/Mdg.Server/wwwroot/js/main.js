@@ -15,6 +15,10 @@ import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/sk
 import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar } from './ui/hud.js';
 import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
 import { MapGenerator } from './map-generator.js';
+import { updateCompanion } from './companion.js';
+import { renderSharedStashModal } from './ui/stash-ui.js';
+import { openNpcDialogue } from './ui/npc-dialog-ui.js';
+import { renderMapDeviceModal } from './ui/map-device-ui.js';
 
 window.keys = keys;
 
@@ -583,7 +587,9 @@ function update(dt) {
   let activeBoss = null;
   monsters.forEach(m => {
     if (!m.isAlive) return;
-    if (m.type === 'boss') activeBoss = m;
+    if (m.type === 'boss' || m.type === 'ignis_boss' || m.type === 'vael_boss' || m.type === 'malakor_boss') {
+      activeBoss = m;
+    }
 
     updateTargetAilments(m, dt);
 
@@ -626,11 +632,19 @@ function update(dt) {
     }
   });
 
+  // Companion Pet Engine Update (Auto-loot, Aura & Delivery)
+  updateCompanion(dt);
+
   const bossHud = document.getElementById('boss-hud-bar');
   if (activeBoss && activeBoss.isAlive && Math.hypot(player.x - activeBoss.x, player.y - activeBoss.y) < 950) {
     bossHud.classList.remove('boss-hud-hide');
     const hpPct = Math.max(0, (activeBoss.life / activeBoss.maxLife) * 100);
     document.getElementById('boss-hp-fill').style.width = `${hpPct}%`;
+    const bossDisplayName = activeBoss.type === 'ignis_boss' ? '🌋 Ignis, The Molten Archon' :
+                           (activeBoss.type === 'vael_boss' ? '❄️ Vael, The Frost Sovereign' :
+                           (activeBoss.type === 'malakor_boss' ? '🌌 Malakor, The Shadow Devourer' : 'Cổ Thần Malakor'));
+    const titleEl = document.getElementById('boss-name-title');
+    if (titleEl) titleEl.innerText = bossDisplayName;
     document.getElementById('boss-hp-text').innerText = `${Math.round(activeBoss.life)} / ${activeBoss.maxLife} (${Math.round(hpPct)}%)`;
   } else {
     bossHud.classList.add('boss-hud-hide');
@@ -715,16 +729,44 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleModal('worldmap-modal');
   if (e.code === 'KeyC') toggleModal('stats-modal');
   if (e.code === 'KeyI') toggleModal('inventory-modal');
-  if (e.code === 'Escape') {
+    if (e.code === 'Escape') {
     document.getElementById('ascension-modal')?.classList.add('hidden');
     document.getElementById('skills-modal')?.classList.add('hidden');
     document.getElementById('inventory-modal')?.classList.add('hidden');
     document.getElementById('worldmap-modal')?.classList.add('hidden');
     document.getElementById('stats-modal')?.classList.add('hidden');
     document.getElementById('character-roster-modal')?.classList.add('hidden');
+    const npcModal = document.getElementById('npcDialogueModal');
+    if (npcModal) npcModal.style.display = 'none';
   }
 
   if (e.code === 'KeyF') {
+    // 1. Check near NPC to talk
+    const nearNpc = npcs.find(n => Math.hypot(player.x - n.x, player.y - n.y) < 110);
+    if (nearNpc) {
+      openNpcDialogue(nearNpc);
+      return;
+    }
+
+    // 2. Check near Map Device in Town
+    if (player.zoneId === 'SanctuaryHaven') {
+      const nearMapDevice = props.find(p => p.type === 'map_device' && Math.hypot(player.x - p.x, player.y - p.y) < 100);
+      if (nearMapDevice) {
+        renderMapDeviceModal();
+        return;
+      }
+    }
+
+    // 3. Check near Stash Chest Prop in Town
+    if (player.zoneId === 'SanctuaryHaven') {
+      const nearChest = props.find(p => p.type === 'chest' && Math.hypot(player.x - p.x, player.y - p.y) < 100);
+      if (nearChest) {
+        renderSharedStashModal();
+        return;
+      }
+    }
+
+    // 4. Pickup Loot
     let closestIdx = -1;
     let minDistance = 120;
     groundLoot.forEach((loot, idx) => {
@@ -750,6 +792,31 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mousedown', e => {
   if (e.button === 0 && e.target === canvas) {
     AudioEngine.init();
+
+    // Check click on NPC to talk
+    const clickedNpc = npcs.find(n => Math.hypot(mouse.worldX - n.x, mouse.worldY - n.y) < 40);
+    if (clickedNpc && Math.hypot(player.x - clickedNpc.x, player.y - clickedNpc.y) < 160) {
+      openNpcDialogue(clickedNpc);
+      return;
+    }
+
+    // Check click on Map Device in Town
+    if (player.zoneId === 'SanctuaryHaven') {
+      const clickedDevice = props.find(p => p.type === 'map_device' && Math.hypot(mouse.worldX - p.x, mouse.worldY - p.y) < 45);
+      if (clickedDevice && Math.hypot(player.x - clickedDevice.x, player.y - clickedDevice.y) < 160) {
+        renderMapDeviceModal();
+        return;
+      }
+    }
+
+    // Check click on chest prop in Town
+    if (player.zoneId === 'SanctuaryHaven') {
+      const clickedChest = props.find(p => p.type === 'chest' && Math.hypot(mouse.worldX - p.x, mouse.worldY - p.y) < 40);
+      if (clickedChest && Math.hypot(player.x - clickedChest.x, player.y - clickedChest.y) < 140) {
+        renderSharedStashModal();
+        return;
+      }
+    }
 
     let clickedLootIdx = -1;
     groundLoot.forEach((loot, idx) => {

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
   <div id="game-container">
@@ -84,11 +84,17 @@
       </div>
 
       <div class="quick-buttons">
-        <button id="btn-toggle-roster" class="hud-btn highlight-btn" title="Character Roster (Select / Create Hero)">👥 Heroes</button>
+        <button id="btn-google-auth" class="hud-btn highlight-btn" title="Google Account Login & Sync" style="color:#4285F4; grid-column: span 2;">🔑 Google Account</button>
+        <button id="btn-toggle-roster" class="hud-btn highlight-btn" title="Character Roster (Select / Create Hero) [P]">👥 Roster (P)</button>
+        <button id="btn-forge" class="hud-btn highlight-btn" title="Genesis Forge Bench (Crafting) [B]" style="color:#ffd700;">🔨 Forge (B)</button>
+        <button id="btn-map-device" class="hud-btn highlight-btn" title="Gate of Eternity Map Device [O]" style="color:#00f2fe;">🌌 Rifts (O)</button>
+        <button id="btn-devotion" class="hud-btn highlight-btn" title="Celestial Devotion Grid [V]" style="color:#c678dd;">✨ Devotion (V)</button>
+        <button id="btn-stash" class="hud-btn highlight-btn" title="Account Shared Stash [X]" style="color:#98c379;">📦 Stash (X)</button>
+        <button id="btn-pet-sell" class="hud-btn highlight-btn" title="Send Pet to Town Market" style="color:#61afef;">🐾 Pet Sell</button>
         <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map & Campaign Atlas (M)">🗺️ Map (M)</button>
         <button id="btn-toggle-skills" class="hud-btn highlight-btn" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
         <button id="btn-toggle-inventory" class="hud-btn highlight-btn" title="Inventory & Equipment (I)">🎒 Bag (I)</button>
-        <button id="btn-toggle-stats" class="hud-btn" title="Character Attributes (C)">📊 Stats (C)</button>
+        <button id="btn-toggle-stats" class="hud-btn highlight-btn" title="Character Attributes & Defenses (C)">📊 Stats (C)</button>
       </div>
     </div>
 
@@ -570,11 +576,11 @@
 
     <!-- Controls Hint (Clean - No Debug Info) -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Attributes | <b>ESC</b>: Close Modals | <b>F</b>: Pickup</span>
+      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Stats | <b>B</b>: Forge | <b>O</b>: Rifts | <b>V</b>: Devotion | <b>X</b>: Stash | <b>P</b>: Roster | <b>F</b>: Pickup | <b>ESC</b>: Close</span>
     </div>
   </div>
 
   <!-- Load Main ES Module -->
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

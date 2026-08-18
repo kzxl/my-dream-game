@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="rogueFemBg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#16382f"/>
+      <stop offset="60%" stop-color="#0b211b"/>
+      <stop offset="100%" stop-color="#040f0c"/>
+    </radialGradient>
+    <linearGradient id="hoodLeatherFem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#344843"/>
+      <stop offset="50%" stop-color="#1b2e29"/>
+      <stop offset="100%" stop-color="#0d1815"/>
+    </linearGradient>
+    <filter id="rogueFemGlow">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="14" fill="url(#rogueFemBg)" />
+  <rect x="3" y="3" width="122" height="122" rx="12" fill="none" stroke="#2b5045" stroke-width="2" opacity="0.8" />
+
+  <!-- Flowing Dark Hair Sides -->
+  <path d="M26 44 C16 70, 18 100, 26 128 L102 128 C110 100, 112 70, 102 44 Z" fill="#141a18" />
+
+  <!-- Shadow Leather Armor -->
+  <path d="M14 128 C18 98, 40 88, 54 86 L74 86 C88 88, 110 98, 114 128 Z" fill="url(#hoodLeatherFem)" />
+  <path d="M46 86 L64 128 L82 86 Z" fill="#2ecc71" opacity="0.6" />
+
+  <!-- Rogue Female Hood -->
+  <path d="M34 60 C34 22, 94 22, 94 60 C94 82, 84 92, 64 94 C44 92, 34 82, 34 60 Z" fill="url(#hoodLeatherFem)" stroke="#264037" stroke-width="1.5" />
+
+  <!-- Inner Hood Shadow -->
+  <path d="M44 46 C44 34, 84 34, 84 46 C84 72, 76 82, 64 84 C52 82, 44 72, 44 46 Z" fill="#091210" />
+
+  <!-- Sleek Cloth Half Mask -->
+  <path d="M46 62 L82 62 L76 80 L52 80 Z" fill="#1a2e28" />
+
+  <!-- Piercing Cyan-Emerald Eyes -->
+  <ellipse cx="55" cy="52" rx="4.5" ry="2.2" fill="#000" />
+  <polygon points="52,52 57,50 56,54" fill="#00f2fe" filter="url(#rogueFemGlow)" />
+  <circle cx="55" cy="52" r="1" fill="#fff" />
+
+  <ellipse cx="73" cy="52" rx="4.5" ry="2.2" fill="#000" />
+  <polygon points="70,50 75,52 72,54" fill="#00f2fe" filter="url(#rogueFemGlow)" />
+  <circle cx="73" cy="52" r="1" fill="#fff" />
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="noviceFemBg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#4a3e35"/>
+      <stop offset="60%" stop-color="#241d17"/>
+      <stop offset="100%" stop-color="#0f0c0a"/>
+    </radialGradient>
+    <linearGradient id="leatherVestFem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a0673f"/>
+      <stop offset="50%" stop-color="#6e4324"/>
+      <stop offset="100%" stop-color="#472a15"/>
+    </linearGradient>
+    <filter id="noviceGlowFem">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="14" fill="url(#noviceFemBg)" />
+  <rect x="3" y="3" width="122" height="122" rx="12" fill="none" stroke="#b08d5b" stroke-width="2" opacity="0.75" />
+
+  <!-- Twin Ponytail Hair Background -->
+  <path d="M22 40 C14 55, 16 85, 24 100 C28 85, 32 60, 34 44 Z" fill="#8c582f" />
+  <path d="M106 40 C114 55, 112 85, 104 100 C100 85, 96 60, 94 44 Z" fill="#8c582f" />
+
+  <!-- Traveler Tunic & Emerald Scarf -->
+  <path d="M14 128 C18 98, 40 88, 54 86 L74 86 C88 88, 110 98, 114 128 Z" fill="url(#leatherVestFem)" />
+  <path d="M42 86 C48 96, 80 96, 86 86 L76 128 L52 128 Z" fill="#27ae60" stroke="#1e8449" stroke-width="1.2" />
+
+  <!-- Face Base -->
+  <path d="M46 42 C46 30, 82 30, 82 42 C82 64, 76 76, 64 78 C52 76, 46 64, 46 42 Z" fill="#fae0cc" />
+
+  <!-- Chestnut Hair Bangs -->
+  <path d="M42 38 C52 24, 76 24, 86 38 C76 30, 52 30, 42 38 Z" fill="#a06637" />
+  <path d="M40 42 C38 60, 44 72, 46 76 C42 66, 40 54, 42 42 Z" fill="#784820" />
+  <path d="M88 42 C90 60, 84 72, 82 76 C86 66, 88 54, 86 42 Z" fill="#784820" />
+
+  <!-- Bright Emerald Eyes & Cute Smile -->
+  <ellipse cx="55" cy="50" rx="4" ry="3" fill="#1e1e1e" />
+  <circle cx="55" cy="50" r="1.8" fill="#2ecc71" filter="url(#noviceGlowFem)" />
+  <circle cx="56" cy="49" r="0.7" fill="#fff" />
+
+  <ellipse cx="73" cy="50" rx="4" ry="3" fill="#1e1e1e" />
+  <circle cx="73" cy="50" r="1.8" fill="#2ecc71" filter="url(#noviceGlowFem)" />
+  <circle cx="74" cy="49" r="0.7" fill="#fff" />
+
+  <path d="M60 66 Q64 70 68 66" stroke="#c0392b" stroke-width="1.5" fill="none" />
+</svg>

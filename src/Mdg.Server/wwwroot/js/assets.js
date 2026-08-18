@@ -11,6 +11,7 @@ export const assets = {
   npcs: new Image(),
   spells: new Image(),
   props: new Image(),
+  nature: new Image(),
   loaded: 0
 };
 
@@ -39,6 +40,9 @@ assets.spells.src = '/assets/spells_fx_pack.png' + cacheBust;
 
 assets.props.onload = () => assets.loaded++;
 assets.props.src = '/assets/props_pack.png' + cacheBust;
+
+assets.nature.onload = () => assets.loaded++;
+assets.nature.src = '/assets/nature_pack.svg' + cacheBust;
 
 export function drawItemSpriteToCanvas(targetCanvas, spriteInfo) {
   if (!targetCanvas) return;
