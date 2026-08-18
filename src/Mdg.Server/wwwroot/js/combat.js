@@ -23,7 +23,7 @@ export function getMonsterLoreBonus(monsterType, isBoss = false) {
   return { tier: 0, name: 'Unfamiliar', bonusDmg: 0, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
 }
 
-export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
+export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true, sourcePos = null, isSlash = false) {
   if (!target.isAlive) return;
 
   // 1. Monster Evasion / Dodge Check (Skip damage & knockback if dodged)
@@ -56,7 +56,10 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
 
   // Monster Lore Mastery Amplifications
   const lore = getMonsterLoreBonus(target.type || 'monster', target.type === 'boss');
-  const effectiveCritChance = (player.critChance || 25) + lore.bonusCrit;
+  let effectiveCritChance = (player.critChance || 25) + lore.bonusCrit;
+  if (isSlash && isNodeAllocated('slash', 'sl_crit')) {
+    effectiveCritChance += 15; // +15% Crit chance for Slash
+  }
   const effectiveCritMulti = (player.critMulti || 200) + lore.bonusCritMulti;
 
   let isCrit = false;
@@ -74,23 +77,32 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     multiplier *= 1.30;
   }
 
-  const physDmg = rawPhysical * multiplier;
+  const physDmg = (rawPhysical || 0) * multiplier;
   let physMitigation = 0;
   if (target.armor > 0 && physDmg > 0) {
     physMitigation = Math.min(0.9, target.armor / (target.armor + 5 * physDmg));
   }
   const finalPhys = physDmg * (1 - physMitigation);
-  const finalFire = (rawFire * multiplier) * (1 - (target.fireRes || 0) / 100);
-  const finalCold = (rawCold * multiplier) * (1 - (target.coldRes || 0) / 100);
-  const finalChaos = (rawChaos * multiplier) * (1 - (target.chaosRes || 0) / 100);
-  const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalChaos));
+  const finalFire = ((rawFire || 0) * multiplier) * (1 - (target.fireRes || 0) / 100);
+  const finalCold = ((rawCold || 0) * multiplier) * (1 - (target.coldRes || 0) / 100);
+  const finalLight = ((rawLightning || 0) * multiplier) * (1 - (target.lightningRes || target.lightRes || 0) / 100);
+  const finalChaos = ((rawChaos || 0) * multiplier) * (1 - (target.chaosRes || 0) / 100);
+  const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
 
   if (target.life < 90000) target.life -= totalDamage;
   target.hurtTimer = 0.25;
 
-  // Dynamic Impact Knockback away from player
+  // Leech Life for Slash
+  if (isSlash && isNodeAllocated('slash', 'sl_leech')) {
+    const leeched = Math.max(1, Math.round(totalDamage * 0.05));
+    player.life = Math.min(player.maxLife, player.life + leeched);
+  }
+
+  // Dynamic Impact Knockback away from source
   if (target.life < 90000 && target.speed !== undefined) {
-    const kAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    const sX = sourcePos ? sourcePos.x : player.x;
+    const sY = sourcePos ? sourcePos.y : player.y;
+    const kAngle = Math.atan2(target.y - sY, target.x - sX);
     target.vx = (target.vx || 0) + Math.cos(kAngle) * 90;
     target.vy = (target.vy || 0) + Math.sin(kAngle) * 90;
   }
@@ -102,7 +114,8 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   if (rawCold > 0) {
     applyChill(target, 2.0); // 45% Movement speed reduction
     if (isCrit || isNodeAllocated('frost', 'fr_freeze')) {
-      applyFreeze(target, 0.5); // 0.5s balanced micro-stun
+      const freezeDur = isNodeAllocated('frost', 'fr_freeze') ? 0.75 : 0.5;
+      applyFreeze(target, freezeDur); // Balanced micro-stun
     }
   }
   if (rawPhysical > 0 && isNodeAllocated('slash', 'sl_bleed')) {
@@ -110,7 +123,7 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   }
 
   AudioEngine.playHit(isCrit);
-  const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : (rawChaos > 0 ? '#c678dd' : '#ffffff')));
+  const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : (rawLightning > 0 ? '#ffe066' : (rawChaos > 0 ? '#c678dd' : '#ffffff'))));
   spawnDamageNumber(target.x, target.y - 30 * (target.scale || 1), totalDamage, isCrit, color);
 
   for (let i = 0; i < (isCrit ? 12 : 6); i++) {
@@ -119,7 +132,7 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
       y: target.y - 10,
       vx: (Math.random() - 0.5) * 200,
       vy: (Math.random() - 0.5) * 200,
-      color: rawFire > 0 ? '#ff5722' : (rawCold > 0 ? '#00f2fe' : '#c678dd'),
+      color: rawFire > 0 ? '#ff5722' : (rawCold > 0 ? '#00f2fe' : (rawLightning > 0 ? '#ffd700' : '#c678dd')),
       life: 0.35,
       maxLife: 0.35,
       size: 3 + Math.random() * 4
@@ -127,28 +140,57 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   }
 
   if (target.life <= 0 && target.life < 90000) {
-    target.isAlive = false;
-    target.life = 0;
-    spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
+    handleMonsterDefeated(target);
+  }
+}
 
-    // Increment Monster Lore Mastery Kill Count
-    if (!player.monsterKills) player.monsterKills = {};
-    const mType = target.type || 'monster';
-    const oldTier = getMonsterLoreBonus(mType, target.type === 'boss').tier;
-    player.monsterKills[mType] = (player.monsterKills[mType] || 0) + 1;
-    const newLore = getMonsterLoreBonus(mType, target.type === 'boss');
+// Unified Monster Defeated Lifecycle Handler
+export function handleMonsterDefeated(target) {
+  if (!target.isAlive) return;
+  target.isAlive = false;
+  target.life = 0;
+  spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
 
-    if (newLore.tier > oldTier) {
-      AudioEngine.playLevelUp();
-      spawnDamageNumber(target.x, target.y - 70, `📖 LORE UP: ${newLore.name} (+${Math.round(newLore.bonusDmg * 100)}% Dmg)!`, true, '#ffd700');
+  // Keystone / Node: Ice Shatter
+  if ((target.freezeTimer > 0 || target.chillTimer > 0) && isNodeAllocated('frost', 'fr_shatter')) {
+    monsters.forEach(m => {
+      if (m !== target && m.isAlive && Math.hypot(m.x - target.x, m.y - target.y) <= 120) {
+        dealDamage(m, 0, 0, 120, 0, 0, false, { x: target.x, y: target.y });
+      }
+    });
+    for (let i = 0; i < 20; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const spd = 50 + Math.random() * 200;
+      particles.push({
+        x: target.x,
+        y: target.y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd,
+        color: '#00f2fe',
+        life: 0.4,
+        maxLife: 0.4,
+        size: 5
+      });
     }
+  }
 
-    window.gainExp(target.expValue || 35);
-    dropMonsterLoot(target.x, target.y, target.type === 'boss');
+  // Increment Monster Lore Mastery Kill Count
+  if (!player.monsterKills) player.monsterKills = {};
+  const mType = target.type || 'monster';
+  const oldTier = getMonsterLoreBonus(mType, target.type === 'boss').tier;
+  player.monsterKills[mType] = (player.monsterKills[mType] || 0) + 1;
+  const newLore = getMonsterLoreBonus(mType, target.type === 'boss');
 
-    if (target.type === 'boss' && player.classSpec === 'Novice') {
-      document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
-    }
+  if (newLore.tier > oldTier) {
+    AudioEngine.playLevelUp();
+    spawnDamageNumber(target.x, target.y - 70, `📖 LORE UP: ${newLore.name} (+${Math.round(newLore.bonusDmg * 100)}% Dmg)!`, true, '#ffd700');
+  }
+
+  if (window.gainExp) window.gainExp(target.expValue || 35);
+  dropMonsterLoot(target.x, target.y, target.type === 'boss');
+
+  if (target.type === 'boss' && player.classSpec === 'Novice') {
+    document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
   }
 }
 
@@ -205,10 +247,7 @@ export function updateTargetAilments(target, dt) {
   }
 
   if (target.life <= 0 && target.life < 90000) {
-    target.isAlive = false;
-    target.life = 0;
-    window.gainExp(target.expValue || 35);
-    dropMonsterLoot(target.x, target.y, target.type === 'boss');
+    handleMonsterDefeated(target);
   }
 }
 
@@ -225,7 +264,7 @@ export function spawnDamageNumber(x, y, text, isCrit, color) {
   });
 }
 
-// 1. HEAVY SLASH (With Wind Blade & Rend Morphs)
+// 1. HEAVY SLASH (With Wind Blade, Rend & Titan Cleave Morphs)
 export function castSlash() {
   const s = SKILLS.slash;
   if (player.cooldowns.slash > 0) return;
@@ -240,17 +279,30 @@ export function castSlash() {
   player.isAttacking = true;
   player.attackTimer = 0.18;
 
-  const reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
+  let reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
+  if (isNodeAllocated('slash', 'sl_reach')) reach += 25;
+
   const slashX = player.x + Math.cos(angle) * 40;
   const slashY = player.y + Math.sin(angle) * 40;
-  const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Vanguard' ? 35 : 0);
+  let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Vanguard' ? 35 : 0);
+
+  const isTitanCleave = isNodeAllocated('slash', 'sl_morph_crush');
+  if (isTitanCleave) {
+    dmg = Math.round(dmg * 2.5); // 2.5x damage
+  }
 
   monsters.forEach(m => {
-    if (m.isAlive && Math.hypot(m.x - slashX, m.y - slashY) < reach) dealDamage(m, dmg, 20, 0, 0, 0);
+    if (m.isAlive && Math.hypot(m.x - slashX, m.y - slashY) < reach) {
+      dealDamage(m, dmg, 20, 0, 0, 0, true, { x: player.x, y: player.y }, true);
+      if (isTitanCleave) {
+        applyFreeze(m, 1.0); // 1.0s Stun
+        spawnDamageNumber(m.x, m.y - 45, '⚡ STUNNED!', true, '#ffd700');
+      }
+    }
   });
 
   trainingDummies.forEach(d => {
-    if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, 0);
+    if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, 0, true, { x: player.x, y: player.y }, true);
   });
 
   // Keystone Morph: Wind Blade Wave
@@ -274,15 +326,15 @@ export function castSlash() {
       y: player.y + Math.sin(spread) * 30,
       vx: Math.cos(spread) * 160,
       vy: Math.sin(spread) * 160,
-      color: isNodeAllocated('slash', 'sl_morph_wave') ? '#00f2fe' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b'),
+      color: isTitanCleave ? '#ffd700' : (isNodeAllocated('slash', 'sl_morph_wave') ? '#00f2fe' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b')),
       life: 0.22,
       maxLife: 0.22,
-      size: 4
+      size: isTitanCleave ? 6 : 4
     });
   }
 }
 
-// 2. PYRO FIREBALL (With GMP Support & Nova Cataclysm Morph)
+// 2. PYRO FIREBALL (With GMP Support, Hellfire Chaos & Nova Cataclysm Morph)
 export function castFireball() {
   const s = SKILLS.fireball;
   if (player.cooldowns.fireball > 0 || player.mana < s.manaCost) return;
@@ -290,8 +342,18 @@ export function castFireball() {
   player.cooldowns.fireball = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
   const baseAngle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
-  const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
-  const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl;
+  let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+  if (isNodeAllocated('fireball', 'fb_dmg_1')) dmg = Math.round(dmg * 1.25);
+
+  let radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl;
+  if (isNodeAllocated('fireball', 'fb_aoe_1')) radius = Math.round(radius * 1.35);
+
+  let speedMult = 1.0;
+  if (isNodeAllocated('fireball', 'fb_spd_1')) speedMult = 1.30;
+
+  const isHellfireChaos = isNodeAllocated('fireball', 'fb_morph_chaos');
+  const fireDmg = isHellfireChaos ? Math.round(dmg * 0.5) : dmg;
+  const chaosDmg = isHellfireChaos ? Math.round(dmg * 0.5) : 0;
 
   const hasNova = isNodeAllocated('fireball', 'fb_morph_nova');
   const hasGmp = skillSocketBoard.fireball?.supports.includes('support_gmp');
@@ -301,10 +363,12 @@ export function castFireball() {
       projectiles.push({
         x: player.x,
         y: player.y - 10,
-        vx: Math.cos(a) * 440,
-        vy: Math.sin(a) * 440,
+        vx: Math.cos(a) * 440 * speedMult,
+        vy: Math.sin(a) * 440 * speedMult,
         type: 'fireball',
         damage: Math.round(dmg * 0.7),
+        fireDmg: isHellfireChaos ? Math.round(dmg * 0.35) : Math.round(dmg * 0.7),
+        chaosDmg: isHellfireChaos ? Math.round(dmg * 0.35) : 0,
         radius: radius,
         life: 1.2
       });
@@ -314,10 +378,12 @@ export function castFireball() {
       projectiles.push({
         x: player.x,
         y: player.y - 10,
-        vx: Math.cos(baseAngle + offset) * 480,
-        vy: Math.sin(baseAngle + offset) * 480,
+        vx: Math.cos(baseAngle + offset) * 480 * speedMult,
+        vy: Math.sin(baseAngle + offset) * 480 * speedMult,
         type: 'fireball',
         damage: Math.round(dmg * 0.85),
+        fireDmg: isHellfireChaos ? Math.round(fireDmg * 0.85) : Math.round(dmg * 0.85),
+        chaosDmg: isHellfireChaos ? Math.round(chaosDmg * 0.85) : 0,
         radius: radius,
         life: 1.5
       });
@@ -326,42 +392,48 @@ export function castFireball() {
     projectiles.push({
       x: player.x,
       y: player.y - 10,
-      vx: Math.cos(baseAngle) * 480,
-      vy: Math.sin(baseAngle) * 480,
+      vx: Math.cos(baseAngle) * 480 * speedMult,
+      vy: Math.sin(baseAngle) * 480 * speedMult,
       type: 'fireball',
       damage: dmg,
+      fireDmg: fireDmg,
+      chaosDmg: chaosDmg,
       radius: radius,
       life: 1.6
     });
   }
 }
 
-// 3. FROST NOVA (With Frost Shield & Glacial Vortex Morph)
+// 3. FROST NOVA (With Frost Shield, Ice Shatter & Glacial Vortex Morph)
 export function castFrostNova() {
   const s = SKILLS.frost;
   if (player.cooldowns.frost > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
   player.cooldowns.frost = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
-  const novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+  let novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+  if (isNodeAllocated('frost', 'fr_aoe')) novaRadius = Math.round(novaRadius * 1.30);
+
   const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
 
   let hitsCount = 0;
   monsters.forEach(m => {
     if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) <= novaRadius) {
-      dealDamage(m, 15, 0, dmg, 0, 0);
+      dealDamage(m, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y });
       hitsCount++;
 
       if (isNodeAllocated('frost', 'fr_morph_vortex')) {
         const pullAngle = Math.atan2(player.y - m.y, player.x - m.x);
-        m.x += Math.cos(pullAngle) * 120;
-        m.y += Math.sin(pullAngle) * 120;
+        const nx = m.x + Math.cos(pullAngle) * 90;
+        const ny = m.y + Math.sin(pullAngle) * 90;
+        if (window.canWalk && window.canWalk(nx, m.y)) m.x = nx;
+        if (window.canWalk && window.canWalk(m.x, ny)) m.y = ny;
       }
     }
   });
 
   trainingDummies.forEach(d => {
-    if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0);
+    if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y });
   });
 
   if (isNodeAllocated('frost', 'fr_shield') && hitsCount > 0) {
@@ -389,7 +461,8 @@ export function castMeteor() {
   const s = SKILLS.meteor;
   if (player.cooldowns.meteor > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
-  player.cooldowns.meteor = Math.max(2.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
+  const cdReduction = isNodeAllocated('meteor', 'met_cd') ? 1.0 : 0;
+  player.cooldowns.meteor = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl - cdReduction);
 
   const targetX = mouse.worldX;
   const targetY = mouse.worldY;
@@ -409,14 +482,15 @@ export function castMeteor() {
 
     setTimeout(() => {
       const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
-      const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+      let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+      if (isNodeAllocated('meteor', 'met_dmg')) dmg = Math.round(dmg * 1.30);
 
       monsters.forEach(m => {
-        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, 30);
+        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, 30, true, { x, y });
       });
 
       trainingDummies.forEach(d => {
-        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, 30);
+        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, 30, true, { x, y });
       });
 
       for (let i = 0; i < 40; i++) {

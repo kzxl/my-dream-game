@@ -535,21 +535,34 @@ function update(dt) {
     if (!hit) {
       monsters.forEach(m => {
         if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
-          dealDamage(m, 10, p.damage || 85, 0, 0, 0);
+          if (p.type === 'windblade') {
+            dealDamage(m, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
+          } else if (p.type === 'frost') {
+            dealDamage(m, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
+          } else {
+            // Fireball (supports partial Chaos from Hellfire Chaos)
+            dealDamage(m, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+          }
           hit = true;
         }
       });
 
       trainingDummies.forEach(d => {
         if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
-          dealDamage(d, 10, p.damage || 85, 0, 0, 0);
+          if (p.type === 'windblade') {
+            dealDamage(d, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
+          } else if (p.type === 'frost') {
+            dealDamage(d, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
+          } else {
+            dealDamage(d, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+          }
           hit = true;
         }
       });
     }
 
     if (hit || p.life <= 0) {
-      const impactColor = p.type === 'frost' ? '#00f2fe' : (p.type === 'windblade' ? '#ffd700' : '#ff5722');
+      const impactColor = p.type === 'frost' ? '#00f2fe' : (p.type === 'windblade' ? '#ffd700' : (p.chaosDmg ? '#c678dd' : '#ff5722'));
       for (let k = 0; k < 12; k++) {
         particles.push({
           x: p.x,
