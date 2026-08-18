@@ -128,7 +128,7 @@ export function updateDevotionUI() {
              style="border-color:${constellation.color}">
           <div class="star-name">${node.name}</div>
           <div class="star-desc">${node.desc}</div>
-          <div class="star-status">${isAllocated ? '✅ ĐÃ HỌC' : '⭐ NHẤP ĐỂ HỌC (1 Điểm)'}</div>
+          <div class="star-status">${isAllocated ? '✅ ALLOCATED' : '⭐ CLICK TO ALLOCATE (1 Point)'}</div>
         </div>
       `;
     });
@@ -149,7 +149,7 @@ export function updateDevotionUI() {
       if (player.allocatedDevotionNodes.includes(nodeId)) return;
 
       if (player.devotionPoints <= 0) {
-        alert('Không đủ Điểm Devotion! Hãy khôi phục thêm Bia Đá Khởi Nguyên.');
+        alert('Not enough Devotion Points! Cleanse more celestial shrines.');
         return;
       }
 
