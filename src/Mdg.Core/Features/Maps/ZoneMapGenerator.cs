@@ -25,16 +25,34 @@ public static class ZoneMapGenerator
     {
         return zoneId switch
         {
+            // Act 1
             "SanctuaryHaven" => GenerateHaven(),
             "WhisperingPlains" => GeneratePlains(),
-            "FrostpeakTundra" => GenerateTundra(),
-            "MoltenCaldera" => GenerateCaldera(),
             "ForgottenCrypt" => GenerateCrypt(),
+
+            // Act 2
+            "GlacialOutpost" => GenerateHaven(),
+            "FrostpeakTundra" => GenerateTundra(),
             "StormpeakRidge" => GenerateStormpeak(),
+
+            // Act 3
+            "AshenRedoubt" => GenerateHaven(),
+            "MoltenCaldera" => GenerateCaldera(),
+            "InfernalHeart" => GenerateCaldera(),
+
+            // Act 4
+            "OasisSanctum" => GenerateHaven(),
+            "DreadTombs" => GenerateCrypt(),
+            "NecropolisOfSouls" => GenerateCrypt(),
+
+            // Act 5 & Pinnacle
+            "AethelisCitadel" => GenerateHaven(),
             "VoidAbyss" => GenerateVoidAbyss(),
+            "CitadelOfTheVoid" => GenerateVoidAbyss(),
             "ArenaCaldera" => GenerateArenaCaldera(),
             "ArenaGlacial" => GenerateArenaGlacial(),
             "ArenaVoid" => GenerateArenaVoid(),
+
             _ => GenerateHaven()
         };
     }

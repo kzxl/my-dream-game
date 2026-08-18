@@ -29,6 +29,11 @@ builder.Services.AddSingleton<GenesisForgeBench>();
 builder.Services.AddSingleton<GenesisCraftingEngine>();
 builder.Services.AddSingleton<MapDeviceManager>();
 builder.Services.AddSingleton<DevotionTree>();
+builder.Services.AddSingleton<ResurrectionSessionManager>();
+builder.Services.AddSingleton<LootService>();
+builder.Services.AddSingleton<ForgeService>();
+builder.Services.AddSingleton<CharacterStatService>();
+builder.Services.AddSingleton<SkillProgressionService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
 var app = builder.Build();
@@ -166,7 +171,101 @@ app.MapGet("/api/v1/devotion/constellations", () =>
     return Results.Ok(DevotionTree.Constellations);
 });
 
+// AUTHORITATIVE PLAYER RESURRECTION APIS
+app.MapPost("/api/v1/player/resurrect/town", (ResurrectionSessionManager resurrectionManager, TownResurrectRequest req) =>
+{
+    var result = resurrectionManager.ProcessTownResurrection(
+        req.CharacterId ?? "hero_default",
+        req.MaxLife > 0 ? req.MaxLife : 250f,
+        req.MaxMana > 0 ? req.MaxMana : 120f,
+        req.MaxEs > 0 ? req.MaxEs : 100f);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/player/resurrect/spot", (ResurrectionSessionManager resurrectionManager, SpotResurrectRequest req) =>
+{
+    int scrolls = req.ScrollCount;
+    var result = resurrectionManager.ProcessSpotResurrection(
+        req.CharacterId ?? "hero_default",
+        req.ZoneId ?? "SanctuaryHaven",
+        ref scrolls,
+        req.MaxLife > 0 ? req.MaxLife : 250f,
+        req.MaxMana > 0 ? req.MaxMana : 120f,
+        req.MaxEs > 0 ? req.MaxEs : 100f);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/v1/player/resurrect/status", (ResurrectionSessionManager resurrectionManager, string? characterId, string? zoneId) =>
+{
+    var charId = characterId ?? "hero_default";
+    var zId = zoneId ?? "SanctuaryHaven";
+    var remaining = resurrectionManager.GetRemainingZoneResurrections(charId, zId);
+    return Results.Ok(new
+    {
+        characterId = charId,
+        zoneId = zId,
+        maxZoneResurrections = Mdg.Core.Features.Combat.PlayerDefeatState.MaxZoneResurrections,
+        remainingZoneResurrections = remaining
+    });
+});
+
+// MASTER DATA APIS (SERVER-AUTHORITATIVE & DB-BACKED)
+app.MapGet("/api/v1/data/items", async (GameDatabaseService db) =>
+{
+    var items = await db.GetItemTemplatesAsync();
+    return Results.Ok(items);
+});
+
+app.MapGet("/api/v1/data/skills", async (GameDatabaseService db) =>
+{
+    var skills = await db.GetSkillTemplatesAsync();
+    return Results.Ok(skills);
+});
+
+app.MapGet("/api/v1/data/zones", async (GameDatabaseService db) =>
+{
+    var zones = await db.GetZoneTemplatesAsync();
+    return Results.Ok(zones);
+});
+
+app.MapGet("/api/v1/data/campaign", async (GameDatabaseService db) =>
+{
+    var acts = await db.GetCampaignActsAsync();
+    return Results.Ok(acts);
+});
+
+// SERVER-AUTHORITATIVE GAMEPLAY LOGIC APIS
+app.MapPost("/api/v1/loot/drop", (LootService lootService, LootDropRequestDto req) =>
+{
+    var result = lootService.GenerateDrops(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/forge/apply-currency", (ForgeService forgeService, ForgeRequestDto req) =>
+{
+    var result = forgeService.ApplyCurrency(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/character/calculate-stats", (CharacterStatService statService, CharacterStatsRequestDto req) =>
+{
+    var result = statService.CalculateStats(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/skills/validate-tree", (SkillProgressionService skillService, SkillValidationRequestDto req) =>
+{
+    var result = skillService.ValidateSkillAllocations(req);
+    return Results.Ok(result);
+});
+
+// Seed Master Database on Startup if needed
+var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<MdgDbContext>>();
+await DatabaseSeeder.SeedAllAsync(dbContextFactory);
+
 app.Run();
 
 public record RiftAffixDto(string Key, string Description, float QuantityBonus, float RarityBonus, float PackSizeBonus);
 public record RiftOpenRequest(string? ZoneName, int Tier, int Rarity, List<RiftAffixDto>? Affixes, List<string>? Fragments);
+public record TownResurrectRequest(string? CharacterId, float MaxLife, float MaxMana, float MaxEs);
+public record SpotResurrectRequest(string? CharacterId, string? ZoneId, int ScrollCount, float MaxLife, float MaxMana, float MaxEs);

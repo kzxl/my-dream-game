@@ -125,7 +125,7 @@
           <div class="skill-icon icon-slash" id="icon-slot-1">⚔️</div>
           <div class="cooldown-overlay" id="cd-slash"></div>
           <span class="key-hint">LMB</span>
-          <span class="skill-lvl-badge" id="lvl-badge-slash">Lv.1</span>
+          <span class="skill-lvl-badge" id="lvl-badge-slash">1</span>
         </div>
         <!-- Slot 2: Fireball -->
         <div class="skill-slot" id="slot-fireball" data-key="Q">
@@ -133,7 +133,7 @@
           <div class="cooldown-overlay" id="cd-fireball"></div>
           <span class="key-hint">Q</span>
           <span class="mana-hint">10 MP</span>
-          <span class="skill-lvl-badge" id="lvl-badge-fireball">Lv.1</span>
+          <span class="skill-lvl-badge" id="lvl-badge-fireball">1</span>
         </div>
         <!-- Slot 3: Frost Nova -->
         <div class="skill-slot" id="slot-frost" data-key="W">
@@ -141,7 +141,7 @@
           <div class="cooldown-overlay" id="cd-frost"></div>
           <span class="key-hint">W</span>
           <span class="mana-hint">15 MP</span>
-          <span class="skill-lvl-badge" id="lvl-badge-frost">Lv.1</span>
+          <span class="skill-lvl-badge" id="lvl-badge-frost">1</span>
         </div>
         <!-- Slot 4: Meteor -->
         <div class="skill-slot" id="slot-meteor" data-key="E">
@@ -149,14 +149,14 @@
           <div class="cooldown-overlay" id="cd-meteor"></div>
           <span class="key-hint">E</span>
           <span class="mana-hint">30 MP</span>
-          <span class="skill-lvl-badge" id="lvl-badge-meteor">Lv.1</span>
+          <span class="skill-lvl-badge" id="lvl-badge-meteor">1</span>
         </div>
         <!-- Slot 5: Dash -->
         <div class="skill-slot" id="slot-dash" data-key="Space">
           <div class="skill-icon icon-dash">💨</div>
           <div class="cooldown-overlay" id="cd-dash"></div>
           <span class="key-hint">SPACE</span>
-          <span class="skill-lvl-badge" id="lvl-badge-dash">Lv.1</span>
+          <span class="skill-lvl-badge" id="lvl-badge-dash">1</span>
         </div>
       </div>
     </div>
@@ -574,6 +574,61 @@
       </div>
     </div>
 
+    <!-- DEFEAT & RESURRECTION POPUP MODAL -->
+    <div id="defeat-modal" class="worldmap-modal-wrap hidden">
+      <div class="defeat-modal-box">
+        <div class="defeat-header">
+          <div class="defeat-skull-badge">☠️</div>
+          <h2 class="defeat-main-title">DEFEATED & WOUNDED</h2>
+          <p class="defeat-sub-title">Your life force was exhausted against the perilous threats of Aethelis.</p>
+        </div>
+
+        <div class="defeat-hero-info">
+          <div class="defeat-info-item">
+            <span class="info-label">Hero:</span>
+            <span id="defeat-hero-name" class="info-val gold-text">The Unbound</span>
+          </div>
+          <div class="defeat-info-item">
+            <span class="info-label">Class & Tier:</span>
+            <span id="defeat-hero-class" class="info-val">Lv.1 Novice</span>
+          </div>
+          <div class="defeat-info-item">
+            <span class="info-label">Location of Fall:</span>
+            <span id="defeat-zone-name" class="info-val">Sanctuary Haven</span>
+          </div>
+        </div>
+
+        <div class="defeat-options-container">
+          <!-- Option 1: Return to town -->
+          <div class="defeat-option-card option-town" id="btn-defeat-town" role="button" tabindex="0">
+            <div class="option-icon-box">🏰</div>
+            <div class="option-content">
+              <div class="option-title">RETURN TO TOWN</div>
+              <div class="option-desc">Recover 100% Life & Mana, safe retreat to Sanctuary Haven.</div>
+              <div class="option-badge">Free • Sanctuary Haven</div>
+            </div>
+          </div>
+
+          <!-- Option 2: Revive on spot -->
+          <div class="defeat-option-card option-resurrect" id="btn-defeat-resurrect" role="button" tabindex="0">
+            <div class="option-icon-box">✨</div>
+            <div class="option-content">
+              <div class="option-title">REVIVE ON SPOT</div>
+              <div class="option-desc" id="defeat-resurrect-desc">Rise instantly on the spot with 100% Life and 3.5s Divine Shield.</div>
+              <div class="option-badge-row" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+                <div class="option-badge" id="defeat-scroll-count-badge">📜 Scrolls: x0</div>
+                <div class="option-badge" id="defeat-map-limit-badge" style="border-color:#00f2fe; color:#00f2fe;">⚡ Zone Attempts: 5/5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="defeat-footer-tip">
+          <span>💡 Hint: Acquire Scrolls of Resurrection from boss encounters, elite monsters, or town vendors.</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Controls Hint (Clean - No Debug Info) -->
     <div id="controls-hint">
       <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Stats | <b>B</b>: Forge | <b>O</b>: Rifts | <b>V</b>: Devotion | <b>X</b>: Stash | <b>P</b>: Roster | <b>F</b>: Pickup | <b>ESC</b>: Close</span>
@@ -581,6 +636,6 @@
   </div>
 
   <!-- Load Main ES Module -->
-  <script type="module" src="js/main.js?v=2"></script>
+  <script type="module" src="js/main.js?v=atlas3"></script>
 </body>
 </html>

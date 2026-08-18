@@ -5,11 +5,11 @@
 
 import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
 import { ZONES } from './data/zones.js';
-import { POSSIBLE_LOOT } from './data/items.js';
+import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
 import { SKILLS } from './data/skills.js';
 import { AudioEngine } from './audio.js';
 import { renderGame } from './renderer.js';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments } from './combat.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar } from './ui/hud.js';
@@ -19,8 +19,12 @@ import { updateCompanion } from './companion.js';
 import { renderSharedStashModal } from './ui/stash-ui.js';
 import { openNpcDialogue } from './ui/npc-dialog-ui.js';
 import { renderMapDeviceModal } from './ui/map-device-ui.js';
+import { initDefeatUI } from './ui/defeat-ui.js';
 
 window.keys = keys;
+window.loadZone = loadZone;
+window.toggleModal = toggleModal;
+window.showZoneBanner = showZoneBanner;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -95,6 +99,7 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   currentZoneId = zoneId || 'SanctuaryHaven';
   currentZone = ZONES[currentZoneId] || { id: currentZoneId, name: currentZoneId, subtitle: '' };
   window.currentZoneId = currentZoneId;
+  player.zoneResurrectionsUsed = 0; // Reset map resurrection counter per map session
 
   // 1. Fetch Server-Authoritative Procedural Zone Map (with fallback)
   try {
@@ -185,7 +190,11 @@ export function spawnMonster(x, y, type = 'slime') {
   let evasionChance = 25;
   let blockChance = 0;
   let expVal = 35;
-  let baseSpd = 110;
+  let baseSpd = 75;
+  let attackDmg = 16;
+  let attackRange = 40;
+  let attackCooldown = 1.2;
+  let dmgType = 'physical';
 
   if (type === 'wolf') {
     mName = 'Shadow Direwolf';
@@ -193,56 +202,64 @@ export function spawnMonster(x, y, type = 'slime') {
     armor = 80;
     fireRes = 20; coldRes = 20; lightRes = 20; chaosRes = 15;
     evasionChance = 30; blockChance = 0;
-    expVal = 45; baseSpd = 160;
+    expVal = 45; baseSpd = 115;
+    attackDmg = 26; attackRange = 44; attackCooldown = 0.95;
   } else if (type === 'goblin') {
     mName = 'Goblin Raider';
     maxHp = 160;
     armor = 110;
     fireRes = 20; coldRes = 20; lightRes = 20; chaosRes = 15;
     evasionChance = 35; blockChance = 10;
-    expVal = 40; baseSpd = 135;
+    expVal = 40; baseSpd = 95;
+    attackDmg = 20; attackRange = 42; attackCooldown = 1.1;
   } else if (type === 'skeleton') {
     mName = 'Skeleton Guard';
     maxHp = 240;
     armor = 220;
     fireRes = 25; coldRes = 25; lightRes = 25; chaosRes = 20;
     evasionChance = 5; blockChance = 25;
-    expVal = 50; baseSpd = 100;
+    expVal = 50; baseSpd = 75;
+    attackDmg = 30; attackRange = 46; attackCooldown = 1.35;
   } else if (type === 'undead_knight') {
     mName = 'Undead Dreadknight';
     maxHp = 520;
     armor = 420;
     fireRes = 35; coldRes = 35; lightRes = 35; chaosRes = 25;
     evasionChance = 10; blockChance = 40;
-    expVal = 95; baseSpd = 95;
+    expVal = 95; baseSpd = 70;
+    attackDmg = 52; attackRange = 50; attackCooldown = 1.4; dmgType = 'chaos';
   } else if (type === 'frost_golem') {
     mName = 'Glacial Frost Golem';
     maxHp = 600;
     armor = 480;
     fireRes = 20; coldRes = 60; lightRes = 20; chaosRes = 20;
     evasionChance = 0; blockChance = 30;
-    expVal = 110; baseSpd = 90;
+    expVal = 110; baseSpd = 65;
+    attackDmg = 58; attackRange = 54; attackCooldown = 1.5; dmgType = 'cold';
   } else if (type === 'fire_imp') {
     mName = 'Infernal Fire Imp';
     maxHp = 200;
     armor = 100;
     fireRes = 60; coldRes = 15; lightRes = 20; chaosRes = 20;
     evasionChance = 25; blockChance = 10;
-    expVal = 55; baseSpd = 150;
+    expVal = 55; baseSpd = 105;
+    attackDmg = 32; attackRange = 220; attackCooldown = 1.6; dmgType = 'fire';
   } else if (type === 'magma_golem') {
     mName = 'Magma Behemoth';
     maxHp = 680;
     armor = 500;
     fireRes = 65; coldRes = 15; lightRes = 20; chaosRes = 20;
     evasionChance = 5; blockChance = 30;
-    expVal = 130; baseSpd = 85;
+    expVal = 130; baseSpd = 60;
+    attackDmg = 70; attackRange = 58; attackCooldown = 1.6; dmgType = 'fire';
   } else if (isBoss) {
     mName = '🔥 Dark Shadow Lord (Lord of Ruin)';
     maxHp = 4800;
     armor = 650;
     fireRes = 60; coldRes = 60; lightRes = 60; chaosRes = 35;
     evasionChance = 20; blockChance = 35;
-    expVal = 650; baseSpd = 145;
+    expVal = 650; baseSpd = 80;
+    attackDmg = 85; attackRange = 72; attackCooldown = 1.1; dmgType = 'fire';
   }
 
   monsters.push({
@@ -263,6 +280,11 @@ export function spawnMonster(x, y, type = 'slime') {
     evasionChance: evasionChance,
     blockChance: blockChance,
     speed: baseSpd + Math.random() * 20,
+    attackDmg: attackDmg,
+    attackRange: attackRange,
+    attackCooldown: attackCooldown,
+    attackCooldownTimer: Math.random() * attackCooldown,
+    dmgType: dmgType,
     expValue: expVal,
     state: 'idle',
     animTimer: Math.random() * 10,
@@ -279,35 +301,6 @@ export function spawnMonsterCluster(cx, cy, count, typeOverride) {
     const mx = cx + (Math.random() - 0.5) * 260;
     const my = cy + (Math.random() - 0.5) * 260;
     if (canWalk(mx, my)) spawnMonster(mx, my, type);
-  }
-}
-
-export function dropMonsterLoot(x, y, isBoss) {
-  const dropCount = isBoss ? Math.floor(Math.random() * 3) + 4 : (Math.random() < 0.65 ? 1 : 0);
-
-  for (let i = 0; i < dropCount; i++) {
-    let itemTemplate;
-    if (isBoss && i === 0) {
-      itemTemplate = POSSIBLE_LOOT.find(it => it.rarity === 'Unique') || POSSIBLE_LOOT[0];
-    } else {
-      itemTemplate = POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)];
-    }
-
-    const dropAngle = Math.random() * Math.PI * 2;
-    const dropDistance = 40 + Math.random() * 80;
-
-    groundLoot.push({
-      id: Math.random().toString(36).substring(2, 9),
-      x: x,
-      y: y,
-      targetX: x + Math.cos(dropAngle) * dropDistance,
-      targetY: y + Math.sin(dropAngle) * dropDistance,
-      item: { ...itemTemplate },
-      bounceTimer: 0.5,
-      beamHeight: itemTemplate.rarity === 'Unique' ? 350 : (itemTemplate.rarity === 'Rare' || itemTemplate.rarity === 'Currency' ? 240 : 0)
-    });
-
-    AudioEngine.playLootDrop(itemTemplate.rarity);
   }
 }
 
@@ -359,9 +352,15 @@ let hazardTickTimer = 0;
 function update(dt) {
   camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
 
+  if (player.invulnerableTimer > 0) {
+    player.invulnerableTimer = Math.max(0, player.invulnerableTimer - dt);
+  }
+
   // 1. Player Movement & Smooth Wall Slide Collision
   let mx = 0, my = 0;
-  if (player.freezeTimer > 0) {
+  if (player.isDead) {
+    // Player defeated: cannot move
+  } else if (player.freezeTimer > 0) {
     player.freezeTimer -= dt;
   } else {
     if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
@@ -370,7 +369,7 @@ function update(dt) {
     if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
   }
 
-  player.isMoving = mx !== 0 || my !== 0;
+  player.isMoving = (mx !== 0 || my !== 0) && !player.isDead;
   if (player.isMoving) {
     const len = Math.hypot(mx, my);
     player.vx = (mx / len) * player.speed;
@@ -396,7 +395,7 @@ function update(dt) {
       player.y = Math.max(36, Math.min(mapH - 36, player.y));
     }
 
-    player.animTimer += dt * 8;
+    player.animTimer += dt * 5.5;
     player.animFrame = Math.floor(player.animTimer) % 4;
   } else {
     player.vx = 0;
@@ -407,7 +406,7 @@ function update(dt) {
 
   // 2. Environmental Hazards & Tile-Based Ground Hazards
   hazardTickTimer += dt;
-  if (hazardTickTimer >= 0.8) {
+  if (hazardTickTimer >= 0.8 && !player.isDead && (!player.invulnerableTimer || player.invulnerableTimer <= 0)) {
     hazardTickTimer = 0;
 
     // Check Player's Current Tile
@@ -419,8 +418,9 @@ function update(dt) {
     if (pTile === 2 || pTile === 5) {
       // Lava Ground (Tile 2 or 5)
       const lavaDmg = Math.max(8, Math.round(40 * (1 - (player.fireRes || 0) / 100)));
-      player.life = Math.max(1, player.life - lavaDmg);
+      player.life = Math.max(0, player.life - lavaDmg);
       spawnDamageNumber(player.x, player.y - 45, `-${lavaDmg} 🔥 Lava Burn!`, true, '#ff3d00');
+      if (player.life <= 0) handlePlayerDefeated();
 
       // Splash Lava Sparks under player feet
       for (let i = 0; i < 4; i++) {
@@ -438,21 +438,24 @@ function update(dt) {
     } else if (pTile === 6) {
       // Toxic Miasma Tile
       const toxicDmg = Math.max(6, Math.round(30 * (1 - (player.chaosRes || 0) / 100)));
-      player.life = Math.max(1, player.life - toxicDmg);
+      player.life = Math.max(0, player.life - toxicDmg);
       spawnDamageNumber(player.x, player.y - 45, `-${toxicDmg} ☠️ Toxic Ground!`, false, '#c678dd');
+      if (player.life <= 0) handlePlayerDefeated();
     } else if (pTile === 7) {
       // Deep Glacial Ice Tile
       const iceDmg = Math.max(4, Math.round(20 * (1 - (player.coldRes || 0) / 100)));
-      player.life = Math.max(1, player.life - iceDmg);
+      player.life = Math.max(0, player.life - iceDmg);
       spawnDamageNumber(player.x, player.y - 45, `-${iceDmg} ❄️ Deep Frost!`, false, '#4facfe');
+      if (player.life <= 0) handlePlayerDefeated();
     }
 
     // Biome Ambient Heat / Peace
     if (currentZoneId === 'MoltenCaldera' && player.fireRes < 75 && pTile !== 2 && pTile !== 5) {
       const heatDmg = Math.max(5, Math.round((75 - player.fireRes) * 1.5));
-      player.life = Math.max(1, player.life - heatDmg);
+      player.life = Math.max(0, player.life - heatDmg);
       spawnDamageNumber(player.x, player.y - 40, `-${heatDmg} 🔥 Heatwave!`, false, '#ff5722');
-    } else if (currentZoneId === 'SanctuaryHaven') {
+      if (player.life <= 0) handlePlayerDefeated();
+    } else if (currentZoneId === 'SanctuaryHaven' && !player.isDead) {
       player.life = Math.min(player.maxLife, player.life + player.maxLife * 0.05);
       player.mana = Math.min(player.maxMana, player.mana + player.maxMana * 0.05);
     }
@@ -505,10 +508,12 @@ function update(dt) {
     player.attackTimer -= dt;
     if (player.attackTimer <= 0) player.isAttacking = false;
   }
-  player.mana = Math.min(player.maxMana, player.mana + 10 * dt);
-  player.life = Math.min(player.maxLife, player.life + 4 * dt);
+  if (!player.isDead) {
+    player.mana = Math.min(player.maxMana, player.mana + 10 * dt);
+    player.life = Math.min(player.maxLife, player.life + 4 * dt);
+  }
 
-  if (mouse.isDown && (player.cooldowns.slash || 0) <= 0 && (player.freezeTimer || 0) <= 0) {
+  if (!player.isDead && mouse.isDown && (player.cooldowns.slash || 0) <= 0 && (player.freezeTimer || 0) <= 0) {
     castSlash();
   }
 
@@ -535,34 +540,43 @@ function update(dt) {
       AudioEngine.playTone(180, 'triangle', 0.12, 0.08);
     }
 
-    // 2. Monster & Dummy Hit Checks
+    // 2. Monster & Player Hit Checks
     if (!hit) {
-      monsters.forEach(m => {
-        if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
-          if (p.type === 'windblade') {
-            dealDamage(m, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
-          } else if (p.type === 'frost') {
-            dealDamage(m, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
-          } else {
-            // Fireball (supports partial Chaos from Hellfire Chaos)
-            dealDamage(m, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
-          }
+      if (p.isMonsterProjectile) {
+        // Monster bullet hits Player
+        if (Math.hypot(player.x - p.x, player.y - p.y) < 24) {
+          dealDamageToPlayer({ attackDmg: p.damage || 25, dmgType: p.fireDmg ? 'fire' : 'physical', isAlive: true });
           hit = true;
         }
-      });
+      } else {
+        // Player bullet hits Monsters / Dummies
+        monsters.forEach(m => {
+          if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
+            if (p.type === 'windblade') {
+              dealDamage(m, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
+            } else if (p.type === 'frost') {
+              dealDamage(m, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
+            } else {
+              // Fireball (supports partial Chaos from Hellfire Chaos)
+              dealDamage(m, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+            }
+            hit = true;
+          }
+        });
 
-      trainingDummies.forEach(d => {
-        if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
-          if (p.type === 'windblade') {
-            dealDamage(d, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
-          } else if (p.type === 'frost') {
-            dealDamage(d, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
-          } else {
-            dealDamage(d, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+        trainingDummies.forEach(d => {
+          if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
+            if (p.type === 'windblade') {
+              dealDamage(d, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
+            } else if (p.type === 'frost') {
+              dealDamage(d, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
+            } else {
+              dealDamage(d, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+            }
+            hit = true;
           }
-          hit = true;
-        }
-      });
+        });
+      }
     }
 
     if (hit || p.life <= 0) {
@@ -615,7 +629,7 @@ function update(dt) {
 
     const currentSpeed = m.chillTimer > 0 ? (m.speed * 0.55) : m.speed;
     const dist = Math.hypot(player.x - m.x, player.y - m.y);
-    if (dist < 450 && dist > 35) {
+    if (!player.isDead && dist < 450 && dist > 35) {
       const angle = Math.atan2(player.y - m.y, player.x - m.x);
       const nx = m.x + Math.cos(angle) * currentSpeed * dt;
       const ny = m.y + Math.sin(angle) * currentSpeed * dt;
@@ -623,12 +637,35 @@ function update(dt) {
       if (canWalk(m.x, ny)) m.y = ny;
     }
 
-    // Monster attacks player on contact
-    if (dist < 40 && Math.random() < 0.05) {
-      if (currentZoneId === 'FrostpeakTundra' && player.coldRes < 75 && Math.random() < 0.35) {
-        player.freezeTimer = 1.0;
+    // Monster attacks player on contact or within attack range
+    m.attackCooldownTimer = Math.max(0, (m.attackCooldownTimer || 0) - dt);
+
+    if (!player.isDead && dist <= (m.attackRange || 45) && m.attackCooldownTimer <= 0) {
+      m.attackCooldownTimer = m.attackCooldown || 1.2;
+      dealDamageToPlayer(m);
+
+      if (currentZoneId === 'FrostpeakTundra' && player.coldRes < 75 && Math.random() < 0.25) {
+        player.freezeTimer = 0.8;
         spawnDamageNumber(player.x, player.y - 45, '❄️ FROZEN BY BLIZZARD!', true, '#00f2fe');
       }
+    } else if (!player.isDead && m.type === 'fire_imp' && dist <= 240 && dist > 50 && m.attackCooldownTimer <= 0) {
+      // Fire Imp Ranged Fireball attack towards player
+      m.attackCooldownTimer = m.attackCooldown || 1.6;
+      const fAngle = Math.atan2(player.y - m.y, player.x - m.x);
+      projectiles.push({
+        x: m.x,
+        y: m.y,
+        vx: Math.cos(fAngle) * 280,
+        vy: Math.sin(fAngle) * 280,
+        type: 'fireball',
+        damage: m.attackDmg || 25,
+        fireDmg: m.attackDmg || 25,
+        chaosDmg: 0,
+        radius: 10,
+        life: 1.5,
+        isMonsterProjectile: true
+      });
+      AudioEngine.playTone(380, 'sawtooth', 0.1, 0.08);
     }
   });
 
@@ -790,6 +827,7 @@ window.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mousedown', e => {
+  if (player.isDead) return;
   if (e.button === 0 && e.target === canvas) {
     AudioEngine.init();
 
@@ -847,21 +885,17 @@ document.getElementById('slot-frost')?.addEventListener('click', castFrostNova);
 document.getElementById('slot-meteor')?.addEventListener('click', castMeteor);
 document.getElementById('slot-dash')?.addEventListener('click', castDash);
 
-// Setup World Map Fast Travel
-document.querySelectorAll('.zone-node').forEach(node => {
-  node.addEventListener('click', () => {
-    const zone = node.getAttribute('data-zone');
-    toggleModal('worldmap-modal');
-    loadZone(zone);
-    saveToDatabase(true);
-  });
-});
+// Setup World Map Fast Travel & HUD Buttons
+document.getElementById('btn-toggle-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
+document.getElementById('btn-close-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
 
 // Initialize UI and Game
 setupUIListeners();
+initDefeatUI();
 
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {
+  await fetchMasterItemsFromServer();
   const loaded = await loadFromDatabase();
   const targetZone = (player.zoneId && ZONES[player.zoneId]) ? player.zoneId : 'SanctuaryHaven';
   await loadZone(targetZone, player.x, player.y);
