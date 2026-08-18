@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Skill Leveling System (Lv.1-20), Skill Points (SP) & Real-time Scaling
+ * Inventory Overhaul with Equipment Spritesheet, Paperdoll & PoE Tooltips
  */
 
 (function () {
@@ -100,11 +100,12 @@
   };
 
   // ==========================================
-  // 2. ASSET LOADER
+  // 2. ASSET LOADER (Equipment & Sprites)
   // ==========================================
   const assets = {
     maleHero: new Image(),
     femaleHero: new Image(),
+    equipment: new Image(),
     monsters: new Image(),
     props: new Image(),
     loaded: 0
@@ -121,6 +122,9 @@
   assets.femaleHero.onload = onAssetLoad;
   assets.femaleHero.src = '/assets/female_character_spritesheet.png' + cacheBust;
 
+  assets.equipment.onload = onAssetLoad;
+  assets.equipment.src = '/assets/equipment_pack.png' + cacheBust;
+
   assets.monsters.onload = onAssetLoad;
   assets.monsters.src = '/assets/monsters_pack.png' + cacheBust;
 
@@ -128,110 +132,202 @@
   assets.props.src = '/assets/props_pack.png' + cacheBust;
 
   // ==========================================
-  // 3. SKILL SYSTEM & LEVELING DATABASE (Lv.1-20)
+  // 3. EQUIPMENT & ITEM DATABASE WITH SPRITES
+  // ==========================================
+  const RARITY_COLORS = {
+    Normal: '#c8c8c8',
+    Magic: '#8888ff',
+    Rare: '#ffff77',
+    Unique: '#af6025',
+    Currency: '#aa9e82'
+  };
+
+  // Sprite coordinate helpers in equipment_pack.png (1024x1024)
+  const ITEM_SPRITES = {
+    sword_fire: { sx: 820, sy: 5, sw: 95, sh: 95 },
+    sword_crystal: { sx: 715, sy: 5, sw: 95, sh: 95 },
+    axe_dragon: { sx: 310, sy: 120, sw: 95, sh: 95 },
+    dagger_kris: { sx: 410, sy: 270, sw: 95, sh: 95 },
+    staff_arcane: { sx: 920, sy: 270, sw: 95, sh: 95 },
+    helm_crown: { sx: 515, sy: 400, sw: 95, sh: 95 },
+    helm_knight: { sx: 215, sy: 400, sw: 95, sh: 95 },
+    shield_dragon: { sx: 925, sy: 515, sw: 95, sh: 95 },
+    shield_lion: { sx: 620, sy: 515, sw: 95, sh: 95 },
+    armor_plate: { sx: 205, sy: 655, sw: 95, sh: 95 },
+    armor_robe: { sx: 820, sy: 655, sw: 95, sh: 95 },
+    boots_plate: { sx: 110, sy: 800, sw: 95, sh: 95 },
+    ring_sapphire: { sx: 720, sy: 800, sw: 95, sh: 95 },
+    ring_ruby: { sx: 925, sy: 800, sw: 95, sh: 95 },
+    amulet_heart: { sx: 415, sy: 915, sw: 95, sh: 95 },
+    amulet_diamond: { sx: 515, sy: 915, sw: 95, sh: 95 }
+  };
+
+  const POSSIBLE_LOOT = [
+    {
+      id: 'bloodseeker_blade',
+      name: 'Bloodseeker Hellblade',
+      baseType: 'Exquisite Hellblade',
+      category: 'weapon',
+      slot: 'MainHand',
+      rarity: 'Unique',
+      icon: '🗡️',
+      sprite: ITEM_SPRITES.sword_fire,
+      primaryStats: { 'Physical Damage': '82 - 145', 'Attack Speed': '1.45/s', 'Critical Chance': '8.5%' },
+      mods: ['+50 Fire Damage to Attacks', 'Instant 4% Life Leech on Critical Hit', 'Hits have 100% Chance to Ignite'],
+      lore: 'Forged in the underworld pyres, it thirsts for demonic essence.'
+    },
+    {
+      id: 'crown_of_void',
+      name: 'Crown of the Void',
+      baseType: 'Hubris Circlet',
+      category: 'armor',
+      slot: 'Helm',
+      rarity: 'Unique',
+      icon: '👑',
+      sprite: ITEM_SPRITES.helm_crown,
+      primaryStats: { 'Energy Shield': '+120', 'Armor': '+45' },
+      mods: ['+30% to Chaos Resistance', 'Chaos Damage cannot bypass Energy Shield', '+25 to Maximum Mana'],
+      lore: 'The gaze of the void shields the worthy and devours the weak.'
+    },
+    {
+      id: 'dragonbone_axe',
+      name: 'Dragonbone Greataxe',
+      baseType: 'Two Hand War Axe',
+      category: 'weapon',
+      slot: 'MainHand',
+      rarity: 'Rare',
+      icon: '🪓',
+      sprite: ITEM_SPRITES.axe_dragon,
+      primaryStats: { 'Physical Damage': '95 - 180', 'Critical Chance': '7.0%' },
+      mods: ['+45 Physical Damage', '+35% Increased Attack Speed', '+25% Critical Strike Multiplier'],
+      lore: 'Carved from the spine of an ancient wyrm.'
+    },
+    {
+      id: 'aegis_lion',
+      name: 'Lionheart Crest Shield',
+      baseType: 'Imperial Kite Shield',
+      category: 'armor',
+      slot: 'OffHand',
+      rarity: 'Rare',
+      icon: '🛡️',
+      sprite: ITEM_SPRITES.shield_lion,
+      primaryStats: { 'Armor': '+320', 'Block Chance': '28%' },
+      mods: ['+25% to Fire Resistance', '+25% to Cold Resistance', '+80 Maximum Life'],
+      lore: 'Emblazoned with the proud sigil of Sanctuary.'
+    },
+    {
+      id: 'juggernaut_plate',
+      name: 'Refined Juggernaut Plate',
+      baseType: 'Full Plate Mail',
+      category: 'armor',
+      slot: 'BodyArmor',
+      rarity: 'Rare',
+      icon: '🛡️',
+      sprite: ITEM_SPRITES.armor_plate,
+      primaryStats: { 'Armor': '+450', 'Movement Penalty': '-3%' },
+      mods: ['+120 Maximum Life', '+15% to All Elemental Resistances', '5% Additional Physical Damage Reduction'],
+      lore: 'Heavy steel tempered in dragon flame.'
+    },
+    {
+      id: 'voidwalker_sabatons',
+      name: 'Voidwalker Sabatons',
+      baseType: 'Armored Greaves',
+      category: 'armor',
+      slot: 'Boots',
+      rarity: 'Rare',
+      icon: '👢',
+      sprite: ITEM_SPRITES.boots_plate,
+      primaryStats: { 'Armor': '+120', 'Evasion': '+85' },
+      mods: ['+30% Increased Movement Speed', '+65 Maximum Life', '+35% to Fire Resistance'],
+      lore: 'Steps as light as shadow, as steadfast as iron.'
+    },
+    {
+      id: 'solar_amulet',
+      name: 'Solar Medallion',
+      baseType: 'Gold Amulet',
+      category: 'armor',
+      slot: 'Amulet',
+      rarity: 'Rare',
+      icon: '📿',
+      sprite: ITEM_SPRITES.amulet_diamond,
+      primaryStats: { 'All Attributes': '+15' },
+      mods: ['+22% Global Critical Strike Multiplier', '+30 Maximum Mana', '+20% Fire Damage'],
+      lore: 'Radiates a gentle, soothing warmth.'
+    },
+    {
+      id: 'sapphire_ring',
+      name: 'Glacial Signet Ring',
+      baseType: 'Sapphire Ring',
+      category: 'armor',
+      slot: 'Ring',
+      rarity: 'Magic',
+      icon: '💍',
+      sprite: ITEM_SPRITES.ring_sapphire,
+      primaryStats: { 'Cold Resistance': '+30%' },
+      mods: ['+45 Maximum Energy Shield', '+15% Cast Speed'],
+      lore: 'Cold to the touch.'
+    },
+    {
+      id: 'chaos_orb',
+      name: 'Chaos Orb',
+      baseType: 'Currency',
+      category: 'currency',
+      rarity: 'Currency',
+      icon: '🔮',
+      primaryStats: { 'Stack Size': '1 / 20' },
+      mods: ['Reforges a rare item with new random modifiers'],
+      lore: 'The fundamental currency of the exiled realms.'
+    },
+    {
+      id: 'exalted_orb',
+      name: 'Exalted Orb',
+      baseType: 'Currency',
+      category: 'currency',
+      rarity: 'Currency',
+      icon: '🌟',
+      primaryStats: { 'Stack Size': '1 / 10' },
+      mods: ['Augments a rare item with a new high-tier modifier'],
+      lore: 'Precious gold imbued with ancestral virtue.'
+    }
+  ];
+
+  // Helper to draw item sprite onto canvas
+  function drawItemSpriteToCanvas(targetCanvas, spriteInfo) {
+    if (!targetCanvas) return;
+    const tCtx = targetCanvas.getContext('2d');
+    tCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+    tCtx.imageSmoothingEnabled = false;
+
+    if (assets.equipment.complete && assets.equipment.naturalWidth > 0 && spriteInfo) {
+      tCtx.drawImage(
+        assets.equipment,
+        spriteInfo.sx, spriteInfo.sy, spriteInfo.sw, spriteInfo.sh,
+        0, 0, targetCanvas.width, targetCanvas.height
+      );
+    }
+  }
+
+  // ==========================================
+  // 4. SKILL DATABASE (Lv.1-20)
   // ==========================================
   const SKILLS = {
-    slash: {
-      id: 'slash',
-      name: 'Heavy Slash',
-      icon: '⚔️',
-      key: 'LMB',
-      level: 1,
-      maxLevel: 20,
-      exp: 0,
-      expToNext: 120,
-      baseDmg: 50,
-      dmgPerLvl: 10,
-      baseCooldown: 0.35,
-      cdReductionPerLvl: 0.008,
-      baseReach: 75,
-      reachPerLvl: 3,
-      desc: 'Cleaves enemies in front with weapon damage and physical force.'
-    },
-    fireball: {
-      id: 'fireball',
-      name: 'Pyro Fireball',
-      icon: '🔥',
-      key: 'Q',
-      level: 1,
-      maxLevel: 20,
-      exp: 0,
-      expToNext: 150,
-      baseDmg: 85,
-      dmgPerLvl: 15,
-      baseCooldown: 1.0,
-      cdReductionPerLvl: 0.02,
-      baseRadius: 12,
-      radiusPerLvl: 0.6,
-      manaCost: 10,
-      desc: 'Hurls an explosive projectile of concentrated fire at target.'
-    },
-    frost: {
-      id: 'frost',
-      name: 'Frost Nova',
-      icon: '❄️',
-      key: 'W',
-      level: 1,
-      maxLevel: 20,
-      exp: 0,
-      expToNext: 180,
-      baseDmg: 90,
-      dmgPerLvl: 16,
-      baseCooldown: 2.5,
-      cdReductionPerLvl: 0.05,
-      baseRadius: 150,
-      radiusPerLvl: 6,
-      manaCost: 15,
-      desc: 'Blasts freezing frost in a 360-degree ring around the caster.'
-    },
-    meteor: {
-      id: 'meteor',
-      name: 'Cataclysm Meteor',
-      icon: '☄️',
-      key: 'E',
-      level: 1,
-      maxLevel: 20,
-      exp: 0,
-      expToNext: 250,
-      baseDmg: 180,
-      dmgPerLvl: 30,
-      baseCooldown: 4.5,
-      cdReductionPerLvl: 0.08,
-      baseRadius: 135,
-      radiusPerLvl: 6,
-      manaCost: 30,
-      desc: 'Calls down a celestial meteor that devastates target ground.'
-    },
-    dash: {
-      id: 'dash',
-      name: 'Shadow Dash',
-      icon: '💨',
-      key: 'Space',
-      level: 1,
-      maxLevel: 20,
-      exp: 0,
-      expToNext: 100,
-      baseDistance: 190,
-      distancePerLvl: 7,
-      baseCooldown: 1.2,
-      cdReductionPerLvl: 0.035,
-      desc: 'Dashes instantly through space with temporary invulnerability.'
-    }
+    slash: { id: 'slash', name: 'Heavy Slash', icon: '⚔️', key: 'LMB', level: 1, maxLevel: 20, exp: 0, expToNext: 120, baseDmg: 50, dmgPerLvl: 10, baseCooldown: 0.35, cdReductionPerLvl: 0.008, baseReach: 75, reachPerLvl: 3, desc: 'Cleaves enemies in front with physical force.' },
+    fireball: { id: 'fireball', name: 'Pyro Fireball', icon: '🔥', key: 'Q', level: 1, maxLevel: 20, exp: 0, expToNext: 150, baseDmg: 85, dmgPerLvl: 15, baseCooldown: 1.0, cdReductionPerLvl: 0.02, baseRadius: 12, radiusPerLvl: 0.6, manaCost: 10, desc: 'Hurls an explosive projectile of fire.' },
+    frost: { id: 'frost', name: 'Frost Nova', icon: '❄️', key: 'W', level: 1, maxLevel: 20, exp: 0, expToNext: 180, baseDmg: 90, dmgPerLvl: 16, baseCooldown: 2.5, cdReductionPerLvl: 0.05, baseRadius: 150, radiusPerLvl: 6, manaCost: 15, desc: 'Blasts freezing frost in a 360-degree ring.' },
+    meteor: { id: 'meteor', name: 'Cataclysm Meteor', icon: '☄️', key: 'E', level: 1, maxLevel: 20, exp: 0, expToNext: 250, baseDmg: 180, dmgPerLvl: 30, baseCooldown: 4.5, cdReductionPerLvl: 0.08, baseRadius: 135, radiusPerLvl: 6, manaCost: 30, desc: 'Calls down a devastating celestial meteor.' },
+    dash: { id: 'dash', name: 'Shadow Dash', icon: '💨', key: 'Space', level: 1, maxLevel: 20, exp: 0, expToNext: 100, baseDistance: 190, distancePerLvl: 7, baseCooldown: 1.2, cdReductionPerLvl: 0.035, desc: 'Dashes with temporary invulnerability.' }
   };
 
   function addSkillExp(skillKey, amount) {
     const s = SKILLS[skillKey];
     if (!s || s.level >= s.maxLevel) return;
-
     s.exp += amount;
     while (s.exp >= s.expToNext && s.level < s.maxLevel) {
       s.exp -= s.expToNext;
       s.level++;
       s.expToNext = Math.round(s.expToNext * 1.35);
-
       AudioEngine.playSkillLevelUp();
       spawnDamageNumber(player.x, player.y - 50, `${s.name} Lv.${s.level}!`, true, '#61afef');
-
       updateSkillBadges();
       renderSkillUpgradeModal();
     }
@@ -241,15 +337,12 @@
     if (player.skillPoints <= 0) return;
     const s = SKILLS[skillKey];
     if (!s || s.level >= s.maxLevel) return;
-
     player.skillPoints--;
     s.level++;
     s.exp = 0;
     s.expToNext = Math.round(s.expToNext * 1.35);
-
     AudioEngine.playSkillLevelUp();
     spawnDamageNumber(player.x, player.y - 50, `${s.name} Lv.${s.level}!`, true, '#ffd700');
-
     updateSkillBadges();
     renderSkillUpgradeModal();
   }
@@ -257,9 +350,7 @@
   function updateSkillBadges() {
     for (let k in SKILLS) {
       const badge = document.getElementById(`lvl-badge-${k}`);
-      if (badge) {
-        badge.innerText = `Lv.${SKILLS[k].level}`;
-      }
+      if (badge) badge.innerText = `Lv.${SKILLS[k].level}`;
     }
     const spEl = document.getElementById('sp-points-text');
     if (spEl) spEl.innerText = `${player.skillPoints} SP`;
@@ -280,13 +371,9 @@
       const curCd = Math.max(0.2, (s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl)).toFixed(2);
       const expPct = Math.min(100, (s.exp / s.expToNext) * 100);
 
-      let statLine = '';
-      if (k === 'dash') {
-        const curDist = Math.round(s.baseDistance + (s.level - 1) * s.distancePerLvl);
-        statLine = `Distance: <b>${curDist}px</b> | Cooldown: <b>${curCd}s</b>`;
-      } else {
-        statLine = `Damage: <b>${curDmg}</b> (Next: <b style="color:#ffd700;">${nextDmg}</b>) | Cooldown: <b>${curCd}s</b>`;
-      }
+      let statLine = k === 'dash'
+        ? `Distance: <b>${Math.round(s.baseDistance + (s.level - 1) * s.distancePerLvl)}px</b> | CD: <b>${curCd}s</b>`
+        : `Damage: <b>${curDmg}</b> (Next: <b style="color:#ffd700;">${nextDmg}</b>) | CD: <b>${curCd}s</b>`;
 
       card.innerHTML = `
         <div class="suc-icon">${s.icon}</div>
@@ -306,16 +393,13 @@
         </button>
       `;
 
-      card.querySelector('.suc-btn').addEventListener('click', () => {
-        levelUpSkillWithPoint(k);
-      });
-
+      card.querySelector('.suc-btn').addEventListener('click', () => levelUpSkillWithPoint(k));
       container.appendChild(card);
     }
   }
 
   // ==========================================
-  // 4. ZONE DEFINITIONS
+  // 5. ZONE DEFINITIONS
   // ==========================================
   const ZONES = {
     SanctuaryHaven: {
@@ -323,9 +407,7 @@
       name: 'Sanctuary Haven',
       subtitle: '🌿 Starting Town - Safe Haven (4000x4000)',
       levelRange: 'Lv. 1-5',
-      portals: [
-        { x: 3200, y: 2000, targetZone: 'WhisperingPlains', targetX: 600, targetY: 2000, name: '🌀 To Whispering Plains' }
-      ],
+      portals: [{ x: 3200, y: 2000, targetZone: 'WhisperingPlains', targetX: 600, targetY: 2000, name: '🌀 To Whispering Plains' }],
       npcs: [
         { x: 1900, y: 1900, name: 'Doran (Blacksmith)', title: 'Blacksmith', color: '#e5c07b' },
         { x: 2100, y: 1900, name: 'Elder Aethel (Sage)', title: 'Quest Master', color: '#61afef' }
@@ -334,18 +416,13 @@
         { x: 2000, y: 2000, type: 'campfire' },
         { x: 1850, y: 1880, type: 'chest' },
         { x: 1880, y: 1940, type: 'barrel' },
-        { x: 2120, y: 1940, type: 'barrel' },
-        { x: 1600, y: 1600, type: 'tree' },
-        { x: 2400, y: 1600, type: 'tree' },
-        { x: 1500, y: 2300, type: 'rock' },
-        { x: 2500, y: 2300, type: 'rock' }
+        { x: 2120, y: 1940, type: 'barrel' }
       ],
       dummies: [
         { x: 1900, y: 2150, name: 'Training Dummy (Alpha)' },
         { x: 2100, y: 2150, name: 'Training Dummy (Beta)' }
       ]
     },
-
     WhisperingPlains: {
       id: 'WhisperingPlains',
       name: 'Whispering Plains',
@@ -358,15 +435,12 @@
       props: [],
       dummies: []
     },
-
     ForgottenCrypt: {
       id: 'ForgottenCrypt',
       name: 'Forgotten Crypt',
       subtitle: '🏰 Forgotten Crypt - Shadow Fiend Lair (4000x4000)',
       levelRange: 'Lv. 15-25',
-      portals: [
-        { x: 500, y: 2000, targetZone: 'WhisperingPlains', targetX: 3300, targetY: 2000, name: '🌀 Escape Dungeon' }
-      ],
+      portals: [{ x: 500, y: 2000, targetZone: 'WhisperingPlains', targetX: 3300, targetY: 2000, name: '🌀 Escape Dungeon' }],
       props: [],
       dummies: []
     }
@@ -376,7 +450,7 @@
   let currentZone = ZONES[currentZoneId];
 
   // ==========================================
-  // 5. CHARACTER STATE
+  // 6. PLAYER STATE & EQUIPMENT PAPERDOLL
   // ==========================================
   const player = {
     x: 2000,
@@ -394,7 +468,7 @@
     level: 1,
     currentExp: 0,
     expToNext: 100,
-    skillPoints: 3, // Start with 3 Skill Points for testing!
+    skillPoints: 3,
 
     life: 250,
     maxLife: 250,
@@ -403,6 +477,8 @@
     es: 100,
     maxEs: 100,
 
+    baseArmor: 250,
+    baseEvasion: 250,
     armor: 250,
     evasion: 250,
     fireRes: 75,
@@ -414,16 +490,25 @@
 
     cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
 
+    // Equipped gear paperdoll
     equipped: {
-      Helm: { name: 'Crown of the Void', rarity: 'Unique', icon: '👑', mods: ['+120 ES', '+30% Chaos Res'] },
-      BodyArmor: { name: 'Refined Plate', rarity: 'Rare', icon: '🛡️', mods: ['+250 Armor', '+15% All Res'] },
-      MainHand: { name: 'Ancient Fireblade', rarity: 'Rare', icon: '🗡️', mods: ['+40 Fire Damage', '+20% Crit Multi'] },
-      OffHand: { name: 'Guardian Shield', rarity: 'Magic', icon: '🛡️', mods: ['+50 Armor', '+10% Block Chance'] }
+      Helm: POSSIBLE_LOOT[1],      // Crown of Void
+      Amulet: POSSIBLE_LOOT[6],    // Solar Medallion
+      MainHand: POSSIBLE_LOOT[0],  // Bloodseeker Blade
+      BodyArmor: POSSIBLE_LOOT[4], // Juggernaut Plate
+      OffHand: POSSIBLE_LOOT[3],   // Lionheart Shield
+      Ring: POSSIBLE_LOOT[7],      // Glacial Signet Ring
+      Boots: POSSIBLE_LOOT[5]      // Voidwalker Sabatons
     },
-    bag: []
+    bag: [
+      POSSIBLE_LOOT[2], // Dragonbone Greataxe
+      POSSIBLE_LOOT[8], // Chaos Orb
+      POSSIBLE_LOOT[9], // Exalted Orb
+      POSSIBLE_LOOT[8]  // Chaos Orb
+    ],
+    bagFilter: 'all'
   };
 
-  // World Entities
   const monsters = [];
   const trainingDummies = [];
   const npcs = [];
@@ -438,20 +523,261 @@
   const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };
 
   // ==========================================
-  // 6. PROGRESSION & CLASS ASCENSION
+  // 7. INVENTORY & PAPERDOLL CONTROLLER
+  // ==========================================
+  function updateBackpackUI() {
+    const grid = document.getElementById('backpack-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const filteredItems = player.bag.filter(item => {
+      if (player.bagFilter === 'all') return true;
+      if (player.bagFilter === 'weapon') return item.category === 'weapon';
+      if (player.bagFilter === 'armor') return item.category === 'armor';
+      if (player.bagFilter === 'currency') return item.category === 'currency';
+      return true;
+    });
+
+    for (let i = 0; i < 16; i++) {
+      const slot = document.createElement('div');
+      const item = filteredItems[i];
+
+      if (item) {
+        slot.className = `bag-slot-card rarity-${item.rarity}`;
+
+        if (item.sprite && assets.equipment.complete) {
+          const cvs = document.createElement('canvas');
+          cvs.width = 44;
+          cvs.height = 44;
+          cvs.className = 'bag-slot-canvas';
+          drawItemSpriteToCanvas(cvs, item.sprite);
+          slot.appendChild(cvs);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'bag-slot-emoji';
+          span.innerText = item.icon || '📦';
+          slot.appendChild(span);
+        }
+
+        slot.addEventListener('mouseenter', e => showItemTooltip(e, item));
+        slot.addEventListener('mouseleave', hideItemTooltip);
+
+        slot.addEventListener('click', () => {
+          if (item.slot) {
+            // Equip Item
+            const prev = player.equipped[item.slot];
+            const realIndex = player.bag.indexOf(item);
+            if (realIndex !== -1) {
+              if (prev) {
+                player.bag[realIndex] = prev;
+              } else {
+                player.bag.splice(realIndex, 1);
+              }
+              player.equipped[item.slot] = item;
+              AudioEngine.playPickup();
+              updateBackpackUI();
+              updatePaperdollUI();
+              hideItemTooltip();
+            }
+          } else if (item.rarity === 'Currency') {
+            spawnDamageNumber(player.x, player.y - 40, `Used ${item.name}!`, true, '#e5c07b');
+            const realIndex = player.bag.indexOf(item);
+            if (realIndex !== -1) player.bag.splice(realIndex, 1);
+            AudioEngine.playPickup();
+            updateBackpackUI();
+            hideItemTooltip();
+          }
+        });
+      } else {
+        slot.className = 'bag-slot-card empty-slot';
+      }
+
+      grid.appendChild(slot);
+    }
+
+    document.getElementById('bag-count-tag').innerText = `${player.bag.length} / 16`;
+  }
+
+  function updatePaperdollUI() {
+    const slots = ['Helm', 'Amulet', 'MainHand', 'BodyArmor', 'OffHand', 'Ring', 'Boots'];
+    let totalAddedArmor = 0;
+    let totalAddedES = 0;
+    let totalAddedPhys = 0;
+    let totalAddedFire = 0;
+
+    slots.forEach(slotKey => {
+      const item = player.equipped[slotKey];
+      const slotEl = document.querySelector(`.doll-slot-frame[data-slot="${slotKey}"]`);
+      if (!slotEl) return;
+
+      slotEl.className = `doll-slot-frame slot-${slotKey.toLowerCase()} ${item ? 'rarity-' + item.rarity : ''}`;
+      const iconEl = slotEl.querySelector('.doll-slot-icon');
+
+      if (item) {
+        if (item.sprite && assets.equipment.complete) {
+          iconEl.innerHTML = '';
+          const cvs = document.createElement('canvas');
+          cvs.width = 38;
+          cvs.height = 38;
+          cvs.className = 'doll-slot-canvas';
+          drawItemSpriteToCanvas(cvs, item.sprite);
+          iconEl.appendChild(cvs);
+        } else {
+          iconEl.innerText = item.icon || '🛡️';
+        }
+
+        slotEl.onmouseenter = e => showItemTooltip(e, item);
+        slotEl.onmouseleave = hideItemTooltip;
+        slotEl.onclick = () => {
+          if (player.bag.length < 16) {
+            player.bag.push(item);
+            delete player.equipped[slotKey];
+            AudioEngine.playPickup();
+            updatePaperdollUI();
+            updateBackpackUI();
+            hideItemTooltip();
+          } else {
+            spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
+          }
+        };
+
+        if (item.primaryStats) {
+          if (item.primaryStats['Armor']) totalAddedArmor += parseInt(item.primaryStats['Armor']) || 0;
+          if (item.primaryStats['Energy Shield']) totalAddedES += parseInt(item.primaryStats['Energy Shield']) || 0;
+        }
+      } else {
+        iconEl.innerHTML = '';
+        iconEl.innerText = getSlotDefaultIcon(slotKey);
+        slotEl.onmouseenter = null;
+        slotEl.onmouseleave = null;
+        slotEl.onclick = null;
+      }
+    });
+
+    document.getElementById('gss-armor').innerText = `+${totalAddedArmor || 770}`;
+    document.getElementById('gss-es').innerText = `+${totalAddedES || 120}`;
+  }
+
+  function getSlotDefaultIcon(slotKey) {
+    switch (slotKey) {
+      case 'Helm': return '👑';
+      case 'Amulet': return '📿';
+      case 'MainHand': return '⚔️';
+      case 'BodyArmor': return '🛡️';
+      case 'OffHand': return '🛡️';
+      case 'Ring': return '💍';
+      case 'Boots': return '👢';
+      default: return '📦';
+    }
+  }
+
+  // PoE Item Tooltip
+  const tooltipEl = document.getElementById('item-tooltip');
+  function showItemTooltip(e, item) {
+    if (!tooltipEl || !item) return;
+
+    document.getElementById('tt-name').innerText = item.name;
+    document.getElementById('tt-name').style.color = RARITY_COLORS[item.rarity] || '#ffffff';
+    document.getElementById('tt-type').innerText = `${item.rarity} ${item.baseType || ''}`;
+    document.getElementById('tt-type').style.color = RARITY_COLORS[item.rarity] || '#abb2bf';
+
+    const iconWrap = document.getElementById('tt-icon-wrap');
+    iconWrap.innerHTML = '';
+    if (item.sprite && assets.equipment.complete) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 34;
+      cvs.height = 34;
+      cvs.className = 'poe-tt-icon-canvas';
+      drawItemSpriteToCanvas(cvs, item.sprite);
+      iconWrap.appendChild(cvs);
+    } else {
+      iconWrap.innerHTML = `<span>${item.icon || '📦'}</span>`;
+    }
+
+    const statsEl = document.getElementById('tt-stats');
+    statsEl.innerHTML = '';
+    if (item.primaryStats) {
+      for (let k in item.primaryStats) {
+        statsEl.innerHTML += `<div>${k}: <b>${item.primaryStats[k]}</b></div>`;
+      }
+    }
+
+    const modsEl = document.getElementById('tt-mods');
+    modsEl.innerHTML = (item.mods || []).map(m => `<div>✦ ${m}</div>`).join('');
+
+    const loreEl = document.getElementById('tt-lore');
+    loreEl.innerText = item.lore ? `"${item.lore}"` : '';
+
+    tooltipEl.classList.remove('hidden');
+    tooltipEl.style.left = `${Math.min(window.innerWidth - 320, e.clientX + 16)}px`;
+    tooltipEl.style.top = `${Math.min(window.innerHeight - 240, e.clientY - 40)}px`;
+  }
+
+  function hideItemTooltip() {
+    if (tooltipEl) tooltipEl.classList.add('hidden');
+  }
+
+  // ==========================================
+  // 8. LOOT DROP & PICKUP
+  // ==========================================
+  function dropMonsterLoot(x, y, isBoss) {
+    const dropCount = isBoss ? Math.floor(Math.random() * 3) + 4 : (Math.random() < 0.65 ? 1 : 0);
+
+    for (let i = 0; i < dropCount; i++) {
+      let itemTemplate;
+      if (isBoss && i === 0) {
+        itemTemplate = POSSIBLE_LOOT.find(it => it.rarity === 'Unique') || POSSIBLE_LOOT[0];
+      } else {
+        itemTemplate = POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)];
+      }
+
+      const dropAngle = Math.random() * Math.PI * 2;
+      const dropDistance = 40 + Math.random() * 80;
+
+      groundLoot.push({
+        id: Math.random().toString(36).substring(2, 9),
+        x: x,
+        y: y,
+        targetX: x + Math.cos(dropAngle) * dropDistance,
+        targetY: y + Math.sin(dropAngle) * dropDistance,
+        item: { ...itemTemplate },
+        bounceTimer: 0.5,
+        beamHeight: itemTemplate.rarity === 'Unique' ? 350 : (itemTemplate.rarity === 'Rare' || itemTemplate.rarity === 'Currency' ? 240 : 0)
+      });
+
+      AudioEngine.playLootDrop(itemTemplate.rarity);
+    }
+  }
+
+  function pickUpLoot(lootIndex) {
+    if (lootIndex < 0 || lootIndex >= groundLoot.length) return;
+    const loot = groundLoot[lootIndex];
+
+    if (player.bag.length >= 16) {
+      spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
+      return;
+    }
+
+    player.bag.push(loot.item);
+    groundLoot.splice(lootIndex, 1);
+
+    AudioEngine.playPickup();
+    spawnDamageNumber(player.x, player.y - 45, `+ ${loot.item.name}`, false, RARITY_COLORS[loot.item.rarity]);
+
+    updateBackpackUI();
+  }
+
+  // ==========================================
+  // 9. PROGRESSION & ASCENSION
   // ==========================================
   function gainExp(amount) {
     player.currentExp += amount;
-    
-    // Distribute Skill EXP to all active skills
-    for (let k in SKILLS) {
-      addSkillExp(k, Math.round(amount * 0.8));
-    }
+    for (let k in SKILLS) addSkillExp(k, Math.round(amount * 0.8));
 
     while (player.currentExp >= player.expToNext) {
       player.currentExp -= player.expToNext;
       player.level++;
-      player.skillPoints++; // +1 SP per Level Up
+      player.skillPoints++;
       player.expToNext = Math.round(player.expToNext * 1.4);
 
       player.maxLife += 20;
@@ -520,149 +846,7 @@
   }
 
   // ==========================================
-  // 7. LOOT DROP TABLE
-  // ==========================================
-  const RARITY_COLORS = {
-    Normal: '#c8c8c8',
-    Magic: '#8888ff',
-    Rare: '#ffff77',
-    Unique: '#af6025',
-    Currency: '#aa9e82'
-  };
-
-  const POSSIBLE_LOOT = [
-    { name: 'Chaos Orb', baseType: 'Currency', rarity: 'Currency', icon: '🔮', mods: ['Reforges a rare item with new random modifiers'] },
-    { name: 'Orb of Alchemy', baseType: 'Currency', rarity: 'Currency', icon: '🧪', mods: ['Upgrades a normal item to a rare item'] },
-    { name: 'Exalted Orb', baseType: 'Currency', rarity: 'Currency', icon: '🌟', mods: ['Augments a rare item with a new random modifier'] },
-    { name: 'Orb of Fusing', baseType: 'Currency', rarity: 'Currency', icon: '🔗', mods: ['Reforges socket links on an item'] },
-    { name: 'Dragonbone Greataxe', baseType: 'Two Hand Axe', rarity: 'Rare', slot: 'MainHand', icon: '🪓', mods: ['+45 Physical Damage', '+35% Attack Speed', '+25% Crit Multi'] },
-    { name: 'Voidwalker Greaves', baseType: 'Boots', rarity: 'Rare', slot: 'Armor', icon: '👢', mods: ['+30% Movement Speed', '+80 Max Life', '+35% Fire Resistance'] },
-    { name: 'Crown of the Void', baseType: 'Hubris Circlet', rarity: 'Unique', slot: 'Helm', icon: '👑', mods: ['+120 Maximum Energy Shield', '+30% Chaos Resistance', 'Chaos Damage cannot bypass ES'] },
-    { name: 'Bloodseeker Blade', baseType: 'Hellblade', rarity: 'Unique', slot: 'MainHand', icon: '🗡️', mods: ['+50 Fire Damage', 'Instant Life Leech on Crit', 'Hits Ignite Enemies'] },
-    { name: 'Reinforced Kite Shield', baseType: 'Shield', rarity: 'Magic', slot: 'OffHand', icon: '🛡️', mods: ['+150 Armor', '+25% Cold Resistance'] }
-  ];
-
-  function dropMonsterLoot(x, y, isBoss) {
-    const dropCount = isBoss ? Math.floor(Math.random() * 3) + 4 : (Math.random() < 0.65 ? 1 : 0);
-
-    for (let i = 0; i < dropCount; i++) {
-      let itemTemplate;
-      if (isBoss && i === 0) {
-        itemTemplate = POSSIBLE_LOOT.find(it => it.rarity === 'Unique') || POSSIBLE_LOOT[4];
-      } else {
-        itemTemplate = POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)];
-      }
-
-      const dropAngle = Math.random() * Math.PI * 2;
-      const dropDistance = 40 + Math.random() * 80;
-
-      groundLoot.push({
-        id: Math.random().toString(36).substring(2, 9),
-        x: x,
-        y: y,
-        targetX: x + Math.cos(dropAngle) * dropDistance,
-        targetY: y + Math.sin(dropAngle) * dropDistance,
-        item: { ...itemTemplate },
-        bounceTimer: 0.5,
-        beamHeight: itemTemplate.rarity === 'Unique' ? 350 : (itemTemplate.rarity === 'Rare' || itemTemplate.rarity === 'Currency' ? 240 : 0)
-      });
-
-      AudioEngine.playLootDrop(itemTemplate.rarity);
-    }
-  }
-
-  function pickUpLoot(lootIndex) {
-    if (lootIndex < 0 || lootIndex >= groundLoot.length) return;
-    const loot = groundLoot[lootIndex];
-
-    if (player.bag.length >= 12) {
-      spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
-      return;
-    }
-
-    player.bag.push(loot.item);
-    groundLoot.splice(lootIndex, 1);
-
-    AudioEngine.playPickup();
-    spawnDamageNumber(player.x, player.y - 45, `+ ${loot.item.name}`, false, RARITY_COLORS[loot.item.rarity]);
-
-    updateBackpackUI();
-  }
-
-  function updateBackpackUI() {
-    const grid = document.getElementById('backpack-grid');
-    grid.innerHTML = '';
-
-    for (let i = 0; i < 12; i++) {
-      const slot = document.createElement('div');
-      const item = player.bag[i];
-
-      if (item) {
-        slot.className = `bag-slot rarity-${item.rarity}`;
-        slot.innerText = item.icon || '📦';
-        slot.title = `${item.name} (${item.rarity})`;
-
-        slot.addEventListener('mouseenter', e => showItemTooltip(e, item));
-        slot.addEventListener('mouseleave', hideItemTooltip);
-
-        slot.addEventListener('click', () => {
-          if (item.slot && player.equipped[item.slot]) {
-            const prev = player.equipped[item.slot];
-            player.equipped[item.slot] = item;
-            player.bag[i] = prev;
-            AudioEngine.playPickup();
-            updateBackpackUI();
-            updateEquippedUI();
-          } else if (item.rarity === 'Currency') {
-            spawnDamageNumber(player.x, player.y - 40, `Used ${item.name}!`, true, '#e5c07b');
-            player.bag.splice(i, 1);
-            AudioEngine.playPickup();
-            updateBackpackUI();
-          }
-        });
-      } else {
-        slot.className = 'bag-slot empty-slot';
-        slot.innerText = '';
-      }
-
-      grid.appendChild(slot);
-    }
-
-    document.getElementById('bag-count-tag').innerText = `${player.bag.length} / 12`;
-  }
-
-  function updateEquippedUI() {
-    for (let slotKey in player.equipped) {
-      const item = player.equipped[slotKey];
-      const el = document.getElementById(`gear-name-${slotKey.toLowerCase()}`);
-      if (el && item) {
-        el.innerText = item.name;
-        el.style.color = RARITY_COLORS[item.rarity] || '#fff';
-      }
-    }
-  }
-
-  const tooltipEl = document.getElementById('item-tooltip');
-  function showItemTooltip(e, item) {
-    if (!tooltipEl || !item) return;
-    document.getElementById('tt-name').innerText = item.name;
-    document.getElementById('tt-name').style.color = RARITY_COLORS[item.rarity];
-    document.getElementById('tt-type').innerText = `${item.rarity} ${item.baseType || ''}`;
-
-    const modsEl = document.getElementById('tt-mods');
-    modsEl.innerHTML = (item.mods || []).map(m => `<div>• ${m}</div>`).join('');
-
-    tooltipEl.classList.remove('hidden');
-    tooltipEl.style.left = `${Math.min(window.innerWidth - 260, e.clientX + 16)}px`;
-    tooltipEl.style.top = `${Math.min(window.innerHeight - 180, e.clientY - 40)}px`;
-  }
-
-  function hideItemTooltip() {
-    if (tooltipEl) tooltipEl.classList.add('hidden');
-  }
-
-  // ==========================================
-  // 8. ZONE LOADING
+  // 10. ZONE LOADING
   // ==========================================
   function loadZone(zoneId, spawnX, spawnY) {
     if (!ZONES[zoneId]) return;
@@ -683,23 +867,10 @@
     player.y = spawnY !== undefined ? spawnY : 2000;
 
     currentZone.portals.forEach(p => portals.push({ ...p }));
-
-    if (currentZone.npcs) {
-      currentZone.npcs.forEach(n => npcs.push({ ...n }));
-    }
-
+    if (currentZone.npcs) currentZone.npcs.forEach(n => npcs.push({ ...n }));
     if (currentZone.dummies) {
       currentZone.dummies.forEach(d => {
-        trainingDummies.push({
-          x: d.x,
-          y: d.y,
-          name: d.name,
-          life: 99999,
-          maxLife: 99999,
-          armor: 200,
-          isAlive: true,
-          hurtTimer: 0
-        });
+        trainingDummies.push({ x: d.x, y: d.y, name: d.name, life: 99999, maxLife: 99999, armor: 200, isAlive: true, hurtTimer: 0 });
       });
     }
 
@@ -709,30 +880,18 @@
 
     const propCount = currentZone.id === 'ForgottenCrypt' ? 60 : 120;
     for (let i = 0; i < propCount; i++) {
-      let type = 'tree';
-      if (currentZone.id === 'ForgottenCrypt') {
-        type = Math.random() < 0.7 ? 'rock' : 'chest';
-      } else {
-        type = Math.random() < 0.65 ? 'tree' : (Math.random() < 0.85 ? 'rock' : 'barrel');
-      }
-
+      let type = currentZone.id === 'ForgottenCrypt' ? (Math.random() < 0.7 ? 'rock' : 'chest') : (Math.random() < 0.65 ? 'tree' : (Math.random() < 0.85 ? 'rock' : 'barrel'));
       const px = Math.random() * (WORLD_SIZE - 400) + 200;
       const py = Math.random() * (WORLD_SIZE - 400) + 200;
-
-      if (Math.hypot(px - 2000, py - 2000) > 200) {
-        props.push({ x: px, y: py, type: type });
-      }
+      if (Math.hypot(px - 2000, py - 2000) > 200) props.push({ x: px, y: py, type: type });
     }
 
     if (currentZone.id === 'WhisperingPlains') {
       spawnMonsterCluster(1200, 1200, 6);
       spawnMonsterCluster(2800, 1400, 7);
       spawnMonsterCluster(1800, 2800, 8);
-      spawnMonsterCluster(3200, 2600, 6);
-      spawnMonsterCluster(1000, 3000, 5);
     } else if (currentZone.id === 'ForgottenCrypt') {
       spawnMonsterCluster(1200, 1500, 8);
-      spawnMonsterCluster(2200, 1200, 8);
       spawnMonsterCluster(2600, 2800, 10);
       spawnMonster(3200, 2000, 'boss');
     }
@@ -746,7 +905,7 @@
     });
 
     updateBackpackUI();
-    updateEquippedUI();
+    updatePaperdollUI();
     updateSkillBadges();
     renderSkillUpgradeModal();
   }
@@ -756,11 +915,8 @@
     document.getElementById('zone-banner-title').innerText = title.toUpperCase();
     document.getElementById('zone-banner-sub').innerText = sub;
     banner.classList.remove('zone-banner-hide');
-
     clearTimeout(banner._timeout);
-    banner._timeout = setTimeout(() => {
-      banner.classList.add('zone-banner-hide');
-    }, 3500);
+    banner._timeout = setTimeout(() => banner.classList.add('zone-banner-hide'), 3500);
   }
 
   function spawnMonster(x, y, type = 'slime') {
@@ -797,7 +953,7 @@
   }
 
   // ==========================================
-  // 9. COMBAT & SCALING PIPELINE
+  // 11. COMBAT & SKILLS
   // ==========================================
   function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
     if (!target.isAlive) return;
@@ -815,21 +971,14 @@
       physMitigation = Math.min(0.9, target.armor / (target.armor + 5 * physDmg));
     }
     const finalPhys = physDmg * (1 - physMitigation);
-
     const finalFire = (rawFire * multiplier) * (1 - (target.fireRes || 0) / 100);
     const finalCold = (rawCold * multiplier) * (1 - (target.coldRes || 0) / 100);
-    const finalLight = (rawLightning * multiplier) * 1.0;
-    const finalChaos = (rawChaos * multiplier) * 1.0;
+    const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold));
 
-    const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
-
-    if (target.life < 90000) {
-      target.life -= totalDamage;
-    }
+    if (target.life < 90000) target.life -= totalDamage;
     target.hurtTimer = 0.25;
 
     AudioEngine.playHit(isCrit);
-
     const color = isCrit ? '#ffd700' : (rawFire > 0 ? '#ff7849' : (rawCold > 0 ? '#4facfe' : '#ffffff'));
     spawnDamageNumber(target.x, target.y - 30 * (target.scale || 1), totalDamage, isCrit, color);
 
@@ -839,7 +988,7 @@
         y: target.y - 10,
         vx: (Math.random() - 0.5) * 200,
         vy: (Math.random() - 0.5) * 200,
-        color: rawFire > 0 ? '#ff5722' : (rawCold > 0 ? '#00f2fe' : '#e06c75'),
+        color: rawFire > 0 ? '#ff5722' : '#00f2fe',
         life: 0.35,
         maxLife: 0.35,
         size: 3 + Math.random() * 4
@@ -850,7 +999,6 @@
       target.isAlive = false;
       target.life = 0;
       spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
-      
       gainExp(target.expValue || 35);
       dropMonsterLoot(target.x, target.y, target.type === 'boss');
 
@@ -873,9 +1021,6 @@
     });
   }
 
-  // ==========================================
-  // 10. SKILLS WITH LEVEL SCALING
-  // ==========================================
   function castSlash() {
     const s = SKILLS.slash;
     if (player.cooldowns.slash > 0) return;
@@ -885,23 +1030,14 @@
     const reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
     const slashX = player.x + Math.cos(angle) * 40;
     const slashY = player.y + Math.sin(angle) * 40;
-
     const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Vanguard' ? 35 : 0);
 
     monsters.forEach(m => {
-      if (m.isAlive) {
-        const dist = Math.hypot(m.x - slashX, m.y - slashY);
-        if (dist < reach) {
-          dealDamage(m, dmg, 20, 0, 0, 0);
-        }
-      }
+      if (m.isAlive && Math.hypot(m.x - slashX, m.y - slashY) < reach) dealDamage(m, dmg, 20, 0, 0, 0);
     });
 
     trainingDummies.forEach(d => {
-      const dist = Math.hypot(d.x - slashX, d.y - slashY);
-      if (dist < reach) {
-        dealDamage(d, dmg, 20, 0, 0, 0);
-      }
+      if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, 0);
     });
 
     for (let i = 0; i < 12; i++) {
@@ -948,19 +1084,11 @@
     const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
 
     monsters.forEach(m => {
-      if (m.isAlive) {
-        const dist = Math.hypot(m.x - player.x, m.y - player.y);
-        if (dist <= novaRadius) {
-          dealDamage(m, 15, 0, dmg, 0, 0);
-        }
-      }
+      if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) <= novaRadius) dealDamage(m, 15, 0, dmg, 0, 0);
     });
 
     trainingDummies.forEach(d => {
-      const dist = Math.hypot(d.x - player.x, d.y - player.y);
-      if (dist <= novaRadius) {
-        dealDamage(d, 15, 0, dmg, 0, 0);
-      }
+      if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0);
     });
 
     for (let a = 0; a < Math.PI * 2; a += 0.25) {
@@ -1003,19 +1131,11 @@
       const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
 
       monsters.forEach(m => {
-        if (m.isAlive) {
-          const dist = Math.hypot(m.x - targetX, m.y - targetY);
-          if (dist <= radius) {
-            dealDamage(m, 50, dmg, 0, 0, 30);
-          }
-        }
+        if (m.isAlive && Math.hypot(m.x - targetX, m.y - targetY) <= radius) dealDamage(m, 50, dmg, 0, 0, 30);
       });
 
       trainingDummies.forEach(d => {
-        const dist = Math.hypot(d.x - targetX, d.y - targetY);
-        if (dist <= radius) {
-          dealDamage(d, 50, dmg, 0, 0, 30);
-        }
+        if (Math.hypot(d.x - targetX, d.y - targetY) <= radius) dealDamage(d, 50, dmg, 0, 0, 30);
       });
 
       for (let i = 0; i < 45; i++) {
@@ -1075,7 +1195,7 @@
   }
 
   // ==========================================
-  // 11. UPDATE LOOP
+  // 12. UPDATE LOOP
   // ==========================================
   let lastTime = performance.now();
   let frameCount = 0;
@@ -1115,8 +1235,7 @@
     }
 
     portals.forEach(p => {
-      const dist = Math.hypot(player.x - p.x, player.y - p.y);
-      if (dist < 55) {
+      if (Math.hypot(player.x - p.x, player.y - p.y) < 55) {
         loadZone(p.targetZone, p.targetX, p.targetY);
       }
     });
@@ -1156,22 +1275,16 @@
 
       let hit = false;
       monsters.forEach(m => {
-        if (m.isAlive && !hit) {
-          const d = Math.hypot(m.x - p.x, m.y - p.y);
-          if (d < 28 * (m.scale || 1)) {
-            dealDamage(m, 10, p.damage || 85, 0, 0, 0);
-            hit = true;
-          }
+        if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
+          dealDamage(m, 10, p.damage || 85, 0, 0, 0);
+          hit = true;
         }
       });
 
       trainingDummies.forEach(d => {
-        if (!hit) {
-          const dist = Math.hypot(d.x - p.x, d.y - p.y);
-          if (dist < 28) {
-            dealDamage(d, 10, p.damage || 85, 0, 0, 0);
-            hit = true;
-          }
+        if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
+          dealDamage(d, 10, p.damage || 85, 0, 0, 0);
+          hit = true;
         }
       });
 
@@ -1260,7 +1373,7 @@
   }
 
   // ==========================================
-  // 12. RENDERING
+  // 13. RENDERING
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1274,30 +1387,14 @@
 
     const renderList = [];
 
-    portals.forEach(p => {
-      renderList.push({ y: p.y, render: () => drawPortal(p) });
-    });
-
-    props.forEach(p => {
-      renderList.push({ y: p.y, render: () => drawPropClean(p) });
-    });
-
-    npcs.forEach(n => {
-      renderList.push({ y: n.y, render: () => drawNpc(n) });
-    });
-
-    trainingDummies.forEach(d => {
-      renderList.push({ y: d.y, render: () => drawDummy(d) });
-    });
-
-    groundLoot.forEach((loot, idx) => {
-      renderList.push({ y: loot.y, render: () => drawGroundLoot(loot, idx) });
-    });
+    portals.forEach(p => renderList.push({ y: p.y, render: () => drawPortal(p) }));
+    props.forEach(p => renderList.push({ y: p.y, render: () => drawPropClean(p) }));
+    npcs.forEach(n => renderList.push({ y: n.y, render: () => drawNpc(n) }));
+    trainingDummies.forEach(d => renderList.push({ y: d.y, render: () => drawDummy(d) }));
+    groundLoot.forEach((loot, idx) => renderList.push({ y: loot.y, render: () => drawGroundLoot(loot, idx) }));
 
     monsters.forEach(m => {
-      if (m.isAlive) {
-        renderList.push({ y: m.y, render: () => drawMonsterClean(m) });
-      }
+      if (m.isAlive) renderList.push({ y: m.y, render: () => drawMonsterClean(m) });
     });
 
     renderList.push({ y: player.y, render: () => drawPlayerClean() });
@@ -1346,7 +1443,6 @@
     renderMinimap();
   }
 
-  // Draw Ground Loot
   function drawGroundLoot(loot, idx) {
     ctx.save();
     ctx.translate(loot.x, loot.y);
@@ -1385,7 +1481,6 @@
     ctx.restore();
   }
 
-  // Draw Seamless Terrain
   function drawSeamlessTerrain() {
     const viewW = canvas.width / camera.zoom;
     const viewH = canvas.height / camera.zoom;
@@ -1447,7 +1542,6 @@
     }
   }
 
-  // Draw Player
   function drawPlayerClean() {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -1490,7 +1584,6 @@
     ctx.restore();
   }
 
-  // Draw Monster
   function drawMonsterClean(m) {
     ctx.save();
     ctx.translate(m.x, m.y);
@@ -1550,7 +1643,6 @@
     ctx.restore();
   }
 
-  // Draw Props
   function drawPropClean(p) {
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -1565,7 +1657,6 @@
         ctx.beginPath();
         ctx.ellipse(0, 10, 36, 14, 0, 0, Math.PI * 2);
         ctx.fill();
-
         ctx.drawImage(img, W * 0.05, H * 0.02, W * 0.55, H * 0.48, -55, -120, 110, 130);
       } else if (p.type === 'rock') {
         ctx.drawImage(img, W * 0.60, H * 0.01, W * 0.38, H * 0.36, -30, -26, 60, 52);
@@ -1576,21 +1667,16 @@
       } else if (p.type === 'campfire') {
         ctx.drawImage(img, W * 0.35, H * 0.70, W * 0.30, H * 0.28, -32, -32, 64, 64);
       }
-    } else {
-      ctx.fillStyle = '#6b4f2c';
-      ctx.fillRect(-6, -10, 12, 24);
     }
 
     ctx.restore();
   }
 
-  // Draw Portal
   function drawPortal(p) {
     ctx.save();
     ctx.translate(p.x, p.y);
 
     const pulse = (Math.sin(performance.now() / 250) + 1) * 0.5;
-
     const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 38);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.4, '#c678dd');
@@ -1619,12 +1705,10 @@
   function drawNpc(n) {
     ctx.save();
     ctx.translate(n.x, n.y);
-
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
     ctx.ellipse(0, 16, 12, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.fillStyle = n.color || '#e5c07b';
     ctx.fillRect(-8, -12, 16, 24);
     ctx.fillStyle = '#ffdbac';
@@ -1639,19 +1723,16 @@
     ctx.fillText(`«${n.title}»`, 0, -38);
     ctx.fillStyle = '#ffffff';
     ctx.fillText(n.name, 0, -26);
-
     ctx.restore();
   }
 
   function drawDummy(d) {
     ctx.save();
     ctx.translate(d.x, d.y);
-
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
     ctx.ellipse(0, 14, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.fillStyle = '#8c6239';
     ctx.fillRect(-6, -16, 12, 28);
     ctx.fillStyle = '#d19a66';
@@ -1661,7 +1742,6 @@
     ctx.fillStyle = '#abb2bf';
     ctx.textAlign = 'center';
     ctx.fillText(d.name, 0, -26);
-
     ctx.restore();
   }
 
@@ -1715,7 +1795,7 @@
   }
 
   // ==========================================
-  // 13. INPUT & MODAL CONTROLS
+  // 14. INPUT & MODAL LISTENERS
   // ==========================================
   window.addEventListener('wheel', e => {
     if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
@@ -1749,6 +1829,24 @@
     });
   });
 
+  // Filter Tabs
+  document.querySelectorAll('.bag-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.bag-tab').forEach(t => t.classList.remove('active-tab'));
+      tab.classList.add('active-tab');
+      player.bagFilter = tab.getAttribute('data-filter');
+      updateBackpackUI();
+    });
+  });
+
+  // Sort Backpack
+  document.getElementById('btn-sort-bag').addEventListener('click', () => {
+    const rarityPriority = { Unique: 1, Rare: 2, Magic: 3, Currency: 4, Normal: 5 };
+    player.bag.sort((a, b) => (rarityPriority[a.rarity] || 9) - (rarityPriority[b.rarity] || 9));
+    AudioEngine.playPickup();
+    updateBackpackUI();
+  });
+
   window.addEventListener('keydown', e => {
     keys[e.code] = true;
     if (e.code === 'KeyQ') castFireball();
@@ -1759,7 +1857,7 @@
     if (e.code === 'KeyM') toggleModal('worldmap-modal');
     if (e.code === 'KeyC') toggleModal('stats-modal');
     if (e.code === 'KeyI') toggleModal('inventory-modal');
-    
+
     if (e.code === 'KeyF') {
       let closestIdx = -1;
       let minDistance = 120;
@@ -1770,9 +1868,7 @@
           closestIdx = idx;
         }
       });
-      if (closestIdx !== -1) {
-        pickUpLoot(closestIdx);
-      }
+      if (closestIdx !== -1) pickUpLoot(closestIdx);
     }
   });
 
@@ -1791,16 +1887,12 @@
 
       let clickedLootIdx = -1;
       groundLoot.forEach((loot, idx) => {
-        const dist = Math.hypot(mouse.worldX - loot.x, mouse.worldY - loot.y);
-        if (dist < 40) {
-          clickedLootIdx = idx;
-        }
+        if (Math.hypot(mouse.worldX - loot.x, mouse.worldY - loot.y) < 40) clickedLootIdx = idx;
       });
 
       if (clickedLootIdx !== -1) {
         const loot = groundLoot[clickedLootIdx];
-        const playerDist = Math.hypot(player.x - loot.x, player.y - loot.y);
-        if (playerDist < 140) {
+        if (Math.hypot(player.x - loot.x, player.y - loot.y) < 140) {
           pickUpLoot(clickedLootIdx);
           return;
         }
@@ -1819,8 +1911,10 @@
     const el = document.getElementById(id);
     if (el) {
       el.classList.toggle('hidden');
-      if (id === 'skills-modal' && !el.classList.contains('hidden')) {
-        renderSkillUpgradeModal();
+      if (id === 'skills-modal' && !el.classList.contains('hidden')) renderSkillUpgradeModal();
+      if (id === 'inventory-modal' && !el.classList.contains('hidden')) {
+        updateBackpackUI();
+        updatePaperdollUI();
       }
     }
   }
@@ -1833,10 +1927,6 @@
   document.getElementById('btn-close-stats').addEventListener('click', () => toggleModal('stats-modal'));
   document.getElementById('btn-toggle-inventory').addEventListener('click', () => toggleModal('inventory-modal'));
   document.getElementById('btn-close-inventory').addEventListener('click', () => toggleModal('inventory-modal'));
-
-  document.getElementById('btn-spawn-monster').addEventListener('click', () => {
-    spawnMonsterCluster(player.x + (Math.random() - 0.5) * 400, player.y + (Math.random() - 0.5) * 400, 5);
-  });
 
   document.querySelectorAll('.zone-node').forEach(node => {
     node.addEventListener('click', () => {
