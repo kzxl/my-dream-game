@@ -70,7 +70,8 @@ export const player = {
     POSSIBLE_LOOT[9],
     POSSIBLE_LOOT[8]
   ],
-  bagFilter: 'all'
+  bagFilter: 'all',
+  monsterKills: {}
 };
 
 export const monsters = [];

@@ -5,6 +5,7 @@
 import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
 import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
+import { getMonsterLoreBonus } from './combat.js';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.fillStyle = '#0c0e14';
@@ -434,10 +435,18 @@ export function drawMonsterClean(ctx, m) {
   if (m.freezeTimer > 0) ailmentIcons += ' ❄️';
   if (m.bleedTimer > 0) ailmentIcons += ' 🩸';
 
+  // Lore Mastery Tier Badge
+  const lore = getMonsterLoreBonus(m.type || 'monster', m.type === 'boss');
+  let loreBadge = '';
+  if (lore.tier === 4) loreBadge = ' 👑';
+  else if (lore.tier === 3) loreBadge = ' 🥇';
+  else if (lore.tier === 2) loreBadge = ' 🥈';
+  else if (lore.tier === 1) loreBadge = ' 🎖️';
+
   ctx.font = m.type === 'boss' ? 'bold 11px "Outfit", sans-serif' : '9px "Outfit", sans-serif';
   ctx.fillStyle = m.type === 'boss' ? '#e5c07b' : '#abb2bf';
   ctx.textAlign = 'center';
-  ctx.fillText(`${m.name}${ailmentIcons}`, 0, -38 * scale);
+  ctx.fillText(`${m.name}${loreBadge}${ailmentIcons}`, 0, -38 * scale);
 
   // Frozen ice crystal glow
   if (m.freezeTimer > 0) {
