@@ -51,10 +51,28 @@ app.MapGet("/api/v1/zones/{zoneId}", (string zoneId) =>
     return Results.Ok(map);
 });
 
-// MULTI-CHARACTER ROSTER APIS
-app.MapGet("/api/v1/characters", async (GameDatabaseService db) =>
+// GOOGLE AUTHENTICATION APIS
+app.MapPost("/api/v1/auth/google", async (GameDatabaseService db, GoogleAuthRequestDto req) =>
 {
-    var list = await db.GetAllCharactersAsync();
+    var (user, characters) = await db.ProcessGoogleAuthAsync(req);
+    return Results.Ok(new
+    {
+        success = true,
+        user = new
+        {
+            id = user.Id,
+            email = user.Email,
+            name = user.Name,
+            picture = user.PictureUrl
+        },
+        characters
+    });
+});
+
+// MULTI-CHARACTER ROSTER APIS
+app.MapGet("/api/v1/characters", async (GameDatabaseService db, string? accountId) =>
+{
+    var list = await db.GetAllCharactersAsync(accountId);
     return Results.Ok(list);
 });
 
@@ -71,15 +89,17 @@ app.MapDelete("/api/v1/characters/{id}", async (GameDatabaseService db, string i
 });
 
 // SHARED STASH APIS
-app.MapGet("/api/v1/stash", async (GameDatabaseService db) =>
+app.MapGet("/api/v1/stash", async (GameDatabaseService db, string? accountId) =>
 {
-    var data = await db.GetSharedStashAsync();
+    var acc = string.IsNullOrWhiteSpace(accountId) ? "guest" : accountId;
+    var data = await db.GetSharedStashAsync(acc);
     return Results.Ok(data ?? new { gear = new List<object>(), currency = new Dictionary<string, int>(), gems = new List<object>() });
 });
 
-app.MapPost("/api/v1/stash", async (GameDatabaseService db, JsonElement payload) =>
+app.MapPost("/api/v1/stash", async (GameDatabaseService db, JsonElement payload, string? accountId) =>
 {
-    var success = await db.SaveSharedStashAsync(payload);
+    var acc = string.IsNullOrWhiteSpace(accountId) ? "guest" : accountId;
+    var success = await db.SaveSharedStashAsync(payload, acc);
     return Results.Ok(new { success });
 });
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -14,19 +15,137 @@ public sealed class GameDatabaseService
     public GameDatabaseService(IDbContextFactory<MdgDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
-        using var db = _contextFactory.CreateDbContext();
-        db.Database.EnsureCreated();
+        try
+        {
+            using var db = _contextFactory.CreateDbContext();
+            db.Database.EnsureCreated();
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE SharedStash ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
+        }
+        catch { }
     }
 
-    public async Task<List<CharacterSummaryDto>> GetAllCharactersAsync()
+    public async Task<(UserAccountEntity User, List<CharacterSummaryDto> Characters)> ProcessGoogleAuthAsync(GoogleAuthRequestDto req)
+    {
+        string userId = "guest";
+        string email = "guest@aethelis.realm";
+        string name = "Aethelis Adventurer";
+        string picture = "";
+
+        // 1. If dev user provided
+        if (req.DevUser != null && !string.IsNullOrWhiteSpace(req.DevUser.Id))
+        {
+            userId = req.DevUser.Id;
+            email = req.DevUser.Email ?? $"{userId}@gmail.com";
+            name = req.DevUser.Name ?? "Google Hero";
+            picture = req.DevUser.Picture ?? "";
+        }
+        // 2. Decode Google JWT Credential Token Payload if provided
+        else if (!string.IsNullOrWhiteSpace(req.Credential))
+        {
+            try
+            {
+                var parts = req.Credential.Split('.');
+                if (parts.Length >= 2)
+                {
+                    string payloadBase64 = parts[1].Replace('-', '+').Replace('_', '/');
+                    switch (payloadBase64.Length % 4)
+                    {
+                        case 2: payloadBase64 += "=="; break;
+                        case 3: payloadBase64 += "="; break;
+                    }
+                    var jsonBytes = Convert.FromBase64String(payloadBase64);
+                    using var doc = JsonDocument.Parse(jsonBytes);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("sub", out var subProp)) userId = "gg_" + subProp.GetString();
+                    if (root.TryGetProperty("email", out var emailProp)) email = emailProp.GetString() ?? email;
+                    if (root.TryGetProperty("name", out var nameProp)) name = nameProp.GetString() ?? name;
+                    if (root.TryGetProperty("picture", out var picProp)) picture = picProp.GetString() ?? picture;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GoogleAuth] JWT Decode error: {ex.Message}");
+                userId = "gg_user_" + Guid.NewGuid().ToString("N")[..8];
+            }
+        }
+        else
+        {
+            userId = "gg_guest_" + Guid.NewGuid().ToString("N")[..8];
+        }
+
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var account = await db.UserAccounts.FindAsync(userId);
+        if (account == null)
+        {
+            account = new UserAccountEntity
+            {
+                Id = userId,
+                Email = email,
+                Name = name,
+                PictureUrl = picture,
+                CreatedAt = DateTime.UtcNow.ToString("o"),
+                LastLoginAt = DateTime.UtcNow.ToString("o")
+            };
+            db.UserAccounts.Add(account);
+            await db.SaveChangesAsync();
+
+            // Create initial default character for new Google user
+            var initialHero = new CharacterEntity
+            {
+                Id = "hero_" + Guid.NewGuid().ToString("N")[..8],
+                AccountId = userId,
+                Name = name.Split(' ')[0],
+                Gender = "Male",
+                ClassSpec = "Novice",
+                Level = 1,
+                CurrentExp = 0,
+                ExpToNext = 100,
+                SkillPoints = 3,
+                Life = 250,
+                MaxLife = 250,
+                Mana = 120,
+                MaxMana = 120,
+                Es = 100,
+                MaxEs = 100,
+                ZoneId = "SanctuaryHaven",
+                PositionX = 2000,
+                PositionY = 2000,
+                CreatedAt = DateTime.UtcNow.ToString("o"),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            };
+            db.Characters.Add(initialHero);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            account.LastLoginAt = DateTime.UtcNow.ToString("o");
+            if (!string.IsNullOrEmpty(picture)) account.PictureUrl = picture;
+            if (!string.IsNullOrEmpty(name)) account.Name = name;
+            await db.SaveChangesAsync();
+        }
+
+        var characters = await GetAllCharactersAsync(userId);
+        return (account, characters);
+    }
+
+    public async Task<List<CharacterSummaryDto>> GetAllCharactersAsync(string? accountId = null)
     {
         await using var db = await _contextFactory.CreateDbContextAsync();
-        return await db.Characters
-            .AsNoTracking()
+        var query = db.Characters.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(accountId))
+        {
+            query = query.Where(c => c.AccountId == accountId || (accountId == "guest" && (c.AccountId == "guest" || string.IsNullOrEmpty(c.AccountId))));
+        }
+
+        return await query
             .OrderByDescending(c => c.UpdatedAt)
             .Select(c => new CharacterSummaryDto
             {
                 Id = c.Id,
+                AccountId = c.AccountId,
                 Name = c.Name,
                 Gender = c.Gender,
                 ClassSpec = c.ClassSpec,
@@ -42,7 +161,8 @@ public sealed class GameDatabaseService
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = new CharacterEntity
         {
-            Id = dto.Id ?? Guid.NewGuid().ToString("N"),
+            Id = dto.Id ?? ("hero_" + Guid.NewGuid().ToString("N")[..8]),
+            AccountId = string.IsNullOrWhiteSpace(dto.AccountId) ? "guest" : dto.AccountId,
             Name = dto.Name,
             Gender = dto.Gender ?? "Male",
             ClassSpec = dto.ClassSpec ?? "Novice",
@@ -93,9 +213,15 @@ public sealed class GameDatabaseService
             entity = new CharacterEntity
             {
                 Id = charId,
+                AccountId = data.AccountId ?? "guest",
                 CreatedAt = DateTime.UtcNow.ToString("o")
             };
             db.Characters.Add(entity);
+        }
+
+        if (!string.IsNullOrWhiteSpace(data.AccountId))
+        {
+            entity.AccountId = data.AccountId;
         }
 
         entity.Name = data.Name ?? "Novice Adventurer";
@@ -132,6 +258,7 @@ public sealed class GameDatabaseService
         return new SaveGameDto
         {
             CharacterId = c.Id,
+            AccountId = c.AccountId,
             Name = c.Name,
             Gender = c.Gender,
             ClassSpec = c.ClassSpec,
@@ -154,37 +281,38 @@ public sealed class GameDatabaseService
         };
     }
 
-    public async Task<List<object>> GetSharedStashAsync()
+    public async Task<object?> GetSharedStashAsync(string accountId = "guest")
     {
         await using var db = await _contextFactory.CreateDbContextAsync();
-        var list = await db.SharedStash.AsNoTracking().OrderBy(s => s.SlotIndex).ToListAsync();
-        var items = new List<object>();
-        foreach (var entry in list)
+        var entry = await db.SharedStash.AsNoTracking().FirstOrDefaultAsync(s => s.AccountId == accountId && s.SlotIndex == 0);
+        if (entry != null)
         {
             try
             {
-                var parsed = JsonSerializer.Deserialize<object>(entry.ItemJson);
-                if (parsed != null) items.Add(parsed);
+                return JsonSerializer.Deserialize<object>(entry.ItemJson);
             }
             catch { }
         }
-        return items;
+        return null;
     }
 
-    public async Task<bool> SaveSharedStashAsync(List<object> items)
+    public async Task<bool> SaveSharedStashAsync(object stashPayload, string accountId = "guest")
     {
         await using var db = await _contextFactory.CreateDbContextAsync();
-        db.SharedStash.RemoveRange(db.SharedStash);
-
-        for (int i = 0; i < items.Count; i++)
+        var existing = await db.SharedStash.Where(s => s.AccountId == accountId).ToListAsync();
+        if (existing.Any())
         {
-            db.SharedStash.Add(new SharedStashItemEntity
-            {
-                SlotIndex = i,
-                ItemJson = JsonSerializer.Serialize(items[i]),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            });
+            db.SharedStash.RemoveRange(existing);
         }
+
+        db.SharedStash.Add(new SharedStashItemEntity
+        {
+            Id = $"{accountId}_0",
+            AccountId = accountId,
+            SlotIndex = 0,
+            ItemJson = JsonSerializer.Serialize(stashPayload),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        });
 
         await db.SaveChangesAsync();
         return true;
@@ -203,9 +331,25 @@ public sealed class GameDatabaseService
     }
 }
 
+public sealed class GoogleAuthRequestDto
+{
+    public string? Credential { get; set; }
+    public string? ClientId { get; set; }
+    public GoogleUserDto? DevUser { get; set; }
+}
+
+public sealed class GoogleUserDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Name { get; set; }
+    public string? Picture { get; set; }
+}
+
 public sealed class CharacterSummaryDto
 {
     public string Id { get; set; } = string.Empty;
+    public string AccountId { get; set; } = "guest";
     public string Name { get; set; } = string.Empty;
     public string Gender { get; set; } = "Male";
     public string ClassSpec { get; set; } = "Novice";
@@ -217,6 +361,7 @@ public sealed class CharacterSummaryDto
 public sealed class CharacterCreateDto
 {
     public string? Id { get; set; }
+    public string? AccountId { get; set; } = "guest";
     public string Name { get; set; } = "New Hero";
     public string? Gender { get; set; } = "Male";
     public string? ClassSpec { get; set; } = "Novice";
@@ -225,6 +370,7 @@ public sealed class CharacterCreateDto
 public sealed class SaveGameDto
 {
     public string? CharacterId { get; set; } = "hero_default";
+    public string? AccountId { get; set; } = "guest";
     public string? Name { get; set; } = "Novice Adventurer";
     public string? Gender { get; set; } = "Male";
     public string? ClassSpec { get; set; } = "Novice";
@@ -245,3 +391,4 @@ public sealed class SaveGameDto
     public Dictionary<string, object>? EquippedGear { get; set; }
     public List<object>? BackpackItems { get; set; }
 }
+

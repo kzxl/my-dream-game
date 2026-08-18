@@ -5,9 +5,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mdg.Server.Database;
 
+public class UserAccountEntity
+{
+    public string Id { get; set; } = string.Empty; // Google Sub ID or Dev ID
+    public string Email { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string PictureUrl { get; set; } = string.Empty;
+    public string LastLoginAt { get; set; } = DateTime.UtcNow.ToString("o");
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}
+
 public class CharacterEntity
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string AccountId { get; set; } = "guest"; // Bound Google Account ID
     public string Name { get; set; } = "Novice Adventurer";
     public string Gender { get; set; } = "Male";
     public string ClassSpec { get; set; } = "Novice";
@@ -35,6 +46,8 @@ public class CharacterEntity
 
 public class SharedStashItemEntity
 {
+    public string Id { get; set; } = "guest_0"; // {AccountId}_{SlotIndex}
+    public string AccountId { get; set; } = "guest";
     public int SlotIndex { get; set; }
     public string ItemJson { get; set; } = "{}";
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
@@ -42,6 +55,7 @@ public class SharedStashItemEntity
 
 public class MdgDbContext : DbContext
 {
+    public DbSet<UserAccountEntity> UserAccounts => Set<UserAccountEntity>();
     public DbSet<CharacterEntity> Characters => Set<CharacterEntity>();
     public DbSet<SharedStashItemEntity> SharedStash => Set<SharedStashItemEntity>();
 
@@ -51,10 +65,17 @@ public class MdgDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<UserAccountEntity>(b =>
+        {
+            b.ToTable("UserAccounts");
+            b.HasKey(u => u.Id);
+        });
+
         modelBuilder.Entity<CharacterEntity>(b =>
         {
             b.ToTable("Characters");
             b.HasKey(c => c.Id);
+            b.HasIndex(c => c.AccountId);
 
             b.Property(c => c.Skills)
                 .HasColumnName("SkillsJson")
@@ -81,7 +102,9 @@ public class MdgDbContext : DbContext
         modelBuilder.Entity<SharedStashItemEntity>(b =>
         {
             b.ToTable("SharedStash");
-            b.HasKey(s => s.SlotIndex);
+            b.HasKey(s => s.Id);
+            b.HasIndex(s => s.AccountId);
         });
     }
 }
+

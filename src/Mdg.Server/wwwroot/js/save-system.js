@@ -8,6 +8,7 @@ import { updateBackpackUI, updatePaperdollUI } from './ui/inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { updateAttributesModal, updateHudAvatar, updateExpBar } from './ui/hud.js';
 import { spawnDamageNumber } from './combat.js';
+import { getCurrentUser } from './auth.js';
 
 export let activeCharacterId = localStorage.getItem('mdg_active_char_id') || 'hero_default';
 let isSaving = false;
@@ -18,8 +19,9 @@ export function setActiveCharacterId(id) {
 }
 
 export async function fetchCharacterList() {
+  const user = getCurrentUser();
   try {
-    const res = await fetch('/api/v1/characters');
+    const res = await fetch(`/api/v1/characters?accountId=${encodeURIComponent(user.id)}`);
     if (res.ok) return await res.json();
   } catch (e) {
     console.warn('Error fetching character list:', e);
@@ -126,8 +128,10 @@ export async function saveToDatabase(silent = false) {
     };
   }
 
+  const user = getCurrentUser();
   const payload = {
     characterId: activeCharacterId,
+    accountId: user.id,
     name: document.getElementById('hud-name')?.innerText || 'Novice Adventurer',
     gender: player.gender,
     classSpec: player.classSpec,
