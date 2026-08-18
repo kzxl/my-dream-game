@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MDG: Aethelis - 2D ARPG Web Client (Modular & SQLite)</title>
-  <meta name="description" content="My Dream Game (MDG) - ARPG with Modular JS Architecture & SQLite Save System" />
+  <title>MDG: Aethelis - 2D ARPG Web Client</title>
+  <meta name="description" content="My Dream Game (MDG) - ARPG with Deep Character Attributes & Progression" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -85,7 +85,7 @@
         <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map (M)">🗺️ Map (M)</button>
         <button id="btn-toggle-skills" class="hud-btn highlight-btn" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
         <button id="btn-toggle-inventory" class="hud-btn highlight-btn" title="Inventory (I)">🎒 Bag (I)</button>
-        <button id="btn-toggle-stats" class="hud-btn" title="Attributes (C)">📊 Stats (C)</button>
+        <button id="btn-toggle-stats" class="hud-btn highlight-btn" title="Attributes (C)">📊 Stats (C)</button>
       </div>
     </div>
 
@@ -214,9 +214,7 @@
           </div>
 
           <!-- 16-Slot Interactive Grid -->
-          <div id="backpack-grid" class="backpack-grid-16">
-            <!-- Dynamically populated 16 slots with pixel art rendering -->
-          </div>
+          <div id="backpack-grid" class="backpack-grid-16"></div>
 
           <div class="bag-hint-footer">
             <span>💡 <b>LMB</b>: Equip / Use item | <b>Hover</b>: Detailed PoE Tooltip | <b>F</b>: Ground Pickup</span>
@@ -352,35 +350,168 @@
       </div>
     </div>
 
-    <!-- Stats Drawer -->
-    <div id="stats-modal" class="pixel-modal hidden">
+    <!-- OVERHAULED CHARACTER ATTRIBUTES & PROGRESSION MODAL (Hotkey C) -->
+    <div id="stats-modal" class="pixel-modal stats-modal-overhaul hidden">
       <div class="modal-header">
-        <h3>CHARACTER ATTRIBUTES (PoE STATS)</h3>
+        <div class="stat-header-group">
+          <span class="stat-title-main">📊 CHARACTER ATTRIBUTES & DEFENSES</span>
+          <span class="stat-title-sub" id="stat-hero-sub">Level 1 Novice • Aethelis Realm</span>
+        </div>
         <button id="btn-close-stats" class="close-btn">✖</button>
       </div>
-      <div class="modal-body">
-        <div class="stat-group">
-          <h4>Defenses & Resistances</h4>
-          <div class="stat-row"><span>Armor:</span> <b id="stat-armor">500</b></div>
-          <div class="stat-row"><span>Evasion Rating:</span> <b id="stat-evasion">350</b></div>
-          <div class="stat-row"><span>Fire Resistance:</span> <b id="stat-fire-res" class="res-fire">75% (Cap)</b></div>
-          <div class="stat-row"><span>Cold Resistance:</span> <b id="stat-cold-res" class="res-cold">75% (Cap)</b></div>
-          <div class="stat-row"><span>Lightning Resistance:</span> <b id="stat-light-res" class="res-light">75% (Cap)</b></div>
-          <div class="stat-row"><span>Chaos Resistance:</span> <b id="stat-chaos-res" class="res-chaos">40%</b></div>
+
+      <div class="attributes-grid-layout">
+        <!-- Column 1: Core Primary Attributes -->
+        <div class="stat-column-card">
+          <div class="stat-group-header">💪 PRIMARY ATTRIBUTES</div>
+          
+          <div class="attr-box attr-str">
+            <div class="attr-name-row">
+              <span>💪 STRENGTH (STR)</span>
+              <b id="val-str">35</b>
+            </div>
+            <small>+70 Max Life | +14% Melee Physical Damage</small>
+          </div>
+
+          <div class="attr-box attr-dex">
+            <div class="attr-name-row">
+              <span>🏹 DEXTERITY (DEX)</span>
+              <b id="val-dex">30</b>
+            </div>
+            <small>+60 Accuracy Rating | +60 Evasion Rating</small>
+          </div>
+
+          <div class="attr-box attr-int">
+            <div class="attr-name-row">
+              <span>🔮 INTELLIGENCE (INT)</span>
+              <b id="val-int">25</b>
+            </div>
+            <small>+50 Max Mana | +12% Energy Shield</small>
+          </div>
+
+          <div class="stat-divider-sub"></div>
+
+          <div class="stat-item-row">
+            <span>Movement Speed:</span>
+            <b id="stat-speed" class="gold-text">6.0 m/s</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Life Regeneration:</span>
+            <b id="stat-life-regen">4.0 HP/s</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Mana Regeneration:</span>
+            <b id="stat-mana-regen">10.0 MP/s</b>
+          </div>
         </div>
-        <div class="stat-group">
-          <h4>Offense & Critical</h4>
-          <div class="stat-row"><span>Movement Speed:</span> <b id="stat-speed">6.0 m/s</b></div>
-          <div class="stat-row"><span>Critical Strike Chance:</span> <b id="stat-crit-chance">35.0%</b></div>
-          <div class="stat-row"><span>Critical Multiplier:</span> <b id="stat-crit-multi">220% (2.2x)</b></div>
-          <div class="stat-row"><span>Database Persistence:</span> <b class="gold-text">SQLite (mdg_world.db)</b></div>
+
+        <!-- Column 2: Defenses & Elemental Resistances -->
+        <div class="stat-column-card">
+          <div class="stat-group-header">🛡️ DEFENSES & RESISTANCES</div>
+
+          <div class="stat-item-row">
+            <span>Armor Rating:</span>
+            <b id="stat-armor">750 (58% PDR)</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Evasion Rating:</span>
+            <b id="stat-evasion">350 (42% Evade)</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Block Chance:</span>
+            <b id="stat-block" class="gold-text">28% (Cap 75%)</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Energy Shield Recharge:</span>
+            <b id="stat-es-recharge">20% ES/s (2s Delay)</b>
+          </div>
+
+          <div class="stat-divider-sub"></div>
+
+          <!-- Resistance Bars -->
+          <div class="res-bar-group">
+            <div class="res-label-row">
+              <span class="res-fire">🔥 Fire Resistance</span>
+              <b id="stat-fire-res" class="res-fire">75% (Cap)</b>
+            </div>
+            <div class="res-track"><div class="res-fill fill-fire" style="width: 75%;"></div></div>
+          </div>
+
+          <div class="res-bar-group">
+            <div class="res-label-row">
+              <span class="res-cold">❄️ Cold Resistance</span>
+              <b id="stat-cold-res" class="res-cold">75% (Cap)</b>
+            </div>
+            <div class="res-track"><div class="res-fill fill-cold" style="width: 75%;"></div></div>
+          </div>
+
+          <div class="res-bar-group">
+            <div class="res-label-row">
+              <span class="res-light">⚡ Lightning Resistance</span>
+              <b id="stat-light-res" class="res-light">75% (Cap)</b>
+            </div>
+            <div class="res-track"><div class="res-fill fill-light" style="width: 75%;"></div></div>
+          </div>
+
+          <div class="res-bar-group">
+            <div class="res-label-row">
+              <span class="res-chaos">☠️ Chaos Resistance</span>
+              <b id="stat-chaos-res" class="res-chaos">40%</b>
+            </div>
+            <div class="res-track"><div class="res-fill fill-chaos" style="width: 40%;"></div></div>
+          </div>
         </div>
+
+        <!-- Column 3: Offensive Power & Multipliers -->
+        <div class="stat-column-card">
+          <div class="stat-group-header">⚔️ OFFENSIVE CAPABILITIES</div>
+
+          <div class="stat-item-row">
+            <span>Main-Hand Attack DPS:</span>
+            <b id="stat-dps" class="gold-text">245.8 DPS</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Physical Strike Damage:</span>
+            <b id="stat-phys-dmg">82 - 145</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Fire Damage to Attacks:</span>
+            <b id="stat-fire-dmg" class="res-fire">+50 Fire</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Attack Speed:</span>
+            <b id="stat-atk-speed">1.45 Attacks/s</b>
+          </div>
+
+          <div class="stat-divider-sub"></div>
+
+          <div class="stat-item-row">
+            <span>Critical Strike Chance:</span>
+            <b id="stat-crit-chance" class="gold-text">35.0%</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Critical Multiplier:</span>
+            <b id="stat-crit-multi" class="gold-text">220% (2.2x)</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Accuracy Rating:</span>
+            <b id="stat-accuracy">480 (95% Hit)</b>
+          </div>
+          <div class="stat-item-row">
+            <span>Elemental Penetration:</span>
+            <b id="stat-pen">+15% Fire Pen</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-footer-hint">
+        <span>💡 Primary Attributes scale automatically with Level, Class Ascension, and Equipped Gear.</span>
       </div>
     </div>
 
-    <!-- Controls Hint -->
+    <!-- Controls Hint (Clean - No Debug Info) -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>ESC</b>: Close Modals | <b>F</b>: Pickup | 💾 <b>Auto-Save</b>: SQLite</span>
+      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Attributes | <b>ESC</b>: Close Modals | <b>F</b>: Pickup</span>
     </div>
   </div>
 

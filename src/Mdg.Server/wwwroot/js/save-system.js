@@ -60,7 +60,7 @@ export async function saveToDatabase(silent = false) {
     });
 
     if (res.ok && !silent) {
-      spawnDamageNumber(player.x, player.y - 45, '💾 GAME SAVED (SQLite)', true, '#98c379');
+      spawnDamageNumber(player.x, player.y - 45, '💾 Progress Saved', true, '#98c379');
     }
   } catch (err) {
     console.warn('SQLite auto-save network fallback:', err);

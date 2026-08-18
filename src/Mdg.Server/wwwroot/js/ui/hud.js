@@ -1,5 +1,5 @@
 /**
- * HUD, Modals & User Interface Controller
+ * HUD, Modals & User Interface Controller (With Detailed Attributes Calculation)
  */
 
 import { player, camera } from '../state.js';
@@ -66,7 +66,39 @@ export function selectClassSpecialization(spec) {
   AudioEngine.playLevelUp();
   spawnDamageNumber(player.x, player.y - 60, `ASCENDED: ${spec.toUpperCase()}!`, true, '#ffd700');
   renderSkillUpgradeModal();
+  updateAttributesModal();
   saveToDatabase();
+}
+
+export function updateAttributesModal() {
+  const subTitle = document.getElementById('stat-hero-sub');
+  if (subTitle) subTitle.innerText = `Level ${player.level} ${player.classSpec} • ${player.gender === 'Male' ? '♂ Hero' : '♀ Heroine'}`;
+
+  // Base Attributes
+  let baseStr = 25 + (player.level * 2) + (player.classSpec === 'Vanguard' ? 25 : 0);
+  let baseDex = 20 + (player.level * 2) + (player.classSpec === 'ShadowRogue' ? 25 : 0);
+  let baseInt = 20 + (player.level * 2) + (player.classSpec === 'Arcanist' ? 25 : 0);
+
+  const strEl = document.getElementById('val-str');
+  if (strEl) strEl.innerText = baseStr;
+  const dexEl = document.getElementById('val-dex');
+  if (dexEl) dexEl.innerText = baseDex;
+  const intEl = document.getElementById('val-int');
+  if (intEl) intEl.innerText = baseInt;
+
+  // Defenses
+  const armorEl = document.getElementById('stat-armor');
+  if (armorEl) armorEl.innerText = `${player.armor} (58% PDR)`;
+  const evasionEl = document.getElementById('stat-evasion');
+  if (evasionEl) evasionEl.innerText = `${player.evasion || 350} (42% Evade)`;
+  const blockEl = document.getElementById('stat-block');
+  if (blockEl) blockEl.innerText = `28% (Cap 75%)`;
+
+  // Offense
+  const critEl = document.getElementById('stat-crit-chance');
+  if (critEl) critEl.innerText = `${player.critChance.toFixed(1)}%`;
+  const multiEl = document.getElementById('stat-crit-multi');
+  if (multiEl) multiEl.innerText = `${player.critMulti}% (${(player.critMulti / 100).toFixed(1)}x)`;
 }
 
 export function toggleModal(id) {
@@ -74,6 +106,7 @@ export function toggleModal(id) {
   if (el) {
     el.classList.toggle('hidden');
     if (id === 'skills-modal' && !el.classList.contains('hidden')) renderSkillUpgradeModal();
+    if (id === 'stats-modal' && !el.classList.contains('hidden')) updateAttributesModal();
     if (id === 'inventory-modal' && !el.classList.contains('hidden')) {
       updateBackpackUI();
       updatePaperdollUI();
