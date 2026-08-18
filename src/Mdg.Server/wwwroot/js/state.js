@@ -4,21 +4,21 @@
 
 import { POSSIBLE_LOOT } from './data/items.js';
 
-export const WORLD_SIZE = 4000;
-export const TILE_SIZE = 64;
+export const WORLD_SIZE = 1920;
+export const TILE_SIZE = 48;
 
 export const camera = {
-  x: 2000,
-  y: 2000,
+  x: 672,
+  y: 672,
   zoom: 1.0,
   targetZoom: 1.0,
-  minZoom: 0.45,
+  minZoom: 0.5,
   maxZoom: 2.0
 };
 
 export const player = {
-  x: 2000,
-  y: 2000,
+  x: 672,
+  y: 672,
   vx: 0,
   vy: 0,
   speed: 280,

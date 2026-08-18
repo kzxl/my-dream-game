@@ -38,21 +38,57 @@ let currentZone = ZONES[currentZoneId];
 let currentZoneMap = null;
 window.currentZoneId = currentZoneId;
 
+export function canWalk(x, y) {
+  if (!currentZoneMap || !currentZoneMap.grid) return true;
+  const tx = Math.floor(x / 48);
+  const ty = Math.floor(y / 48);
+  if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return false;
+  return currentZoneMap.grid[ty][tx] !== 1; // 1 = WALL
+}
+
+export function findSafeWalkableCoord(reqX, reqY) {
+  if (!currentZoneMap || !currentZoneMap.grid) return { x: reqX || 672, y: reqY || 672 };
+  const mapW = currentZoneMap.worldWidth || (currentZoneMap.widthInTiles * 48) || 1344;
+  const mapH = currentZoneMap.worldHeight || (currentZoneMap.heightInTiles * 48) || 1344;
+
+  let cx = Math.max(96, Math.min(mapW - 96, reqX || 672));
+  let cy = Math.max(96, Math.min(mapH - 96, reqY || 672));
+
+  if (canWalk(cx, cy)) return { x: cx, y: cy };
+
+  // Spiral search for nearest floor tile
+  for (let radius = 1; radius <= 16; radius++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        if (Math.abs(dx) === radius || Math.abs(dy) === radius) {
+          const testX = cx + dx * 48;
+          const testY = cy + dy * 48;
+          if (canWalk(testX, testY)) {
+            return { x: testX, y: testY };
+          }
+        }
+      }
+    }
+  }
+
+  return { x: currentZoneMap.spawnX || 672, y: currentZoneMap.spawnY || 672 };
+}
+
 export async function loadZone(zoneId, spawnX, spawnY) {
-  currentZoneId = zoneId;
-  currentZone = ZONES[zoneId] || { id: zoneId, name: zoneId, subtitle: '' };
+  currentZoneId = zoneId || 'SanctuaryHaven';
+  currentZone = ZONES[currentZoneId] || { id: currentZoneId, name: currentZoneId, subtitle: '' };
   window.currentZoneId = currentZoneId;
 
   // 1. Fetch Server-Authoritative Procedural Zone Map (with fallback)
   try {
-    const res = await fetch(`/api/v1/zones/${zoneId}`);
+    const res = await fetch(`/api/v1/zones/${currentZoneId}`);
     if (res.ok) {
       currentZoneMap = await res.json();
     } else {
-      currentZoneMap = MapGenerator.generateZone(zoneId);
+      currentZoneMap = MapGenerator.generateZone(currentZoneId);
     }
   } catch {
-    currentZoneMap = MapGenerator.generateZone(zoneId);
+    currentZoneMap = MapGenerator.generateZone(currentZoneId);
   }
 
   monsters.length = 0;
@@ -65,8 +101,22 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   floatingTexts.length = 0;
   groundLoot.length = 0;
 
-  player.x = spawnX !== undefined ? spawnX : (currentZoneMap.spawnX || 672);
-  player.y = spawnY !== undefined ? spawnY : (currentZoneMap.spawnY || 672);
+  const mapW = currentZoneMap.worldWidth || (currentZoneMap.widthInTiles * 48) || 1344;
+  const mapH = currentZoneMap.worldHeight || (currentZoneMap.heightInTiles * 48) || 1344;
+
+  const defaultSpawnX = currentZoneMap.spawnX || Math.floor(mapW / 2);
+  const defaultSpawnY = currentZoneMap.spawnY || Math.floor(mapH / 2);
+
+  const desiredX = (spawnX !== undefined && spawnX >= 48 && spawnX <= mapW - 48) ? spawnX : defaultSpawnX;
+  const desiredY = (spawnY !== undefined && spawnY >= 48 && spawnY <= mapH - 48) ? spawnY : defaultSpawnY;
+
+  const safe = findSafeWalkableCoord(desiredX, desiredY);
+  player.x = safe.x;
+  player.y = safe.y;
+  player.vx = 0;
+  player.vy = 0;
+  camera.x = safe.x;
+  camera.y = safe.y;
 
   // 2. Load Elements from ZoneMap
   if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
@@ -103,14 +153,6 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   updatePaperdollUI();
   updateSkillBadges();
   renderSkillUpgradeModal();
-}
-
-export function canWalk(x, y) {
-  if (!currentZoneMap || !currentZoneMap.grid) return true;
-  const tx = Math.floor(x / 48);
-  const ty = Math.floor(y / 48);
-  if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return false;
-  return currentZoneMap.grid[ty][tx] !== 1; // 1 = WALL
 }
 
 export function spawnMonster(x, y, type = 'slime') {
@@ -243,6 +285,14 @@ function update(dt) {
 
     if (canWalk(newX, player.y)) player.x = newX;
     if (canWalk(player.x, newY)) player.y = newY;
+
+    // Hard boundary clamp within current map dimensions
+    if (currentZoneMap) {
+      const mapW = currentZoneMap.worldWidth || (currentZoneMap.widthInTiles * 48) || 1344;
+      const mapH = currentZoneMap.worldHeight || (currentZoneMap.heightInTiles * 48) || 1344;
+      player.x = Math.max(36, Math.min(mapW - 36, player.x));
+      player.y = Math.max(36, Math.min(mapH - 36, player.y));
+    }
 
     player.animTimer += dt * 8;
     player.animFrame = Math.floor(player.animTimer) % 4;
@@ -561,12 +611,14 @@ document.querySelectorAll('.zone-node').forEach(node => {
 
 // Initialize UI and Game
 setupUIListeners();
-loadZone('SanctuaryHaven');
 
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {
-  await loadFromDatabase();
+  const loaded = await loadFromDatabase();
+  const targetZone = (player.zoneId && ZONES[player.zoneId]) ? player.zoneId : 'SanctuaryHaven';
+  await loadZone(targetZone, player.x, player.y);
   updateHudAvatar();
+  updateExpBar();
   startAutoSave(10000);
 })();
 

@@ -194,8 +194,9 @@ export async function loadFromDatabase(charId) {
     player.maxEs = data.maxEs || 100;
     player.es = data.es || player.maxEs;
 
-    player.x = data.positionX || 2000;
-    player.y = data.positionY || 2000;
+    player.x = (data.positionX && data.positionX >= 48 && data.positionX <= 1850) ? data.positionX : 672;
+    player.y = (data.positionY && data.positionY >= 48 && data.positionY <= 1850) ? data.positionY : 672;
+    player.zoneId = data.zoneId || 'SanctuaryHaven';
 
     if (data.skills) {
       for (let k in data.skills) {

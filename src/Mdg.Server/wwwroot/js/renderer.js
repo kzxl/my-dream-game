@@ -7,7 +7,8 @@ import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0c0e14';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
