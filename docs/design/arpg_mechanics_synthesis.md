@@ -1,61 +1,54 @@
-# Phân Tích & Tổng Hợp Tinh Hoa: Grim Dawn × Path of Exile × Torchlight cho MDG
+# MDG (Aethelis) - Hệ Thống Tiến Trình 1 Hệ Chuyên Sâu (Single Mastery Deep Progression)
 
-Tài liệu so sánh, chắt lọc các cơ chế xuất sắc nhất từ 3 tượng đài ARPG và đề xuất giải pháp kiến trúc dung hợp độc bản (Unique Hybrid) cho **MDG: Aethelis**.
-
----
-
-## 1. Bảng So Sánh & Chắt Lọc Tinh Hoa Cơ Chế
-
-| Trục Tính Năng | Grim Dawn | Path of Exile (PoE) | Torchlight (I/II/Infinite) | Ý Tưởng Chắt Lọc Cho MDG |
-| :--- | :--- | :--- | :--- | :--- |
-| **Xây dựng Nhân vật (Class & Build)** | **Dual-Mastery**: Ghép 2 bảng kỹ năng (VD: Soldier + Occultist = Witchblade) | **Passive Skill Tree** khổng lồ & **Skill Gems + Support Links** | **Class cố định** + Cột kỹ năng 3 nhánh + Thanh **Charge/Frenzy Bar** | **Dual-Affinities (Song Hệ)** kết hợp **Keystones**: Chọn 1 Hệ Chính (Lv.1) + 1 Hệ Phụ (Lv.10) không gò bó class. |
-| **Hệ thống Kỹ năng & Procs** | **Devotion System**: Chòm sao mở khóa kỹ năng phụ gắn trực tiếp vào skill (Proc on Hit) | **Gem Links**: Ngọc bổ trợ thay đổi hành vi chiêu (Multiple Projectiles, Cast on Crit) | Kỹ năng mở khóa theo cấp độ, tăng cấp bằng điểm Skill Points | **Rune Inscription (Khắc Ấn Ngọc)**: Gắn 1-2 Ấn phụ trợ vào Skill để kích hoạt hiệu ứng kép (Proc) khi đánh/crit. |
-| **Hệ thống Đồ & Kinh tế** | Rơi đồ phong phú + **Components/Augments** ép trực tiếp vào slot | **Currency Orbs** (Không có vàng; Orb vừa là tiền vừa là phôi ép đồ) | Vàng (Gold) + Đồ huyền thoại + Ép ngọc (Gem Socketing) | **Essence & Currency Orbs**: Tiền tệ là các viên đá rèn đúc (Chaos/Alch), kết hợp mảnh ghép trang bị (Fragments). |
-| **Bạn đồng hành (Companion)** | Không có Pet phụ trợ (chỉ có Summon quái đệ chiến đấu) | Golem / Minion thuần kỹ năng chiến đấu | **Pet Companion**: Đánh phụ, mang đồ phụ, tự chạy về làng bán rác/mua bình máu | **Aethelis Spirit/Golem Pet**: Bạn đồng hành tự hút tiền/nguyên liệu, giữ 6 ô túi phụ, bật Aura hỗ trợ. |
-| **Cơ chế Khám phá Thế giới** | **Faction & Nemesis**: Diệt nhiều quái cùng tộc sẽ triệu hồi Nemesis Boss siêu khó | **Atlas of Worlds & Maps**: Ép dòng tăng độ khó cho hầm ngục endgame | **Phase Beast Portals**: Cổng ma thuật ngẫu nhiên mở ra thử thách mini-game | **Fracture Rifts & Nemesis**: Giết đủ quái dã ngoại sẽ nứt không gian gọi **Nemesis Boss** kèm rương báu. |
+Định hướng thiết kế tinh gọn, tập trung: **Không dùng Song hệ (Dual-Class)** mà sử dụng **1 Hệ Duy Nhất phát triển chuyên sâu dần lên theo từng bậc tiến hóa (Evolution Tiers)**.
 
 ---
 
-## 2. Chi Tiết Các Cơ Chế Đề Xuất Phát Triển Cho MDG
+## 1. Cấu Trúc Tiến Trình 4 Bậc (Single Class Tiered Progression)
 
 ```mermaid
 graph TD
-    subgraph MDG_Core_Systems [Hệ Thống Tinh Hoa MDG]
-        A[1. Dual-Affinities: Song Hệ Linh Hoạt]
-        B[2. Rune Sockets & Devotion Procs]
-        C[3. Pet Scout Companion]
-        D[4. Nemesis & World Fractures]
-        E[5. Currency Crafting & Loot Filter]
-    end
+    A[BẬC 1: NOVICE / TẬP SỰ<br>Lv. 1 - 10<br>Kỹ năng cơ bản: Slash, Fireball, Dash] -->|Mở khóa Nhánh Chuyên Biệt| B[BẬC 2: ADEPT / TINH ANH<br>Lv. 11 - 30<br>Biến đổi chiêu thức: Đa mục tiêu, Đốt cháy, Hút máu]
+    B -->|Thử Thách Đột Phá Hầm Ngục| C[BẬC 3: MASTER / BẬC THẦY<br>Lv. 31 - 60<br>Chiêu Thức Tỉnh Ultimate, Khảm 3 Lỗ Ấn Kỹ Năng]
+    C -->|Mở Cổng Vực Thẳm Endgame| D[BẬC 4: ASCENDANT / THẦN THOẠI<br>Lv. 60+<br>Điểm Nội Tại Đột Phá, Keystone Huyền Thoại]
 ```
 
-### 2.1. Dual-Affinities (Hệ Thống Song Hệ - Kế thừa Grim Dawn)
-* **Khởi đầu (Lv. 1):** Chọn 1 Phân Hệ Cơ Bản (VD: *Vanguard - Đấu Sĩ*, *Arcanist - Pháp Sư*, *Shadowstalker - Sát Thủ*).
-* **Tiến hóa (Lv. 10):** Mở khóa Phân Hệ Phụ (VD: *Vanguard* + *Pyromancy* = **Hỏa Hiệp Sĩ (Sun Paladin)**; *Shadowstalker* + *Necromancy* = **Kẻ Đoạt Hồn (Soul Reaper)**).
-* **Lợi ích:** Tạo ra hàng chục phong cách build độc đáo từ lượng code tối giản, người chơi tự do sáng tạo.
-
-### 2.2. Khắc Ấn Kỹ Năng & Devotion Procs (Dung hợp PoE + Grim Dawn)
-* Mỗi Kỹ năng chính (VD: *Fireball*, *Slash*) có **2 Lỗ Khảm Ấn (Rune Sockets)**:
-  * **Ấn Tách Nhánh (Split Rune):** Bắn ra 3 quả thay vì 1.
-  * **Ấn Bão Lửa (Firestorm Proc - Grim Dawn style):** 20% cơ hội khi đòn đánh trúng đích sẽ tự động gọi thêm 1 đợt mưa sao băng con.
-  * **Ấn Hút Huyết (Life Leech Proc):** Hồi 3% HP trên đòn chí mạng.
-
-### 2.3. Bạn Đồng Hành Aethelis (Pet Companion - Kế thừa Torchlight)
-* Người chơi được chọn 1 Linh Thú / Golem Cổ Đại đi cùng:
-  * **Tính năng QoL (Tiện ích):** Tự động nhặt tiền và ngọc rèn đúc rơi trên mặt đất trong phạm vi 150px.
-  * **Túi phụ:** Chứa thêm 6 ô đồ.
-  * **Hỗ trợ chiến đấu:** Cung cấp 1 hào quang nhỏ (VD: +10% Tốc độ chạy hoặc +15 Giáp).
-
-### 2.4. Vết Nứt Thế Giới & Thợ Săn Nemesis (Dung hợp Torchlight + Grim Dawn)
-* **Nemesis Encounter:** Khi người chơi tiêu diệt đủ 40 Goblin trong Whispering Plains, biểu tượng cảnh báo xuất hiện và **Goblin Nemesis Warlord** sẽ dịch chuyển đến săn lùng người chơi.
-* **World Fractures (Vết nứt không gian):** Xuất hiện ngẫu nhiên trên bản đồ dã ngoại. Bước vào sẽ mở ra đấu trường thử thách 45 giây sống sót nhận bão quà rơi (Loot Explosion).
+### 1.1. Chi tiết từng bậc tiến trình:
+1. **Bậc 1: Tập Sự (Novice - Lv. 1 đến 10):**
+   * Người chơi sử dụng bộ kỹ năng nền tảng: Chém kiếm thường (`LMB`), Cầu lửa cơ bản (`Q`), Sóng băng (`W`), Lướt né đòn (`Space`).
+   * Làm quen với cơ chế né đòn và quản lý Thanh Năng Lượng (Mana) / Lá Chắn (ES).
+2. **Bậc 2: Tinh Anh (Adept - Lv. 11 đến 30):**
+   * Mở khóa cây biến đổi kỹ năng (Skill Augments):
+     * *Nhánh Hỏa Nộ:* Tăng phạm vi nổ của Fireball + thiêu đốt DoT (Damage over Time).
+     * *Nhánh Băng Phong:* Đóng băng kẻ địch + tăng 50% sát thương chí mạng lên mục tiêu bị đông cứng.
+     * *Nhánh Thiết Giáp:* Đòn chém chuyển 30% sát thương thành lớp giáp ảo bảo vệ.
+3. **Bậc 3: Bậc Thầy (Master - Lv. 31 đến 60):**
+   * Mở khóa kỹ năng Thức Tỉnh (Ultimate Awakening Skill - Phím `R`): Gọi Bão Thiên Thạch toàn màn hình hoặc Hóa Thần Khổng Lồ.
+   * Mỗi kỹ năng mở thêm các **Lỗ Khảm Ấn (Rune Sockets)** để tự động kích nổ các hiệu ứng phụ (Proc on Hit).
+4. **Bậc 4: Thần Thoại (Ascendant - Lv. 60+ Endgame):**
+   * Mở khóa các điểm then chốt (Keystones) thay đổi toàn bộ luật chơi:
+     * *Bất Hoại Thân (Iron Fortress):* Kháng 85% mọi sát thương nhưng tốc độ di chuyển giảm 15%.
+     * *Hỗn Mang Bất Diệt (Chaos Weaver):* Mọi đòn đánh đều gây sát thương Chaos xuyên giáp.
 
 ---
 
-## 3. Kiến Trúc Core C# Sẵn Sàng Mở Rộng (Universe Architecture)
+## 2. Hệ Thống Khảm Ấn Kỹ Năng (Rune Sockets)
 
-Hệ thống được thiết kế theo các Module độc lập trong `src/Mdg.Core/`:
-1. `Mdg.Core.Features.Affinity` $\rightarrow$ Quản lý cây Song Hệ (Mastery Tree).
-2. `Mdg.Core.Features.Runes` $\rightarrow$ Quản lý hiệu ứng khảm ngọc bổ trợ chiêu thức.
-3. `Mdg.Core.Features.Companions` $\rightarrow$ Quản lý hành vi và túi đồ của Pet.
-4. `Mdg.Core.Features.Nemesis` $\rightarrow$ Quản lý tiến trình kích nổ Boss Nemesis theo từng vùng.
+Mỗi kỹ năng được gắn thêm các viên Ấn Ngọc (Runes) để cường hóa phong cách chơi:
+
+| Loại Ấn | Tác Dụng Cường Hóa | Ví Dụ Ứng Dụng |
+| :--- | :--- | :--- |
+| **Split Rune (Ấn Phân Nhánh)** | Tăng thêm số lượng tia đạn | Bắn 3 quả cầu lửa hình nón |
+| **Echo Rune (Ấn Dư Chấn)** | Tự động kích nổ đòn phụ sau 0.5s | Vết chém chém thêm 1 nhát dư chấn |
+| **Leech Rune (Ấn Hút Sinh Lực)** | Hồi máu/mana khi đánh trúng | Hút 4% lượng sát thương gây ra thành HP |
+| **Nova Rune (Ấn Vòng Xoáy)** | Biến kỹ năng đường thẳng thành vòng tròn xung quanh thân | Cầu lửa nổ tỏa ra 8 hướng |
+
+---
+
+## 3. Tổng Hợp Bộ Tính Năng Cốt Lõi MDG Đã Thống Nhất
+
+* ✅ **Tiến trình:** 1 Hệ duy nhất phát triển chuyên sâu 4 Bậc (Novice $\rightarrow$ Adept $\rightarrow$ Master $\rightarrow$ Ascendant).
+* ✅ **Kỹ năng:** Nâng cấp kỹ năng + Khảm Ấn biến đổi chiêu thức (Rune Sockets).
+* ✅ **Loot & Kinh tế:** Rơi đồ theo bậc màu (Normal, Magic, Rare, Unique) + Currency Orbs rèn đúc (Chaos, Alchemy, Exalted).
+* ✅ **Bản đồ & Thế giới:** Mạng lưới Waystones, Bản đồ Thế giới (World Map `M`) và các Hầm ngục độ khó tăng dần.
+* ✅ **Bạn đồng hành:** Linh thú (Pet) tự động nhặt Currency và hỗ trợ túi đồ phụ.
