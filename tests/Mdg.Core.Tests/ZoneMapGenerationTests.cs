@@ -12,14 +12,16 @@ namespace Mdg.Core.Tests
         [InlineData("FrostpeakTundra")]
         [InlineData("MoltenCaldera")]
         [InlineData("ForgottenCrypt")]
-        public void GenerateZone_ValidZone_ReturnsStructuredMapDto(string zoneId)
+        [InlineData("StormpeakRidge")]
+        [InlineData("VoidAbyss")]
+        public void GenerateZone_ValidZone_ReturnsExpandedStructuredMapDto(string zoneId)
         {
             var map = ZoneMapGenerator.GenerateZone(zoneId);
 
             Assert.NotNull(map);
             Assert.Equal(zoneId, map.Id);
-            Assert.True(map.WidthInTiles >= 28);
-            Assert.True(map.HeightInTiles >= 28);
+            Assert.True(map.WidthInTiles >= 40, $"Expected width >= 40 for {zoneId}, got {map.WidthInTiles}");
+            Assert.True(map.HeightInTiles >= 40, $"Expected height >= 40 for {zoneId}, got {map.HeightInTiles}");
             Assert.NotNull(map.Grid);
             Assert.Equal(map.HeightInTiles, map.Grid.Count);
             Assert.Equal(map.WidthInTiles, map.Grid[0].Count);
@@ -42,29 +44,31 @@ namespace Mdg.Core.Tests
         }
 
         [Fact]
-        public void GenerateZone_MoltenCaldera_ContainsLavaAndBurntGround()
+        public void GenerateZone_StormpeakRidge_ContainsChasmsAndElectricGround()
         {
-            var caldera = ZoneMapGenerator.GenerateZone("MoltenCaldera");
+            var stormpeak = ZoneMapGenerator.GenerateZone("StormpeakRidge");
 
-            bool hasLava = caldera.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_LAVA));
-            bool hasBurntGround = caldera.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_BURNT_GROUND));
-            bool hasPillars = caldera.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_ANCIENT_PILLAR));
+            bool hasChasms = stormpeak.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_CHASM));
+            bool hasElectric = stormpeak.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_ELECTRIC_GROUND));
+            bool hasPaths = stormpeak.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_PATH));
 
-            Assert.True(hasLava);
-            Assert.True(hasBurntGround);
-            Assert.True(hasPillars);
+            Assert.True(hasChasms);
+            Assert.True(hasElectric);
+            Assert.True(hasPaths);
         }
 
         [Fact]
-        public void GenerateZone_ForgottenCrypt_ContainsPillarsAndToxicMiasma()
+        public void GenerateZone_VoidAbyss_ContainsCosmicArenaAndPillars()
         {
-            var crypt = ZoneMapGenerator.GenerateZone("ForgottenCrypt");
+            var abyss = ZoneMapGenerator.GenerateZone("VoidAbyss");
 
-            bool hasPillars = crypt.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_ANCIENT_PILLAR));
-            bool hasToxic = crypt.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_TOXIC_MIASMA));
+            bool hasChasms = abyss.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_CHASM));
+            bool hasPillars = abyss.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_ANCIENT_PILLAR));
+            bool hasPlaza = abyss.Grid.Any(row => row.Contains(ZoneMapGenerator.TILE_PLAZA));
 
+            Assert.True(hasChasms);
             Assert.True(hasPillars);
-            Assert.True(hasToxic);
+            Assert.True(hasPlaza);
         }
     }
 }

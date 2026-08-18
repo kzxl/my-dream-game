@@ -7,7 +7,8 @@ public enum ZoneBiomeType
     FrostpeakTundra,
     MoltenCaldera,
     ForgottenCrypt,
-    StormpeakRidge
+    StormpeakRidge,
+    VoidAbyss
 }
 
 public sealed class EnvironmentalHazardConfig

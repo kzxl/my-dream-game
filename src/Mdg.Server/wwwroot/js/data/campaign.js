@@ -98,13 +98,22 @@ export const CAMPAIGN_ACTS = [
         desc: 'A fiery hellscape of flowing magma rivers and obsidian ruins. High Fire Resistance is essential.'
       },
       {
-        id: 'InfernalCore',
-        name: 'Infernal Abyss',
-        type: 'Volcano Core',
+        id: 'StormpeakRidge',
+        name: 'Stormpeak Ridge',
+        type: 'Thunder Mountain Peaks',
+        level: 'Lv. 40-45',
+        isTown: false,
+        coords: { x: 84, y: 52 },
+        desc: 'High mountain crags battered by relentless static lightning storms and apex storm drakes.'
+      },
+      {
+        id: 'VoidAbyss',
+        name: 'The Void Abyss',
+        type: 'Cosmic Pinnacle Arena',
         level: 'Lv. 45-50',
         isTown: false,
-        coords: { x: 86, y: 74 },
-        desc: 'The molten heart of Aethelis where Ignis the Undying Tyrant forges hellforged relic armaments.'
+        coords: { x: 88, y: 78 },
+        desc: 'The fractured cosmic arena of Malakor and the gateway into the infinite Endgame Rift Atlas.'
       }
     ],
     quests: [
