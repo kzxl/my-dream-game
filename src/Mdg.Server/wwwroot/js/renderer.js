@@ -36,14 +36,36 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
 
   // Projectiles
   projectiles.forEach(p => {
-    ctx.fillStyle = p.type === 'windblade' ? '#00f2fe' : '#ff7849';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.radius || 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffe066';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, (p.radius || 12) * 0.6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.save();
+    ctx.translate(p.x, p.y);
+
+    if (assets.spells.complete && assets.spells.naturalWidth > 0) {
+      const sW = assets.spells.naturalWidth / 3;
+      const sH = assets.spells.naturalHeight / 3;
+
+      let sx = 0, sy = 0;
+      if (p.type === 'windblade') {
+        sx = 0; sy = sH; // Middle-Left: Slash
+      } else if (p.type === 'frost') {
+        sx = sW; sy = 0; // Top-Center: Frost Nova
+      } else if (p.type === 'meteor') {
+        sx = sW * 2; sy = 0; // Top-Right: Meteor
+      } else {
+        sx = 0; sy = 0; // Top-Left: Fireball
+      }
+
+      const angle = Math.atan2(p.vy, p.vx);
+      ctx.rotate(angle);
+      const dw = (p.radius || 16) * 2.5;
+      const dh = (p.radius || 16) * 2.5;
+      ctx.drawImage(assets.spells, sx, sy, sW, sH, -dw / 2, -dh / 2, dw, dh);
+    } else {
+      ctx.fillStyle = p.type === 'windblade' ? '#00f2fe' : '#ff7849';
+      ctx.beginPath();
+      ctx.arc(0, 0, p.radius || 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   });
 
   // Particles
@@ -300,8 +322,26 @@ export function drawMonsterClean(ctx, m) {
   ctx.ellipse(0, 16 * scale, 14 * scale, 6 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const img = assets.monsters;
-  if (img.complete && img.naturalWidth > 0) {
+  // Render Boss from assets.bosses
+  if (m.type === 'boss' && assets.bosses.complete && assets.bosses.naturalWidth > 0) {
+    const bImg = assets.bosses;
+    const bHalfW = bImg.naturalWidth / 2;
+    const bHalfH = bImg.naturalHeight / 2;
+
+    let sx = 0, sy = 0;
+    if (m.name.includes('Cryomancer') || m.name.includes('Vael')) {
+      sx = bHalfW; sy = 0; // Top-Right
+    } else if (m.name.includes('Ignis') || m.name.includes('Tyrant')) {
+      sx = 0; sy = bHalfH; // Bottom-Left
+    } else {
+      sx = 0; sy = 0; // Top-Left: Malakor
+    }
+
+    const dw = 78 * scale;
+    const dh = 78 * scale;
+    ctx.drawImage(bImg, sx, sy, bHalfW, bHalfH, -dw / 2, -dh + 22 * scale, dw, dh);
+  } else if (assets.monsters.complete && assets.monsters.naturalWidth > 0) {
+    const img = assets.monsters;
     const colW = img.naturalWidth / 4;
     const rowH = img.naturalHeight / 4;
 
@@ -426,43 +466,70 @@ export function drawPortal(ctx, p) {
 export function drawNpc(ctx, n) {
   ctx.save();
   ctx.translate(n.x, n.y);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.beginPath();
-  ctx.ellipse(0, 16, 12, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 18, 16, 7, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = n.color || '#e5c07b';
-  ctx.fillRect(-8, -12, 16, 24);
-  ctx.fillStyle = '#ffdbac';
-  ctx.fillRect(-6, -22, 12, 10);
-  ctx.fillStyle = '#1e1e1e';
-  ctx.fillRect(-4, -18, 2, 2);
-  ctx.fillRect(2, -18, 2, 2);
+
+  const img = assets.npcs;
+  if (img.complete && img.naturalWidth > 0) {
+    const halfW = img.naturalWidth / 2;
+    const halfH = img.naturalHeight / 2;
+
+    let sx = 0, sy = 0;
+    if (n.name.includes('Doran') || n.name.includes('Blacksmith')) {
+      sx = halfW; sy = 0; // Top-Right
+    } else if (n.name.includes('Kaelen') || n.name.includes('Stash')) {
+      sx = 0; sy = halfH; // Bottom-Left
+    } else {
+      sx = 0; sy = 0; // Top-Left: Elder Aethel
+    }
+
+    const dw = 58;
+    const dh = 58;
+    ctx.drawImage(img, sx, sy, halfW, halfH, -dw / 2, -dh + 18, dw, dh);
+  } else {
+    ctx.fillStyle = n.color || '#e5c07b';
+    ctx.fillRect(-8, -12, 16, 24);
+  }
 
   ctx.font = 'bold 10px "Outfit", sans-serif';
   ctx.fillStyle = '#ffd700';
   ctx.textAlign = 'center';
-  ctx.fillText(`«${n.title}»`, 0, -38);
+  ctx.fillText(`«${n.title}»`, 0, -42);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(n.name, 0, -26);
+  ctx.fillText(n.name, 0, -30);
   ctx.restore();
 }
 
 export function drawDummy(ctx, d) {
   ctx.save();
   ctx.translate(d.x, d.y);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.beginPath();
-  ctx.ellipse(0, 14, 10, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 16, 14, 6, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#8c6239';
-  ctx.fillRect(-6, -16, 12, 28);
-  ctx.fillStyle = '#d19a66';
-  ctx.fillRect(-12, -8, 24, 6);
+
+  const img = assets.npcs;
+  if (img.complete && img.naturalWidth > 0) {
+    const halfW = img.naturalWidth / 2;
+    const halfH = img.naturalHeight / 2;
+    const sx = halfW;
+    const sy = halfH; // Bottom-Right: Straw Dummy
+    const dw = 54;
+    const dh = 54;
+    ctx.drawImage(img, sx, sy, halfW, halfH, -dw / 2, -dh + 16, dw, dh);
+  } else {
+    ctx.fillStyle = '#8c6239';
+    ctx.fillRect(-6, -16, 12, 28);
+  }
 
   ctx.font = '9px "Outfit", sans-serif';
   ctx.fillStyle = '#abb2bf';
   ctx.textAlign = 'center';
-  ctx.fillText(d.name, 0, -26);
+  ctx.fillText(d.name, 0, -38);
   ctx.restore();
 }
 

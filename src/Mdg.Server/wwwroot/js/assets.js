@@ -7,6 +7,9 @@ export const assets = {
   femaleHero: new Image(),
   equipment: new Image(),
   monsters: new Image(),
+  bosses: new Image(),
+  npcs: new Image(),
+  spells: new Image(),
   props: new Image(),
   loaded: 0
 };
@@ -24,6 +27,15 @@ assets.equipment.src = '/assets/equipment_pack.png' + cacheBust;
 
 assets.monsters.onload = () => assets.loaded++;
 assets.monsters.src = '/assets/monsters_pack.png' + cacheBust;
+
+assets.bosses.onload = () => assets.loaded++;
+assets.bosses.src = '/assets/bosses_pack.png' + cacheBust;
+
+assets.npcs.onload = () => assets.loaded++;
+assets.npcs.src = '/assets/npcs_pack.png' + cacheBust;
+
+assets.spells.onload = () => assets.loaded++;
+assets.spells.src = '/assets/spells_fx_pack.png' + cacheBust;
 
 assets.props.onload = () => assets.loaded++;
 assets.props.src = '/assets/props_pack.png' + cacheBust;
