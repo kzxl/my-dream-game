@@ -10,16 +10,16 @@ import { dropMonsterLoot } from './main.js';
 export function getMonsterLoreBonus(monsterType, isBoss = false) {
   const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
   if (isBoss) {
-    if (kills >= 25) return { tier: 4, name: 'Apex Nemesis 👑', bonusDmg: 0.30, bonusCrit: 15, bonusCritMulti: 40, iir: 35 };
-    if (kills >= 12) return { tier: 3, name: 'Master Inquisitor 🥇', bonusDmg: 0.20, bonusCrit: 10, bonusCritMulti: 25, iir: 20 };
-    if (kills >= 6)  return { tier: 2, name: 'Adept Slayer 🥈', bonusDmg: 0.12, bonusCrit: 5, bonusCritMulti: 0, iir: 10 };
-    if (kills >= 2)  return { tier: 1, name: 'Novice Hunter 🎖️', bonusDmg: 0.05, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
+    if (kills >= 120) return { tier: 4, name: 'Apex Nemesis 👑', bonusDmg: 0.25, bonusCrit: 15, bonusCritMulti: 35, iir: 35 };
+    if (kills >= 50)  return { tier: 3, name: 'Master Inquisitor 🥇', bonusDmg: 0.18, bonusCrit: 10, bonusCritMulti: 25, iir: 20 };
+    if (kills >= 20)  return { tier: 2, name: 'Adept Slayer 🥈', bonusDmg: 0.10, bonusCrit: 5, bonusCritMulti: 0, iir: 10 };
+    if (kills >= 5)   return { tier: 1, name: 'Novice Hunter 🎖️', bonusDmg: 0.05, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
     return { tier: 0, name: 'Unfamiliar', bonusDmg: 0, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
   }
-  if (kills >= 500) return { tier: 4, name: 'Apex Nemesis 👑', bonusDmg: 0.30, bonusCrit: 15, bonusCritMulti: 40, iir: 35 };
-  if (kills >= 150) return { tier: 3, name: 'Master Inquisitor 🥇', bonusDmg: 0.20, bonusCrit: 10, bonusCritMulti: 25, iir: 20 };
-  if (kills >= 50)  return { tier: 2, name: 'Adept Slayer 🥈', bonusDmg: 0.12, bonusCrit: 5, bonusCritMulti: 0, iir: 10 };
-  if (kills >= 10)  return { tier: 1, name: 'Novice Hunter 🎖️', bonusDmg: 0.05, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
+  if (kills >= 3000) return { tier: 4, name: 'Apex Nemesis 👑', bonusDmg: 0.25, bonusCrit: 15, bonusCritMulti: 35, iir: 35 };
+  if (kills >= 1000) return { tier: 3, name: 'Master Inquisitor 🥇', bonusDmg: 0.18, bonusCrit: 10, bonusCritMulti: 25, iir: 20 };
+  if (kills >= 250)  return { tier: 2, name: 'Adept Slayer 🥈', bonusDmg: 0.10, bonusCrit: 5, bonusCritMulti: 0, iir: 10 };
+  if (kills >= 50)   return { tier: 1, name: 'Novice Hunter 🎖️', bonusDmg: 0.05, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
   return { tier: 0, name: 'Unfamiliar', bonusDmg: 0, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
 }
 

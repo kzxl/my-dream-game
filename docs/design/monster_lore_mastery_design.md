@@ -10,10 +10,10 @@ Khi tiêu diệt một loài quái vật đủ nhiều lần, nhân vật sẽ t
 graph TD
     Kill[Tiêu diệt Quái vật] --> AddCount["Cộng dồn Kill Count (player.monsterKills[type]++)"]
     AddCount --> CheckTier{Đạt Ngưỡng Kills?}
-    CheckTier -->|Tier 1: 10 Kills| T1["🎖️ Tier 1 - Sơ Cấp (Novice Hunter)<br>• +5% Sát thương cộng thêm<br>• Hiển thị thanh máu & tên quái"]
-    CheckTier -->|Tier 2: 50 Kills| T2["🥈 Tier 2 - Thông Thạo (Adept Slayer)<br>• +12% Sát thương cộng thêm<br>• +5% Tỷ lệ Chí mạng (Crit Chance)<br>• Hiển thị điểm yếu nguyên tố"]
-    CheckTier -->|Tier 3: 150 Kills| T3["🥇 Tier 3 - Tinh Anh (Master Inquisitor)<br>• +20% Sát thương cộng thêm<br>• +10% Tỷ lệ Chí mạng<br>• +25% Sát thương Chí mạng<br>• +15% Tỷ lệ rơi đồ (IIR)"]
-    CheckTier -->|Tier 4: 500 Kills / 20 Boss| T4["👑 Tier 4 - Khắc Tinh Tuyệt Đối (Apex Nemesis)<br>• +30% Sát thương cộng thêm<br>• +15% Tỷ lệ Chí mạng<br>• +40% Sát thương Chí mạng<br>• -15% Sát thương nhận vào<br>• +30% Tỷ lệ rơi đồ (IIQ/IIR)"]
+    CheckTier -->|Tier 1: 50 Kills / 5 Boss| T1["🎖️ Tier 1 - Sơ Cấp (Novice Hunter)<br>• +5% Sát thương cộng thêm<br>• Hiển thị thanh máu & tên quái"]
+    CheckTier -->|Tier 2: 250 Kills / 20 Boss| T2["🥈 Tier 2 - Thông Thạo (Adept Slayer)<br>• +10% Sát thương cộng thêm<br>• +5% Tỷ lệ Chí mạng (Crit Chance)<br>• +10% IIR Rơi Đồ"]
+    CheckTier -->|Tier 3: 1,000 Kills / 50 Boss| T3["🥇 Tier 3 - Tinh Anh (Master Inquisitor)<br>• +18% Sát thương cộng thêm<br>• +10% Tỷ lệ Chí mạng<br>• +25% Sát thương Chí mạng<br>• +20% IIR / +10% IIQ"]
+    CheckTier -->|Tier 4: 3,000 Kills / 120 Boss| T4["👑 Tier 4 - Khắc Tinh Tuyệt Đối (Apex Nemesis)<br>• +25% Sát thương cộng thêm<br>• +15% Tỷ lệ Chí mạng<br>• +35% Sát thương Chí mạng<br>• -15% Sát thương nhận vào<br>• +35% IIR / +20% IIQ"]
 ```
 
 ---
@@ -23,10 +23,10 @@ graph TD
 | Bậc Am Hiểu | Danh Hiệu Hunter | Ngưỡng Kills Thường | Ngưỡng Kills Boss | Tăng Sát Thương (Extra Damage) | Tăng Tỷ Lệ Crit (Bonus Crit) | Tăng Sát Thương Crit (Bonus Crit Multi) | Giảm Thương Nhận Vào (Dmg Taken Reduction) | Thưởng Rơi Đồ (Drop Multipliers) |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Tier 0** | *Unfamiliar (Chưa Biết)* | `0` | `0` | $+0\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ |
-| **Tier 1** | *Novice Hunter (Thợ Săn Mới)* | `10` | `2` | $+5\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ |
-| **Tier 2** | *Adept Slayer (Sát Thủ Thông Thạo)* | `50` | `6` | $+12\%$ | $+5\%$ | $+0\%$ | $0\%$ | $+10\%\text{ IIR}$ |
-| **Tier 3** | *Master Inquisitor (Thầy Trừ Tà)* | `150` | `12` | $+20\%$ | $+10\%$ | $+25\%$ | $-5\%$ | $+20\%\text{ IIR} / +10\%\text{ IIQ}$ |
-| **Tier 4** | *Apex Nemesis (Khắc Tinh Tuyệt Đối)*| `500` | `25` | $+30\%$ | $+15\%$ | $+40\%$ | $-15\%$ | $+35\%\text{ IIR} / +20\%\text{ IIQ}$ |
+| **Tier 1** | *Novice Hunter (Thợ Săn Mới)* | `50` | `5` | $+5\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ |
+| **Tier 2** | *Adept Slayer (Sát Thủ Thông Thạo)* | `250` | `20` | $+10\%$ | $+5\%$ | $+0\%$ | $0\%$ | $+10\%\text{ IIR}$ |
+| **Tier 3** | *Master Inquisitor (Thầy Trừ Tà)* | `1,000` | `50` | $+18\%$ | $+10\%$ | $+25\%$ | $-5\%$ | $+20\%\text{ IIR} / +10\%\text{ IIQ}$ |
+| **Tier 4** | *Apex Nemesis (Khắc Tinh Tuyệt Đối)*| `3,000` | `120` | $+25\%$ | $+15\%$ | $+35\%$ | $-15\%$ | $+35\%\text{ IIR} / +20\%\text{ IIQ}$ |
 
 ---
 

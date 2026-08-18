@@ -29,20 +29,20 @@ public static class MonsterLoreMastery
         {
             return killCount switch
             {
-                >= 25 => MonsterLoreTier.Apex,
-                >= 12 => MonsterLoreTier.Master,
-                >= 6 => MonsterLoreTier.Adept,
-                >= 2 => MonsterLoreTier.Novice,
+                >= 120 => MonsterLoreTier.Apex,
+                >= 50 => MonsterLoreTier.Master,
+                >= 20 => MonsterLoreTier.Adept,
+                >= 5 => MonsterLoreTier.Novice,
                 _ => MonsterLoreTier.None
             };
         }
 
         return killCount switch
         {
-            >= 500 => MonsterLoreTier.Apex,
-            >= 150 => MonsterLoreTier.Master,
-            >= 50 => MonsterLoreTier.Adept,
-            >= 10 => MonsterLoreTier.Novice,
+            >= 3000 => MonsterLoreTier.Apex,
+            >= 1000 => MonsterLoreTier.Master,
+            >= 250 => MonsterLoreTier.Adept,
+            >= 50 => MonsterLoreTier.Novice,
             _ => MonsterLoreTier.None
         };
     }
@@ -57,9 +57,9 @@ public static class MonsterLoreMastery
             {
                 Tier = MonsterLoreTier.Apex,
                 TierTitle = "Apex Nemesis",
-                BonusDamagePercent = 30f,
+                BonusDamagePercent = 25f,
                 BonusCritChance = 15f,
-                BonusCritMulti = 40f,
+                BonusCritMulti = 35f,
                 DamageReductionPercent = 15f,
                 BonusIir = 35f,
                 BonusIiq = 20f
@@ -68,7 +68,7 @@ public static class MonsterLoreMastery
             {
                 Tier = MonsterLoreTier.Master,
                 TierTitle = "Master Inquisitor",
-                BonusDamagePercent = 20f,
+                BonusDamagePercent = 18f,
                 BonusCritChance = 10f,
                 BonusCritMulti = 25f,
                 DamageReductionPercent = 5f,
@@ -79,7 +79,7 @@ public static class MonsterLoreMastery
             {
                 Tier = MonsterLoreTier.Adept,
                 TierTitle = "Adept Slayer",
-                BonusDamagePercent = 12f,
+                BonusDamagePercent = 10f,
                 BonusCritChance = 5f,
                 BonusCritMulti = 0f,
                 DamageReductionPercent = 0f,
