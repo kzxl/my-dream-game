@@ -329,6 +329,30 @@ public sealed class GameDatabaseService
         }
         return true;
     }
+
+    public async Task<List<ItemTemplateEntity>> GetItemTemplatesAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.ItemTemplates.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<SkillTemplateEntity>> GetSkillTemplatesAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.SkillTemplates.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<ZoneTemplateEntity>> GetZoneTemplatesAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.ZoneTemplates.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<CampaignActEntity>> GetCampaignActsAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.CampaignActs.AsNoTracking().OrderBy(a => a.ActNumber).ToListAsync();
+    }
 }
 
 public sealed class GoogleAuthRequestDto

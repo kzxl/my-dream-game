@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Mdg.Core\Mdg.Core.csproj" />
     <ProjectReference Include="..\..\src\Mdg.Client.Adapter\Mdg.Client.Adapter.csproj" />
+    <ProjectReference Include="..\..\src\Mdg.Server\Mdg.Server.csproj" />
   </ItemGroup>
 
 </Project>

@@ -58,6 +58,10 @@ public class MdgDbContext : DbContext
     public DbSet<UserAccountEntity> UserAccounts => Set<UserAccountEntity>();
     public DbSet<CharacterEntity> Characters => Set<CharacterEntity>();
     public DbSet<SharedStashItemEntity> SharedStash => Set<SharedStashItemEntity>();
+    public DbSet<ItemTemplateEntity> ItemTemplates => Set<ItemTemplateEntity>();
+    public DbSet<SkillTemplateEntity> SkillTemplates => Set<SkillTemplateEntity>();
+    public DbSet<ZoneTemplateEntity> ZoneTemplates => Set<ZoneTemplateEntity>();
+    public DbSet<CampaignActEntity> CampaignActs => Set<CampaignActEntity>();
 
     public MdgDbContext(DbContextOptions<MdgDbContext> options) : base(options) { }
 
@@ -105,6 +109,34 @@ public class MdgDbContext : DbContext
             b.HasKey(s => s.Id);
             b.HasIndex(s => s.AccountId);
         });
+
+        modelBuilder.Entity<ItemTemplateEntity>(b =>
+        {
+            b.ToTable("ItemTemplates");
+            b.HasKey(i => i.Id);
+            b.HasIndex(i => i.Category);
+            b.HasIndex(i => i.Rarity);
+        });
+
+        modelBuilder.Entity<SkillTemplateEntity>(b =>
+        {
+            b.ToTable("SkillTemplates");
+            b.HasKey(s => s.Id);
+        });
+
+        modelBuilder.Entity<ZoneTemplateEntity>(b =>
+        {
+            b.ToTable("ZoneTemplates");
+            b.HasKey(z => z.Id);
+            b.HasIndex(z => z.ActNumber);
+        });
+
+        modelBuilder.Entity<CampaignActEntity>(b =>
+        {
+            b.ToTable("CampaignActs");
+            b.HasKey(a => a.ActNumber);
+        });
     }
 }
+
 
