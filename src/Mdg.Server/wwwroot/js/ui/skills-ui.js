@@ -3,13 +3,14 @@
  */
 
 import { player } from '../state.js';
-import { SKILLS, SKILL_MASTERY_TREES, skillSocketBoard, isNodeAllocated, allocateNode, respecSkillTree, getSpentMasteryPoints, getSkillExpMultiplier } from '../data/skills.js';
+import { SKILLS, SKILL_MASTERY_TREES, skillSocketBoard, isNodeAllocated, allocateNode, respecSkillTree, getSpentMasteryPoints, getSkillExpMultiplier, isSkillUnlocked } from '../data/skills.js';
 import { POSSIBLE_LOOT, RARITY_COLORS } from '../data/items.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
+import { updateBackpackUI } from './inventory.js';
 
-let selectedTreeSkillKey = 'fireball';
+let selectedTreeSkillKey = 'slash';
 
 export function addSkillExp(skillKey, amount) {
   const s = SKILLS[skillKey];
@@ -58,11 +59,29 @@ export function levelUpSkillWithPoint(skillKey) {
 
 export function updateSkillBadges() {
   for (let k in SKILLS) {
+    const slotEl = document.getElementById(`slot-${k}`);
     const badge = document.getElementById(`lvl-badge-${k}`);
+    const unlocked = isSkillUnlocked(k);
+
+    if (slotEl) {
+      if (unlocked) {
+        slotEl.classList.remove('slot-locked');
+        slotEl.title = `[${SKILLS[k].key}] ${SKILLS[k].name} (Lv.${SKILLS[k].level})`;
+      } else {
+        slotEl.classList.add('slot-locked');
+        slotEl.title = `[${SKILLS[k].key}] ${SKILLS[k].name} (Locked - Socket Skill Gem to Activate)`;
+      }
+    }
+
     if (badge) {
-      const isSocketed = skillSocketBoard[k]?.activeGem;
-      badge.innerText = isSocketed ? `Lv.${SKILLS[k].level}` : 'Empty';
-      badge.style.background = isSocketed ? '#1abc9c' : '#4b5263';
+      if (unlocked) {
+        const lvl = SKILLS[k].level || 1;
+        badge.innerText = `${lvl}`;
+        badge.style.display = 'block';
+      } else {
+        badge.innerText = '🔒';
+        badge.style.display = 'block';
+      }
     }
   }
   const spEl = document.getElementById('sp-points-text');
@@ -80,7 +99,7 @@ export function renderSkillUpgradeModal() {
   socketBoardSection.innerHTML = `
     <div class="socket-board-title">
       <span>💎 ACTIVE SKILL GEMS & SUPPORT SOCKETS</span>
-      <small>Khảm ngọc chủ động và tối đa 2 ngọc hỗ trợ theo từng phím tắt</small>
+      <small>Socket Skill Gems from your backpack to unlock hotkey spells (Q, W, E)</small>
     </div>
     <div class="socket-slots-grid" id="socket-board-grid"></div>
   `;
@@ -88,9 +107,9 @@ export function renderSkillUpgradeModal() {
   const sbGrid = socketBoardSection.querySelector('#socket-board-grid');
   const hotbarKeys = [
     { key: 'LMB', skill: 'slash' },
-    { key: 'Q', skill: 'fireball' },
-    { key: 'W', skill: 'frost' },
-    { key: 'E', skill: 'meteor' },
+    { key: 'Q', skill: 'fireball', expectedGem: 'gem_fireball' },
+    { key: 'W', skill: 'frost', expectedGem: 'gem_frost' },
+    { key: 'E', skill: 'meteor', expectedGem: 'gem_meteor' },
     { key: 'SPACE', skill: 'dash' }
   ];
 
@@ -106,11 +125,11 @@ export function renderSkillUpgradeModal() {
       <div class="slot-card-header">
         <span class="slot-key-badge">${hk.key}</span>
         <span class="slot-skill-name">${s.name}</span>
-        <span class="slot-gem-lvl">Lv.${s.level}</span>
+        <span class="slot-gem-lvl">${sockData.activeGem ? `Lv.${s.level}` : '<span style="color:#8892b0;">Locked</span>'}</span>
       </div>
       <div class="slot-gem-visual">
-        <div class="active-gem-box ${activeGemItem ? 'has-gem' : 'empty-gem'}" title="Active Gem: ${activeGemItem ? activeGemItem.name : 'None'}">
-          ${activeGemItem ? activeGemItem.icon : '💠'}
+        <div class="active-gem-box ${activeGemItem ? 'has-gem' : 'empty-gem'}" id="gem-socket-${hk.skill}" style="cursor:pointer;" title="${activeGemItem ? `Socketed: ${activeGemItem.name} (Click to toggle/socket)` : 'Empty Socket (Click to socket from Bag)'}">
+          ${activeGemItem ? activeGemItem.icon : (hk.skill === 'slash' || hk.skill === 'dash' ? '⚔️' : '🔒')}
         </div>
         <div class="support-links-row">
           <div class="support-gem-box ${supportsItems[0] ? 'has-support' : ''}" title="Support 1: ${supportsItems[0] ? supportsItems[0].name : 'Empty Slot'}">
@@ -123,6 +142,60 @@ export function renderSkillUpgradeModal() {
       </div>
       <button class="open-tree-btn ${hk.skill === selectedTreeSkillKey ? 'active-tree-btn' : ''}">🌿 Open Tree</button>
     `;
+
+    // Interactive Socketing: Click to socket gem if found in bag or toggle
+    const gemBox = slotCard.querySelector(`#gem-socket-${hk.skill}`);
+    if (gemBox && hk.expectedGem) {
+      gemBox.addEventListener('click', () => {
+        if (skillSocketBoard[hk.skill]?.activeGem) {
+          // Unsocket -> Return Gem Item to Player Bag
+          const curGemId = skillSocketBoard[hk.skill].activeGem;
+          const gemTpl = POSSIBLE_LOOT.find(it => it.id === curGemId || it.gemId === curGemId) || {
+            id: curGemId,
+            gemId: curGemId,
+            name: s.name + ' Skill Gem',
+            baseType: 'Active Skill Gem',
+            category: 'gem',
+            rarity: 'SkillGem',
+            color: '#1abc9c',
+            icon: '💎',
+            skillKey: hk.skill,
+            description: `Socket to cast ${s.name}`
+          };
+
+          if (player.bag) {
+            player.bag.push({
+              ...gemTpl,
+              id: 'gem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)
+            });
+          }
+
+          skillSocketBoard[hk.skill].activeGem = null;
+          updateBackpackUI();
+          AudioEngine.playPickup();
+          spawnDamageNumber(player.x, player.y - 45, `Unsocketed ${s.name} Gem back to Bag`, false, '#a0a8b7');
+        } else {
+          // Socket -> Look for Gem in Player Bag
+          const bagIndex = (player.bag || []).findIndex(it => it && (it.gemId === hk.expectedGem || it.id === hk.expectedGem || it.skillKey === hk.skill));
+
+          if (bagIndex >= 0) {
+            // Remove from bag and socket
+            player.bag.splice(bagIndex, 1);
+            skillSocketBoard[hk.skill] = { activeGem: hk.expectedGem, supports: [] };
+            updateBackpackUI();
+            AudioEngine.playLevelUp();
+            spawnDamageNumber(player.x, player.y - 45, `💎 Socketed ${s.name} Gem from Bag!`, true, '#00f2fe');
+          } else {
+            // Not found in bag
+            AudioEngine.playTone(180, 'sawtooth', 0.15, 0.1);
+            spawnDamageNumber(player.x, player.y - 45, `⚠️ ${s.name} Gem not in Bag! Farm monsters!`, true, '#ff5722');
+          }
+        }
+        updateSkillBadges();
+        renderSkillUpgradeModal();
+        saveToDatabase(true);
+      });
+    }
 
     slotCard.querySelector('.open-tree-btn').addEventListener('click', () => {
       selectedTreeSkillKey = hk.skill;

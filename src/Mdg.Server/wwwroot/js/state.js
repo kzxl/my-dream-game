@@ -2,7 +2,7 @@
  * Global Game State & Collections
  */
 
-import { POSSIBLE_LOOT } from './data/items.js';
+import { POSSIBLE_LOOT, RESURRECTION_SCROLL } from './data/items.js';
 
 export const WORLD_SIZE = 1920;
 export const TILE_SIZE = 48;
@@ -21,10 +21,13 @@ export const player = {
   y: 672,
   vx: 0,
   vy: 0,
-  speed: 280,
+  speed: 185,
   facing: 'down',
   isMoving: false,
   isAttacking: false,
+  isDead: false,
+  invulnerableTimer: 0,
+  zoneResurrectionsUsed: 0,
   animFrame: 0,
   animTimer: 0,
   freezeTimer: 0,
@@ -77,7 +80,8 @@ export const player = {
     POSSIBLE_LOOT[2],
     POSSIBLE_LOOT[8],
     POSSIBLE_LOOT[9],
-    POSSIBLE_LOOT[8]
+    POSSIBLE_LOOT[8],
+    { ...RESURRECTION_SCROLL, stack: 3 }
   ],
   bagFilter: 'all',
   monsterKills: {}

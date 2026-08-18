@@ -87,7 +87,7 @@ export function renderDevotionModal() {
     };
 
     document.getElementById('btnResetDevotion').onclick = () => {
-      if (confirm('Tẩy toàn bộ điểm Devotion đã cộng?')) {
+      if (confirm('Respec and refund all allocated Devotion points?')) {
         player.allocatedDevotionNodes = [];
         player.devotionPoints = 8;
         AudioEngine.playTone(330, 'square', 0.2, 0.15);

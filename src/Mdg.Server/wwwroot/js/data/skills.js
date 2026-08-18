@@ -160,25 +160,31 @@ export const SKILL_MASTERY_TREES = {
 
 /**
  * Socketed Active Gem Sockets (Hotbar mapping: LMB, Q, W, E, Space)
+ * New characters start ONLY with basic slash & dash.
  */
 export const skillSocketBoard = {
-  slash: { activeGem: 'gem_slash', supports: ['support_echo'] },
-  fireball: { activeGem: 'gem_fireball', supports: ['support_gmp', 'support_fire'] },
-  frost: { activeGem: 'gem_frost', supports: [] },
-  meteor: { activeGem: 'gem_meteor', supports: [] },
-  dash: { activeGem: 'gem_dash', supports: [] }
+  slash: { activeGem: 'gem_slash', supports: [] },
+  dash: { activeGem: 'gem_dash', supports: [] },
+  fireball: { activeGem: null, supports: [] },
+  frost: { activeGem: null, supports: [] },
+  meteor: { activeGem: null, supports: [] }
 };
 
 /**
- * Allocated Mastery Nodes per Skill
+ * Allocated Mastery Nodes per Skill (Clean initial slate for new characters)
  */
 export const allocatedMasteryNodes = {
-  slash: new Set(['sl_reach', 'sl_morph_wave']),
-  fireball: new Set(['fb_dmg_1', 'fb_aoe_1', 'fb_morph_nova']),
-  frost: new Set(['fr_aoe', 'fr_shield']),
-  meteor: new Set(['met_dmg']),
-  dash: new Set(['dsh_dist'])
+  slash: new Set(),
+  fireball: new Set(),
+  frost: new Set(),
+  meteor: new Set(),
+  dash: new Set()
 };
+
+export function isSkillUnlocked(skillKey) {
+  if (skillKey === 'slash' || skillKey === 'dash') return true;
+  return !!(skillSocketBoard[skillKey] && skillSocketBoard[skillKey].activeGem);
+}
 
 export function isNodeAllocated(skillKey, nodeId) {
   return allocatedMasteryNodes[skillKey]?.has(nodeId) || false;

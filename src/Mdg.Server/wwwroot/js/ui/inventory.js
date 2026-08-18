@@ -4,7 +4,7 @@
  */
 
 import { player, groundLoot } from '../state.js';
-import { RARITY_COLORS } from '../data/items.js';
+import { RARITY_COLORS, SET_DEFINITIONS, getActiveSetBonuses } from '../data/items.js';
 import { assets, drawItemSpriteToCanvas } from '../assets.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
@@ -63,7 +63,14 @@ export function updateBackpackUI() {
 
       // 1-Click Equip or Use
       slot.addEventListener('click', () => {
-        if (item.slot && item.slot !== 'Currency' && item.slot !== 'Gem') {
+        if (item.slot && item.slot !== 'Currency' && item.slot !== 'Gem' && item.category !== 'map') {
+          // Check level requirement
+          if (item.requiredLevel && player.level < item.requiredLevel) {
+            spawnDamageNumber(player.x, player.y - 45, `⚠️ Requires Level ${item.requiredLevel}! (Lv.${player.level})`, true, '#e06c75');
+            AudioEngine.playTone(220, 'sawtooth', 0.2, 0.2);
+            return;
+          }
+
           // Equip gear to Paperdoll
           const prev = player.equipped[item.slot];
           const realIndex = player.bag.indexOf(item);
@@ -81,6 +88,9 @@ export function updateBackpackUI() {
         } else if (item.slot === 'Currency' || item.rarity === 'Currency') {
           // Quick hint or use
           spawnDamageNumber(player.x, player.y - 40, `🔮 ${item.name}`, false, '#ffd700');
+          AudioEngine.playPickup();
+        } else if (item.id === 'scroll_resurrection' || item.category === 'consumable') {
+          spawnDamageNumber(player.x, player.y - 40, `📜 ${item.name} (Auto-consumed upon defeat)`, false, '#ffd700');
           AudioEngine.playPickup();
         }
       });
@@ -144,6 +154,10 @@ export function updatePaperdollUI() {
         if (item.primaryStats['Armor']) totalAddedArmor += parseInt(item.primaryStats['Armor']) || 0;
         if (item.primaryStats['Energy Shield']) totalAddedES += parseInt(item.primaryStats['Energy Shield']) || 0;
       }
+      if (item.stats) {
+        if (item.stats.armor) totalAddedArmor += parseInt(item.stats.armor) || 0;
+        if (item.stats.es) totalAddedES += parseInt(item.stats.es) || 0;
+      }
     } else {
       iconEl.innerHTML = '';
       iconEl.innerText = getSlotDefaultIcon(slotKey);
@@ -152,6 +166,15 @@ export function updatePaperdollUI() {
       slotEl.onclick = null;
     }
   });
+
+  // Calculate & Apply Active Set Bonuses
+  const { activeSets, totalBonusStats, hiddenSynergies } = getActiveSetBonuses(player);
+  player.activeSets = activeSets;
+  player.setBonusStats = totalBonusStats;
+  player.activeHiddenSynergies = hiddenSynergies;
+
+  if (totalBonusStats.armorPct) totalAddedArmor = Math.round(totalAddedArmor * (1 + totalBonusStats.armorPct / 100));
+  if (totalBonusStats.es) totalAddedES += totalBonusStats.es;
 
   const gArmor = document.getElementById('gss-armor');
   if (gArmor) gArmor.innerText = `+${totalAddedArmor || 770}`;
@@ -237,6 +260,19 @@ export function showItemTooltip(e, item) {
   const statsEl = document.getElementById('tt-stats');
   if (statsEl) {
     statsEl.innerHTML = '';
+
+    // Item Level & Level Requirement Row
+    const reqLvl = item.requiredLevel || 1;
+    const meetsReq = (player.level || 1) >= reqLvl;
+    statsEl.innerHTML += `
+      <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+        <span>Item Level: <b style="color:#ffd700;">${item.iLvl || 1}</b></span>
+        <span style="color:${meetsReq ? '#98c379' : '#e06c75'}; font-weight:700;">
+          Requires Level: <b>${reqLvl}</b> ${meetsReq ? '✓' : '⚠️'}
+        </span>
+      </div>
+    `;
+
     if (item.primaryStats) {
       for (let k in item.primaryStats) {
         statsEl.innerHTML += `<div>${k}: <b>${item.primaryStats[k]}</b></div>`;
@@ -251,10 +287,53 @@ export function showItemTooltip(e, item) {
 
   const modsEl = document.getElementById('tt-mods');
   if (modsEl) {
-    let modsHtml = (item.mods || []).map(m => `<div>✦ ${m}</div>`).join('');
+    let modsHtml = (item.mods || []).map(m => {
+      // Highlight Tier tags like (T1), (T2)
+      const coloredMod = m.replace(/\(T1\)/g, '<b style="color:#ffd700;">(T1)</b>')
+                          .replace(/\(T2\)/g, '<b style="color:#00f2fe;">(T2)</b>')
+                          .replace(/\(T3\)/g, '<b style="color:#c678dd;">(T3)</b>')
+                          .replace(/\(T4\)/g, '<b style="color:#8888ff;">(T4)</b>')
+                          .replace(/\(T5\)/g, '<b style="color:#abb2bf;">(T5)</b>');
+      return `<div>✦ ${coloredMod}</div>`;
+    }).join('');
+
     if (item.craftedMods) {
       modsHtml += item.craftedMods.map(m => `<div style="color:#00f2fe">🔨 [Forge] ${m}</div>`).join('');
     }
+
+    // --- SET ITEMS & HIDDEN SYNERGIES SECTION ---
+    if (item.setId && SET_DEFINITIONS[item.setId]) {
+      const setDef = SET_DEFINITIONS[item.setId];
+      const equippedPieces = Object.values(player.equipped || {}).filter(it => it && it.setId === item.setId);
+      const activeCount = equippedPieces.length;
+
+      let piecesListHtml = setDef.pieces.map(p => {
+        const isEquipped = equippedPieces.some(ep => ep.name === p.name);
+        return `<div style="color:${isEquipped ? '#00e676' : '#7f8c8d'}; font-size:11px; margin-left:8px;">
+          ${isEquipped ? '✔' : '○'} ${p.name}
+        </div>`;
+      }).join('');
+
+      let bonusesListHtml = setDef.bonuses.map(b => {
+        const isUnlocked = activeCount >= b.count;
+        return `<div style="color:${isUnlocked ? '#00e676' : '#666'}; font-size:11px; margin-top:2px; font-weight:${isUnlocked ? '600' : 'normal'};">
+          ${isUnlocked ? '★' : '☆'} (${b.count}) Set: ${b.desc}
+        </div>`;
+      }).join('');
+
+      modsHtml += `
+        <div class="tt-set-panel" style="margin-top:8px; padding-top:6px; border-top:1px dashed #00e676;">
+          <div style="color:#00e676; font-weight:700; font-size:12px; margin-bottom:4px;">
+            🌿 Set: ${setDef.name} (${activeCount}/${setDef.pieces.length})
+          </div>
+          <div style="margin-bottom:6px;">${piecesListHtml}</div>
+          <div style="background:rgba(0,230,118,0.06); padding:4px 6px; border-radius:4px;">
+            ${bonusesListHtml}
+          </div>
+        </div>
+      `;
+    }
+
     modsEl.innerHTML = modsHtml;
   }
 

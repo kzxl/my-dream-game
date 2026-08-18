@@ -236,11 +236,11 @@ function updateStashUI() {
           stashData.currency[key] = (stashData.currency[key] || 0) + count;
           player.bag.splice(i, 1);
         } else if (item.slot === 'Gem' || (item.name && item.name.includes('Gem'))) {
-          if (stashData.gems.length >= 32) return alert('Kho Ngọc & Bản Đồ đã đầy (32/32)!');
+          if (stashData.gems.length >= 32) return alert('Gems & Maps Vault is full (32/32)!');
           stashData.gems.push(item);
           player.bag.splice(i, 1);
         } else {
-          if (stashData.gear.length >= 32) return alert('Kho Trang Bị đã đầy (32/32)!');
+          if (stashData.gear.length >= 32) return alert('Equipment Vault is full (32/32)!');
           stashData.gear.push(item);
           player.bag.splice(i, 1);
         }
@@ -259,7 +259,7 @@ function updateStashUI() {
 }
 
 function renderGearVaultTab(container) {
-  document.getElementById('stashTabTitle').innerText = '🏛️ Kho Trang Bị Chung (32 Ô)';
+  document.getElementById('stashTabTitle').innerText = '🏛️ Equipment Shared Vault (32 Slots)';
   container.innerHTML = `<div class="stash-grid-32" id="vaultGrid32"></div>`;
   const grid = container.querySelector('#vaultGrid32');
 
@@ -276,7 +276,7 @@ function renderGearVaultTab(container) {
       `;
       slot.onclick = async () => {
         // Withdraw to Player Bag
-        if (player.bag.length >= MAX_BACKPACK_SLOTS) return alert('Túi đồ nhân vật đã đầy!');
+        if (player.bag.length >= MAX_BACKPACK_SLOTS) return alert('Inventory backpack is full!');
         stashData.gear.splice(i, 1);
         player.bag.push(item);
         AudioEngine.playPickup();
@@ -293,7 +293,7 @@ function renderGearVaultTab(container) {
 }
 
 function renderGemsVaultTab(container) {
-  document.getElementById('stashTabTitle').innerText = '💎 Kho Ngọc & Bản Đồ (32 Ô)';
+  document.getElementById('stashTabTitle').innerText = '💎 Gems & Maps Vault (32 Slots)';
   container.innerHTML = `<div class="stash-grid-32" id="vaultGemsGrid32"></div>`;
   const grid = container.querySelector('#vaultGemsGrid32');
 
@@ -309,7 +309,7 @@ function renderGemsVaultTab(container) {
         <div class="slot-item-type">${item.slot || 'Gem/Map'}</div>
       `;
       slot.onclick = async () => {
-        if (player.bag.length >= MAX_BACKPACK_SLOTS) return alert('Túi đồ nhân vật đã đầy!');
+        if (player.bag.length >= MAX_BACKPACK_SLOTS) return alert('Inventory backpack is full!');
         stashData.gems.splice(i, 1);
         player.bag.push(item);
         AudioEngine.playPickup();

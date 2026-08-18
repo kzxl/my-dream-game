@@ -1706,18 +1706,29 @@
 
       let row = 0;
       let col = player.isMoving ? (player.animFrame % 3) : 0;
+      let flipX = false;
 
       if (player.facing === 'down') row = 0;
       else if (player.facing === 'up') row = 1;
       else if (player.facing === 'right') row = 2;
-      else if (player.facing === 'left') row = 3;
+      else if (player.facing === 'left') {
+        row = 2;
+        flipX = true;
+      }
 
       const sx = col * frameW;
       const sy = row * frameH;
       const destW = 56;
       const destH = 56;
 
-      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      if (flipX) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      }
     } else {
       ctx.fillStyle = '#2b5c8f';
       ctx.fillRect(-12, -12, 24, 24);

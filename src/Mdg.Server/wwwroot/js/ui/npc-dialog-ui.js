@@ -11,6 +11,8 @@ import { renderSharedStashModal } from './stash-ui.js';
 import { renderMapDeviceModal } from './map-device-ui.js';
 import { renderDevotionModal } from './devotion-ui.js';
 import { sendPetToTown } from '../companion.js';
+import { SET_ITEMS_DATABASE } from '../data/items.js';
+import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
 
 let activeNpc = null;
 
@@ -39,6 +41,10 @@ export const NPC_DIALOGUES = {
       {
         label: '✨ Open Celestial Devotion Grid',
         action: () => renderDevotionModal()
+      },
+      {
+        label: '💎 Where can I find Skill Gems?',
+        response: 'Skill & Support Gems are crystallized shards of the shattered Eternal Core. They cannot be bought with mere gold; you must venture into wild biomes, defeat monsters and slay Dungeon Bosses to farm and harvest them!'
       }
     ]
   },
@@ -51,6 +57,18 @@ export const NPC_DIALOGUES = {
       {
         label: '🔨 Open Genesis Crafting Forge',
         action: () => renderForgeBenchModal()
+      },
+      {
+        label: '🎁 Claim Sacred Vanguard Set (4-Piece Set Demo)',
+        action: () => {
+          const vanguardPieces = SET_ITEMS_DATABASE.filter(it => it.setId === 'set_vanguard');
+          vanguardPieces.forEach(p => player.bag.push({ ...p }));
+          AudioEngine.playPickup();
+          spawnDamageNumber(player.x, player.y - 50, '🎁 Received 4 Vanguard Set Items!', true, '#00e676');
+          updateBackpackUI();
+          updatePaperdollUI();
+        },
+        response: 'Take these consecrated relics! Wear all 4 pieces to unlock the Sacred Bastion and unleash Triple Holy Blade Waves!'
       },
       {
         label: '❓ Socket Reforging & Metamods Guide',

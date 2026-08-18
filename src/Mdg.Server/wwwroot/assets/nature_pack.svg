@@ -1,235 +1,294 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" shape-rendering="crispEdges">
   <defs>
-    <!-- Gradients for Trees & Foliage -->
-    <radialGradient id="oakGrad" cx="40%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#98c379"/>
-      <stop offset="50%" stop-color="#4e8830"/>
-      <stop offset="100%" stop-color="#244d15"/>
-    </radialGradient>
-
-    <radialGradient id="pineGrad" cx="50%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#56b6c2"/>
-      <stop offset="40%" stop-color="#2d6d59"/>
-      <stop offset="100%" stop-color="#143c30"/>
-    </radialGradient>
-
-    <radialGradient id="cherryGrad" cx="40%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#ffb6c1"/>
-      <stop offset="40%" stop-color="#ff69b4"/>
-      <stop offset="100%" stop-color="#c71585"/>
-    </radialGradient>
-
-    <radialGradient id="autumnGrad" cx="40%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#ffd700"/>
-      <stop offset="40%" stop-color="#e06c75"/>
-      <stop offset="100%" stop-color="#9e2a2b"/>
-    </radialGradient>
-
-    <radialGradient id="willowGrad" cx="50%" cy="20%" r="80%">
-      <stop offset="0%" stop-color="#a3e635"/>
-      <stop offset="60%" stop-color="#3f6212"/>
-      <stop offset="100%" stop-color="#14532d"/>
-    </radialGradient>
-
-    <!-- Wood Trunk Gradients -->
-    <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#5c3a21"/>
-      <stop offset="50%" stop-color="#8b5a2b"/>
-      <stop offset="100%" stop-color="#3d2314"/>
-    </linearGradient>
-
-    <radialGradient id="glowMushroom" cx="40%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#67e8f9"/>
-      <stop offset="60%" stop-color="#06b6d4"/>
-      <stop offset="100%" stop-color="#083344"/>
-    </radialGradient>
-
-    <radialGradient id="redMushroom" cx="40%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#f87171"/>
-      <stop offset="60%" stop-color="#dc2626"/>
-      <stop offset="100%" stop-color="#7f1d1d"/>
-    </radialGradient>
-
-    <radialGradient id="mossyRock" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#65a30d"/>
-      <stop offset="40%" stop-color="#4b5563"/>
-      <stop offset="100%" stop-color="#1f2937"/>
-    </radialGradient>
-
-    <radialGradient id="crystalGrad" cx="30%" cy="20%" r="80%">
-      <stop offset="0%" stop-color="#f0abfc"/>
-      <stop offset="50%" stop-color="#c084fc"/>
-      <stop offset="100%" stop-color="#581c87"/>
-    </radialGradient>
+    <!-- Pixel Shading Filters & Gradients -->
+    <filter id="pixelShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="0" flood-color="#0a0d14" flood-opacity="0.8"/>
+    </filter>
   </defs>
 
-  <!-- GRID LAYOUT: 4x4 Cells (128x128 px each) -->
+  <!-- ========================================================================= -->
+  <!-- ROW 0: TREES (128x128 each)                                               -->
+  <!-- ========================================================================= -->
 
-  <!-- CELL (0,0): OAK TREE (x: 0..128, y: 0..128) -->
+  <!-- CELL (0,0): ANCIENT GNARLED OAK TREE (Dark Fantasy Pixel Art) -->
   <g id="oak_tree" transform="translate(0, 0)">
-    <!-- Shadow -->
-    <ellipse cx="64" cy="115" rx="38" ry="10" fill="rgba(0,0,0,0.3)"/>
-    <!-- Trunk -->
-    <path d="M56,65 Q58,110 50,118 L78,118 Q70,110 72,65 Z" fill="url(#trunkGrad)"/>
-    <path d="M52,118 Q64,112 76,118" stroke="#2b180d" stroke-width="2"/>
-    <!-- Foliage Layers -->
-    <circle cx="46" cy="65" r="28" fill="url(#oakGrad)"/>
-    <circle cx="82" cy="65" r="28" fill="url(#oakGrad)"/>
-    <circle cx="64" cy="42" r="32" fill="url(#oakGrad)"/>
-    <circle cx="64" cy="55" r="26" fill="#65a30d" opacity="0.4"/>
+    <!-- Base Drop Shadow -->
+    <ellipse cx="64" cy="116" rx="36" ry="10" fill="#080a0f" opacity="0.6"/>
+    <!-- Root Base -->
+    <path d="M48,118 L54,108 L60,112 L68,112 L74,108 L80,118 L72,118 L64,115 L56,118 Z" fill="#26170d"/>
+    <!-- Gnarled Trunk (Pixel Textured) -->
+    <rect x="56" y="70" width="16" height="44" fill="#3d2314"/>
+    <rect x="58" y="72" width="4" height="40" fill="#2b180d"/>
+    <rect x="64" y="74" width="4" height="36" fill="#54331d"/>
+    <rect x="68" y="76" width="3" height="32" fill="#26170d"/>
+    <!-- Branch Left & Right -->
+    <path d="M56,82 L42,74 L44,70 L58,76 Z" fill="#3d2314"/>
+    <path d="M70,80 L84,72 L86,76 L72,84 Z" fill="#3d2314"/>
+    <!-- Foliage Layer 1 - Deep Shadow Clusters -->
+    <rect x="28" y="32" width="72" height="46" rx="6" fill="#183311"/>
+    <rect x="22" y="44" width="84" height="28" rx="6" fill="#183311"/>
+    <rect x="36" y="20" width="56" height="50" rx="8" fill="#183311"/>
+    <!-- Foliage Layer 2 - Midtone Forest Green -->
+    <rect x="30" y="30" width="68" height="44" rx="6" fill="#2b591d"/>
+    <rect x="24" y="42" width="80" height="26" rx="6" fill="#2b591d"/>
+    <rect x="38" y="18" width="52" height="48" rx="8" fill="#2b591d"/>
+    <!-- Foliage Layer 3 - Light Green Clusters (Pixel Highlights) -->
+    <rect x="32" y="22" width="24" height="22" rx="4" fill="#44802c"/>
+    <rect x="68" y="24" width="22" height="20" rx="4" fill="#44802c"/>
+    <rect x="46" y="14" width="36" height="24" rx="4" fill="#44802c"/>
+    <rect x="26" y="44" width="26" height="18" rx="4" fill="#44802c"/>
+    <rect x="74" y="42" width="26" height="18" rx="4" fill="#44802c"/>
+    <!-- Foliage Layer 4 - Specular Bright Highlights -->
+    <rect x="36" y="24" width="14" height="10" rx="2" fill="#71b34a"/>
+    <rect x="52" y="16" width="22" height="12" rx="2" fill="#71b34a"/>
+    <rect x="76" y="26" width="12" height="8" rx="2" fill="#71b34a"/>
+    <rect x="30" y="46" width="14" height="8" rx="2" fill="#71b34a"/>
+    <rect x="78" y="44" width="14" height="8" rx="2" fill="#71b34a"/>
+    <rect x="54" y="18" width="12" height="5" fill="#a4db6e"/>
   </g>
 
-  <!-- CELL (1,0): PINE TREE (x: 128..256, y: 0..128) -->
+  <!-- CELL (1,0): FROSTPEAK PINE TREE (Tiered Needle Pine) -->
   <g id="pine_tree" transform="translate(128, 0)">
-    <ellipse cx="64" cy="115" rx="30" ry="8" fill="rgba(0,0,0,0.3)"/>
-    <rect x="58" y="90" width="12" height="26" fill="url(#trunkGrad)"/>
-    <!-- Pine Needle Triangles -->
-    <polygon points="64,15 28,55 100,55" fill="url(#pineGrad)"/>
-    <polygon points="64,38 20,80 108,80" fill="url(#pineGrad)"/>
-    <polygon points="64,62 14,102 114,102" fill="url(#pineGrad)"/>
-    <polygon points="64,18 36,52 92,52" fill="#5eead4" opacity="0.3"/>
+    <ellipse cx="64" cy="116" rx="30" ry="8" fill="#080a0f" opacity="0.6"/>
+    <!-- Trunk -->
+    <rect x="59" y="88" width="10" height="26" fill="#382115"/>
+    <rect x="61" y="90" width="3" height="22" fill="#523220"/>
+    <!-- Tier 3 (Bottom Needles) -->
+    <polygon points="64,68 18,102 110,102" fill="#132b26"/>
+    <polygon points="64,68 22,98 106,98" fill="#1b423b"/>
+    <polygon points="64,70 30,94 98,94" fill="#285e54"/>
+    <polygon points="64,72 40,88 88,88" fill="#3c8275"/>
+    <!-- Tier 2 (Middle Needles) -->
+    <polygon points="64,42 26,74 102,74" fill="#132b26"/>
+    <polygon points="64,42 30,70 98,70" fill="#1b423b"/>
+    <polygon points="64,44 38,66 90,66" fill="#285e54"/>
+    <polygon points="64,46 46,60 82,60" fill="#3c8275"/>
+    <!-- Tier 1 (Top Peak) -->
+    <polygon points="64,14 36,46 92,46" fill="#132b26"/>
+    <polygon points="64,14 40,43 88,43" fill="#1b423b"/>
+    <polygon points="64,16 46,39 82,39" fill="#285e54"/>
+    <polygon points="64,18 52,34 76,34" fill="#3c8275"/>
+    <!-- Frost / Snow Highlights -->
+    <polygon points="64,14 58,26 70,26" fill="#8bf0e0"/>
+    <polygon points="64,42 54,54 74,54" fill="#8bf0e0"/>
+    <polygon points="64,68 50,78 78,78" fill="#8bf0e0"/>
   </g>
 
-  <!-- CELL (2,0): CHERRY BLOSSOM TREE (x: 256..384, y: 0..128) -->
+  <!-- CELL (2,0): MYSTIC CHERRY BLOSSOM TREE (Arcane Magenta/Pink) -->
   <g id="cherry_tree" transform="translate(256, 0)">
-    <ellipse cx="64" cy="115" rx="36" ry="10" fill="rgba(0,0,0,0.3)"/>
-    <!-- Curved Artistic Trunk -->
-    <path d="M58,65 Q50,95 48,118 L76,118 Q72,90 68,65 Z" fill="url(#trunkGrad)"/>
-    <circle cx="44" cy="62" r="26" fill="url(#cherryGrad)"/>
-    <circle cx="84" cy="62" r="26" fill="url(#cherryGrad)"/>
-    <circle cx="64" cy="40" r="30" fill="url(#cherryGrad)"/>
-    <!-- Blossom Petal Highlights -->
-    <circle cx="50" cy="38" r="4" fill="#ffffff" opacity="0.7"/>
-    <circle cx="78" cy="48" r="3" fill="#ffffff" opacity="0.7"/>
-    <circle cx="62" cy="62" r="4" fill="#fbcfe8" opacity="0.8"/>
+    <ellipse cx="64" cy="116" rx="34" ry="9" fill="#080a0f" opacity="0.6"/>
+    <!-- Curved Ancient Trunk -->
+    <path d="M58,72 Q52,98 50,116 L76,116 Q72,94 68,72 Z" fill="#382025"/>
+    <rect x="58" y="80" width="4" height="34" fill="#57333b"/>
+    <!-- Blossom Clusters -->
+    <rect x="28" y="24" width="72" height="52" rx="8" fill="#591431"/>
+    <rect x="24" y="38" width="80" height="30" rx="8" fill="#591431"/>
+    <rect x="30" y="22" width="68" height="48" rx="8" fill="#8c2350"/>
+    <rect x="26" y="36" width="76" height="26" rx="8" fill="#8c2350"/>
+    <!-- Midtone Pink Highlights -->
+    <rect x="34" y="24" width="24" height="20" rx="4" fill="#c4437a"/>
+    <rect x="68" y="26" width="22" height="18" rx="4" fill="#c4437a"/>
+    <rect x="48" y="16" width="32" height="22" rx="4" fill="#c4437a"/>
+    <rect x="28" y="44" width="24" height="14" rx="4" fill="#c4437a"/>
+    <rect x="74" y="42" width="24" height="14" rx="4" fill="#c4437a"/>
+    <!-- Bright Petal Shimmer -->
+    <rect x="38" y="26" width="14" height="10" rx="2" fill="#f472b6"/>
+    <rect x="52" y="18" width="18" height="10" rx="2" fill="#f472b6"/>
+    <rect x="76" y="28" width="12" height="8" rx="2" fill="#f472b6"/>
+    <rect x="54" y="20" width="8" height="4" fill="#fbcfe8"/>
   </g>
 
-  <!-- CELL (3,0): AUTUMN MAPLE TREE (x: 384..512, y: 0..128) -->
+  <!-- CELL (3,0): CURSED AUTUMN ASH TREE (Fiery Amber / Blood Orange) -->
   <g id="autumn_tree" transform="translate(384, 0)">
-    <ellipse cx="64" cy="115" rx="36" ry="10" fill="rgba(0,0,0,0.3)"/>
-    <path d="M56,65 Q58,110 50,118 L78,118 Q70,110 72,65 Z" fill="url(#trunkGrad)"/>
-    <circle cx="44" cy="65" r="26" fill="url(#autumnGrad)"/>
-    <circle cx="84" cy="65" r="26" fill="url(#autumnGrad)"/>
-    <circle cx="64" cy="42" r="30" fill="url(#autumnGrad)"/>
-    <circle cx="64" cy="50" r="18" fill="#fef08a" opacity="0.5"/>
+    <ellipse cx="64" cy="116" rx="34" ry="9" fill="#080a0f" opacity="0.6"/>
+    <rect x="58" y="74" width="12" height="42" fill="#2d1d17"/>
+    <rect x="60" y="76" width="3" height="38" fill="#4d3228"/>
+    <!-- Deep Reddish Foliage Shadow -->
+    <rect x="28" y="22" width="72" height="54" rx="8" fill="#52120e"/>
+    <rect x="22" y="38" width="84" height="32" rx="8" fill="#52120e"/>
+    <rect x="30" y="20" width="68" height="50" rx="8" fill="#8f2b18"/>
+    <rect x="24" y="36" width="80" height="28" rx="8" fill="#8f2b18"/>
+    <!-- Golden Amber Midtone -->
+    <rect x="34" y="22" width="26" height="22" rx="4" fill="#d9651e"/>
+    <rect x="66" y="24" width="24" height="20" rx="4" fill="#d9651e"/>
+    <rect x="46" y="14" width="36" height="24" rx="4" fill="#d9651e"/>
+    <!-- Bright Gold Specular -->
+    <rect x="38" y="24" width="16" height="12" rx="2" fill="#fbbf24"/>
+    <rect x="52" y="16" width="20" height="12" rx="2" fill="#fbbf24"/>
+    <rect x="74" y="26" width="14" height="10" rx="2" fill="#fbbf24"/>
+    <rect x="54" y="18" width="10" height="5" fill="#fef08a"/>
   </g>
 
-  <!-- ROW 2: BUSHES & NATURE PROPS -->
+  <!-- ========================================================================= -->
+  <!-- ROW 1: BUSHES & FLORA (128x128 each)                                      -->
+  <!-- ========================================================================= -->
 
-  <!-- CELL (0,1): LUSH BERRY BUSH (x: 0..128, y: 128..256) -->
-  <g id="lush_bush" transform="translate(0, 128)">
-    <ellipse cx="64" cy="100" rx="38" ry="14" fill="rgba(0,0,0,0.25)"/>
-    <circle cx="44" cy="74" r="24" fill="url(#oakGrad)"/>
-    <circle cx="84" cy="74" r="24" fill="url(#oakGrad)"/>
-    <circle cx="64" cy="58" r="26" fill="url(#oakGrad)"/>
-    <!-- Glowing Berries -->
-    <circle cx="45" cy="55" r="4" fill="#ef4444"/>
-    <circle cx="58" cy="75" r="3.5" fill="#ef4444"/>
-    <circle cx="78" cy="60" r="4.5" fill="#ef4444"/>
-    <circle cx="85" cy="78" r="3.5" fill="#ef4444"/>
-    <circle cx="36" cy="78" r="3" fill="#f87171"/>
+  <!-- CELL (0,1): WILD BLACKBERRY BUSH (x: 0, y: 128) -->
+  <g id="bush" transform="translate(0, 128)">
+    <ellipse cx="64" cy="100" rx="28" ry="7" fill="#080a0f" opacity="0.6"/>
+    <!-- Bush Clump Shadow -->
+    <rect x="32" y="62" width="64" height="36" rx="10" fill="#142e11"/>
+    <rect x="24" y="70" width="80" height="26" rx="8" fill="#142e11"/>
+    <!-- Midtone Leaves -->
+    <rect x="34" y="60" width="60" height="32" rx="8" fill="#25541c"/>
+    <rect x="26" y="68" width="76" height="22" rx="6" fill="#25541c"/>
+    <!-- Leaf Highlights -->
+    <rect x="36" y="62" width="22" height="14" rx="3" fill="#44802c"/>
+    <rect x="68" y="64" width="22" height="14" rx="3" fill="#44802c"/>
+    <rect x="48" y="56" width="28" height="16" rx="3" fill="#44802c"/>
+    <rect x="52" y="58" width="12" height="6" fill="#71b34a"/>
+    <!-- Berries (Deep Violet & Crimson) -->
+    <circle cx="44" cy="74" r="3" fill="#701a75"/>
+    <circle cx="43" cy="73" r="1" fill="#f472b6"/>
+    <circle cx="78" cy="72" r="3" fill="#701a75"/>
+    <circle cx="62" cy="80" r="3.5" fill="#9f1239"/>
+    <circle cx="61" cy="79" r="1" fill="#fb7185"/>
+    <circle cx="86" cy="82" r="3" fill="#9f1239"/>
   </g>
 
-  <!-- CELL (1,1): TALL WINDY GRASS (x: 128..256, y: 128..256) -->
+  <!-- CELL (1,1): DENSE TALL REED GRASS (x: 128, y: 128) -->
   <g id="tall_grass" transform="translate(128, 128)">
-    <ellipse cx="64" cy="105" rx="30" ry="8" fill="rgba(0,0,0,0.2)"/>
-    <!-- Grass Blades -->
-    <path d="M40,105 Q30,60 25,45 Q42,70 48,105" fill="#84cc16"/>
-    <path d="M50,105 Q55,50 62,32 Q65,65 60,105" fill="#4d7c0f"/>
-    <path d="M58,105 Q70,55 85,40 Q75,75 68,105" fill="#65a30d"/>
-    <path d="M35,105 Q45,75 52,60 Q48,85 42,105" fill="#a3e635"/>
-    <path d="M68,105 Q82,75 92,62 Q80,88 74,105" fill="#a3e635"/>
+    <ellipse cx="64" cy="102" rx="24" ry="6" fill="#080a0f" opacity="0.5"/>
+    <!-- Dark Grass Blades -->
+    <path d="M42,102 L38,62 L46,102 Z" fill="#163814"/>
+    <path d="M50,102 L48,54 L56,102 Z" fill="#163814"/>
+    <path d="M60,102 L62,48 L66,102 Z" fill="#163814"/>
+    <path d="M72,102 L76,52 L78,102 Z" fill="#163814"/>
+    <path d="M82,102 L88,64 L86,102 Z" fill="#163814"/>
+    <!-- Midtone Blades -->
+    <path d="M44,102 L42,66 L48,102 Z" fill="#2d6a24"/>
+    <path d="M52,102 L52,58 L58,102 Z" fill="#2d6a24"/>
+    <path d="M62,102 L64,52 L68,102 Z" fill="#2d6a24"/>
+    <path d="M70,102 L74,56 L76,102 Z" fill="#2d6a24"/>
+    <path d="M80,102 L84,68 L84,102 Z" fill="#2d6a24"/>
+    <!-- Bright Tips -->
+    <path d="M52,66 L52,58 L55,66 Z" fill="#65a30d"/>
+    <path d="M62,60 L64,52 L65,60 Z" fill="#84cc16"/>
+    <path d="M71,64 L74,56 L75,64 Z" fill="#84cc16"/>
   </g>
 
-  <!-- CELL (2,1): RED POPPY WILDFLOWERS (x: 256..384, y: 128..256) -->
+  <!-- CELL (2,1): BLOOD LOTUS WILDFLOWERS (x: 256, y: 128) -->
   <g id="flowers_red" transform="translate(256, 128)">
-    <ellipse cx="64" cy="100" rx="32" ry="9" fill="rgba(0,0,0,0.2)"/>
-    <!-- Stems & Leaves -->
-    <path d="M45,100 Q42,75 40,65" stroke="#4d7c0f" stroke-width="3" fill="none"/>
-    <path d="M64,100 Q65,70 64,52" stroke="#4d7c0f" stroke-width="3" fill="none"/>
-    <path d="M82,100 Q85,75 88,62" stroke="#4d7c0f" stroke-width="3" fill="none"/>
-    <!-- Flower 1 -->
-    <circle cx="40" cy="62" r="10" fill="#dc2626"/>
-    <circle cx="40" cy="62" r="4" fill="#450a0a"/>
-    <!-- Flower 2 -->
-    <circle cx="64" cy="48" r="13" fill="#ef4444"/>
-    <circle cx="64" cy="48" r="5" fill="#7f1d1d"/>
-    <!-- Flower 3 -->
-    <circle cx="88" cy="60" r="11" fill="#f87171"/>
-    <circle cx="88" cy="60" r="4" fill="#450a0a"/>
+    <ellipse cx="64" cy="100" rx="22" ry="6" fill="#080a0f" opacity="0.5"/>
+    <!-- Leaf base -->
+    <ellipse cx="64" cy="98" rx="20" ry="8" fill="#1c4718"/>
+    <ellipse cx="64" cy="96" rx="16" ry="6" fill="#307828"/>
+    <!-- Red Flowers -->
+    <!-- Center Big Flower -->
+    <circle cx="64" cy="80" r="7" fill="#881337"/>
+    <circle cx="64" cy="80" r="5" fill="#e11d48"/>
+    <circle cx="64" cy="80" r="2.5" fill="#fbbf24"/>
+    <!-- Left Flower -->
+    <circle cx="48" cy="88" r="5.5" fill="#881337"/>
+    <circle cx="48" cy="88" r="4" fill="#e11d48"/>
+    <circle cx="48" cy="88" r="2" fill="#fbbf24"/>
+    <!-- Right Flower -->
+    <circle cx="78" cy="86" r="6" fill="#881337"/>
+    <circle cx="78" cy="86" r="4.5" fill="#e11d48"/>
+    <circle cx="78" cy="86" r="2" fill="#fbbf24"/>
+    <!-- Top Small Bud -->
+    <circle cx="58" cy="70" r="4" fill="#e11d48"/>
+    <circle cx="58" cy="70" r="1.5" fill="#ffe4e6"/>
   </g>
 
-  <!-- CELL (3,1): BLUE BELL WILDFLOWERS (x: 384..512, y: 128..256) -->
+  <!-- CELL (3,1): STARLIGHT AZURE FLOWERS (x: 384, y: 128) -->
   <g id="flowers_blue" transform="translate(384, 128)">
-    <ellipse cx="64" cy="100" rx="32" ry="9" fill="rgba(0,0,0,0.2)"/>
-    <path d="M46,100 Q40,70 42,58" stroke="#15803d" stroke-width="3" fill="none"/>
-    <path d="M64,100 Q66,65 64,48" stroke="#15803d" stroke-width="3" fill="none"/>
-    <path d="M80,100 Q86,70 82,55" stroke="#15803d" stroke-width="3" fill="none"/>
-    <!-- Blue Petals -->
-    <circle cx="42" cy="55" r="9" fill="#0284c7"/>
-    <circle cx="42" cy="55" r="3" fill="#e0f2fe"/>
-    <circle cx="64" cy="45" r="12" fill="#0ea5e9"/>
-    <circle cx="64" cy="45" r="4" fill="#ffffff"/>
-    <circle cx="82" cy="52" r="10" fill="#38bdf8"/>
-    <circle cx="82" cy="52" r="3" fill="#e0f2fe"/>
+    <ellipse cx="64" cy="100" rx="22" ry="6" fill="#080a0f" opacity="0.5"/>
+    <ellipse cx="64" cy="98" rx="20" ry="8" fill="#12382c"/>
+    <ellipse cx="64" cy="96" rx="16" ry="6" fill="#1e5c49"/>
+    <!-- Glowing Blue Petals -->
+    <circle cx="64" cy="78" r="7.5" fill="#0f375a"/>
+    <circle cx="64" cy="78" r="5.5" fill="#0284c7"/>
+    <circle cx="64" cy="78" r="3" fill="#38bdf8"/>
+    <circle cx="64" cy="78" r="1" fill="#ffffff"/>
+    <!-- Side Flowers -->
+    <circle cx="46" cy="86" r="6" fill="#0284c7"/>
+    <circle cx="46" cy="86" r="3" fill="#7dd3fc"/>
+    <circle cx="80" cy="84" r="6" fill="#0284c7"/>
+    <circle cx="80" cy="84" r="3" fill="#7dd3fc"/>
   </g>
 
-  <!-- ROW 3: GOLDEN LOTUS, GLOW MUSHROOMS & ROCKS -->
+  <!-- ========================================================================= -->
+  <!-- ROW 2: PROPS & ENVIRONMENT (128x128 each)                                 -->
+  <!-- ========================================================================= -->
 
-  <!-- CELL (0,2): GOLDEN LOTUS (x: 0..128, y: 256..384) -->
+  <!-- CELL (0,2): GOLDEN SUNBURST BLOSSOM (x: 0, y: 256) -->
   <g id="flowers_gold" transform="translate(0, 256)">
-    <ellipse cx="64" cy="98" rx="34" ry="10" fill="rgba(0,0,0,0.25)"/>
-    <!-- Radiant Leaf Pad -->
-    <ellipse cx="64" cy="92" rx="36" ry="12" fill="#15803d"/>
-    <!-- Lotus Petals Layered -->
-    <path d="M64,42 Q40,65 48,82 Q64,88 80,82 Q88,65 64,42 Z" fill="#eab308"/>
-    <path d="M64,48 Q48,68 54,80 Q64,84 74,80 Q80,68 64,48 Z" fill="#facc15"/>
-    <circle cx="64" cy="70" r="7" fill="#fef08a"/>
-    <!-- Glow Sparkles -->
-    <polygon points="64,30 66,38 74,40 66,42 64,50 62,42 54,40 62,38" fill="#ffffff"/>
+    <ellipse cx="64" cy="100" rx="22" ry="6" fill="#080a0f" opacity="0.5"/>
+    <ellipse cx="64" cy="98" rx="18" ry="7" fill="#1a3b1a"/>
+    <ellipse cx="64" cy="96" rx="14" ry="5" fill="#2d612c"/>
+    <!-- Gold/Amber Flowers -->
+    <circle cx="64" cy="80" r="7" fill="#78350f"/>
+    <circle cx="64" cy="80" r="5" fill="#d97706"/>
+    <circle cx="64" cy="80" r="2.5" fill="#fde68a"/>
+    <circle cx="48" cy="86" r="5.5" fill="#d97706"/>
+    <circle cx="48" cy="86" r="2" fill="#fde68a"/>
+    <circle cx="78" cy="86" r="5.5" fill="#d97706"/>
+    <circle cx="78" cy="86" r="2" fill="#fde68a"/>
   </g>
 
-  <!-- CELL (1,2): BIOLUMINESCENT GLOW MUSHROOMS (x: 128..256, y: 256..384) -->
+  <!-- CELL (1,2): LUMINESCENT SPORE MUSHROOM (x: 128, y: 256) -->
   <g id="mushroom_glow" transform="translate(128, 256)">
-    <ellipse cx="64" cy="102" rx="30" ry="9" fill="rgba(0,0,0,0.3)"/>
+    <ellipse cx="64" cy="102" rx="26" ry="7" fill="#080a0f" opacity="0.6"/>
     <!-- Stems -->
-    <path d="M48,102 Q44,80 46,70 L56,70 Q56,80 58,102 Z" fill="#cffafe"/>
-    <path d="M70,102 Q72,75 70,55 L82,55 Q84,75 80,102 Z" fill="#e0f2fe"/>
-    <!-- Big Glowing Cap -->
-    <path d="M58,55 Q76,25 94,55 Q76,64 58,55 Z" fill="url(#glowMushroom)"/>
-    <circle cx="76" cy="42" r="3" fill="#ffffff" opacity="0.8"/>
-    <circle cx="86" cy="48" r="2.5" fill="#a5f3fc" opacity="0.8"/>
-    <!-- Small Cap -->
-    <path d="M38,70 Q50,48 64,70 Q50,76 38,70 Z" fill="url(#glowMushroom)"/>
-    <!-- Spores Glow Aura -->
-    <circle cx="76" cy="28" r="2" fill="#22d3ee"/>
-    <circle cx="92" cy="35" r="1.5" fill="#67e8f9"/>
-    <circle cx="44" cy="50" r="1.5" fill="#67e8f9"/>
+    <rect x="60" y="80" width="8" height="22" rx="3" fill="#cbd5e1"/>
+    <rect x="62" y="82" width="2" height="18" fill="#f8fafc"/>
+    <rect x="42" y="88" width="6" height="14" rx="2" fill="#94a3b8"/>
+    <rect x="80" y="86" width="6" height="16" rx="2" fill="#94a3b8"/>
+    <!-- Big Center Glow Cap (Cyan/Teal Spores) -->
+    <path d="M44,80 Q64,52 84,80 Z" fill="#0e454f"/>
+    <path d="M46,78 Q64,54 82,78 Z" fill="#06b6d4"/>
+    <path d="M50,74 Q64,56 78,74 Z" fill="#67e8f9"/>
+    <!-- Glowing Spots -->
+    <circle cx="56" cy="68" r="2.5" fill="#ecfeff"/>
+    <circle cx="70" cy="66" r="2.5" fill="#ecfeff"/>
+    <circle cx="64" cy="60" r="2" fill="#ecfeff"/>
+    <!-- Side Small Caps -->
+    <path d="M34,88 Q44,70 54,88 Z" fill="#0284c7"/>
+    <circle cx="44" cy="78" r="1.5" fill="#e0f2fe"/>
+    <path d="M74,86 Q84,68 94,86 Z" fill="#8b5cf6"/>
+    <circle cx="84" cy="76" r="1.5" fill="#ede9fe"/>
   </g>
 
-  <!-- CELL (2,2): MOSSY BOULDER ROCK (x: 256..384, y: 256..384) -->
+  <!-- CELL (2,2): ANCIENT MOSSY MEGALITH ROCK (x: 256, y: 256) -->
   <g id="mossy_rock" transform="translate(256, 256)">
-    <ellipse cx="64" cy="104" rx="42" ry="12" fill="rgba(0,0,0,0.35)"/>
-    <!-- Main Rock Body -->
-    <path d="M26,98 Q22,65 42,50 Q68,40 92,55 Q106,75 98,98 Q64,106 26,98 Z" fill="url(#mossyRock)"/>
-    <!-- Moss Top Overlay -->
-    <path d="M38,65 Q52,44 76,46 Q90,52 86,68 Q72,60 56,68 Q44,75 38,65 Z" fill="#84cc16" opacity="0.85"/>
-    <path d="M48,56 Q62,48 70,52" stroke="#d9f99d" stroke-width="2" fill="none"/>
-    <!-- Small Pebble -->
-    <ellipse cx="104" cy="98" rx="8" ry="5" fill="#4b5563"/>
+    <ellipse cx="64" cy="102" rx="32" ry="9" fill="#080a0f" opacity="0.6"/>
+    <!-- Chiseled Boulder Base (Dark Grey Slate) -->
+    <polygon points="34,102 24,84 38,58 72,52 98,70 102,96 86,106 48,106" fill="#1e2530"/>
+    <polygon points="36,100 26,84 40,60 70,54 96,72 98,94 84,102 50,102" fill="#2d3748"/>
+    <!-- Boulder Chiseled Facets -->
+    <polygon points="40,60 70,54 78,76 46,84" fill="#4a5568"/>
+    <polygon points="70,54 96,72 82,88 78,76" fill="#3b4453"/>
+    <polygon points="46,84 78,76 80,98 44,98" fill="#242b35"/>
+    <polygon points="42,62 66,56 64,66 44,70" fill="#718096"/>
+    <!-- Moss Patches (Deep & Bright Forest Green) -->
+    <path d="M38,62 Q48,54 58,58 Q66,54 74,56 L70,68 Q58,62 48,68 Z" fill="#225419"/>
+    <path d="M40,60 Q48,56 56,58 L54,64 Q46,62 42,65 Z" fill="#4d9e31"/>
+    <circle cx="50" cy="59" r="1.5" fill="#86efac"/>
+    <path d="M78,82 Q86,76 94,80 L90,88 Q84,84 80,88 Z" fill="#225419"/>
+    <path d="M80,82 Q86,78 92,80 L88,85 Z" fill="#4d9e31"/>
   </g>
 
-  <!-- CELL (3,2): ANCIENT AETHER CRYSTAL SPIRE (x: 384..512, y: 256..384) -->
+  <!-- CELL (3,2): VOID-INFUSED CRYSTAL SPIRE (x: 384, y: 256) -->
   <g id="crystal_spire" transform="translate(384, 256)">
-    <ellipse cx="64" cy="106" rx="36" ry="10" fill="rgba(0,0,0,0.35)"/>
-    <!-- Crystal Facets -->
-    <polygon points="64,20 45,75 58,105 70,105 83,75" fill="url(#crystalGrad)"/>
-    <polygon points="64,20 58,105 70,105" fill="#e879f9" opacity="0.7"/>
-    <polygon points="64,20 70,105 83,75" fill="#a855f7" opacity="0.9"/>
-    <!-- Side Crystals -->
-    <polygon points="36,60 25,95 38,102 44,80" fill="url(#crystalGrad)"/>
-    <polygon points="92,60 84,80 90,102 103,95" fill="url(#crystalGrad)"/>
-    <!-- Glowing Core Light -->
-    <circle cx="64" cy="65" r="6" fill="#ffffff" opacity="0.8"/>
+    <ellipse cx="64" cy="106" rx="28" ry="8" fill="#080a0f" opacity="0.6"/>
+    <!-- Base Stone Ring -->
+    <polygon points="42,106 36,96 50,92 78,92 92,96 86,106" fill="#1e1829"/>
+    <!-- Crystal 1 (Left Small) -->
+    <polygon points="40,94 34,74 42,62 48,76 46,94" fill="#4c1d95"/>
+    <polygon points="42,62 48,76 46,94 42,94" fill="#7c3aed"/>
+    <polygon points="38,66 42,62 44,72 40,74" fill="#c4b5fd"/>
+    <!-- Crystal 2 (Right Medium) -->
+    <polygon points="78,94 74,70 84,54 92,72 86,94" fill="#4c1d95"/>
+    <polygon points="84,54 92,72 86,94 82,94" fill="#7c3aed"/>
+    <polygon points="80,58 84,54 86,68 82,70" fill="#c4b5fd"/>
+    <!-- Crystal 3 (Center Monolith Spire) -->
+    <polygon points="56,96 48,60 64,18 78,60 72,96" fill="#2e1065"/>
+    <polygon points="64,18 78,60 72,96 64,96" fill="#5b21b6"/>
+    <polygon points="64,18 64,96 56,96 48,60" fill="#7c3aed"/>
+    <polygon points="64,18 68,48 64,90 60,48" fill="#a855f7"/>
+    <polygon points="64,22 66,38 64,56 62,38" fill="#e9d5ff"/>
+    <line x1="64" y1="20" x2="64" y2="92" stroke="#ffffff" stroke-width="1.5" opacity="0.8"/>
   </g>
+
 </svg>

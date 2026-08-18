@@ -327,34 +327,59 @@ export function drawPlayerClean(ctx) {
 
     let row = 0;
     let col = player.isMoving ? (player.animFrame % 3) : 0;
+    let flipX = false;
 
     if (player.facing === 'down') row = 0;
     else if (player.facing === 'up') row = 1;
     else if (player.facing === 'right') row = 2;
-    else if (player.facing === 'left') row = 3;
+    else if (player.facing === 'left') {
+      row = 2;
+      flipX = true;
+    }
 
     const sx = col * frameW;
     const sy = row * frameH;
     const destW = 56;
     const destH = 56;
 
-    ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+    if (flipX) {
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      ctx.restore();
+    } else {
+      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+    }
   } else {
     ctx.fillStyle = '#2b5c8f';
     ctx.fillRect(-12, -12, 24, 24);
   }
 
-  const titleColor = player.classSpec === 'Vanguard' ? '#e5c07b' : (player.classSpec === 'Arcanist' ? '#61afef' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#ffffff'));
+  const titleColor = player.isDead ? '#e06c75' : (player.classSpec === 'Vanguard' ? '#e5c07b' : (player.classSpec === 'Arcanist' ? '#61afef' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#ffffff')));
   ctx.font = 'bold 10px "Outfit", sans-serif';
   ctx.fillStyle = titleColor;
   ctx.textAlign = 'center';
-  ctx.fillText(`${player.gender === 'Male' ? '♂' : '♀'} ${player.classSpec} [Lv.${player.level}]`, 0, -42);
+  const statusBadge = player.isDead ? ' ☠️ [FALLEN]' : '';
+  ctx.fillText(`${player.gender === 'Male' ? '♂' : '♀'} ${player.classSpec} [Lv.${player.level}]${statusBadge}`, 0, -42);
 
   // Player Frozen Ice Aura
   if (player.freezeTimer > 0) {
     ctx.strokeStyle = '#00f2fe';
     ctx.lineWidth = 2;
     ctx.strokeRect(-22, -48, 44, 68);
+  }
+
+  // Divine Holy Invulnerability Shield
+  if (player.invulnerableTimer > 0) {
+    ctx.save();
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   ctx.restore();
@@ -521,6 +546,7 @@ export function drawPropClean(ctx, p) {
     }
 
     if (col !== -1 && row !== -1) {
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
         natImg,
         col * cellSize, row * cellSize, cellSize, cellSize,
@@ -531,7 +557,41 @@ export function drawPropClean(ctx, p) {
     }
   }
 
-  // 2. Fallback to Legacy Props Sheet (barrel, chest, campfire)
+  // 2. Check Master Buildings Pack
+  const bldImg = assets.buildings;
+  if (bldImg && bldImg.complete && bldImg.naturalWidth > 0) {
+    const bW = bldImg.naturalWidth;
+    const bH = bldImg.naturalHeight;
+    ctx.imageSmoothingEnabled = false;
+
+    if (p.type === 'castle') {
+      ctx.drawImage(bldImg, bW * 0.58, 0, bW * 0.42, bH * 0.58, -90, -140, 180, 160);
+      ctx.restore();
+      return;
+    } else if (p.type === 'house_blue') {
+      ctx.drawImage(bldImg, 0, 0, bW * 0.28, bH * 0.40, -45, -70, 90, 80);
+      ctx.restore();
+      return;
+    } else if (p.type === 'house_shop') {
+      ctx.drawImage(bldImg, bW * 0.29, 0, bW * 0.28, bH * 0.40, -45, -70, 90, 80);
+      ctx.restore();
+      return;
+    } else if (p.type === 'windmill') {
+      ctx.drawImage(bldImg, 0, bH * 0.42, bW * 0.28, bH * 0.45, -45, -80, 90, 95);
+      ctx.restore();
+      return;
+    } else if (p.type === 'blacksmith') {
+      ctx.drawImage(bldImg, bW * 0.29, bH * 0.42, bW * 0.29, bH * 0.45, -48, -75, 96, 90);
+      ctx.restore();
+      return;
+    } else if (p.type === 'watchtower') {
+      ctx.drawImage(bldImg, bW * 0.82, bH * 0.42, bW * 0.18, bH * 0.55, -28, -90, 56, 105);
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 3. Fallback to Legacy Props Sheet (barrel, chest, campfire, tent, well)
   const img = assets.props;
   if (img.complete && img.naturalWidth > 0) {
     const W = img.naturalWidth;

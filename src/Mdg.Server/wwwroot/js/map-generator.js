@@ -261,7 +261,7 @@ export class MapGenerator {
       levelRange: 'Lv. 10-18',
       hazard: {
         hazardName: 'Curse of Miasma',
-        description: 'Deadly chướng khí độc. Stepping on Toxic Miasma deals 30 Chaos Dmg/s. Reduces Flask recovery if Chaos Resistance < 50%!'
+        description: 'Deadly toxic miasma. Stepping on Toxic Miasma deals 30 Chaos Dmg/s. Reduces Flask recovery if Chaos Resistance < 50%!'
       },
       widthInTiles: w,
       heightInTiles: h,
