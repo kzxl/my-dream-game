@@ -457,7 +457,6 @@ canvas#gameCanvas {
 }
 
 .socket-board-title small { font-family: 'Outfit', sans-serif; font-size: 11px; color: #abb2bf; }
-
 .socket-slots-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 
 .socket-slot-card {
@@ -678,7 +677,6 @@ canvas#gameCanvas {
   text-align: center;
 }
 
-/* Attribute Cards (STR, DEX, INT) */
 .attr-box {
   background: #222736;
   border: 1px solid #4b5263;
@@ -702,7 +700,6 @@ canvas#gameCanvas {
 }
 
 .attr-box small { font-size: 9px; color: #abb2bf; }
-
 .stat-divider-sub { height: 1px; background: #2f3545; margin: 4px 0; }
 
 .stat-item-row {
@@ -715,41 +712,136 @@ canvas#gameCanvas {
 
 .stat-item-row b { color: #ffffff; font-weight: 700; }
 
-/* Resistance Bars */
-.res-bar-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 4px;
-}
-
-.res-label-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.res-track {
-  width: 100%;
-  height: 6px;
-  background: #252a38;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
+.res-bar-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.res-label-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
+.res-track { width: 100%; height: 6px; background: #252a38; border-radius: 3px; overflow: hidden; }
 .res-fill { height: 100%; border-radius: 3px; }
 .fill-fire { background: linear-gradient(90deg, #ff416c, #e06c75); }
 .fill-cold { background: linear-gradient(90deg, #4facfe, #00f2fe); }
 .fill-light { background: linear-gradient(90deg, #ffd700, #e5c07b); }
 .fill-chaos { background: linear-gradient(90deg, #c678dd, #a06cd5); }
 
-.stat-footer-hint {
-  text-align: center;
-  font-size: 11px;
-  color: #abb2bf;
-  font-style: italic;
+.stat-footer-hint { text-align: center; font-size: 11px; color: #abb2bf; font-style: italic; }
+
+/* ==========================================
+   MULTI-CHARACTER ROSTER & SELECT MODAL
+   ========================================== */
+.roster-modal-box {
+  width: 90vw;
+  max-width: 860px;
+  background: #161a24;
+  border: 4px solid #61afef;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(97, 175, 239, 0.25);
+  display: flex;
+  flex-direction: column;
 }
+
+.roster-header { width: 100%; text-align: center; margin-bottom: 16px; }
+.roster-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px; }
+.roster-header h2 { font-family: 'Press Start 2P', monospace; font-size: 13px; color: #61afef; flex: 1; text-align: center; }
+.roster-header p { color: #98c379; font-size: 12px; }
+
+.roster-content-layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+
+.roster-list-panel, .create-hero-panel {
+  background: #1c212e;
+  border: 2px solid #3e4451;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.roster-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.roster-char-card {
+  background: #242938;
+  border: 2px solid #3e4451;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.roster-char-card:hover { border-color: #61afef; transform: translateY(-2px); }
+.roster-active-hero { border-color: #ffd700 !important; background: #2f3422 !important; box-shadow: 0 0 12px rgba(255, 215, 0, 0.35); }
+
+.char-info-col { display: flex; flex-direction: column; gap: 2px; }
+.char-title-line { display: flex; align-items: center; gap: 6px; }
+.char-name-txt { font-weight: 800; font-size: 12px; color: #fff; }
+.char-spec-tag { font-size: 9px; color: #e5c07b; background: rgba(229, 192, 123, 0.2); padding: 1px 4px; border-radius: 3px; }
+.char-loc-txt { font-size: 10px; color: #abb2bf; }
+
+.char-actions-col { display: flex; align-items: center; gap: 6px; }
+.btn-select-hero {
+  background: #61afef;
+  color: #1e1e1e;
+  border: none;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-select-hero:hover { background: #00f2fe; }
+.btn-delete-hero {
+  background: #3b2024;
+  border: 1px solid #e06c75;
+  color: #e06c75;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-delete-hero:hover { background: #e06c75; color: #fff; }
+
+/* Create Hero Form */
+.create-form-group { display: flex; flex-direction: column; gap: 4px; }
+.create-form-group label { font-size: 11px; font-weight: 700; color: #e5c07b; }
+.create-form-group input[type="text"], .hero-select-box {
+  background: #131720;
+  border: 1px solid #4b5263;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.create-form-group input[type="text"]:focus, .hero-select-box:focus { border-color: #61afef; outline: none; }
+
+.gender-radio-row { display: flex; gap: 14px; }
+.radio-label { font-size: 12px; color: #dcdfe4; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+.create-hero-submit-btn {
+  background: linear-gradient(90deg, #e5c07b, #ffd700);
+  color: #1e1e1e;
+  border: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.15s ease;
+}
+
+.create-hero-submit-btn:hover { background: #ffd700; transform: scale(1.02); }
 
 /* ==========================================
    INVENTORY & PAPERDOLL MODAL

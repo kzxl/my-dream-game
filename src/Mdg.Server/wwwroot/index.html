@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MDG: Aethelis - 2D ARPG Web Client</title>
-  <meta name="description" content="My Dream Game (MDG) - ARPG with Deep Character Attributes & Progression" />
+  <meta name="description" content="My Dream Game (MDG) - ARPG with Deep Character Progression & Multi-Character Roster" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -82,10 +82,11 @@
       </div>
 
       <div class="quick-buttons">
+        <button id="btn-toggle-roster" class="hud-btn highlight-btn" title="Character Roster (Select / Create Hero)">👥 Heroes</button>
         <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map (M)">🗺️ Map (M)</button>
         <button id="btn-toggle-skills" class="hud-btn highlight-btn" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
         <button id="btn-toggle-inventory" class="hud-btn highlight-btn" title="Inventory (I)">🎒 Bag (I)</button>
-        <button id="btn-toggle-stats" class="hud-btn highlight-btn" title="Attributes (C)">📊 Stats (C)</button>
+        <button id="btn-toggle-stats" class="hud-btn" title="Attributes (C)">📊 Stats (C)</button>
       </div>
     </div>
 
@@ -506,6 +507,59 @@
 
       <div class="stat-footer-hint">
         <span>💡 Primary Attributes scale automatically with Level, Class Ascension, and Equipped Gear.</span>
+      </div>
+    </div>
+
+    <!-- MULTI-CHARACTER ROSTER & SELECT MODAL -->
+    <div id="character-roster-modal" class="worldmap-modal-wrap hidden">
+      <div class="roster-modal-box">
+        <div class="roster-header">
+          <div class="roster-title-row">
+            <h2>👥 CHARACTER ROSTER & HERO SELECTION</h2>
+            <button id="btn-close-roster" class="close-btn">✖</button>
+          </div>
+          <p>Select an existing hero to venture forth or forge a new legend.</p>
+        </div>
+
+        <div class="roster-content-layout">
+          <!-- Left: Existing Characters List -->
+          <div class="roster-list-panel">
+            <div class="panel-section-title">YOUR HEROES</div>
+            <div id="roster-characters-list" class="roster-cards-grid">
+              <!-- Dynamically populated character cards -->
+            </div>
+          </div>
+
+          <!-- Right: Create New Hero Panel -->
+          <div class="create-hero-panel">
+            <div class="panel-section-title">✨ FORGE NEW HERO</div>
+            
+            <div class="create-form-group">
+              <label>Hero Name:</label>
+              <input type="text" id="new-hero-name" placeholder="Enter hero name..." maxlength="18" value="Aria" />
+            </div>
+
+            <div class="create-form-group">
+              <label>Gender:</label>
+              <div class="gender-radio-row">
+                <label class="radio-label"><input type="radio" name="new-hero-gender" value="Male" checked /> ♂ Male</label>
+                <label class="radio-label"><input type="radio" name="new-hero-gender" value="Female" /> ♀ Female</label>
+              </div>
+            </div>
+
+            <div class="create-form-group">
+              <label>Starting Archetype:</label>
+              <select id="new-hero-class" class="hero-select-box">
+                <option value="Novice">Novice (Balanced Adventurer)</option>
+                <option value="Vanguard">Vanguard (Knight of Iron)</option>
+                <option value="Arcanist">Arcanist (Master of Elements)</option>
+                <option value="ShadowRogue">Shadow Rogue (Assassin of Night)</option>
+              </select>
+            </div>
+
+            <button id="btn-submit-create-hero" class="create-hero-submit-btn">⚔️ Create Hero</button>
+          </div>
+        </div>
       </div>
     </div>
 

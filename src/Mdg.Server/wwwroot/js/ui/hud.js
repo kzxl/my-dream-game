@@ -1,5 +1,5 @@
 /**
- * HUD, Modals & User Interface Controller (With Detailed Attributes Calculation)
+ * HUD, Modals & User Interface Controller (With Detailed Attributes & Multi-Character Roster)
  */
 
 import { player, camera } from '../state.js';
@@ -7,7 +7,7 @@ import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js';
-import { saveToDatabase } from '../save-system.js';
+import { saveToDatabase, renderCharacterRosterUI, createNewCharacter } from '../save-system.js';
 
 export function showZoneBanner(title, sub) {
   const banner = document.getElementById('zone-banner');
@@ -107,6 +107,7 @@ export function toggleModal(id) {
     el.classList.toggle('hidden');
     if (id === 'skills-modal' && !el.classList.contains('hidden')) renderSkillUpgradeModal();
     if (id === 'stats-modal' && !el.classList.contains('hidden')) updateAttributesModal();
+    if (id === 'character-roster-modal' && !el.classList.contains('hidden')) renderCharacterRosterUI();
     if (id === 'inventory-modal' && !el.classList.contains('hidden')) {
       updateBackpackUI();
       updatePaperdollUI();
@@ -163,6 +164,21 @@ export function setupUIListeners() {
     AudioEngine.playPickup();
     updateBackpackUI();
     saveToDatabase(true);
+  });
+
+  // Character Roster & Creation Listeners
+  document.getElementById('btn-toggle-roster')?.addEventListener('click', () => toggleModal('character-roster-modal'));
+  document.getElementById('btn-close-roster')?.addEventListener('click', () => toggleModal('character-roster-modal'));
+  document.getElementById('btn-submit-create-hero')?.addEventListener('click', async () => {
+    const name = document.getElementById('new-hero-name')?.value.trim() || 'New Hero';
+    const gender = document.querySelector('input[name="new-hero-gender"]:checked')?.value || 'Male';
+    const spec = document.getElementById('new-hero-class')?.value || 'Novice';
+
+    const success = await createNewCharacter(name, gender, spec);
+    if (success) {
+      AudioEngine.playLevelUp();
+      renderCharacterRosterUI();
+    }
   });
 
   // Modal Buttons

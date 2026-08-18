@@ -1,127 +1,74 @@
-using Mdg.Client.Adapter.ViewModels;
-using Mdg.Core.Common.Math;
-using Mdg.Core.Features.Combat;
+using System;
+using System.IO;
 using Mdg.Server.Database;
 using Mdg.Server.Services;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<GameDatabaseService>();
-builder.Services.AddSingleton<GameSessionService>();
-builder.Services.AddSingleton<IGameSessionService>(sp => sp.GetRequiredService<GameSessionService>());
-builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
+// Ensure Database file path
+var dataDir = builder.Environment.ContentRootPath;
+var dbPath = Path.Combine(dataDir, "mdg_world.db");
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-});
+// Register Services
+builder.Services.AddSingleton(new GameDatabaseService(dbPath));
+builder.Services.AddSingleton<GameSessionService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
 var app = builder.Build();
 
-app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Health Check
-app.MapGet("/api/v1/health", () => new { status = "Online", game = "My Dream Game (MDG) Server", tickRate = 30 });
-
-// ==========================================
-// SQLITE PERSISTENCE ENDPOINTS
-// ==========================================
-app.MapGet("/api/v1/savegame", async (GameDatabaseService db, string? characterId) =>
+// Health Check API
+app.MapGet("/api/v1/health", () => new
 {
-    var cid = string.IsNullOrWhiteSpace(characterId) ? "hero_default" : characterId;
-    var savegame = await db.LoadSaveGameAsync(cid);
-    return savegame != null ? Results.Ok(savegame) : Results.NotFound(new { message = "No savegame found" });
+    status = "Online",
+    game = "My Dream Game (MDG) Server",
+    tickRate = 30
 });
 
-app.MapPost("/api/v1/savegame", async (SaveGameDto dto, GameDatabaseService db) =>
+// MULTI-CHARACTER APIS
+app.MapGet("/api/v1/characters", async (GameDatabaseService db) =>
 {
-    if (string.IsNullOrWhiteSpace(dto.CharacterId)) dto.CharacterId = "hero_default";
-    await db.SaveGameAsync(dto);
-    return Results.Ok(new { success = true, timestamp = DateTime.UtcNow });
+    var list = await db.GetAllCharactersAsync();
+    return Results.Ok(list);
+});
+
+app.MapPost("/api/v1/characters", async (GameDatabaseService db, CharacterCreateDto req) =>
+{
+    var success = await db.CreateCharacterAsync(req);
+    return success ? Results.Ok(new { success = true, id = req.Id }) : Results.BadRequest();
+});
+
+app.MapDelete("/api/v1/characters/{id}", async (GameDatabaseService db, string id) =>
+{
+    var success = await db.DeleteCharacterAsync(id);
+    return success ? Results.Ok(new { success = true, id }) : Results.NotFound();
+});
+
+// SAVEGAME APIS
+app.MapGet("/api/v1/savegame", async (GameDatabaseService db, string? characterId) =>
+{
+    var charId = string.IsNullOrWhiteSpace(characterId) ? "hero_default" : characterId;
+    var savegame = await db.GetCharacterAsync(charId);
+    return savegame is not null ? Results.Ok(savegame) : Results.NotFound(new { message = "No savegame found" });
+});
+
+app.MapPost("/api/v1/savegame", async (GameDatabaseService db, SaveGameDto payload) =>
+{
+    var success = await db.SaveCharacterAsync(payload);
+    return Results.Ok(new { success, timestamp = DateTime.UtcNow.ToString("o") });
 });
 
 app.MapPost("/api/v1/savegame/reset", async (GameDatabaseService db, string? characterId) =>
 {
-    var cid = string.IsNullOrWhiteSpace(characterId) ? "hero_default" : characterId;
-    await db.ResetSaveGameAsync(cid);
+    var charId = string.IsNullOrWhiteSpace(characterId) ? "hero_default" : characterId;
+    await db.ResetSavegameAsync(charId);
     return Results.Ok(new { success = true, message = "Savegame reset successfully" });
 });
 
-// 1. Tạo Character
-app.MapPost("/api/v1/characters", (CreateCharacterRequest req, IGameSessionService gameService) =>
-{
-    var character = gameService.CreateCharacter(string.IsNullOrWhiteSpace(req.Name) ? "Hero" : req.Name);
-    var vm = new CharacterViewModel(character);
-    return Results.Ok(new
-    {
-        characterId = vm.Id,
-        name = vm.Name,
-        life = vm.CurrentLife,
-        maxLife = vm.MaxLife,
-        mana = vm.CurrentMana,
-        maxMana = vm.MaxMana,
-        energyShield = vm.CurrentEnergyShield,
-        maxEnergyShield = vm.MaxEnergyShield,
-        skills = vm.GetSkillStatuses()
-    });
-});
-
-// 2. Lấy trạng thái Character (ViewModel)
-app.MapGet("/api/v1/characters/{id:guid}", (Guid id, IGameSessionService gameService) =>
-{
-    var character = gameService.GetCharacter(id);
-    if (character == null) return Results.NotFound(new { error = "Character not found" });
-
-    var vm = new CharacterViewModel(character);
-    return Results.Ok(new
-    {
-        id = vm.Id,
-        name = vm.Name,
-        isAlive = vm.IsAlive,
-        life = vm.CurrentLife,
-        maxLife = vm.MaxLife,
-        mana = vm.CurrentMana,
-        maxMana = vm.MaxMana,
-        energyShield = vm.CurrentEnergyShield,
-        maxEnergyShield = vm.MaxEnergyShield,
-        armor = vm.Armor,
-        evasion = vm.Evasion,
-        resists = new
-        {
-            fire = vm.FireResistance,
-            cold = vm.ColdResistance,
-            lightning = vm.LightningResistance,
-            chaos = vm.ChaosResistance
-        },
-        skills = vm.GetSkillStatuses()
-    });
-});
-
-// 3. Thi triển Skill
-app.MapPost("/api/v1/characters/{id:guid}/cast-skill", (Guid id, CastSkillRequest req, IGameSessionService gameService) =>
-{
-    var character = gameService.GetCharacter(id);
-    if (character == null) return Results.NotFound(new { error = "Character not found" });
-
-    var targetPos = new FixVector2(req.TargetX, req.TargetY);
-    bool success = character.CastSkill(req.SkillId, targetPos, gameService.World.EventBus, gameService.World.CurrentTick);
-
-    return Results.Ok(new
-    {
-        success,
-        remainingMana = character.CurrentMana,
-        targetPos = targetPos.ToString()
-    });
-});
-
-app.Run("http://localhost:5123");
-
-public record CreateCharacterRequest(string Name);
-public record CastSkillRequest(string SkillId, float TargetX, float TargetY);
+app.Run();
