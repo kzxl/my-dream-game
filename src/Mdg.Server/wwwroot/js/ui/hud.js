@@ -5,10 +5,17 @@
 import { player, camera } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
-import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
+import { updateBackpackUI, updatePaperdollUI, sortAndConsolidateBackpack } from './inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js';
 import { saveToDatabase, renderCharacterRosterUI, createNewCharacter } from '../save-system.js';
 import { renderWorldMapUI } from './worldmap-ui.js';
+import { renderForgeBenchModal } from './forge-ui.js';
+import { renderMapDeviceModal } from './map-device-ui.js';
+import { renderDevotionModal } from './devotion-ui.js';
+import { renderSharedStashModal } from './stash-ui.js';
+import { renderRosterModal } from './roster-ui.js';
+import { sendPetToTown, companion } from '../companion.js';
+import { openGoogleAuthModal } from '../auth.js';
 
 export function showZoneBanner(title, sub) {
   const banner = document.getElementById('zone-banner');
@@ -21,22 +28,46 @@ export function showZoneBanner(title, sub) {
 }
 
 /**
- * Updates HUD portrait & gender badge according to player's permanent gender chosen at creation
+ * Gets high-quality avatar portrait path for given class and gender
+ */
+export function getAvatarPath(classSpec, gender) {
+  const spec = (classSpec || 'Novice').toLowerCase();
+  const gen = (gender || 'Male').toLowerCase();
+  if (spec.includes('vanguard') || spec.includes('knight') || spec.includes('paladin')) {
+    return `/assets/avatars/vanguard_${gen}.svg`;
+  } else if (spec.includes('arcanist') || spec.includes('mage') || spec.includes('wizard')) {
+    return `/assets/avatars/arcanist_${gen}.svg`;
+  } else if (spec.includes('rogue') || spec.includes('assassin') || spec.includes('shadow')) {
+    return `/assets/avatars/shadowrogue_${gen}.svg`;
+  }
+  return `/assets/avatars/novice_${gen}.svg`;
+}
+
+/**
+ * Updates HUD portrait & gender badge according to player's class & gender
  */
 export function updateHudAvatar() {
   const avatar = document.getElementById('hud-avatar');
   const tag = document.getElementById('hud-gender-tag');
-  if (!avatar || !tag) return;
+  const nameEl = document.getElementById('hud-name');
+  const levelEl = document.getElementById('hud-level');
+  if (!avatar) return;
 
-  if (player.gender === 'Female') {
-    avatar.classList.add('avatar-female');
-    tag.innerText = '♀ Female';
-    tag.style.color = '#ff79c6';
-  } else {
-    avatar.classList.remove('avatar-female');
-    tag.innerText = '♂ Male';
-    tag.style.color = '#61afef';
+  const avatarSrc = getAvatarPath(player.classSpec, player.gender);
+  avatar.innerHTML = `<img src="${avatarSrc}" alt="Avatar" class="hud-avatar-img" />`;
+
+  if (tag) {
+    if (player.gender === 'Female') {
+      tag.innerText = '♀ Female';
+      tag.style.color = '#ff79c6';
+    } else {
+      tag.innerText = '♂ Male';
+      tag.style.color = '#61afef';
+    }
   }
+
+  if (nameEl) nameEl.innerText = player.name || player.classSpec || 'Novice Adventurer';
+  if (levelEl) levelEl.innerText = `Lv.${player.level || 1}`;
 }
 
 /**
@@ -199,7 +230,23 @@ export function setupUIListeners() {
     if (e.key === '1') useFlask(1);
     if (e.key === '2') useFlask(2);
     if (e.key === '3') useFlask(3);
+
+    // Expansion Hotkeys
+    if (e.key.toLowerCase() === 'b') renderForgeBenchModal();
+    if (e.key.toLowerCase() === 'o') renderMapDeviceModal();
+    if (e.key.toLowerCase() === 'v') renderDevotionModal();
+    if (e.key.toLowerCase() === 'x') renderSharedStashModal();
+    if (e.key.toLowerCase() === 'p') renderRosterModal();
   });
+
+  // Expansion Action Buttons (if present in DOM)
+  document.getElementById('btn-google-auth')?.addEventListener('click', openGoogleAuthModal);
+  document.getElementById('btn-forge')?.addEventListener('click', renderForgeBenchModal);
+  document.getElementById('btn-map-device')?.addEventListener('click', renderMapDeviceModal);
+  document.getElementById('btn-devotion')?.addEventListener('click', renderDevotionModal);
+  document.getElementById('btn-stash')?.addEventListener('click', renderSharedStashModal);
+  document.getElementById('btn-roster')?.addEventListener('click', renderRosterModal);
+  document.getElementById('btn-pet-sell')?.addEventListener('click', sendPetToTown);
 
   // Ascension Modal (Trigger & Close)
   document.getElementById('btn-ascend-trigger')?.addEventListener('click', () => {
@@ -226,17 +273,13 @@ export function setupUIListeners() {
     });
   });
 
-  // Sort Bag
+  // Sort Bag & Consolidate Currency Stacks
   document.getElementById('btn-sort-bag')?.addEventListener('click', () => {
-    const rarityPriority = { Unique: 1, Rare: 2, Magic: 3, Currency: 4, Normal: 5 };
-    player.bag.sort((a, b) => (rarityPriority[a.rarity] || 9) - (rarityPriority[b.rarity] || 9));
-    AudioEngine.playPickup();
-    updateBackpackUI();
-    saveToDatabase(true);
+    sortAndConsolidateBackpack();
   });
 
   // Character Roster & Creation Listeners
-  document.getElementById('btn-toggle-roster')?.addEventListener('click', () => toggleModal('character-roster-modal'));
+  document.getElementById('btn-toggle-roster')?.addEventListener('click', renderRosterModal);
   document.getElementById('btn-close-roster')?.addEventListener('click', () => toggleModal('character-roster-modal'));
   document.getElementById('btn-submit-create-hero')?.addEventListener('click', async () => {
     const name = document.getElementById('new-hero-name')?.value.trim() || 'New Hero';

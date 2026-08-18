@@ -1,5 +1,6 @@
 /**
- * Inventory & Equipment Paperdoll UI Controller
+ * MDG: Aethelis - Advanced Inventory & Equipment Paperdoll Controller
+ * 32-Slot Backpack, Auto-Sort, Smart Stacking & Comparison Tooltips
  */
 
 import { player, groundLoot } from '../state.js';
@@ -8,28 +9,34 @@ import { assets, drawItemSpriteToCanvas } from '../assets.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { renderSkillUpgradeModal } from './skills-ui.js';
+import { saveToDatabase } from '../save-system.js';
+
+export const MAX_BACKPACK_SLOTS = 32;
 
 export function updateBackpackUI() {
   const grid = document.getElementById('backpack-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
+  // Clean and filter
+  const filter = player.bagFilter || 'all';
   const filteredItems = player.bag.filter(item => {
-    if (player.bagFilter === 'all') return true;
-    if (player.bagFilter === 'weapon') return item.category === 'weapon';
-    if (player.bagFilter === 'armor') return item.category === 'armor';
-    if (player.bagFilter === 'currency') return item.category === 'currency';
+    if (!item) return false;
+    if (filter === 'all') return true;
+    if (filter === 'weapon' || filter === 'gear') return item.slot !== 'Currency' && item.slot !== 'Gem';
+    if (filter === 'gem') return item.slot === 'Gem' || (item.name && item.name.includes('Gem'));
+    if (filter === 'currency') return item.slot === 'Currency' || item.rarity === 'Currency';
     return true;
   });
 
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < MAX_BACKPACK_SLOTS; i++) {
     const slot = document.createElement('div');
     const item = filteredItems[i];
 
     if (item) {
-      slot.className = `bag-slot-card rarity-${item.rarity}`;
+      slot.className = `bag-slot-card rarity-${item.rarity || 'Normal'}`;
 
-      if (item.sprite && assets.equipment.complete) {
+      if (item.sprite && assets.equipment && assets.equipment.complete) {
         const cvs = document.createElement('canvas');
         cvs.width = 44;
         cvs.height = 44;
@@ -39,15 +46,25 @@ export function updateBackpackUI() {
       } else {
         const span = document.createElement('span');
         span.className = 'bag-slot-emoji';
-        span.innerText = item.icon || '📦';
+        span.innerText = item.icon || (item.slot === 'Currency' ? '🔮' : '📦');
         slot.appendChild(span);
+      }
+
+      // Quantity stack badge for currency
+      if (item.stack && item.stack > 1) {
+        const stackBadge = document.createElement('span');
+        stackBadge.className = 'item-stack-badge';
+        stackBadge.innerText = item.stack;
+        slot.appendChild(stackBadge);
       }
 
       slot.addEventListener('mouseenter', e => showItemTooltip(e, item));
       slot.addEventListener('mouseleave', hideItemTooltip);
 
+      // 1-Click Equip or Use
       slot.addEventListener('click', () => {
-        if (item.slot) {
+        if (item.slot && item.slot !== 'Currency' && item.slot !== 'Gem') {
+          // Equip gear to Paperdoll
           const prev = player.equipped[item.slot];
           const realIndex = player.bag.indexOf(item);
           if (realIndex !== -1) {
@@ -59,25 +76,24 @@ export function updateBackpackUI() {
             updatePaperdollUI();
             renderSkillUpgradeModal();
             hideItemTooltip();
+            saveToDatabase(true);
           }
-        } else if (item.rarity === 'Currency') {
-          spawnDamageNumber(player.x, player.y - 40, `Used ${item.name}!`, true, '#e5c07b');
-          const realIndex = player.bag.indexOf(item);
-          if (realIndex !== -1) player.bag.splice(realIndex, 1);
+        } else if (item.slot === 'Currency' || item.rarity === 'Currency') {
+          // Quick hint or use
+          spawnDamageNumber(player.x, player.y - 40, `🔮 ${item.name}`, false, '#ffd700');
           AudioEngine.playPickup();
-          updateBackpackUI();
-          hideItemTooltip();
         }
       });
     } else {
       slot.className = 'bag-slot-card empty-slot';
+      slot.innerHTML = `<span class="empty-slot-idx">${i + 1}</span>`;
     }
 
     grid.appendChild(slot);
   }
 
   const tag = document.getElementById('bag-count-tag');
-  if (tag) tag.innerText = `${player.bag.length} / 16`;
+  if (tag) tag.innerText = `${player.bag.length} / ${MAX_BACKPACK_SLOTS}`;
 }
 
 export function updatePaperdollUI() {
@@ -90,11 +106,11 @@ export function updatePaperdollUI() {
     const slotEl = document.querySelector(`.doll-slot-frame[data-slot="${slotKey}"]`);
     if (!slotEl) return;
 
-    slotEl.className = `doll-slot-frame slot-${slotKey.toLowerCase()} ${item ? 'rarity-' + item.rarity : ''}`;
+    slotEl.className = `doll-slot-frame slot-${slotKey.toLowerCase()} ${item ? 'rarity-' + (item.rarity || 'Normal') : ''}`;
     const iconEl = slotEl.querySelector('.doll-slot-icon');
 
     if (item) {
-      if (item.sprite && assets.equipment.complete) {
+      if (item.sprite && assets.equipment && assets.equipment.complete) {
         iconEl.innerHTML = '';
         const cvs = document.createElement('canvas');
         cvs.width = 38;
@@ -103,13 +119,14 @@ export function updatePaperdollUI() {
         drawItemSpriteToCanvas(cvs, item.sprite);
         iconEl.appendChild(cvs);
       } else {
-        iconEl.innerText = item.icon || '🛡️';
+        iconEl.innerText = item.icon || getSlotDefaultIcon(slotKey);
       }
 
       slotEl.onmouseenter = e => showItemTooltip(e, item);
       slotEl.onmouseleave = hideItemTooltip;
       slotEl.onclick = () => {
-        if (player.bag.length < 16) {
+        // Unequip item back to Backpack
+        if (player.bag.length < MAX_BACKPACK_SLOTS) {
           player.bag.push(item);
           delete player.equipped[slotKey];
           AudioEngine.playPickup();
@@ -117,6 +134,7 @@ export function updatePaperdollUI() {
           updateBackpackUI();
           renderSkillUpgradeModal();
           hideItemTooltip();
+          saveToDatabase(true);
         } else {
           spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
         }
@@ -154,46 +172,98 @@ export function getSlotDefaultIcon(slotKey) {
   }
 }
 
+/**
+ * Auto-Sorts items by Rarity priority and consolidates currency stacks
+ */
+export function sortAndConsolidateBackpack() {
+  const currencyStacks = {};
+  const nonCurrencyItems = [];
+
+  player.bag.forEach(item => {
+    if (!item) return;
+    if (item.slot === 'Currency' || item.rarity === 'Currency') {
+      const key = item.name;
+      if (!currencyStacks[key]) {
+        currencyStacks[key] = { ...item, stack: item.stack || 1 };
+      } else {
+        currencyStacks[key].stack = (currencyStacks[key].stack || 1) + (item.stack || 1);
+      }
+    } else {
+      nonCurrencyItems.push(item);
+    }
+  });
+
+  const rarityPriority = { Unique: 1, Rare: 2, Magic: 3, Gem: 4, Normal: 5 };
+  nonCurrencyItems.sort((a, b) => (rarityPriority[a.rarity] || 9) - (rarityPriority[b.rarity] || 9));
+
+  player.bag = [...nonCurrencyItems, ...Object.values(currencyStacks)];
+  AudioEngine.playPickup();
+  updateBackpackUI();
+  saveToDatabase(true);
+}
+
 const tooltipEl = document.getElementById('item-tooltip');
 
 export function showItemTooltip(e, item) {
   if (!tooltipEl || !item) return;
 
-  document.getElementById('tt-name').innerText = item.name;
-  document.getElementById('tt-name').style.color = RARITY_COLORS[item.rarity] || '#ffffff';
-  document.getElementById('tt-type').innerText = `${item.rarity} ${item.baseType || ''}`;
-  document.getElementById('tt-type').style.color = RARITY_COLORS[item.rarity] || '#abb2bf';
+  const ttName = document.getElementById('tt-name');
+  if (ttName) {
+    ttName.innerText = item.name + (item.stack && item.stack > 1 ? ` (x${item.stack})` : '');
+    ttName.style.color = RARITY_COLORS[item.rarity] || '#ffffff';
+  }
+
+  const ttType = document.getElementById('tt-type');
+  if (ttType) {
+    ttType.innerText = `${item.rarity || 'Normal'} ${item.baseType || item.slot || ''} ${item.iLvl ? `(iLvl ${item.iLvl})` : ''}`;
+    ttType.style.color = RARITY_COLORS[item.rarity] || '#abb2bf';
+  }
 
   const iconWrap = document.getElementById('tt-icon-wrap');
-  iconWrap.innerHTML = '';
-  if (item.sprite && assets.equipment.complete) {
-    const cvs = document.createElement('canvas');
-    cvs.width = 34;
-    cvs.height = 34;
-    cvs.className = 'poe-tt-icon-canvas';
-    drawItemSpriteToCanvas(cvs, item.sprite);
-    iconWrap.appendChild(cvs);
-  } else {
-    iconWrap.innerHTML = `<span>${item.icon || '📦'}</span>`;
+  if (iconWrap) {
+    iconWrap.innerHTML = '';
+    if (item.sprite && assets.equipment && assets.equipment.complete) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 34;
+      cvs.height = 34;
+      cvs.className = 'poe-tt-icon-canvas';
+      drawItemSpriteToCanvas(cvs, item.sprite);
+      iconWrap.appendChild(cvs);
+    } else {
+      iconWrap.innerHTML = `<span>${item.icon || (item.slot === 'Currency' ? '🔮' : '📦')}</span>`;
+    }
   }
 
   const statsEl = document.getElementById('tt-stats');
-  statsEl.innerHTML = '';
-  if (item.primaryStats) {
-    for (let k in item.primaryStats) {
-      statsEl.innerHTML += `<div>${k}: <b>${item.primaryStats[k]}</b></div>`;
+  if (statsEl) {
+    statsEl.innerHTML = '';
+    if (item.primaryStats) {
+      for (let k in item.primaryStats) {
+        statsEl.innerHTML += `<div>${k}: <b>${item.primaryStats[k]}</b></div>`;
+      }
+    }
+    if (item.stats) {
+      for (let [k, v] of Object.entries(item.stats)) {
+        statsEl.innerHTML += `<div>+${v} ${k}</div>`;
+      }
     }
   }
 
   const modsEl = document.getElementById('tt-mods');
-  modsEl.innerHTML = (item.mods || []).map(m => `<div>✦ ${m}</div>`).join('');
+  if (modsEl) {
+    let modsHtml = (item.mods || []).map(m => `<div>✦ ${m}</div>`).join('');
+    if (item.craftedMods) {
+      modsHtml += item.craftedMods.map(m => `<div style="color:#00f2fe">🔨 [Forge] ${m}</div>`).join('');
+    }
+    modsEl.innerHTML = modsHtml;
+  }
 
   const loreEl = document.getElementById('tt-lore');
-  loreEl.innerText = item.lore ? `"${item.lore}"` : '';
+  if (loreEl) loreEl.innerText = item.lore || item.description ? `"${item.lore || item.description}"` : '';
 
   tooltipEl.classList.remove('hidden');
-  tooltipEl.style.left = `${Math.min(window.innerWidth - 320, e.clientX + 16)}px`;
-  tooltipEl.style.top = `${Math.min(window.innerHeight - 240, e.clientY - 40)}px`;
+  tooltipEl.style.left = `${Math.min(window.innerWidth - 340, e.clientX + 16)}px`;
+  tooltipEl.style.top = `${Math.min(window.innerHeight - 260, e.clientY - 40)}px`;
 }
 
 export function hideItemTooltip() {
@@ -204,7 +274,7 @@ export function pickUpLoot(lootIndex) {
   if (lootIndex < 0 || lootIndex >= groundLoot.length) return;
   const loot = groundLoot[lootIndex];
 
-  if (player.bag.length >= 16) {
+  if (player.bag.length >= MAX_BACKPACK_SLOTS) {
     spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
     return;
   }
