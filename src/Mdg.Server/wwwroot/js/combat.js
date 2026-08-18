@@ -2,10 +2,12 @@
  * Combat Calculations, Ailments (Ignite, Freeze, Bleed, Shock), Support Gems & Keystone Morphs
  */
 
-import { player, monsters, trainingDummies, projectiles, particles, floatingTexts, mouse } from './state.js';
-import { SKILLS, skillSocketBoard, isNodeAllocated } from './data/skills.js';
+import { player, monsters, trainingDummies, projectiles, particles, floatingTexts, groundLoot, mouse } from './state.js';
+import { SKILLS, skillSocketBoard, isNodeAllocated, isSkillUnlocked } from './data/skills.js';
+import { generateLootItem } from './data/items.js';
 import { AudioEngine } from './audio.js';
-import { dropMonsterLoot } from './main.js';
+import { showDefeatModal } from './ui/defeat-ui.js';
+import { ApiClient } from './services/api-client.js';
 
 export function getMonsterLoreBonus(monsterType, isBoss = false) {
   const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
@@ -23,8 +25,8 @@ export function getMonsterLoreBonus(monsterType, isBoss = false) {
   return { tier: 0, name: 'Unfamiliar', bonusDmg: 0, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
 }
 
-export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true, sourcePos = null, isSlash = false) {
-  if (!target.isAlive) return;
+export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true, sourcePos = null, isSlash = false, isProc = false) {
+  if (!target || !target.isAlive || target.defeatedHandled) return;
 
   // 1. Monster Evasion / Dodge Check (Skip damage & knockback if dodged)
   if (target.evasionChance && Math.random() * 100 < target.evasionChance) {
@@ -64,7 +66,7 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
 
   let isCrit = false;
   let multiplier = 1.0;
-  if (canCrit && Math.random() * 100 <= effectiveCritChance) {
+  if (canCrit && !isProc && Math.random() * 100 <= effectiveCritChance) {
     isCrit = true;
     multiplier = effectiveCritMulti / 100;
   }
@@ -107,19 +109,21 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     target.vy = (target.vy || 0) + Math.sin(kAngle) * 90;
   }
 
-  // Ailment Proc Chances
-  if (rawFire > 0 && (isCrit || isNodeAllocated('fireball', 'fb_ignite') || Math.random() < 0.4)) {
-    applyIgnite(target, Math.round(totalDamage * 0.45));
-  }
-  if (rawCold > 0) {
-    applyChill(target, 2.0); // 45% Movement speed reduction
-    if (isCrit || isNodeAllocated('frost', 'fr_freeze')) {
-      const freezeDur = isNodeAllocated('frost', 'fr_freeze') ? 0.75 : 0.5;
-      applyFreeze(target, freezeDur); // Balanced micro-stun
+  // Ailment Proc Chances (only for direct attacks, not recursive procs)
+  if (!isProc) {
+    if (rawFire > 0 && (isCrit || isNodeAllocated('fireball', 'fb_ignite') || Math.random() < 0.4)) {
+      applyIgnite(target, Math.round(totalDamage * 0.45));
     }
-  }
-  if (rawPhysical > 0 && isNodeAllocated('slash', 'sl_bleed')) {
-    applyBleed(target, Math.round(totalDamage * 0.35));
+    if (rawCold > 0) {
+      applyChill(target, 2.0); // 45% Movement speed reduction
+      if (isCrit || isNodeAllocated('frost', 'fr_freeze')) {
+        const freezeDur = isNodeAllocated('frost', 'fr_freeze') ? 0.75 : 0.5;
+        applyFreeze(target, freezeDur); // Balanced micro-stun
+      }
+    }
+    if (rawPhysical > 0 && isNodeAllocated('slash', 'sl_bleed')) {
+      applyBleed(target, Math.round(totalDamage * 0.35));
+    }
   }
 
   AudioEngine.playHit(isCrit);
@@ -139,59 +143,81 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     });
   }
 
-  // Devotion Proc: Phoenix Firestorm on Crit
-  if (isCrit && player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('ph_proc')) {
-    spawnDamageNumber(target.x, target.y - 65, '🔥 PHOENIX FIRESTORM!', true, '#ff7700');
-    monsters.forEach(m => {
-      if (m !== target && m.isAlive && Math.hypot(m.x - target.x, m.y - target.y) <= 150) {
-        dealDamage(m, 0, 180, 0, 0, 0, false, { x: target.x, y: target.y });
+  // ONLY PRIMARY HITS TRIGGER SECONDARY PROCS (Prevents Infinite Recursion / Freeze)
+  if (!isProc) {
+    // Set Synergy: Ignis Raining Mini-Meteors on Attack (35% chance)
+    if ((player.activeHiddenSynergies || []).includes('raining_mini_meteors') && Math.random() < 0.35) {
+      spawnDamageNumber(target.x, target.y - 65, '☄️ MINI METEOR!', true, '#ff5722');
+      dealDamage(target, 0, 160, 0, 0, 0, false, { x: target.x, y: target.y - 120 }, false, true);
+      for (let i = 0; i < 12; i++) {
+        particles.push({
+          x: target.x,
+          y: target.y,
+          vx: (Math.random() - 0.5) * 160,
+          vy: (Math.random() - 0.5) * 160,
+          color: '#ff5722',
+          life: 0.35,
+          maxLife: 0.35,
+          size: 5
+        });
       }
-    });
-    for (let i = 0; i < 15; i++) {
-      particles.push({
-        x: target.x + (Math.random() - 0.5) * 40,
-        y: target.y + (Math.random() - 0.5) * 40,
-        vx: (Math.random() - 0.5) * 120,
-        vy: -80 - Math.random() * 100,
-        color: '#ff5722',
-        life: 0.5,
-        maxLife: 0.5,
-        size: 4
+    }
+
+    // Devotion Proc: Phoenix Firestorm on Crit
+    if (isCrit && player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('ph_proc')) {
+      spawnDamageNumber(target.x, target.y - 65, '🔥 PHOENIX FIRESTORM!', true, '#ff7700');
+      monsters.forEach(m => {
+        if (m !== target && m.isAlive && Math.hypot(m.x - target.x, m.y - target.y) <= 150) {
+          dealDamage(m, 0, 180, 0, 0, 0, false, { x: target.x, y: target.y }, false, true);
+        }
+      });
+      for (let i = 0; i < 15; i++) {
+        particles.push({
+          x: target.x + (Math.random() - 0.5) * 40,
+          y: target.y + (Math.random() - 0.5) * 40,
+          vx: (Math.random() - 0.5) * 120,
+          vy: -80 - Math.random() * 100,
+          color: '#ff5722',
+          life: 0.5,
+          maxLife: 0.5,
+          size: 4
+        });
+      }
+    }
+
+    // Devotion Proc: Chain Lightning on Hit (25% chance)
+    if (player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('tl_proc') && Math.random() < 0.25) {
+      spawnDamageNumber(target.x, target.y - 50, '⚡ CHAIN LIGHTNING!', true, '#ffd700');
+      let chained = 0;
+      monsters.forEach(m => {
+        if (m !== target && m.isAlive && chained < 3 && Math.hypot(m.x - target.x, m.y - target.y) <= 220) {
+          dealDamage(m, 0, 0, 0, 140, 0, false, { x: target.x, y: target.y }, false, true);
+          chained++;
+        }
       });
     }
-  }
 
-  // Devotion Proc: Chain Lightning on Hit (25% chance)
-  if (player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('tl_proc') && Math.random() < 0.25) {
-    spawnDamageNumber(target.x, target.y - 50, '⚡ CHAIN LIGHTNING!', true, '#ffd700');
-    let chained = 0;
-    monsters.forEach(m => {
-      if (m !== target && m.isAlive && chained < 3 && Math.hypot(m.x - target.x, m.y - target.y) <= 220) {
-        dealDamage(m, 0, 0, 0, 140, 0, false, { x: target.x, y: target.y });
-        chained++;
+    // Devotion Proc: Glacial Barrier on Low Life (< 35% HP)
+    if (player.life > 0 && player.life < player.maxLife * 0.35 && player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('fw_proc')) {
+      if (!player.glacialBarrierCooldown) {
+        player.glacialBarrierCooldown = true;
+        player.es = Math.min(player.maxEs + 400, player.es + 400);
+        spawnDamageNumber(player.x, player.y - 50, '❄️ GLACIAL BARRIER +400 ES!', true, '#00f2fe');
+        AudioEngine.playTone(587, 'sine', 0.3, 0.2);
+        setTimeout(() => { player.glacialBarrierCooldown = false; }, 15000);
       }
-    });
-  }
-
-  // Devotion Proc: Glacial Barrier on Low Life (< 35% HP)
-  if (player.life > 0 && player.life < player.maxLife * 0.35 && player.allocatedDevotionNodes && player.allocatedDevotionNodes.includes('fw_proc')) {
-    if (!player.glacialBarrierCooldown) {
-      player.glacialBarrierCooldown = true;
-      player.es = Math.min(player.maxEs + 400, player.es + 400);
-      spawnDamageNumber(player.x, player.y - 50, '❄️ GLACIAL BARRIER +400 ES!', true, '#00f2fe');
-      AudioEngine.playTone(587, 'sine', 0.3, 0.2);
-      setTimeout(() => { player.glacialBarrierCooldown = false; }, 15000);
     }
   }
 
-  if (target.life <= 0 && target.life < 90000) {
+  if (target.life <= 0 && target.life < 90000 && !target.defeatedHandled) {
     handleMonsterDefeated(target);
   }
 }
 
 // Unified Monster Defeated Lifecycle Handler
 export function handleMonsterDefeated(target) {
-  if (!target.isAlive) return;
+  if (!target || target.defeatedHandled) return;
+  target.defeatedHandled = true;
   target.isAlive = false;
   target.life = 0;
   spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
@@ -209,7 +235,7 @@ export function handleMonsterDefeated(target) {
   if ((target.freezeTimer > 0 || target.chillTimer > 0) && isNodeAllocated('frost', 'fr_shatter')) {
     monsters.forEach(m => {
       if (m !== target && m.isAlive && Math.hypot(m.x - target.x, m.y - target.y) <= 120) {
-        dealDamage(m, 0, 0, 120, 0, 0, false, { x: target.x, y: target.y });
+        dealDamage(m, 0, 0, 120, 0, 0, false, { x: target.x, y: target.y }, false, true);
       }
     });
     for (let i = 0; i < 20; i++) {
@@ -228,6 +254,23 @@ export function handleMonsterDefeated(target) {
     }
   }
 
+  // Set Synergy: Vael Permafrost Shatter (8 Ice Shards detonation)
+  if ((player.activeHiddenSynergies || []).includes('ice_shards_shatter')) {
+    spawnDamageNumber(target.x, target.y - 65, '❄️ PERMAFROST SHATTER!', true, '#00f2fe');
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      projectiles.push({
+        x: target.x,
+        y: target.y,
+        vx: Math.cos(a) * 350,
+        vy: Math.sin(a) * 350,
+        type: 'frost',
+        damage: 95,
+        radius: 16,
+        life: 0.6
+      });
+    }
+  }
+
   // Increment Monster Lore Mastery Kill Count
   if (!player.monsterKills) player.monsterKills = {};
   const mType = target.type || 'monster';
@@ -241,10 +284,80 @@ export function handleMonsterDefeated(target) {
   }
 
   if (window.gainExp) window.gainExp(target.expValue || 35);
-  dropMonsterLoot(target.x, target.y, target.type === 'boss');
+  dropMonsterLoot(target.x, target.y, target.type === 'boss' || target.isBoss, target.rarity || (target.type === 'boss' ? 'boss' : 'normal'));
 
   if (target.type === 'boss' && player.classSpec === 'Novice') {
     document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
+  }
+}
+
+export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal') {
+  const zoneId = window.currentZoneId || player.zoneId || 'SanctuaryHaven';
+  let monsterLevel = player.level || 1;
+  if (zoneId === 'WhisperingPlains') monsterLevel = 10;
+  else if (zoneId === 'ForgottenCrypt') monsterLevel = 22;
+  else if (zoneId === 'FrostpeakTundra') monsterLevel = 28;
+  else if (zoneId === 'StormpeakRidge') monsterLevel = 36;
+  else if (zoneId === 'MoltenCaldera') monsterLevel = 42;
+  else if (zoneId === 'VoidAbyss') monsterLevel = 60;
+  else if (zoneId === 'ArenaCaldera') monsterLevel = 78;
+  else if (zoneId === 'ArenaGlacial') monsterLevel = 80;
+  else if (zoneId === 'ArenaVoid') monsterLevel = 84;
+
+  const playerIir = player.iir || 0;
+  const playerIiq = player.iiq || 0;
+
+  // 1. Try server-authoritative loot generation
+  const serverResult = await ApiClient.generateMonsterLoot(
+    'monster',
+    monsterRarity,
+    isBoss,
+    monsterLevel,
+    zoneId,
+    playerIir,
+    playerIiq
+  );
+
+  let itemsToDrop = [];
+
+  if (serverResult && Array.isArray(serverResult.items)) {
+    itemsToDrop = serverResult.items;
+  } else {
+    // Local fallback if server unreachable
+    const isChampion = monsterRarity === 'champion' || monsterRarity === 'magic';
+    const isRare = monsterRarity === 'rare';
+    let dropCount = isBoss ? (Math.floor(Math.random() * 4) + 4) : isRare ? (Math.floor(Math.random() * 3) + 2) : isChampion ? (Math.floor(Math.random() * 2) + 1) : (Math.random() < 0.25 ? 1 : 0);
+    for (let i = 0; i < dropCount; i++) {
+      itemsToDrop.push(generateLootItem(monsterLevel, isBoss, monsterRarity));
+    }
+  }
+
+  // Animate items spawning with physics onto groundLoot
+  for (const item of itemsToDrop) {
+    const dropAngle = Math.random() * Math.PI * 2;
+    const dropDistance = 40 + Math.random() * 80;
+
+    let beamHeight = item.beamHeight || 0;
+    if (!beamHeight) {
+      if (item.rarity === 'Unique' || item.rarity === 'Set' || item.rarity === 'Gem' || item.rarity === 'SkillGem') {
+        beamHeight = 350;
+      } else if (item.rarity === 'Rare' || item.rarity === 'Currency' || item.rarity === 'Consumable') {
+        beamHeight = 240;
+      }
+    }
+
+    groundLoot.push({
+      id: item.id || Math.random().toString(36).substring(2, 9),
+      x: x,
+      y: y,
+      targetX: x + Math.cos(dropAngle) * dropDistance,
+      targetY: y + Math.sin(dropAngle) * dropDistance,
+      item: item,
+      bounceTimer: 0.5,
+      beamHeight: beamHeight
+    });
+
+    AudioEngine.playLootDrop(item.rarity);
   }
 }
 
@@ -320,9 +433,10 @@ export function spawnDamageNumber(x, y, text, isCrit, color) {
 
 // 1. HEAVY SLASH (With Wind Blade, Rend & Titan Cleave Morphs)
 export function castSlash() {
+  if (player.isDead) return;
   const s = SKILLS.slash;
   if (player.cooldowns.slash > 0) return;
-  player.cooldowns.slash = Math.max(0.18, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
+  player.cooldowns.slash = Math.max(0.32, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
   const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
   if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
@@ -331,7 +445,7 @@ export function castSlash() {
     player.facing = Math.sin(angle) > 0 ? 'down' : 'up';
   }
   player.isAttacking = true;
-  player.attackTimer = 0.18;
+  player.attackTimer = 0.24;
 
   let reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
   if (isNodeAllocated('slash', 'sl_reach')) reach += 25;
@@ -364,13 +478,31 @@ export function castSlash() {
     projectiles.push({
       x: player.x,
       y: player.y,
-      vx: Math.cos(angle) * 520,
-      vy: Math.sin(angle) * 520,
+      vx: Math.cos(angle) * 380,
+      vy: Math.sin(angle) * 380,
       type: 'windblade',
       damage: Math.round(dmg * 0.85),
       radius: 20,
-      life: 0.75
+      life: 0.9
     });
+  }
+
+  // Set Synergy: Vanguard Triple Holy Blade Waves
+  if ((player.activeHiddenSynergies || []).includes('holy_blade_waves')) {
+    [-0.22, 0, 0.22].forEach(offset => {
+      projectiles.push({
+        x: player.x,
+        y: player.y,
+        vx: Math.cos(angle + offset) * 400,
+        vy: Math.sin(angle + offset) * 400,
+        type: 'windblade',
+        damage: Math.round(dmg * 1.15),
+        radius: 24,
+        life: 0.95
+      });
+    });
+    spawnDamageNumber(player.x, player.y - 60, '⚔️ TRIPLE HOLY BLADE WAVES!', true, '#00e676');
+    AudioEngine.playTone(880, 'sine', 0.18, 0.12);
   }
 
   for (let i = 0; i < 12; i++) {
@@ -390,6 +522,12 @@ export function castSlash() {
 
 // 2. PYRO FIREBALL (With GMP Support, Hellfire Chaos & Nova Cataclysm Morph)
 export function castFireball() {
+  if (player.isDead) return;
+  if (!isSkillUnlocked('fireball')) {
+    spawnDamageNumber(player.x, player.y - 45, '🔒 Pyro Fireball Not Socketed!', false, '#a0a8b7');
+    AudioEngine.playTone(200, 'square', 0.1, 0.08);
+    return;
+  }
   const s = SKILLS.fireball;
   if (player.cooldowns.fireball > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
@@ -417,14 +555,14 @@ export function castFireball() {
       projectiles.push({
         x: player.x,
         y: player.y - 10,
-        vx: Math.cos(a) * 440 * speedMult,
-        vy: Math.sin(a) * 440 * speedMult,
+        vx: Math.cos(a) * 330 * speedMult,
+        vy: Math.sin(a) * 330 * speedMult,
         type: 'fireball',
         damage: Math.round(dmg * 0.7),
         fireDmg: isHellfireChaos ? Math.round(dmg * 0.35) : Math.round(dmg * 0.7),
         chaosDmg: isHellfireChaos ? Math.round(dmg * 0.35) : 0,
         radius: radius,
-        life: 1.2
+        life: 1.4
       });
     }
   } else if (hasGmp) {
@@ -432,34 +570,40 @@ export function castFireball() {
       projectiles.push({
         x: player.x,
         y: player.y - 10,
-        vx: Math.cos(baseAngle + offset) * 480 * speedMult,
-        vy: Math.sin(baseAngle + offset) * 480 * speedMult,
+        vx: Math.cos(baseAngle + offset) * 360 * speedMult,
+        vy: Math.sin(baseAngle + offset) * 360 * speedMult,
         type: 'fireball',
         damage: Math.round(dmg * 0.85),
         fireDmg: isHellfireChaos ? Math.round(fireDmg * 0.85) : Math.round(dmg * 0.85),
         chaosDmg: isHellfireChaos ? Math.round(chaosDmg * 0.85) : 0,
         radius: radius,
-        life: 1.5
+        life: 1.7
       });
     });
   } else {
     projectiles.push({
       x: player.x,
       y: player.y - 10,
-      vx: Math.cos(baseAngle) * 480 * speedMult,
-      vy: Math.sin(baseAngle) * 480 * speedMult,
+      vx: Math.cos(baseAngle) * 360 * speedMult,
+      vy: Math.sin(baseAngle) * 360 * speedMult,
       type: 'fireball',
       damage: dmg,
       fireDmg: fireDmg,
       chaosDmg: chaosDmg,
       radius: radius,
-      life: 1.6
+      life: 1.8
     });
   }
 }
 
 // 3. FROST NOVA (With Frost Shield, Ice Shatter & Glacial Vortex Morph)
 export function castFrostNova() {
+  if (player.isDead) return;
+  if (!isSkillUnlocked('frost')) {
+    spawnDamageNumber(player.x, player.y - 45, '🔒 Frost Nova Not Socketed!', false, '#a0a8b7');
+    AudioEngine.playTone(200, 'square', 0.1, 0.08);
+    return;
+  }
   const s = SKILLS.frost;
   if (player.cooldowns.frost > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
@@ -512,6 +656,12 @@ export function castFrostNova() {
 
 // 4. CATACLYSM METEOR (With Meteor Shower Morph)
 export function castMeteor() {
+  if (player.isDead) return;
+  if (!isSkillUnlocked('meteor')) {
+    spawnDamageNumber(player.x, player.y - 45, '🔒 Meteor Not Socketed!', false, '#a0a8b7');
+    AudioEngine.playTone(200, 'square', 0.1, 0.08);
+    return;
+  }
   const s = SKILLS.meteor;
   if (player.cooldowns.meteor > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
@@ -542,6 +692,19 @@ export function castMeteor() {
       monsters.forEach(m => {
         if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, 30, true, { x, y });
       });
+
+      // Set Synergy: Malakor Cosmic Singularity Void Rift
+      if ((player.activeHiddenSynergies || []).includes('cosmic_singularity')) {
+        spawnDamageNumber(x, y - 60, '🌌 VOID SINGULARITY!', true, '#c678dd');
+        monsters.forEach(m => {
+          if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= 220) {
+            const pullAngle = Math.atan2(y - m.y, x - m.x);
+            m.vx = (m.vx || 0) + Math.cos(pullAngle) * 380;
+            m.vy = (m.vy || 0) + Math.sin(pullAngle) * 380;
+            dealDamage(m, 0, 0, 0, 0, 180, false, { x, y }, false, true);
+          }
+        });
+      }
 
       trainingDummies.forEach(d => {
         if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, 30, true, { x, y });
@@ -574,6 +737,7 @@ export function castMeteor() {
 
 // 5. SHADOW DASH
 export function castDash() {
+  if (player.isDead) return;
   const s = SKILLS.dash;
   if (player.cooldowns.dash > 0) return;
   player.cooldowns.dash = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
@@ -625,4 +789,98 @@ export function castDash() {
       size: 14
     });
   }
+}
+
+// 6. DEAL DAMAGE TO PLAYER (With Armor, Block, Resistances & Energy Shield)
+export function dealDamageToPlayer(monster) {
+  if (!monster || !monster.isAlive || player.isDead || (player.invulnerableTimer && player.invulnerableTimer > 0)) return;
+
+  // 1. Player Evasion Check
+  const pEvasion = player.evasionChance || 15;
+  if (Math.random() * 100 < pEvasion) {
+    spawnDamageNumber(player.x, player.y - 45, 'DODGED!', false, '#a0a8b7');
+    AudioEngine.playTone(320, 'sine', 0.08, 0.05);
+    return;
+  }
+
+  // 2. Player Shield Block Check (75% Damage Mitigation)
+  let blockMult = 1.0;
+  const pBlock = player.blockChance || 0;
+  if (pBlock > 0 && Math.random() * 100 < pBlock) {
+    blockMult = 0.25;
+    spawnDamageNumber(player.x, player.y - 45, '🛡️ BLOCKED!', true, '#ffd700');
+    AudioEngine.playTone(160, 'square', 0.15, 0.12);
+  }
+
+  // 3. Raw Damage Calculation & Defense Mitigations
+  const baseDmg = (monster.attackDmg || 20) * blockMult;
+  let finalDmg = 0;
+
+  if (monster.dmgType === 'fire') {
+    finalDmg = baseDmg * (1 - (player.fireRes || 0) / 100);
+  } else if (monster.dmgType === 'cold') {
+    finalDmg = baseDmg * (1 - (player.coldRes || 0) / 100);
+    if (Math.random() < 0.25) applyChill(player, 1.5);
+  } else if (monster.dmgType === 'lightning') {
+    finalDmg = baseDmg * (1 - (player.lightningRes || player.lightRes || 0) / 100);
+  } else if (monster.dmgType === 'chaos') {
+    finalDmg = baseDmg * (1 - (player.chaosRes || 0) / 100);
+  } else {
+    // Physical Armor Mitigation
+    const pArmor = player.armor || 60;
+    const physMitigation = Math.min(0.85, pArmor / (pArmor + 5 * baseDmg));
+    finalDmg = baseDmg * (1 - physMitigation);
+  }
+
+  const totalDmg = Math.max(1, Math.round(finalDmg));
+
+  // 4. Energy Shield Absorption First
+  if (player.es > 0) {
+    if (player.es >= totalDmg) {
+      player.es -= totalDmg;
+    } else {
+      const remainingDmg = totalDmg - player.es;
+      player.es = 0;
+      player.life = Math.max(0, player.life - remainingDmg);
+    }
+  } else {
+    player.life = Math.max(0, player.life - totalDmg);
+  }
+
+  // Visual Hit & Sound
+  AudioEngine.playHit(false);
+  const dmgColor = monster.dmgType === 'fire' ? '#ff7849' : (monster.dmgType === 'cold' ? '#4facfe' : (monster.dmgType === 'chaos' ? '#c678dd' : '#ff4d4f'));
+  spawnDamageNumber(player.x, player.y - 35, `-${totalDmg}`, false, dmgColor);
+
+  // Blood / Impact Particles
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x: player.x,
+      y: player.y - 10,
+      vx: (Math.random() - 0.5) * 140,
+      vy: (Math.random() - 0.5) * 140,
+      color: '#ff4d4f',
+      life: 0.25,
+      maxLife: 0.25,
+      size: 3
+    });
+  }
+
+  // 5. Player Defeated / Death Handler
+  if (player.life <= 0) {
+    handlePlayerDefeated();
+  }
+}
+
+export function handlePlayerDefeated() {
+  if (player.isDead) return;
+  player.isDead = true;
+  player.life = 0;
+  spawnDamageNumber(player.x, player.y - 60, '☠️ YOU ARE DEFEATED!', true, '#e06c75');
+  AudioEngine.playTone(110, 'sawtooth', 0.6, 0.4);
+
+  // Show defeat popup modal with 2 resurrection options
+  setTimeout(() => {
+    showDefeatModal();
+  }, 650);
 }

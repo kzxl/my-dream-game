@@ -6,6 +6,7 @@
 import { player } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
+import { ApiClient } from '../services/api-client.js';
 
 let selectedItemIndex = -1;
 
@@ -212,7 +213,7 @@ function setupForgeEventListeners() {
     updateForgeUI();
   };
 
-  document.getElementById('btnRerollSockets').onclick = () => {
+  document.getElementById('btnRerollSockets').onclick = async () => {
     const item = player.bag[selectedItemIndex];
     if (!item) return alert('Please place a piece of equipment onto the anvil.');
     
@@ -221,29 +222,38 @@ function setupForgeEventListeners() {
       return alert('Requires 1x Socketing Core or 1x Aether Spark!');
     }
 
-    item.sockets = Math.floor(Math.random() * 3) + 2; // 2 to 4 sockets
-    item.links = Math.min(item.sockets, item.links || 1);
+    const serverRes = await ApiClient.applyForgeCurrency('Currency_Jeweller', item);
+    if (serverRes && serverRes.success && serverRes.item) {
+      Object.assign(item, serverRes.item);
+    } else {
+      item.sockets = Math.floor(Math.random() * 3) + 2;
+      item.links = Math.min(item.sockets, item.links || 1);
+    }
     AudioEngine.playTone(440, 'triangle', 0.15, 0.15);
     updateForgeUI();
     updatePaperdollUI();
   };
 
-  document.getElementById('btnRerollLinks').onclick = () => {
+  document.getElementById('btnRerollLinks').onclick = async () => {
     const item = player.bag[selectedItemIndex];
     if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    const sockets = item.sockets || 2;
     
     if (!consumeCurrency('Harmonic Tether', 1) && !consumeCurrency('Flux Catalyst', 1)) {
       return alert('Requires 1x Harmonic Tether or 1x Flux Catalyst!');
     }
 
-    item.links = Math.floor(Math.random() * sockets) + 1;
+    const serverRes = await ApiClient.applyForgeCurrency('Currency_Fusing', item);
+    if (serverRes && serverRes.success && serverRes.item) {
+      Object.assign(item, serverRes.item);
+    } else {
+      item.links = Math.min(item.sockets || 2, Math.floor(Math.random() * (item.sockets || 2)) + 1);
+    }
     AudioEngine.playTone(659, 'sine', 0.2, 0.15);
     updateForgeUI();
     updatePaperdollUI();
   };
 
-  document.getElementById('btnCraftAffix').onclick = () => {
+  document.getElementById('btnCraftAffix').onclick = async () => {
     const item = player.bag[selectedItemIndex];
     if (!item) return alert('Please place a piece of equipment onto the anvil.');
     if (!consumeCurrency('Ascendant Catalyst', 1) && !consumeCurrency('Genesis Prism', 1)) {
@@ -252,21 +262,21 @@ function setupForgeEventListeners() {
 
     const select = document.getElementById('forgeAffixSelect');
     const chosenText = select.options[select.selectedIndex].text;
-    item.craftedMods = item.craftedMods || [];
-    if (item.craftedMods.length >= 2) {
-      return alert('Item already has the maximum of 2 crafted mods!');
+
+    const serverRes = await ApiClient.applyForgeCurrency('Currency_Exalted', item);
+    if (serverRes && serverRes.success && serverRes.item) {
+      Object.assign(item, serverRes.item);
+    } else {
+      item.craftedMods = item.craftedMods || [];
+      item.craftedMods.push(chosenText);
+      item.rarity = 'Rare';
+      item.color = '#ffff77';
+      if (chosenText.includes('Life')) item.stats.life = (item.stats.life || 0) + 65;
+      if (chosenText.includes('Physical')) item.stats.damage = (item.stats.damage || 0) + 35;
+      if (chosenText.includes('Energy Shield')) item.stats.es = (item.stats.es || 0) + 50;
+      if (chosenText.includes('Fire Resistance')) player.fireRes = Math.min(90, (player.fireRes || 0) + 10);
+      if (chosenText.includes('Attack Speed')) item.stats.attackSpeed = (item.stats.attackSpeed || 0) + 15;
     }
-
-    item.craftedMods.push(chosenText);
-    item.rarity = 'Rare';
-    item.color = '#ffff77';
-
-    // Apply stat directly
-    if (chosenText.includes('Life')) item.stats.life = (item.stats.life || 0) + 65;
-    if (chosenText.includes('Physical')) item.stats.damage = (item.stats.damage || 0) + 35;
-    if (chosenText.includes('Energy Shield')) item.stats.es = (item.stats.es || 0) + 50;
-    if (chosenText.includes('Fire Resistance')) player.fireRes = Math.min(90, player.fireRes + 10);
-    if (chosenText.includes('Attack Speed')) item.stats.attackSpeed = (item.stats.attackSpeed || 0) + 15;
 
     AudioEngine.playTone(880, 'sine', 0.3, 0.2);
     updateForgeUI();
@@ -274,21 +284,26 @@ function setupForgeEventListeners() {
     updatePaperdollUI();
   };
 
-  document.getElementById('btnChaosReroll').onclick = () => {
+  document.getElementById('btnChaosReroll').onclick = async () => {
     const item = player.bag[selectedItemIndex];
     if (!item) return alert('Please place a piece of equipment onto the anvil.');
     if (!consumeCurrency('Fracture Core', 1) && !consumeCurrency('Chaos Orb', 1)) {
       return alert('Requires 1x Fracture Core to chaos reroll all affixes!');
     }
 
-    item.rarity = 'Rare';
-    item.color = '#ffff77';
-    item.stats = {
-      damage: Math.floor(Math.random() * 40) + 25,
-      armor: Math.floor(Math.random() * 60) + 40,
-      life: Math.floor(Math.random() * 70) + 30
-    };
-    item.craftedMods = [];
+    const serverRes = await ApiClient.applyForgeCurrency('Currency_Chaos', item);
+    if (serverRes && serverRes.success && serverRes.item) {
+      Object.assign(item, serverRes.item);
+    } else {
+      item.rarity = 'Rare';
+      item.color = '#ffff77';
+      item.stats = {
+        damage: Math.floor(Math.random() * 40) + 25,
+        armor: Math.floor(Math.random() * 60) + 40,
+        life: Math.floor(Math.random() * 70) + 30
+      };
+      item.craftedMods = [];
+    }
 
     AudioEngine.playTone(330, 'sawtooth', 0.25, 0.18);
     updateForgeUI();
