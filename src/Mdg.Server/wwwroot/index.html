@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -18,7 +18,7 @@
     <!-- Zone Entry Banner Notification -->
     <div id="zone-banner" class="zone-banner-hide">
       <h2 id="zone-banner-title">SANCTUARY HAVEN</h2>
-      <p id="zone-banner-sub">🌿 Vùng Đất Khởi Đầu - Khu Vực An Toàn</p>
+      <p id="zone-banner-sub">🌿 Starting Town - Safe Haven</p>
     </div>
 
     <!-- Top Left HUD: Character Info & Globes -->
@@ -60,17 +60,17 @@
       
       <!-- Zoom Controls -->
       <div class="zoom-controls">
-        <button id="btn-zoom-in" class="zoom-btn" title="Phóng to (Scroll Up)">🔍 +</button>
+        <button id="btn-zoom-in" class="zoom-btn" title="Zoom In (Scroll Up)">🔍 +</button>
         <span id="zoom-level-text" class="zoom-tag">100%</span>
-        <button id="btn-zoom-out" class="zoom-btn" title="Thu nhỏ (Scroll Down)">🔍 -</button>
-        <button id="btn-zoom-reset" class="zoom-btn-reset" title="Mặc định">1x</button>
+        <button id="btn-zoom-out" class="zoom-btn" title="Zoom Out (Scroll Down)">🔍 -</button>
+        <button id="btn-zoom-reset" class="zoom-btn-reset" title="Reset Zoom (1x)">1x</button>
       </div>
 
       <div class="quick-buttons">
-        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="Bản đồ thế giới (M)">🗺️ Map (M)</button>
-        <button id="btn-toggle-stats" class="hud-btn" title="Chỉ số nhân vật (C)">📊 Stats (C)</button>
-        <button id="btn-toggle-inventory" class="hud-btn" title="Túi đồ & Trang bị (I)">🎒 Bag (I)</button>
-        <button id="btn-spawn-monster" class="hud-btn" title="Spawn quái">⚔️ Spawn</button>
+        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map (M)">🗺️ Map (M)</button>
+        <button id="btn-toggle-stats" class="hud-btn" title="Attributes (C)">📊 Stats (C)</button>
+        <button id="btn-toggle-inventory" class="hud-btn" title="Inventory (I)">🎒 Bag (I)</button>
+        <button id="btn-spawn-monster" class="hud-btn" title="Spawn Monsters">⚔️ Spawn</button>
       </div>
     </div>
 
@@ -112,7 +112,7 @@
     <div id="worldmap-modal" class="worldmap-modal-wrap hidden">
       <div class="worldmap-content">
         <div class="worldmap-header">
-          <h2>BẢN ĐỒ THẾ GIỚI AETHELIS (THE FRACTURED WORLD)</h2>
+          <h2>THE WORLD OF AETHELIS (THE FRACTURED REALM)</h2>
           <button id="btn-close-worldmap" class="close-btn">✖</button>
         </div>
         <div class="worldmap-body">
@@ -121,27 +121,27 @@
             
             <div class="zone-node node-haven active-node" id="node-haven" data-zone="SanctuaryHaven" title="Sanctuary Haven (Lv. 1-5)">
               <div class="node-pulse"></div>
-              <span class="node-label">🌿 Sanctuary Haven<br><small>(Khu An Toàn)</small></span>
+              <span class="node-label">🌿 Sanctuary Haven<br><small>(Safe Haven)</small></span>
             </div>
 
             <div class="zone-node node-plains" id="node-plains" data-zone="WhisperingPlains" title="Whispering Plains (Lv. 5-15)">
               <div class="node-pulse"></div>
-              <span class="node-label">🌾 Whispering Plains<br><small>(Bãi Săn Quái)</small></span>
+              <span class="node-label">🌾 Whispering Plains<br><small>(Hunting Grounds)</small></span>
             </div>
 
             <div class="zone-node node-crypt" id="node-crypt" data-zone="ForgottenCrypt" title="Forgotten Crypt (Lv. 15-25)">
               <div class="node-pulse"></div>
-              <span class="node-label">🏰 Forgotten Crypt<br><small>(Hầm Ngục Boss)</small></span>
+              <span class="node-label">🏰 Forgotten Crypt<br><small>(Boss Dungeon)</small></span>
             </div>
 
-            <div class="zone-node node-caldera node-locked" id="node-caldera" data-zone="MoltenCaldera" title="Molten Caldera (Lv. 35+ Khóa)">
+            <div class="zone-node node-caldera node-locked" id="node-caldera" data-zone="MoltenCaldera" title="Molten Caldera (Lv. 35+ Locked)">
               <div class="node-lock">🔒</div>
-              <span class="node-label">🌋 Molten Caldera<br><small>(Sắp Ra Mắt)</small></span>
+              <span class="node-label">🌋 Molten Caldera<br><small>(Coming Soon)</small></span>
             </div>
           </div>
         </div>
         <div class="worldmap-footer">
-          <span>💡 Bấm vào một khu vực để dịch chuyển tức thời (Fast Travel Waypoint).</span>
+          <span>💡 Click any unlocked region node to fast travel instantly.</span>
         </div>
       </div>
     </div>
@@ -149,25 +149,25 @@
     <!-- Stats Drawer (Modal) -->
     <div id="stats-modal" class="pixel-modal hidden">
       <div class="modal-header">
-        <h3>THUỘC TÍNH (PoE STATS)</h3>
+        <h3>CHARACTER ATTRIBUTES (PoE STATS)</h3>
         <button id="btn-close-stats" class="close-btn">✖</button>
       </div>
       <div class="modal-body">
         <div class="stat-group">
-          <h4>Phòng Thủ & Kháng Tính</h4>
-          <div class="stat-row"><span>Giáp (Armor):</span> <b id="stat-armor">500</b></div>
-          <div class="stat-row"><span>Né tránh (Evasion):</span> <b id="stat-evasion">350</b></div>
-          <div class="stat-row"><span>Kháng Lửa (Fire Res):</span> <b id="stat-fire-res" class="res-fire">75% (Cap)</b></div>
-          <div class="stat-row"><span>Kháng Băng (Cold Res):</span> <b id="stat-cold-res" class="res-cold">75% (Cap)</b></div>
-          <div class="stat-row"><span>Kháng Sét (Lightning Res):</span> <b id="stat-light-res" class="res-light">75% (Cap)</b></div>
-          <div class="stat-row"><span>Kháng Hỗn Mang (Chaos Res):</span> <b id="stat-chaos-res" class="res-chaos">40%</b></div>
+          <h4>Defenses & Resistances</h4>
+          <div class="stat-row"><span>Armor:</span> <b id="stat-armor">500</b></div>
+          <div class="stat-row"><span>Evasion Rating:</span> <b id="stat-evasion">350</b></div>
+          <div class="stat-row"><span>Fire Resistance:</span> <b id="stat-fire-res" class="res-fire">75% (Cap)</b></div>
+          <div class="stat-row"><span>Cold Resistance:</span> <b id="stat-cold-res" class="res-cold">75% (Cap)</b></div>
+          <div class="stat-row"><span>Lightning Resistance:</span> <b id="stat-light-res" class="res-light">75% (Cap)</b></div>
+          <div class="stat-row"><span>Chaos Resistance:</span> <b id="stat-chaos-res" class="res-chaos">40%</b></div>
         </div>
         <div class="stat-group">
-          <h4>Tấn Công & Chí Mạng</h4>
-          <div class="stat-row"><span>Tốc độ di chuyển:</span> <b id="stat-speed">6.0 m/s</b></div>
-          <div class="stat-row"><span>Chí mạng (Crit Chance):</span> <b id="stat-crit-chance">35.0%</b></div>
-          <div class="stat-row"><span>Sát thương Chí mạng:</span> <b id="stat-crit-multi">220% (2.2x)</b></div>
-          <div class="stat-row"><span>Công thức PoE:</span> <small class="gold-text">(Base + Flat) × Inc × More</small></div>
+          <h4>Offense & Critical</h4>
+          <div class="stat-row"><span>Movement Speed:</span> <b id="stat-speed">6.0 m/s</b></div>
+          <div class="stat-row"><span>Critical Strike Chance:</span> <b id="stat-crit-chance">35.0%</b></div>
+          <div class="stat-row"><span>Critical Multiplier:</span> <b id="stat-crit-multi">220% (2.2x)</b></div>
+          <div class="stat-row"><span>PoE Stat Formula:</span> <small class="gold-text">(Base + Flat) × Inc × More</small></div>
         </div>
       </div>
     </div>
@@ -175,23 +175,23 @@
     <!-- Inventory / Equipment Drawer (Modal) -->
     <div id="inventory-modal" class="pixel-modal hidden">
       <div class="modal-header">
-        <h3>TRANG BỊ & TÚI ĐỒ (PAPERDOLL)</h3>
+        <h3>EQUIPMENT & INVENTORY (PAPERDOLL)</h3>
         <button id="btn-close-inventory" class="close-btn">✖</button>
       </div>
       <div class="modal-body">
         <div class="equipment-paperdoll">
-          <div class="equip-slot" id="equip-helm" title="Mũ Chiến Binh">👑 <span>Mũ Giáp Vàng</span></div>
-          <div class="equip-slot" id="equip-armor" title="Giáp Thân">🛡️ <span>Thiết Giáp Tinh Luyện</span></div>
-          <div class="equip-slot active-gear" id="equip-weapon" title="Vũ Khí">🗡️ <span>Hỏa Kiếm Cổ Đại (+40 Fire)</span></div>
-          <div class="equip-slot active-gear" id="equip-shield" title="Khiên">🛡️ <span>Khiên Hộ Vệ (+50 Armor)</span></div>
+          <div class="equip-slot" id="equip-helm" title="Golden Crown">👑 <span>Golden Crown (+15 All Res)</span></div>
+          <div class="equip-slot" id="equip-armor" title="Refined Plate">🛡️ <span>Refined Plate (+250 Armor)</span></div>
+          <div class="equip-slot active-gear" id="equip-weapon" title="Ancient Fireblade">🗡️ <span>Ancient Fireblade (+40 Fire)</span></div>
+          <div class="equip-slot active-gear" id="equip-shield" title="Guardian Shield">🛡️ <span>Guardian Shield (+50 Armor)</span></div>
         </div>
-        <p class="inventory-hint">💡 Bấm vào ô trang bị để bật/tắt buff thử nghiệm trực tiếp lên Core.</p>
+        <p class="inventory-hint">💡 Click item slots to toggle equipment buffs live on the Core engine.</p>
       </div>
     </div>
 
     <!-- Help & Controls Overlay -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Di chuyển | <b>Cuộn chuột</b>: Zoom In/Out | <b>LMB</b>: Đánh thường | <b>Q/W/E</b>: Skill | <b>Space</b>: Dash | <b>M</b>: World Map</span>
+      <span>🎮 <b>WASD</b>: Move | <b>Mouse Wheel</b>: Zoom In/Out | <b>LMB</b>: Attack | <b>Q/W/E</b>: Skills | <b>Space</b>: Dash | <b>M</b>: World Map</span>
     </div>
   </div>
 

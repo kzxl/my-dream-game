@@ -83,41 +83,41 @@ namespace Mdg.Core.Features.World
             var haven = new ZoneDefinition(
                 ZoneType.SanctuaryHaven,
                 "Sanctuary Haven",
-                "Thị Trấn Khởi Đầu - Vùng Đất An Toàn",
+                "Starting Town - Safe Haven",
                 "Lv. 1-5",
-                new FixVector2(1200, 1200),
+                new FixVector2(2000, 2000),
                 isSafeZone: true
             );
             haven.AddPortal(new Portal(
                 "haven_to_plains",
-                "Cổng ra Đồng Cỏ Whispering Plains",
-                new FixVector2(1800, 1200),
+                "To Whispering Plains",
+                new FixVector2(3200, 2000),
                 ZoneType.WhisperingPlains,
-                new FixVector2(400, 1200)
+                new FixVector2(600, 2000)
             ));
             _zones[ZoneType.SanctuaryHaven] = haven;
 
-            // 2. Whispering Plains (Meadows / Slimes & Goblins)
+            // 2. Whispering Plains (Wilderness / Slimes & Goblins)
             var plains = new ZoneDefinition(
                 ZoneType.WhisperingPlains,
                 "Whispering Plains",
-                "Đồng Cỏ Thì Thầm - Bãi Quái Dã Ngoại",
+                "Wild Hunting Grounds - Roaming Beasts",
                 "Lv. 5-15",
-                new FixVector2(400, 1200)
+                new FixVector2(600, 2000)
             );
             plains.AddPortal(new Portal(
                 "plains_to_haven",
-                "Trở về Sanctuary Haven",
-                new FixVector2(300, 1200),
+                "Return to Sanctuary Haven",
+                new FixVector2(500, 2000),
                 ZoneType.SanctuaryHaven,
-                new FixVector2(1700, 1200)
+                new FixVector2(3000, 2000)
             ));
             plains.AddPortal(new Portal(
                 "plains_to_crypt",
-                "Cổng vào Hầm Ngục Forgotten Crypt",
-                new FixVector2(2000, 1200),
+                "Portal to Forgotten Crypt",
+                new FixVector2(3500, 2000),
                 ZoneType.ForgottenCrypt,
-                new FixVector2(400, 1200)
+                new FixVector2(600, 2000)
             ));
             _zones[ZoneType.WhisperingPlains] = plains;
 
@@ -125,16 +125,16 @@ namespace Mdg.Core.Features.World
             var crypt = new ZoneDefinition(
                 ZoneType.ForgottenCrypt,
                 "Forgotten Crypt",
-                "Hầm Ngục Bị Lãng Quên - Nơi Trú Ngụ Của Boss",
+                "Ancient Crypt - Shadow Fiend Lair",
                 "Lv. 15-25",
-                new FixVector2(400, 1200)
+                new FixVector2(600, 2000)
             );
             crypt.AddPortal(new Portal(
                 "crypt_to_plains",
-                "Thoát khỏi Hầm Ngục",
-                new FixVector2(300, 1200),
+                "Escape Dungeon",
+                new FixVector2(500, 2000),
                 ZoneType.WhisperingPlains,
-                new FixVector2(1900, 1200)
+                new FixVector2(3300, 2000)
             ));
             _zones[ZoneType.ForgottenCrypt] = crypt;
         }

@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * Seamless Natural Terrain, 4000x4000 World Map & Smooth Dynamic Zoom (In/Out)
+ * English UI, Seamless Terrain & Dynamic Zoom System
  */
 
 (function () {
@@ -21,7 +21,7 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // World & Camera Settings (Expanded to 4000x4000)
+  // World & Camera Settings (4000x4000)
   const WORLD_SIZE = 4000;
   const TILE_SIZE = 64;
 
@@ -59,20 +59,20 @@
   assets.props.src = '/assets/props_pack.png' + cacheBust;
 
   // ==========================================
-  // 2. ZONE DEFINITIONS (4000x4000 Layout)
+  // 2. ZONE DEFINITIONS (English)
   // ==========================================
   const ZONES = {
     SanctuaryHaven: {
       id: 'SanctuaryHaven',
       name: 'Sanctuary Haven',
-      subtitle: '🌿 Vùng Đất Khởi Đầu - Thị Trấn An Toàn (4000x4000)',
+      subtitle: '🌿 Starting Town - Safe Haven (4000x4000)',
       levelRange: 'Lv. 1-5',
       portals: [
-        { x: 3200, y: 2000, targetZone: 'WhisperingPlains', targetX: 600, targetY: 2000, name: '🌀 Đến Whispering Plains' }
+        { x: 3200, y: 2000, targetZone: 'WhisperingPlains', targetX: 600, targetY: 2000, name: '🌀 To Whispering Plains' }
       ],
       npcs: [
-        { x: 1900, y: 1900, name: 'Rèn Cổ (Blacksmith)', title: 'Thợ Rèn', color: '#e5c07b' },
-        { x: 2100, y: 1900, name: 'Học Giả Aethel (Sage)', title: 'Nhiệm Vụ', color: '#61afef' }
+        { x: 1900, y: 1900, name: 'Doran (Blacksmith)', title: 'Blacksmith', color: '#e5c07b' },
+        { x: 2100, y: 1900, name: 'Elder Aethel (Sage)', title: 'Quest Master', color: '#61afef' }
       ],
       props: [
         { x: 2000, y: 2000, type: 'campfire' },
@@ -85,19 +85,19 @@
         { x: 2500, y: 2300, type: 'rock' }
       ],
       dummies: [
-        { x: 1900, y: 2150, name: 'Bù Nhìn Gỗ (Dummy 1)' },
-        { x: 2100, y: 2150, name: 'Bù Nhìn Gỗ (Dummy 2)' }
+        { x: 1900, y: 2150, name: 'Training Dummy (Alpha)' },
+        { x: 2100, y: 2150, name: 'Training Dummy (Beta)' }
       ]
     },
 
     WhisperingPlains: {
       id: 'WhisperingPlains',
       name: 'Whispering Plains',
-      subtitle: '🌾 Đồng Cỏ Thì Thầm - Bãi Săn Quái Bạt Ngàn (4000x4000)',
+      subtitle: '🌾 Whispering Plains - Wild Hunting Grounds (4000x4000)',
       levelRange: 'Lv. 5-15',
       portals: [
-        { x: 500, y: 2000, targetZone: 'SanctuaryHaven', targetX: 3000, targetY: 2000, name: '🌀 Về Sanctuary Haven' },
-        { x: 3500, y: 2000, targetZone: 'ForgottenCrypt', targetX: 600, targetY: 2000, name: '🌀 Cổng vào Forgotten Crypt' }
+        { x: 500, y: 2000, targetZone: 'SanctuaryHaven', targetX: 3000, targetY: 2000, name: '🌀 Return to Haven' },
+        { x: 3500, y: 2000, targetZone: 'ForgottenCrypt', targetX: 600, targetY: 2000, name: '🌀 Enter Forgotten Crypt' }
       ],
       props: [],
       dummies: []
@@ -106,10 +106,10 @@
     ForgottenCrypt: {
       id: 'ForgottenCrypt',
       name: 'Forgotten Crypt',
-      subtitle: '🏰 Hầm Ngục Cổ Đại - Hang Ổ Shadow Fiend Boss (4000x4000)',
+      subtitle: '🏰 Forgotten Crypt - Shadow Fiend Lair (4000x4000)',
       levelRange: 'Lv. 15-25',
       portals: [
-        { x: 500, y: 2000, targetZone: 'WhisperingPlains', targetX: 3300, targetY: 2000, name: '🌀 Thoát Khỏi Hầm Ngục' }
+        { x: 500, y: 2000, targetZone: 'WhisperingPlains', targetX: 3300, targetY: 2000, name: '🌀 Escape Dungeon' }
       ],
       props: [],
       dummies: []
@@ -208,7 +208,6 @@
       });
     }
 
-    // Generate Props across expanded 4000x4000 map
     if (currentZone.props && currentZone.props.length > 0) {
       currentZone.props.forEach(pr => props.push({ ...pr }));
     }
@@ -225,13 +224,11 @@
       const px = Math.random() * (WORLD_SIZE - 400) + 200;
       const py = Math.random() * (WORLD_SIZE - 400) + 200;
 
-      // Don't spawn props directly on center spawn
       if (Math.hypot(px - 2000, py - 2000) > 200) {
         props.push({ x: px, y: py, type: type });
       }
     }
 
-    // Spawn Monsters across Expanded Map
     if (currentZone.id === 'WhisperingPlains') {
       spawnMonsterCluster(1200, 1200, 6);
       spawnMonsterCluster(2800, 1400, 7);
@@ -242,7 +239,7 @@
       spawnMonsterCluster(1200, 1500, 8);
       spawnMonsterCluster(2200, 1200, 8);
       spawnMonsterCluster(2600, 2800, 10);
-      spawnMonster(3200, 2000, 'boss'); // Boss in Throne Chamber
+      spawnMonster(3200, 2000, 'boss');
     }
 
     showZoneBanner(currentZone.name, currentZone.subtitle);
@@ -555,17 +552,15 @@
   }
 
   // ==========================================
-  // 7. UPDATE LOOP & SMOOTH ZOOM
+  // 7. UPDATE LOOP & DYNAMIC ZOOM
   // ==========================================
   let lastTime = performance.now();
   let frameCount = 0;
   let fpsTimer = 0;
 
   function update(dt) {
-    // Smooth Camera Zoom Interpolation
     camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
 
-    // Movement
     let mx = 0, my = 0;
     if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
     if (keys['KeyS'] || keys['ArrowDown']) my += 1;
@@ -596,7 +591,6 @@
       player.animFrame = 0;
     }
 
-    // Portals
     portals.forEach(p => {
       const dist = Math.hypot(player.x - p.x, player.y - p.y);
       if (dist < 55) {
@@ -604,7 +598,6 @@
       }
     });
 
-    // Cooldowns & Regen
     for (let k in player.cooldowns) {
       if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
     }
@@ -615,11 +608,9 @@
       castSlash();
     }
 
-    // Camera follow player
     camera.x = player.x;
     camera.y = player.y;
 
-    // Recalculate Mouse World Coordinates with dynamic zoom
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     mouse.worldX = player.x + (mouse.x - centerX) / camera.zoom;
@@ -724,21 +715,18 @@
   }
 
   // ==========================================
-  // 8. NATURAL TERRAIN & ZOOMED RENDERING
+  // 8. RENDERING
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    // Center camera on screen and apply dynamic zoom
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-player.x, -player.y);
 
-    // 1. Draw Seamless Natural Terrain (Zero Checkerboard)
     drawSeamlessTerrain();
 
-    // 2. Y-Sorting Render Queue
     const renderList = [];
 
     portals.forEach(p => {
@@ -768,7 +756,7 @@
     renderList.sort((a, b) => a.y - b.y);
     renderList.forEach(item => item.render());
 
-    // 3. Projectiles
+    // Projectiles
     projectiles.forEach(p => {
       ctx.fillStyle = '#ff7849';
       ctx.beginPath();
@@ -780,7 +768,7 @@
       ctx.fill();
     });
 
-    // 4. Particles
+    // Particles
     particles.forEach(pt => {
       ctx.fillStyle = pt.color;
       if (pt.isRing) {
@@ -794,7 +782,7 @@
       }
     });
 
-    // 5. Floating Damage Text
+    // Floating Text
     floatingTexts.forEach(ft => {
       ctx.font = ft.isCrit ? 'bold 16px "Press Start 2P", monospace' : 'bold 12px "Press Start 2P", monospace';
       ctx.fillStyle = ft.color;
@@ -809,7 +797,7 @@
     renderMinimap();
   }
 
-  // Draw Natural Seamless Terrain (No Grid Lines, Soft Color Blends)
+  // Draw Natural Seamless Terrain
   function drawSeamlessTerrain() {
     const viewW = canvas.width / camera.zoom;
     const viewH = canvas.height / camera.zoom;
@@ -821,18 +809,15 @@
     const isCrypt = currentZone.id === 'ForgottenCrypt';
     const isHaven = currentZone.id === 'SanctuaryHaven';
 
-    // 1. Fill base solid field for the whole visible screen first
     ctx.fillStyle = isCrypt ? '#241b2f' : '#4d752c';
     ctx.fillRect(startX - 10, startY - 10, endX - startX + 20, endY - startY + 20);
 
-    // 2. Draw organic features
     for (let x = startX; x < endX; x += TILE_SIZE) {
       for (let y = startY; y < endY; y += TILE_SIZE) {
         const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
         const rand = hash - Math.floor(hash);
 
         if (isCrypt) {
-          // Crypt: Dark slate tiles with subtle moss
           if (rand > 0.6) {
             ctx.fillStyle = '#2f233d';
             ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
@@ -842,7 +827,6 @@
             ctx.fillRect(x + 14, y + 14, 12, 12);
           }
         } else if (isHaven) {
-          // Sanctuary Haven: Cobblestone town plaza in center
           const distToCenter = Math.hypot(x - 2000, y - 2000);
           if (distToCenter < 240) {
             ctx.fillStyle = '#6b7280';
@@ -850,19 +834,17 @@
             ctx.fillStyle = '#565d6b';
             ctx.fillRect(x + 12, y + 12, 24, 24);
           } else {
-            // Soft Meadow & subtle grass tufts
             if (rand > 0.7) {
               ctx.fillStyle = '#588334';
               ctx.fillRect(x + 10, y + 12, 4, 8);
               ctx.fillRect(x + 14, y + 10, 4, 10);
             }
             if (rand > 0.92) {
-              ctx.fillStyle = '#ffd700'; // Yellow daisy
+              ctx.fillStyle = '#ffd700';
               ctx.fillRect(x + 24, y + 24, 5, 5);
             }
           }
         } else {
-          // Whispering Plains: Seamless emerald wilderness
           if (rand > 0.65) {
             ctx.fillStyle = '#598436';
             ctx.fillRect(x + 8, y + 14, 4, 8);
@@ -914,7 +896,7 @@
     ctx.font = '10px "Outfit", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText('Vanguard Hero [Lvl.99]', 0, -42);
+    ctx.fillText('Vanguard Hero [Lv.99]', 0, -42);
 
     ctx.restore();
   }
@@ -1013,7 +995,7 @@
     ctx.restore();
   }
 
-  // Draw Glowing Portal
+  // Draw Portal
   function drawPortal(p) {
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -1094,13 +1076,11 @@
     ctx.restore();
   }
 
-  // Minimap with 4000x4000 Scaling
   function renderMinimap() {
     mmCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
     const scaleX = minimapCanvas.width / WORLD_SIZE;
     const scaleY = minimapCanvas.height / WORLD_SIZE;
 
-    // Portals
     portals.forEach(p => {
       mmCtx.fillStyle = '#c678dd';
       mmCtx.beginPath();
@@ -1108,7 +1088,6 @@
       mmCtx.fill();
     });
 
-    // Monsters
     monsters.forEach(m => {
       if (m.isAlive) {
         mmCtx.fillStyle = m.type === 'boss' ? '#ffd700' : '#e06c75';
@@ -1117,14 +1096,12 @@
       }
     });
 
-    // Player Dot
     mmCtx.fillStyle = '#61afef';
     mmCtx.beginPath();
     mmCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
     mmCtx.fill();
   }
 
-  // Main Loop
   function gameLoop(now) {
     const dt = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
@@ -1146,17 +1123,13 @@
   // ==========================================
   // 9. INPUT & ZOOM LISTENERS
   // ==========================================
-  // Mouse Wheel Zoom In / Out
   window.addEventListener('wheel', e => {
-    // Only zoom when not scrolling inside modals
     if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
-    
     e.preventDefault();
     const zoomFactor = -Math.sign(e.deltaY) * 0.15;
     camera.targetZoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.targetZoom + zoomFactor));
   }, { passive: false });
 
-  // Zoom Buttons
   document.getElementById('btn-zoom-in').addEventListener('click', () => {
     camera.targetZoom = Math.min(camera.maxZoom, camera.targetZoom + 0.25);
   });
@@ -1218,7 +1191,7 @@
     node.addEventListener('click', () => {
       const zone = node.getAttribute('data-zone');
       if (zone === 'MoltenCaldera') {
-        alert('Khu vực Molten Caldera (Lv. 35+) hiện đang bị phong ấn bởi ma thuật cổ!');
+        alert('The Molten Caldera (Lv. 35+) is currently sealed by ancient magic!');
         return;
       }
       toggleModal('worldmap-modal');
