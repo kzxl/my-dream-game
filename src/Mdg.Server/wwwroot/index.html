@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MDG: Aethelis - 2D ARPG Web Client & Loot System</title>
-  <meta name="description" content="My Dream Game (MDG) - Pure C# Core Cross-Platform 2D Top-Down ARPG with PoE Loot Drops & Boss Battles" />
+  <title>MDG: Aethelis - 2D ARPG Web Client & Class Ascension</title>
+  <meta name="description" content="My Dream Game (MDG) - Pure C# Core ARPG with Gender Selection & Class Ascension" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
       </div>
       <div class="boss-bar-wrap">
         <div id="boss-hp-fill" class="boss-hp-fill" style="width: 100%;"></div>
-        <span id="boss-hp-text" class="boss-hp-text">1,800 / 1,800 (100%)</span>
+        <span id="boss-hp-text" class="boss-hp-text">2,400 / 2,400 (100%)</span>
       </div>
     </div>
 
@@ -36,13 +36,15 @@
 
     <!-- Top Left HUD: Character Info & Globes -->
     <div id="player-hud" class="pixel-panel">
-      <div class="portrait-box">
-        <div class="avatar-pixel"></div>
-        <span class="level-badge" id="hud-level">Lv.99</span>
+      <div class="portrait-box" id="btn-toggle-gender" title="Click to Switch Gender (Male / Female)">
+        <div class="avatar-pixel" id="hud-avatar"></div>
+        <span class="level-badge" id="hud-level">Lv.1</span>
+        <span class="gender-tag" id="hud-gender-tag">♂ Male</span>
       </div>
       <div class="bars-container">
         <div class="name-row">
-          <span id="hud-name" class="char-name">Vanguard Hero</span>
+          <span id="hud-name" class="char-name">Novice Adventurer</span>
+          <button id="btn-ascend-trigger" class="ascend-pulse-btn hidden" title="Class Ascension Available!">⭐ Ascend Class!</button>
           <span class="zone-badge" id="hud-zone-tag">🌿 Sanctuary Haven</span>
         </div>
         <!-- Energy Shield Bar -->
@@ -91,24 +93,24 @@
     <div id="bottom-hotbar">
       <div class="hotbar-slots">
         <div class="skill-slot" id="slot-slash" data-key="LMB / 1">
-          <div class="skill-icon icon-slash">⚔️</div>
+          <div class="skill-icon icon-slash" id="icon-slot-1">⚔️</div>
           <div class="cooldown-overlay" id="cd-slash"></div>
           <span class="key-hint">LMB</span>
         </div>
         <div class="skill-slot" id="slot-fireball" data-key="Q">
-          <div class="skill-icon icon-fireball">🔥</div>
+          <div class="skill-icon icon-fireball" id="icon-slot-2">🔥</div>
           <div class="cooldown-overlay" id="cd-fireball"></div>
           <span class="key-hint">Q</span>
           <span class="mana-hint">10 MP</span>
         </div>
         <div class="skill-slot" id="slot-frost" data-key="W">
-          <div class="skill-icon icon-frost">❄️</div>
+          <div class="skill-icon icon-frost" id="icon-slot-3">❄️</div>
           <div class="cooldown-overlay" id="cd-frost"></div>
           <span class="key-hint">W</span>
           <span class="mana-hint">15 MP</span>
         </div>
         <div class="skill-slot" id="slot-meteor" data-key="E">
-          <div class="skill-icon icon-meteor">☄️</div>
+          <div class="skill-icon icon-meteor" id="icon-slot-4">☄️</div>
           <div class="cooldown-overlay" id="cd-meteor"></div>
           <span class="key-hint">E</span>
           <span class="mana-hint">30 MP</span>
@@ -121,7 +123,57 @@
       </div>
     </div>
 
-    <!-- Fullscreen World Map Modal (Aethelis World Map) -->
+    <!-- Class Ascension Selection Modal (Milestone Unlock) -->
+    <div id="ascension-modal" class="worldmap-modal-wrap hidden">
+      <div class="ascension-card-box">
+        <div class="ascension-header">
+          <h2>⭐ CHOOSE YOUR DESTINY (CLASS ASCENSION)</h2>
+          <p>You have proven your valor! Select a specialization to master your powers.</p>
+        </div>
+        <div class="ascension-grid">
+          <!-- Class 1: Vanguard -->
+          <div class="class-choice-card" data-class="Vanguard">
+            <div class="class-icon">🛡️</div>
+            <h3>VANGUARD</h3>
+            <span class="class-subtitle">Heavy Armor & Cleaves</span>
+            <ul class="class-perks">
+              <li>+300 Flat Armor Rating</li>
+              <li>+150 Maximum Health</li>
+              <li>Heavy Cleave & Shield Fortress</li>
+            </ul>
+            <button class="select-class-btn btn-vanguard">Become Vanguard</button>
+          </div>
+
+          <!-- Class 2: Arcanist -->
+          <div class="class-choice-card" data-class="Arcanist">
+            <div class="class-icon">🔮</div>
+            <h3>ARCANIST</h3>
+            <span class="class-subtitle">Elemental Burst & Energy Shield</span>
+            <ul class="class-perks">
+              <li>+200 Energy Shield Buffer</li>
+              <li>+50% Elemental Spell Damage</li>
+              <li>Frost Nova & Cataclysm Meteor</li>
+            </ul>
+            <button class="select-class-btn btn-arcanist">Become Arcanist</button>
+          </div>
+
+          <!-- Class 3: Shadow Rogue -->
+          <div class="class-choice-card" data-class="ShadowRogue">
+            <div class="class-icon">🗡️</div>
+            <h3>SHADOW ROGUE</h3>
+            <span class="class-subtitle">Critical Strikes & Evasion</span>
+            <ul class="class-perks">
+              <li>+350 Evasion Rating</li>
+              <li>+25% Base Critical Chance</li>
+              <li>Dual Blade Flurry & Poison Daggers</li>
+            </ul>
+            <button class="select-class-btn btn-rogue">Become Shadow Rogue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen World Map Modal -->
     <div id="worldmap-modal" class="worldmap-modal-wrap hidden">
       <div class="worldmap-content">
         <div class="worldmap-header">
@@ -159,7 +211,7 @@
       </div>
     </div>
 
-    <!-- Stats Drawer (Modal) -->
+    <!-- Stats Drawer -->
     <div id="stats-modal" class="pixel-modal hidden">
       <div class="modal-header">
         <h3>CHARACTER ATTRIBUTES (PoE STATS)</h3>
@@ -185,7 +237,7 @@
       </div>
     </div>
 
-    <!-- Equipment & Bag Drawer (Modal) -->
+    <!-- Equipment & Bag Drawer -->
     <div id="inventory-modal" class="pixel-modal inv-modal-wide hidden">
       <div class="modal-header">
         <h3>EQUIPMENT & INVENTORY (PAPERDOLL & BAG)</h3>
@@ -233,7 +285,7 @@
 
     <!-- Help & Controls Overlay -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>Mouse Wheel</b>: Zoom | <b>LMB / F</b>: Attack / Pick Loot | <b>Q/W/E</b>: Skills | <b>Space</b>: Dash | <b>M/C/I</b>: Map / Stats / Bag</span>
+      <span>🎮 <b>WASD</b>: Move | <b>Click Avatar</b>: Switch ♂/♀ | <b>LMB/F</b>: Attack/Loot | <b>Q/W/E</b>: Skills | <b>M/C/I</b>: Map/Stats/Bag</span>
     </div>
   </div>
 

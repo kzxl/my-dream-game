@@ -1,6 +1,6 @@
 /**
  * MDG: Aethelis - 2D Top-Down Pixel Art ARPG Engine
- * PoE Loot Drops, Loot Beams, Boss Top Health Bar, Web Audio SFX & Inventory Grid
+ * Gender Selection (Male/Female), Leveling & Class Ascension System
  */
 
 (function () {
@@ -85,14 +85,22 @@
       } else {
         this.playTone(120, 'square', 0.12, 0.08);
       }
+    },
+    playLevelUp() {
+      this.init();
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((note, idx) => {
+        setTimeout(() => this.playTone(note, 'triangle', 0.35, 0.15), idx * 100);
+      });
     }
   };
 
   // ==========================================
-  // 2. ASSET LOADER
+  // 2. ASSET LOADER (Male & Female Sprites)
   // ==========================================
   const assets = {
-    hero: new Image(),
+    maleHero: new Image(),
+    femaleHero: new Image(),
     monsters: new Image(),
     props: new Image(),
     loaded: 0
@@ -103,8 +111,11 @@
   }
 
   const cacheBust = '?v=' + Date.now();
-  assets.hero.onload = onAssetLoad;
-  assets.hero.src = '/assets/character_spritesheet.png' + cacheBust;
+  assets.maleHero.onload = onAssetLoad;
+  assets.maleHero.src = '/assets/character_spritesheet.png' + cacheBust;
+
+  assets.femaleHero.onload = onAssetLoad;
+  assets.femaleHero.src = '/assets/female_character_spritesheet.png' + cacheBust;
 
   assets.monsters.onload = onAssetLoad;
   assets.monsters.src = '/assets/monsters_pack.png' + cacheBust;
@@ -174,7 +185,7 @@
   let currentZone = ZONES[currentZoneId];
 
   // ==========================================
-  // 4. PLAYER STATE & INVENTORY
+  // 4. CHARACTER STATE & PROGRESSION
   // ==========================================
   const player = {
     x: 2000,
@@ -187,6 +198,12 @@
     animFrame: 0,
     animTimer: 0,
 
+    gender: 'Male', // 'Male' or 'Female'
+    classSpec: 'Novice', // 'Novice', 'Vanguard', 'Arcanist', 'ShadowRogue'
+    level: 1,
+    currentExp: 0,
+    expToNext: 100,
+
     life: 250,
     maxLife: 250,
     mana: 120,
@@ -194,26 +211,25 @@
     es: 100,
     maxEs: 100,
 
-    baseArmor: 250,
-    armor: 500,
-    evasion: 350,
+    armor: 250,
+    evasion: 250,
     fireRes: 75,
     coldRes: 75,
     lightRes: 75,
     chaosRes: 40,
-    critChance: 35,
-    critMulti: 220,
+    critChance: 25,
+    critMulti: 200,
 
     cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
     maxCooldowns: { slash: 0.35, fireball: 1.0, frost: 2.5, meteor: 4.5, dash: 1.2 },
 
     equipped: {
-      Helm: { name: 'Crown of the Void', rarity: 'Unique', icon: '👑', stats: '+120 Energy Shield, +30% Chaos Res' },
-      BodyArmor: { name: 'Refined Plate', rarity: 'Rare', icon: '🛡️', stats: '+250 Armor, +15% All Res' },
-      MainHand: { name: 'Ancient Fireblade', rarity: 'Rare', icon: '🗡️', stats: '+40 Fire Damage, +20% Crit Multi' },
-      OffHand: { name: 'Guardian Shield', rarity: 'Magic', icon: '🛡️', stats: '+50 Armor, +10% Block Chance' }
+      Helm: { name: 'Crown of the Void', rarity: 'Unique', icon: '👑', mods: ['+120 ES', '+30% Chaos Res'] },
+      BodyArmor: { name: 'Refined Plate', rarity: 'Rare', icon: '🛡️', mods: ['+250 Armor', '+15% All Res'] },
+      MainHand: { name: 'Ancient Fireblade', rarity: 'Rare', icon: '🗡️', mods: ['+40 Fire Damage', '+20% Crit Multi'] },
+      OffHand: { name: 'Guardian Shield', rarity: 'Magic', icon: '🛡️', mods: ['+50 Armor', '+10% Block Chance'] }
     },
-    bag: [] // Up to 12 items
+    bag: []
   };
 
   // World Entities
@@ -232,7 +248,81 @@
   const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };
 
   // ==========================================
-  // 5. LOOT DROP TABLE & GENERATOR
+  // 5. PROGRESSION & CLASS ASCENSION LOGIC
+  // ==========================================
+  function gainExp(amount) {
+    player.currentExp += amount;
+    while (player.currentExp >= player.expToNext) {
+      player.currentExp -= player.expToNext;
+      player.level++;
+      player.expToNext = Math.round(player.expToNext * 1.4);
+
+      player.maxLife += 20;
+      player.life = player.maxLife;
+      player.maxMana += 10;
+      player.mana = player.maxMana;
+
+      AudioEngine.playLevelUp();
+      spawnDamageNumber(player.x, player.y - 60, 'LEVEL UP!', true, '#ffd700');
+
+      document.getElementById('hud-level').innerText = `Lv.${player.level}`;
+
+      // Check Ascension milestone at Lv. 10
+      if (player.level >= 10 && player.classSpec === 'Novice') {
+        document.getElementById('btn-ascend-trigger').classList.remove('hidden');
+      }
+    }
+  }
+
+  function setGender(newGender) {
+    player.gender = newGender;
+    const avatar = document.getElementById('hud-avatar');
+    const tag = document.getElementById('hud-gender-tag');
+
+    if (newGender === 'Female') {
+      avatar.classList.add('avatar-female');
+      tag.innerText = '♀ Female';
+      tag.style.color = '#ff79c6';
+    } else {
+      avatar.classList.remove('avatar-female');
+      tag.innerText = '♂ Male';
+      tag.style.color = '#61afef';
+    }
+    spawnDamageNumber(player.x, player.y - 40, `Hero: ${newGender}`, false, '#98c379');
+  }
+
+  function selectClassSpecialization(spec) {
+    player.classSpec = spec;
+    document.getElementById('ascension-modal').classList.add('hidden');
+    document.getElementById('btn-ascend-trigger').classList.add('hidden');
+
+    if (spec === 'Vanguard') {
+      player.armor += 300;
+      player.maxLife += 150;
+      player.life = player.maxLife;
+      document.getElementById('hud-name').innerText = `${player.gender === 'Male' ? 'Vanguard Knight' : 'Vanguard Valkyrie'}`;
+      document.getElementById('icon-slot-1').innerText = '🪓';
+      document.getElementById('icon-slot-4').innerText = '🛡️';
+    } else if (spec === 'Arcanist') {
+      player.maxEs += 200;
+      player.es = player.maxEs;
+      document.getElementById('hud-name').innerText = `${player.gender === 'Male' ? 'Grand Arcanist' : 'High Sorceress'}`;
+      document.getElementById('icon-slot-1').innerText = '✨';
+      document.getElementById('icon-slot-4').innerText = '☄️';
+    } else if (spec === 'ShadowRogue') {
+      player.evasion += 350;
+      player.critChance += 25;
+      document.getElementById('hud-name').innerText = `${player.gender === 'Male' ? 'Shadow Assassin' : 'Nightshade Rogue'}`;
+      document.getElementById('icon-slot-1').innerText = '🗡️';
+      document.getElementById('icon-slot-4').innerText = '💨';
+    }
+
+    AudioEngine.playLevelUp();
+    spawnDamageNumber(player.x, player.y - 60, `ASCENDED: ${spec.toUpperCase()}!`, true, '#ffd700');
+  }
+
+  // ==========================================
+  // 6. LOOT DROP TABLE
   // ==========================================
   const RARITY_COLORS = {
     Normal: '#c8c8c8',
@@ -260,7 +350,6 @@
     for (let i = 0; i < dropCount; i++) {
       let itemTemplate;
       if (isBoss && i === 0) {
-        // Guaranteed Unique or High Rare for Boss
         itemTemplate = POSSIBLE_LOOT.find(it => it.rarity === 'Unique') || POSSIBLE_LOOT[4];
       } else {
         itemTemplate = POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)];
@@ -268,21 +357,18 @@
 
       const dropAngle = Math.random() * Math.PI * 2;
       const dropDistance = 40 + Math.random() * 80;
-      const targetX = x + Math.cos(dropAngle) * dropDistance;
-      const targetY = y + Math.sin(dropAngle) * dropDistance;
 
-      const lootItem = {
+      groundLoot.push({
         id: Math.random().toString(36).substring(2, 9),
         x: x,
         y: y,
-        targetX: targetX,
-        targetY: targetY,
+        targetX: x + Math.cos(dropAngle) * dropDistance,
+        targetY: y + Math.sin(dropAngle) * dropDistance,
         item: { ...itemTemplate },
         bounceTimer: 0.5,
         beamHeight: itemTemplate.rarity === 'Unique' ? 350 : (itemTemplate.rarity === 'Rare' || itemTemplate.rarity === 'Currency' ? 240 : 0)
-      };
+      });
 
-      groundLoot.push(lootItem);
       AudioEngine.playLootDrop(itemTemplate.rarity);
     }
   }
@@ -301,20 +387,6 @@
 
     AudioEngine.playPickup();
     spawnDamageNumber(player.x, player.y - 45, `+ ${loot.item.name}`, false, RARITY_COLORS[loot.item.rarity]);
-
-    // Flying particle effect
-    for (let i = 0; i < 8; i++) {
-      particles.push({
-        x: loot.x,
-        y: loot.y,
-        vx: (Math.random() - 0.5) * 120,
-        vy: (Math.random() - 0.5) * 120,
-        color: RARITY_COLORS[loot.item.rarity],
-        life: 0.3,
-        maxLife: 0.3,
-        size: 4
-      });
-    }
 
     updateBackpackUI();
   }
@@ -337,7 +409,6 @@
 
         slot.addEventListener('click', () => {
           if (item.slot && player.equipped[item.slot]) {
-            // Swap gear
             const prev = player.equipped[item.slot];
             player.equipped[item.slot] = item;
             player.bag[i] = prev;
@@ -345,7 +416,6 @@
             updateBackpackUI();
             updateEquippedUI();
           } else if (item.rarity === 'Currency') {
-            // Use currency
             spawnDamageNumber(player.x, player.y - 40, `Used ${item.name}!`, true, '#e5c07b');
             player.bag.splice(i, 1);
             AudioEngine.playPickup();
@@ -394,7 +464,7 @@
   }
 
   // ==========================================
-  // 6. ZONE LOADING & WORLD INITIALIZATION
+  // 7. ZONE LOADING
   // ==========================================
   function loadZone(zoneId, spawnX, spawnY) {
     if (!ZONES[zoneId]) return;
@@ -502,13 +572,14 @@
       vx: 0,
       vy: 0,
       type: type,
-      name: isBoss ? '🔥 Dark Shadow Fiend (Lord of the Crypt)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
+      name: isBoss ? '🔥 Dark Shadow Fiend (Lord of Crypt)' : (type === 'slime' ? 'Toxic Slime' : (type === 'skeleton' ? 'Skeleton Warrior' : 'Goblin Scout')),
       maxLife: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
       life: isBoss ? 2400 : (type === 'slime' ? 90 : (type === 'skeleton' ? 180 : 130)),
       armor: isBoss ? 600 : (type === 'skeleton' ? 350 : 100),
       fireRes: type === 'slime' ? 0 : (isBoss ? 50 : 30),
       coldRes: type === 'slime' ? 70 : (isBoss ? 40 : 10),
       speed: isBoss ? 140 : (100 + Math.random() * 40),
+      expValue: isBoss ? 500 : (type === 'slime' ? 30 : 45),
       state: 'idle',
       animTimer: Math.random() * 10,
       isAlive: true,
@@ -526,7 +597,7 @@
   }
 
   // ==========================================
-  // 7. COMBAT & MITIGATION PIPELINE
+  // 8. COMBAT PIPELINE
   // ==========================================
   function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true) {
     if (!target.isAlive) return;
@@ -580,8 +651,13 @@
       target.life = 0;
       spawnDamageNumber(target.x, target.y - 50, 'DEFEATED!', true, '#e5c07b');
       
-      // Drop Loot!
+      gainExp(target.expValue || 35);
       dropMonsterLoot(target.x, target.y, target.type === 'boss');
+
+      // Defeating boss unlocks ascension if not unlocked
+      if (target.type === 'boss' && player.classSpec === 'Novice') {
+        document.getElementById('btn-ascend-trigger').classList.remove('hidden');
+      }
     }
   }
 
@@ -599,14 +675,14 @@
   }
 
   // ==========================================
-  // 8. SKILLS
+  // 9. SKILLS
   // ==========================================
   function castSlash() {
     if (player.cooldowns.slash > 0) return;
     player.cooldowns.slash = player.maxCooldowns.slash;
 
     const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
-    const reach = 75;
+    const reach = player.classSpec === 'Vanguard' ? 95 : 75;
     const slashX = player.x + Math.cos(angle) * 40;
     const slashY = player.y + Math.sin(angle) * 40;
 
@@ -614,7 +690,8 @@
       if (m.isAlive) {
         const dist = Math.hypot(m.x - slashX, m.y - slashY);
         if (dist < reach) {
-          dealDamage(m, 50, 20, 0, 0, 0);
+          const phys = player.classSpec === 'Vanguard' ? 85 : 50;
+          dealDamage(m, phys, 20, 0, 0, 0);
         }
       }
     });
@@ -633,7 +710,7 @@
         y: player.y + Math.sin(spread) * 30,
         vx: Math.cos(spread) * 160,
         vy: Math.sin(spread) * 160,
-        color: '#e5c07b',
+        color: player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b',
         life: 0.22,
         maxLife: 0.22,
         size: 4
@@ -653,7 +730,7 @@
       vx: Math.cos(angle) * 480,
       vy: Math.sin(angle) * 480,
       type: 'fireball',
-      radius: 12,
+      radius: player.classSpec === 'Arcanist' ? 16 : 12,
       life: 1.6
     });
   }
@@ -663,7 +740,7 @@
     player.mana -= 15;
     player.cooldowns.frost = player.maxCooldowns.frost;
 
-    const novaRadius = 150;
+    const novaRadius = player.classSpec === 'Arcanist' ? 190 : 150;
     monsters.forEach(m => {
       if (m.isAlive) {
         const dist = Math.hypot(m.x - player.x, m.y - player.y);
@@ -715,7 +792,7 @@
     });
 
     setTimeout(() => {
-      const radius = 135;
+      const radius = player.classSpec === 'Arcanist' ? 175 : 135;
       monsters.forEach(m => {
         if (m.isAlive) {
           const dist = Math.hypot(m.x - targetX, m.y - targetY);
@@ -787,7 +864,7 @@
   }
 
   // ==========================================
-  // 9. UPDATE LOOP & BOSS HEALTH BAR
+  // 10. UPDATE LOOP
   // ==========================================
   let lastTime = performance.now();
   let frameCount = 0;
@@ -826,7 +903,6 @@
       player.animFrame = 0;
     }
 
-    // Portals
     portals.forEach(p => {
       const dist = Math.hypot(player.x - p.x, player.y - p.y);
       if (dist < 55) {
@@ -834,17 +910,14 @@
       }
     });
 
-    // Ground Loot Bounce Physics
     groundLoot.forEach(loot => {
       if (loot.bounceTimer > 0) {
         loot.bounceTimer -= dt;
-        const progress = 1 - loot.bounceTimer / 0.5;
         loot.x += (loot.targetX - loot.x) * 0.15;
         loot.y += (loot.targetY - loot.y) * 0.15;
       }
     });
 
-    // Cooldowns & Regen
     for (let k in player.cooldowns) {
       if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
     }
@@ -908,7 +981,7 @@
       }
     }
 
-    // Monster AI & Boss Bar Detection
+    // Monster AI & Boss Bar
     let activeBoss = null;
     monsters.forEach(m => {
       if (!m.isAlive) return;
@@ -925,7 +998,6 @@
       }
     });
 
-    // Update Boss Top HUD
     const bossHud = document.getElementById('boss-hud-bar');
     if (activeBoss && activeBoss.isAlive && Math.hypot(player.x - activeBoss.x, player.y - activeBoss.y) < 950) {
       bossHud.classList.remove('boss-hud-hide');
@@ -976,7 +1048,7 @@
   }
 
   // ==========================================
-  // 10. RENDERING (Loot Beams & Ground Cards)
+  // 11. RENDERING
   // ==========================================
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1006,7 +1078,6 @@
       renderList.push({ y: d.y, render: () => drawDummy(d) });
     });
 
-    // Ground Loot (Rendered with Beams and Nameplates)
     groundLoot.forEach((loot, idx) => {
       renderList.push({ y: loot.y, render: () => drawGroundLoot(loot, idx) });
     });
@@ -1063,14 +1134,13 @@
     renderMinimap();
   }
 
-  // Draw Ground Loot Item Card + Vertical Loot Beam
+  // Draw Ground Loot
   function drawGroundLoot(loot, idx) {
     ctx.save();
     ctx.translate(loot.x, loot.y);
 
     const rarityColor = RARITY_COLORS[loot.item.rarity] || '#ffffff';
 
-    // 1. Glowing Vertical Loot Beam for High-Tier Loot
     if (loot.beamHeight > 0) {
       const pulse = (Math.sin(performance.now() / 200) + 1) * 0.5;
       const beamGrad = ctx.createLinearGradient(0, 0, 0, -loot.beamHeight);
@@ -1082,23 +1152,19 @@
       ctx.fillRect(-3 - pulse * 2, -loot.beamHeight, 6 + pulse * 4, loot.beamHeight);
     }
 
-    // 2. PoE Style Ground Nameplate Card
     ctx.font = 'bold 10px "Outfit", sans-serif';
     const text = `${loot.item.icon || '📦'} ${loot.item.name}`;
     const textWidth = ctx.measureText(text).width;
     const cardW = textWidth + 16;
     const cardH = 22;
 
-    // Card Shadow & Background
     ctx.fillStyle = 'rgba(10, 12, 16, 0.94)';
     ctx.fillRect(-cardW / 2, -cardH / 2, cardW, cardH);
 
-    // Rarity Border
     ctx.strokeStyle = rarityColor;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(-cardW / 2, -cardH / 2, cardW, cardH);
 
-    // Label Text
     ctx.fillStyle = rarityColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1169,7 +1235,7 @@
     }
   }
 
-  // Draw Clean Player
+  // Draw Clean Player (Male or Female Hero)
   function drawPlayerClean() {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -1179,7 +1245,7 @@
     ctx.ellipse(0, 20, 18, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const img = assets.hero;
+    const img = player.gender === 'Female' ? assets.femaleHero : assets.maleHero;
     if (img.complete && img.naturalWidth > 0) {
       const frameW = img.naturalWidth / 4;
       const frameH = img.naturalHeight / 4;
@@ -1203,15 +1269,16 @@
       ctx.fillRect(-12, -12, 24, 24);
     }
 
-    ctx.font = '10px "Outfit", sans-serif';
-    ctx.fillStyle = '#ffffff';
+    const titleColor = player.classSpec === 'Vanguard' ? '#e5c07b' : (player.classSpec === 'Arcanist' ? '#61afef' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#ffffff'));
+    ctx.font = 'bold 10px "Outfit", sans-serif';
+    ctx.fillStyle = titleColor;
     ctx.textAlign = 'center';
-    ctx.fillText('Vanguard Hero [Lv.99]', 0, -42);
+    ctx.fillText(`${player.gender === 'Male' ? '♂' : '♀'} ${player.classSpec} [Lv.${player.level}]`, 0, -42);
 
     ctx.restore();
   }
 
-  // Draw Clean Monster
+  // Draw Monster
   function drawMonsterClean(m) {
     ctx.save();
     ctx.translate(m.x, m.y);
@@ -1271,7 +1338,7 @@
     ctx.restore();
   }
 
-  // Draw Clean Props
+  // Draw Props
   function drawPropClean(p) {
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -1436,7 +1503,7 @@
   }
 
   // ==========================================
-  // 11. INPUT & INTERACTION LISTENERS
+  // 12. INPUT LISTENERS & ASCENSION MODAL
   // ==========================================
   window.addEventListener('wheel', e => {
     if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
@@ -1455,6 +1522,23 @@
     camera.targetZoom = 1.0;
   });
 
+  // Toggle Gender when clicking avatar box
+  document.getElementById('btn-toggle-gender').addEventListener('click', () => {
+    setGender(player.gender === 'Male' ? 'Female' : 'Male');
+  });
+
+  // Open Ascension Modal
+  document.getElementById('btn-ascend-trigger').addEventListener('click', () => {
+    document.getElementById('ascension-modal').classList.remove('hidden');
+  });
+
+  document.querySelectorAll('.class-choice-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const spec = card.getAttribute('data-class');
+      selectClassSpecialization(spec);
+    });
+  });
+
   window.addEventListener('keydown', e => {
     keys[e.code] = true;
     if (e.code === 'KeyQ') castFireball();
@@ -1465,7 +1549,6 @@
     if (e.code === 'KeyC') toggleModal('stats-modal');
     if (e.code === 'KeyI') toggleModal('inventory-modal');
     
-    // 'F' key: Pick up closest ground loot
     if (e.code === 'KeyF') {
       let closestIdx = -1;
       let minDistance = 120;
@@ -1495,7 +1578,6 @@
     if (e.button === 0 && e.target === canvas) {
       AudioEngine.init();
 
-      // Check if clicking directly on a ground loot card
       let clickedLootIdx = -1;
       groundLoot.forEach((loot, idx) => {
         const dist = Math.hypot(mouse.worldX - loot.x, mouse.worldY - loot.y);
@@ -1505,7 +1587,6 @@
       });
 
       if (clickedLootIdx !== -1) {
-        // Move towards and pick up loot if close
         const loot = groundLoot[clickedLootIdx];
         const playerDist = Math.hypot(player.x - loot.x, player.y - loot.y);
         if (playerDist < 140) {

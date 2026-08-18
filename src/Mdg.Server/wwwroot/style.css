@@ -173,25 +173,36 @@ canvas#gameCanvas {
   padding: 10px 14px;
   gap: 12px;
   align-items: center;
-  min-width: 290px;
+  min-width: 320px;
 }
 
 .portrait-box {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   background: #282c34;
   border: 2px solid #e5c07b;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.portrait-box:hover {
+  transform: scale(1.05);
+  border-color: #61afef;
 }
 
 .avatar-pixel {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='4' y='2' width='8' height='4' fill='%23e06c75'/%3E%3Crect x='4' y='6' width='8' height='6' fill='%23d19a66'/%3E%3Crect x='5' y='7' width='2' height='2' fill='%231e1e1e'/%3E%3Crect x='9' y='7' width='2' height='2' fill='%231e1e1e'/%3E%3Crect x='3' y='12' width='10' height='4' fill='%2361afef'/%3E%3C/svg%3E") no-repeat center/contain;
+}
+
+.avatar-female {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='4' y='2' width='8' height='4' fill='%23ffd700'/%3E%3Crect x='4' y='6' width='8' height='6' fill='%23ffdbac'/%3E%3Crect x='5' y='7' width='2' height='2' fill='%231e1e1e'/%3E%3Crect x='9' y='7' width='2' height='2' fill='%231e1e1e'/%3E%3Crect x='3' y='12' width='10' height='4' fill='%23c678dd'/%3E%3C/svg%3E") no-repeat center/contain !important;
 }
 
 .level-badge {
@@ -207,6 +218,21 @@ canvas#gameCanvas {
   font-weight: bold;
 }
 
+.gender-tag {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #21252b;
+  border: 1px solid #4b5263;
+  color: #61afef;
+  font-size: 8px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
 .bars-container {
   flex: 1;
   display: flex;
@@ -219,12 +245,31 @@ canvas#gameCanvas {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2px;
+  gap: 6px;
 }
 
 .char-name {
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13px;
   color: #fff;
+}
+
+.ascend-pulse-btn {
+  background: linear-gradient(90deg, #e5c07b, #ffd700);
+  color: #1e1e1e;
+  border: none;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  animation: pulse-ascend 1.5s infinite;
+}
+
+@keyframes pulse-ascend {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(255, 215, 0, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
 }
 
 .zone-badge {
@@ -452,7 +497,106 @@ canvas#gameCanvas {
   font-weight: bold;
 }
 
-/* World Map Modal */
+/* ==========================================
+   CLASS ASCENSION MODAL
+   ========================================== */
+.ascension-card-box {
+  width: 90vw;
+  max-width: 860px;
+  background: #1a1e26;
+  border: 4px solid #ffd700;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 30px rgba(255, 215, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ascension-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.ascension-header h2 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #ffd700;
+  margin-bottom: 6px;
+}
+
+.ascension-header p {
+  color: #98c379;
+  font-size: 13px;
+}
+
+.ascension-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.class-choice-card {
+  background: #21252b;
+  border: 2px solid #4b5263;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.class-choice-card:hover {
+  transform: translateY(-6px);
+  border-color: #ffd700;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+}
+
+.class-icon { font-size: 40px; margin-bottom: 8px; }
+.class-choice-card h3 { font-family: 'Press Start 2P', monospace; font-size: 12px; color: #fff; margin-bottom: 4px; }
+.class-subtitle { font-size: 11px; color: #abb2bf; margin-bottom: 12px; }
+
+.class-perks {
+  list-style: none;
+  font-size: 11px;
+  color: #61afef;
+  text-align: left;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.class-perks li::before {
+  content: "✔ ";
+  color: #98c379;
+}
+
+.select-class-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-vanguard { background: #e5c07b; color: #1e1e1e; }
+.btn-vanguard:hover { background: #ffd700; }
+
+.btn-arcanist { background: #61afef; color: #1e1e1e; }
+.btn-arcanist:hover { background: #00f2fe; }
+
+.btn-rogue { background: #c678dd; color: #1e1e1e; }
+.btn-rogue:hover { background: #e06c75; }
+
+/* Modals */
 .worldmap-modal-wrap {
   position: absolute;
   top: 0;
@@ -646,9 +790,7 @@ canvas#gameCanvas {
 .res-chaos { color: #c678dd; }
 .gold-text { color: #d19a66; }
 
-/* ==========================================
-   INVENTORY & BACKPACK GRID
-   ========================================== */
+/* Inventory Grid */
 .inv-flex-body {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -761,9 +903,7 @@ canvas#gameCanvas {
   font-style: italic;
 }
 
-/* ==========================================
-   ITEM HOVER TOOLTIP
-   ========================================== */
+/* Tooltip */
 .item-tooltip {
   position: fixed;
   pointer-events: none;
