@@ -575,3 +575,26 @@ export const ZONES = {
     dummies: []
   }
 };
+
+export async function fetchMasterZonesFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/zones');
+    if (!res.ok) return;
+    const serverZones = await res.json();
+    if (Array.isArray(serverZones) && serverZones.length > 0) {
+      serverZones.forEach(sz => {
+        if (ZONES[sz.id]) {
+          ZONES[sz.id].name = sz.name || ZONES[sz.id].name;
+          ZONES[sz.id].subtitle = sz.subtitle || ZONES[sz.id].subtitle;
+          ZONES[sz.id].act = sz.actNumber || ZONES[sz.id].act;
+          ZONES[sz.id].boss = sz.bossName || ZONES[sz.id].boss;
+          ZONES[sz.id].biome = sz.biomeType || ZONES[sz.id].biome;
+        }
+      });
+      console.log(`[MasterData] Hydrated ${serverZones.length} Zones from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline zones fallback:', e.message);
+  }
+}
+

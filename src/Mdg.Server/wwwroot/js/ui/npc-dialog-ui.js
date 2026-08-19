@@ -220,6 +220,8 @@ function renderNpcChoices(config) {
       AudioEngine.playTone(587, 'sine', 0.1, 0.1);
       if (opt.action) {
         opt.action();
+      } else if (opt.actionType) {
+        executeNpcActionType(opt.actionType);
       }
       if (opt.response) {
         speechText.innerHTML = `"${opt.response}"`;
@@ -237,3 +239,63 @@ function renderNpcChoices(config) {
   };
   container.appendChild(byeBtn);
 }
+
+function executeNpcActionType(actionType) {
+  switch (actionType) {
+    case 'heal':
+      player.life = player.maxLife;
+      player.mana = player.maxMana;
+      player.es = player.maxEs;
+      AudioEngine.playTone(659, 'sine', 0.3, 0.3);
+      spawnDamageNumber(player.x, player.y - 50, '✨ Vitality Restored!', true, '#98c379');
+      break;
+    case 'open_forge':
+      renderForgeBenchModal();
+      break;
+    case 'open_stash':
+      renderSharedStashModal();
+      break;
+    case 'open_map_device':
+      renderMapDeviceModal();
+      break;
+    case 'open_devotion':
+      renderDevotionModal();
+      break;
+    case 'give_vanguard_set':
+      const vanguardPieces = SET_ITEMS_DATABASE.filter(it => it.setId === 'set_vanguard');
+      vanguardPieces.forEach(p => player.bag.push({ ...p }));
+      AudioEngine.playPickup();
+      spawnDamageNumber(player.x, player.y - 50, '🎁 Received Vanguard Relics!', true, '#00e676');
+      updateBackpackUI();
+      updatePaperdollUI();
+      break;
+  }
+}
+
+export async function fetchMasterNpcsFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/npcs');
+    if (!res.ok) return;
+    const serverNpcs = await res.json();
+    if (Array.isArray(serverNpcs) && serverNpcs.length > 0) {
+      serverNpcs.forEach(sn => {
+        let options = [];
+        try {
+          options = typeof sn.optionsJson === 'string' ? JSON.parse(sn.optionsJson) : (sn.optionsJson || []);
+        } catch { }
+
+        NPC_DIALOGUES[sn.npcName] = {
+          title: sn.title,
+          avatarIcon: sn.avatarIcon,
+          color: sn.color,
+          greeting: sn.greeting,
+          options: options
+        };
+      });
+      console.log(`[MasterData] Hydrated ${serverNpcs.length} NPCs from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline NPC fallback:', e.message);
+  }
+}
+

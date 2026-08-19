@@ -36,6 +36,9 @@ builder.Services.AddSingleton<LootService>();
 builder.Services.AddSingleton<ForgeService>();
 builder.Services.AddSingleton<CharacterStatService>();
 builder.Services.AddSingleton<SkillProgressionService>();
+builder.Services.AddSingleton<EconomyService>();
+builder.Services.AddSingleton<QuestService>();
+builder.Services.AddSingleton<DevotionService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
 var app = builder.Build();
@@ -280,6 +283,24 @@ app.MapGet("/api/v1/data/family-mastery", async (GameDatabaseService db) =>
     return Results.Ok(mastery);
 });
 
+app.MapGet("/api/v1/data/quests", async (GameDatabaseService db, int? actNumber) =>
+{
+    var quests = await db.GetQuestTemplatesAsync(actNumber);
+    return Results.Ok(quests);
+});
+
+app.MapGet("/api/v1/data/npcs", async (GameDatabaseService db, string? zoneId) =>
+{
+    var npcs = await db.GetNpcDialoguesAsync(zoneId);
+    return Results.Ok(npcs);
+});
+
+app.MapGet("/api/v1/data/devotion", async (GameDatabaseService db) =>
+{
+    var devotion = await db.GetDevotionDataAsync();
+    return Results.Ok(devotion);
+});
+
 // SERVER-AUTHORITATIVE GAMEPLAY LOGIC APIS
 app.MapPost("/api/v1/loot/drop", (LootService lootService, LootDropRequestDto req) =>
 {
@@ -302,6 +323,24 @@ app.MapPost("/api/v1/character/calculate-stats", (CharacterStatService statServi
 app.MapPost("/api/v1/skills/validate-tree", (SkillProgressionService skillService, SkillValidationRequestDto req) =>
 {
     var result = skillService.ValidateSkillAllocations(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/economy/pet-sell", (EconomyService economyService, PetSellRequestDto req) =>
+{
+    var result = economyService.ProcessPetDelivery(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/quests/claim", async (QuestService questService, QuestClaimRequestDto req) =>
+{
+    var result = await questService.ClaimQuestRewardAsync(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/devotion/validate", async (DevotionService devotionService, DevotionValidationRequestDto req) =>
+{
+    var result = await devotionService.ValidateDevotionAllocationsAsync(req);
     return Results.Ok(result);
 });
 

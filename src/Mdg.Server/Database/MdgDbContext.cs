@@ -22,10 +22,12 @@ public class CharacterEntity
     public string Name { get; set; } = "Novice Adventurer";
     public string Gender { get; set; } = "Male";
     public string ClassSpec { get; set; } = "Novice";
+    public string Ascendance { get; set; } = "";
     public int Level { get; set; } = 1;
     public int CurrentExp { get; set; } = 0;
     public int ExpToNext { get; set; } = 100;
     public int SkillPoints { get; set; } = 3;
+    public int DevotionPoints { get; set; } = 8;
     public double Life { get; set; } = 250;
     public double MaxLife { get; set; } = 250;
     public double Mana { get; set; } = 120;
@@ -39,6 +41,14 @@ public class CharacterEntity
     public Dictionary<string, object> Skills { get; set; } = new();
     public Dictionary<string, object> EquippedGear { get; set; } = new();
     public List<object> BackpackItems { get; set; } = new();
+    public Dictionary<string, int> MonsterKills { get; set; } = new();
+    public Dictionary<string, List<string>> FamilyTalents { get; set; } = new();
+    public Dictionary<string, int> FamilyPoints { get; set; } = new();
+    public List<string> AllocatedDevotionNodes { get; set; } = new();
+    public List<string> CompletedQuests { get; set; } = new();
+    public Dictionary<string, object> ActiveQuests { get; set; } = new();
+    public List<string> UnlockedWaypoints { get; set; } = new();
+    public Dictionary<string, int> Currencies { get; set; } = new();
 
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
@@ -67,6 +77,10 @@ public class MdgDbContext : DbContext
     public DbSet<DropTableEntryEntity> DropTables => Set<DropTableEntryEntity>();
     public DbSet<FamilyMasteryTemplateEntity> FamilyMasteries => Set<FamilyMasteryTemplateEntity>();
     public DbSet<FamilyTalentNodeEntity> FamilyTalentNodes => Set<FamilyTalentNodeEntity>();
+    public DbSet<QuestTemplateEntity> QuestTemplates => Set<QuestTemplateEntity>();
+    public DbSet<NpcDialogueTemplateEntity> NpcDialogues => Set<NpcDialogueTemplateEntity>();
+    public DbSet<DevotionConstellationEntity> DevotionConstellations => Set<DevotionConstellationEntity>();
+    public DbSet<DevotionNodeEntity> DevotionNodes => Set<DevotionNodeEntity>();
 
     public MdgDbContext(DbContextOptions<MdgDbContext> options) : base(options) { }
 
@@ -90,21 +104,77 @@ public class MdgDbContext : DbContext
                 .HasColumnName("SkillsJson")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new()
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new())
                 );
 
             b.Property(c => c.EquippedGear)
                 .HasColumnName("EquippedJson")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new()
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new())
                 );
 
             b.Property(c => c.BackpackItems)
                 .HasColumnName("BackpackJson")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<object>>(v, (JsonSerializerOptions?)null) ?? new()
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<List<object>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.MonsterKills)
+                .HasColumnName("MonsterKillsJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, int>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.FamilyTalents)
+                .HasColumnName("FamilyTalentsJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, List<string>>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.FamilyPoints)
+                .HasColumnName("FamilyPointsJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, int>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.AllocatedDevotionNodes)
+                .HasColumnName("DevotionNodesJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.CompletedQuests)
+                .HasColumnName("CompletedQuestsJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.ActiveQuests)
+                .HasColumnName("ActiveQuestsJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.UnlockedWaypoints)
+                .HasColumnName("WaypointsJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new())
+                );
+
+            b.Property(c => c.Currencies)
+                .HasColumnName("CurrenciesJson")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => string.IsNullOrEmpty(v) ? new() : (JsonSerializer.Deserialize<Dictionary<string, int>>(v, (JsonSerializerOptions?)null) ?? new())
                 );
         });
 
@@ -183,7 +253,35 @@ public class MdgDbContext : DbContext
             b.HasIndex(t => t.FamilyId);
             b.HasIndex(t => t.Branch);
         });
+
+        modelBuilder.Entity<QuestTemplateEntity>(b =>
+        {
+            b.ToTable("QuestTemplates");
+            b.HasKey(q => q.Id);
+            b.HasIndex(q => q.ActNumber);
+        });
+
+        modelBuilder.Entity<NpcDialogueTemplateEntity>(b =>
+        {
+            b.ToTable("NpcDialogues");
+            b.HasKey(n => n.Id);
+            b.HasIndex(n => n.ZoneId);
+        });
+
+        modelBuilder.Entity<DevotionConstellationEntity>(b =>
+        {
+            b.ToTable("DevotionConstellations");
+            b.HasKey(d => d.Id);
+        });
+
+        modelBuilder.Entity<DevotionNodeEntity>(b =>
+        {
+            b.ToTable("DevotionNodes");
+            b.HasKey(n => n.Id);
+            b.HasIndex(n => n.ConstellationId);
+        });
     }
 }
+
 
 

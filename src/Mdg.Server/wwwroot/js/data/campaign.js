@@ -331,3 +331,56 @@ export function getTownForAct(zoneIdOrAct) {
   }
   return 'SanctuaryHaven';
 }
+
+export async function fetchMasterCampaignFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/campaign');
+    if (!res.ok) return;
+    const serverActs = await res.json();
+    if (Array.isArray(serverActs) && serverActs.length > 0) {
+      serverActs.forEach(sAct => {
+        const localAct = CAMPAIGN_ACTS.find(a => a.actNumber === `ACT ${sAct.actNumber}` || a.id === `act${sAct.actNumber}`);
+        if (localAct) {
+          localAct.name = sAct.name || localAct.name;
+          localAct.subtitle = sAct.subtitle || localAct.subtitle;
+          localAct.levelRange = sAct.levelRange || localAct.levelRange;
+          localAct.boss = sAct.boss || localAct.boss;
+        }
+      });
+      console.log(`[MasterData] Hydrated ${serverActs.length} Campaign Acts from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline campaign fallback:', e.message);
+  }
+}
+
+export async function fetchMasterQuestsFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/quests');
+    if (!res.ok) return;
+    const serverQuests = await res.json();
+    if (Array.isArray(serverQuests) && serverQuests.length > 0) {
+      serverQuests.forEach(sq => {
+        const act = CAMPAIGN_ACTS.find(a => a.id === `act${sq.actNumber}`);
+        if (act && Array.isArray(act.quests)) {
+          const existingQuest = act.quests.find(q => q.id === sq.id);
+          if (existingQuest) {
+            existingQuest.title = sq.title;
+            existingQuest.desc = sq.description;
+          } else {
+            act.quests.push({
+              id: sq.id,
+              title: sq.title,
+              desc: sq.description,
+              reward: sq.rewardsJson || ''
+            });
+          }
+        }
+      });
+      console.log(`[MasterData] Hydrated ${serverQuests.length} Quests from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline quests fallback:', e.message);
+  }
+}
+

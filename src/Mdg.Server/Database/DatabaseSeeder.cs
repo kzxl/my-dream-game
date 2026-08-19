@@ -163,9 +163,88 @@ CREATE TABLE IF NOT EXISTS ""FamilyTalentNodes"" (
     ""CreatedAt"" TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ""IX_FamilyTalentNodes_FamilyId"" ON ""FamilyTalentNodes"" (""FamilyId"");
+
+CREATE TABLE IF NOT EXISTS ""QuestTemplates"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_QuestTemplates"" PRIMARY KEY,
+    ""ActNumber"" INTEGER NOT NULL,
+    ""Title"" TEXT NOT NULL,
+    ""Description"" TEXT NOT NULL,
+    ""RequiredLevel"" INTEGER NOT NULL,
+    ""TargetZoneId"" TEXT NOT NULL,
+    ""TargetNpcId"" TEXT NOT NULL,
+    ""ObjectivesJson"" TEXT NOT NULL,
+    ""RewardsJson"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_QuestTemplates_ActNumber"" ON ""QuestTemplates"" (""ActNumber"");
+
+CREATE TABLE IF NOT EXISTS ""NpcDialogues"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_NpcDialogues"" PRIMARY KEY,
+    ""NpcName"" TEXT NOT NULL,
+    ""Title"" TEXT NOT NULL,
+    ""ZoneId"" TEXT NOT NULL,
+    ""AvatarIcon"" TEXT NOT NULL,
+    ""Color"" TEXT NOT NULL,
+    ""Greeting"" TEXT NOT NULL,
+    ""OptionsJson"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_NpcDialogues_ZoneId"" ON ""NpcDialogues"" (""ZoneId"");
+
+CREATE TABLE IF NOT EXISTS ""DevotionConstellations"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_DevotionConstellations"" PRIMARY KEY,
+    ""Name"" TEXT NOT NULL,
+    ""Affiliation"" TEXT NOT NULL,
+    ""Tier"" TEXT NOT NULL,
+    ""TotalStars"" INTEGER NOT NULL,
+    ""AffinityGrantedJson"" TEXT NOT NULL,
+    ""AffinityRequiredJson"" TEXT NOT NULL,
+    ""Description"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ""DevotionNodes"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_DevotionNodes"" PRIMARY KEY,
+    ""ConstellationId"" TEXT NOT NULL,
+    ""Name"" TEXT NOT NULL,
+    ""Description"" TEXT NOT NULL,
+    ""Lore"" TEXT NOT NULL,
+    ""StatKey"" TEXT NOT NULL,
+    ""StatValue"" REAL NOT NULL,
+    ""StringValue"" TEXT,
+    ""X"" REAL NOT NULL,
+    ""Y"" REAL NOT NULL,
+    ""ParentNodeId"" TEXT,
+    ""Color"" TEXT NOT NULL,
+    ""Icon"" TEXT NOT NULL,
+    ""IsRoot"" INTEGER NOT NULL,
+    ""IsProc"" INTEGER NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_DevotionNodes_ConstellationId"" ON ""DevotionNodes"" (""ConstellationId"");
 ");
         }
         catch { }
+
+        // Ensure Character table schema columns exist
+        var characterColumns = new[]
+        {
+            "AccountId TEXT DEFAULT 'guest'",
+            "MonsterKillsJson TEXT DEFAULT '{}'",
+            "FamilyTalentsJson TEXT DEFAULT '{}'",
+            "FamilyPointsJson TEXT DEFAULT '{}'",
+            "DevotionNodesJson TEXT DEFAULT '[]'",
+            "CompletedQuestsJson TEXT DEFAULT '[]'",
+            "ActiveQuestsJson TEXT DEFAULT '{}'",
+            "WaypointsJson TEXT DEFAULT '[]'",
+            "CurrenciesJson TEXT DEFAULT '{}'",
+            "DevotionPoints INTEGER DEFAULT 8",
+            "Ascendance TEXT DEFAULT ''"
+        };
+        foreach (var col in characterColumns)
+        {
+            try { await db.Database.ExecuteSqlRawAsync($@"ALTER TABLE ""Characters"" ADD COLUMN {col};"); } catch { }
+        }
 
         // 2. Seed Item Templates
         if (!await db.ItemTemplates.AnyAsync())
@@ -229,6 +308,31 @@ CREATE INDEX IF NOT EXISTS ""IX_FamilyTalentNodes_FamilyId"" ON ""FamilyTalentNo
             var (families, nodes) = BuildDefaultFamilyMasterySystem();
             await db.FamilyMasteries.AddRangeAsync(families);
             await db.FamilyTalentNodes.AddRangeAsync(nodes);
+            await db.SaveChangesAsync();
+        }
+
+        // 10. Seed Quests
+        if (!await db.QuestTemplates.AnyAsync())
+        {
+            var quests = BuildDefaultQuestTemplates();
+            await db.QuestTemplates.AddRangeAsync(quests);
+            await db.SaveChangesAsync();
+        }
+
+        // 11. Seed NPC Dialogues
+        if (!await db.NpcDialogues.AnyAsync())
+        {
+            var npcs = BuildDefaultNpcDialogues();
+            await db.NpcDialogues.AddRangeAsync(npcs);
+            await db.SaveChangesAsync();
+        }
+
+        // 12. Seed Devotion Constellations & Nodes
+        if (!await db.DevotionConstellations.AnyAsync())
+        {
+            var (constellations, devNodes) = BuildDefaultDevotionSystem();
+            await db.DevotionConstellations.AddRangeAsync(constellations);
+            await db.DevotionNodes.AddRangeAsync(devNodes);
             await db.SaveChangesAsync();
         }
     }
@@ -1333,4 +1437,266 @@ CREATE INDEX IF NOT EXISTS ""IX_FamilyTalentNodes_FamilyId"" ON ""FamilyTalentNo
 
         return (families, nodes);
     }
+
+    public static List<QuestTemplateEntity> BuildDefaultQuestTemplates()
+    {
+        return new List<QuestTemplateEntity>
+        {
+            // === ACT I: Sylvan Frontier ===
+            new()
+            {
+                Id = "q1_1", ActNumber = 1, RequiredLevel = 1,
+                Title = "Awakening in Haven",
+                Description = "Consult High Elder Aethel and forge your first weapon with Doran the Blacksmith.",
+                TargetZoneId = "SanctuaryHaven", TargetNpcId = "Elder Aethel",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Speak to Elder Aethel", "Inspect Doran's Genesis Forge" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 100, gold = 50, itemTemplateId = "ring_sapphire_t1", skillPoints = 1 })
+            },
+            new()
+            {
+                Id = "q1_2", ActNumber = 1, RequiredLevel = 5,
+                Title = "Securing the Plains",
+                Description = "Hunt down goblin scouts and alpha direwolves lurking in the Whispering Plains.",
+                TargetZoneId = "WhisperingPlains", TargetNpcId = "Doran (Blacksmith)",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Slay 8 Goblin Scouts", "Slay 4 Direwolves" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 350, gold = 150, itemTemplateId = "boots_plate_t1", devotionPoints = 1 })
+            },
+            new()
+            {
+                Id = "q1_3", ActNumber = 1, RequiredLevel = 9,
+                Title = "The Deep Forest",
+                Description = "Cleanse the venom brood and ancient treants lurking within Verdant Canopy.",
+                TargetZoneId = "VerdantCanopy", TargetNpcId = "Elder Aethel",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Cleanse Verdant Canopy Brood", "Retrieve Primal Resin" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 600, gold = 300, itemTemplateId = "gem_support_echo", skillPoints = 1 })
+            },
+            new()
+            {
+                Id = "q1_4", ActNumber = 1, RequiredLevel = 12,
+                Title = "Malakor's Demise",
+                Description = "Descend into the Forgotten Crypt ceremonial vault and vanquish Malakor the Shadow Fiend.",
+                TargetZoneId = "ForgottenCrypt", TargetNpcId = "Elder Aethel",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Enter Forgotten Crypt", "Defeat Malakor the Shadow Fiend" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 1200, gold = 800, itemTemplateId = "sword_fire_t2", ascendanceUnlocked = true, devotionPoints = 2 })
+            },
+
+            // === ACT II: Frozen Spires ===
+            new()
+            {
+                Id = "q2_1", ActNumber = 2, RequiredLevel = 15,
+                Title = "Glacial Frontier",
+                Description = "Establish contact with the Glacial Outpost garrison and reinforce thermal ward runes.",
+                TargetZoneId = "GlacialOutpost", TargetNpcId = "Commander Keith",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Reach Glacial Outpost", "Activate Thermal Runes" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 1500, gold = 600, skillPoints = 1 })
+            },
+            new()
+            {
+                Id = "q2_2", ActNumber = 2, RequiredLevel = 18,
+                Title = "Frostpeak Passage",
+                Description = "Brave the biting blizzards of Frostpeak Tundra and exterminate frost wyrm hatchlings.",
+                TargetZoneId = "FrostpeakTundra", TargetNpcId = "Commander Keith",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Clear Frostpeak Tundra beasts" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 2400, gold = 1000, itemTemplateId = "armor_plate_t2" })
+            },
+            new()
+            {
+                Id = "q2_3", ActNumber = 2, RequiredLevel = 22,
+                Title = "Caverns of Echoing Ice",
+                Description = "Venture deep into the Howling Ice Caverns and claim the Glacial Core fragment.",
+                TargetZoneId = "HowlingIceCaverns", TargetNpcId = "Elder Aethel",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Retrieve Glacial Core" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 3800, gold = 1500, devotionPoints = 1 })
+            },
+            new()
+            {
+                Id = "q2_4", ActNumber = 2, RequiredLevel = 26,
+                Title = "Sovereign of Winter",
+                Description = "Ascend the Summit of the Frozen Sovereign and defeat Cryomancer Vael.",
+                TargetZoneId = "GlacialSummit", TargetNpcId = "Elder Aethel",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Vanquish Cryomancer Vael" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 6500, gold = 3000, itemTemplateId = "sword_crystal_t3", skillPoints = 2, devotionPoints = 2 })
+            },
+
+            // === ACT III: Volcanic Caldera ===
+            new()
+            {
+                Id = "q3_1", ActNumber = 3, RequiredLevel = 30,
+                Title = "Ashen Bastion",
+                Description = "Cross the Obsidian Caldera and establish a defensive perimeter at Emberforge Garrison.",
+                TargetZoneId = "EmberforgeGarrison", TargetNpcId = "Doran (Blacksmith)",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Reach Emberforge Garrison" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 8000, gold = 2500, skillPoints = 1 })
+            },
+            new()
+            {
+                Id = "q3_2", ActNumber = 3, RequiredLevel = 35,
+                Title = "Infernal Behemoth",
+                Description = "Descend into the Core of Cinders and slay Ignis the Infernal Behemoth.",
+                TargetZoneId = "CoreOfCinders", TargetNpcId = "Doran (Blacksmith)",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Defeat Ignis the Infernal Behemoth" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 15000, gold = 6000, itemTemplateId = "axe_dragon_t3", devotionPoints = 2 })
+            },
+
+            // === ACT IV: Sunken Citadel ===
+            new()
+            {
+                Id = "q4_1", ActNumber = 4, RequiredLevel = 45,
+                Title = "Abyssal Tide",
+                Description = "Investigate the abyssal corruption spreading from the Sunken Citadel.",
+                TargetZoneId = "TidecallerSanctum", TargetNpcId = "Lyra (Astromancer)",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Defeat Tidecaller Leviathan" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 28000, gold = 12000, devotionPoints = 2, skillPoints = 2 })
+            },
+
+            // === ACT V: Celestial Fracture ===
+            new()
+            {
+                Id = "q5_1", ActNumber = 5, RequiredLevel = 60,
+                Title = "The Void Sovereign",
+                Description = "Step through the Gate of Eternity and purge the Celestial Void Sovereign to restore balance to Aethelis.",
+                TargetZoneId = "CelestialPinnacle", TargetNpcId = "Elder Aethel",
+                ObjectivesJson = JsonSerializer.Serialize(new[] { "Conquer Pinnacle Void Sovereign" }),
+                RewardsJson = JsonSerializer.Serialize(new { exp = 60000, gold = 30000, devotionPoints = 3, skillPoints = 3 })
+            }
+        };
+    }
+
+    public static List<NpcDialogueTemplateEntity> BuildDefaultNpcDialogues()
+    {
+        return new List<NpcDialogueTemplateEntity>
+        {
+            new()
+            {
+                Id = "npc_elder_aethel",
+                NpcName = "Elder Aethel",
+                Title = "High Elder Sage",
+                ZoneId = "SanctuaryHaven",
+                AvatarIcon = "🧙‍♂️",
+                Color = "#61afef",
+                Greeting = "Welcome back to Sanctuary Haven, Chosen One. The Void surges relentlessly from the depths of Aethelis...",
+                OptionsJson = JsonSerializer.Serialize(new[]
+                {
+                    new { label = "📜 Lore of Aethelis", actionType = "lore", response = "Eras ago, our continent was guarded by ancient constellations. When the barrier fractured, darkness spilled across the realm. Reclaim Genesis Orbs to rekindle the Eternal Shrine." },
+                    new { label = "💊 Blessed Blessing: Restore Full Vitality", actionType = "heal", response = "May the primal light cleanse your wounds and restore your spirit!" },
+                    new { label = "✨ Open Celestial Devotion Grid", actionType = "open_devotion", response = "" },
+                    new { label = "💎 Where can I find Skill Gems?", actionType = "lore", response = "Skill & Support Gems are crystallized shards of the Eternal Core. Farm them from wild biomes and Dungeon Bosses!" }
+                })
+            },
+            new()
+            {
+                Id = "npc_doran",
+                NpcName = "Doran (Blacksmith)",
+                Title = "Master Craftsman & Smith",
+                ZoneId = "SanctuaryHaven",
+                AvatarIcon = "🔨",
+                Color = "#e5c07b",
+                Greeting = "My forge burns day and night! Have you brought Genesis Orbs to reforge your weapons and armor?",
+                OptionsJson = JsonSerializer.Serialize(new[]
+                {
+                    new { label = "🔨 Open Genesis Crafting Forge", actionType = "open_forge", response = "" },
+                    new { label = "🎁 Claim Sacred Vanguard Set (Demo)", actionType = "give_vanguard_set", response = "Wear all 4 pieces to unlock Sacred Bastion and Holy Blade Waves!" },
+                    new { label = "❓ Socket Reforging & Metamods Guide", actionType = "lore", response = "Use Socketing Cores to re-roll sockets, Harmonic Tethers for link chains, and Fracture Cores to lock metamods!" }
+                })
+            },
+            new()
+            {
+                Id = "npc_kaelen",
+                NpcName = "Kaelen (Vault Keeper)",
+                Title = "Keeper of the Vault",
+                ZoneId = "SanctuaryHaven",
+                AvatarIcon = "📦",
+                Color = "#98c379",
+                Greeting = "This vault is bound by ancient celestial seals, linking the soul inventory across all your heroes in Aethelis.",
+                OptionsJson = JsonSerializer.Serialize(new[]
+                {
+                    new { label = "📦 Open Account Shared Stash", actionType = "open_stash", response = "" },
+                    new { label = "🔮 Currency Vault Storage Advice", actionType = "lore", response = "In the Currency Vault tab, all 8 Genesis Orbs stack without limit across your entire account!" }
+                })
+            },
+            new()
+            {
+                Id = "npc_lyra",
+                NpcName = "Lyra (Astromancer)",
+                Title = "Astromancer of the Void",
+                ZoneId = "SanctuaryHaven",
+                AvatarIcon = "🌌",
+                Color = "#c678dd",
+                Greeting = "The constellations align... The Gate of Eternity is ready to receive Map Keystones to open dimensional rifts to Pinnacle Bosses.",
+                OptionsJson = JsonSerializer.Serialize(new[]
+                {
+                    new { label = "🌌 Open Gate of Eternity Map Device", actionType = "open_map_device", response = "" },
+                    new { label = "🗺️ Pinnacle Rift Mechanics Guide", actionType = "lore", response = "Insert Tier 1-16 Map Keystones, augment with affixes for IIQ/IIR bonuses, and combine with Celestial Fragments!" }
+                })
+            }
+        };
+    }
+
+    public static (List<DevotionConstellationEntity> Constellations, List<DevotionNodeEntity> Nodes) BuildDefaultDevotionSystem()
+    {
+        var constellations = new List<DevotionConstellationEntity>
+        {
+            new()
+            {
+                Id = "phoenix", Name = "The Phoenix", Affiliation = "Chaos", Tier = "Tier 1", TotalStars = 4,
+                AffinityGrantedJson = JsonSerializer.Serialize(new { Chaos = 3 }),
+                AffinityRequiredJson = JsonSerializer.Serialize(new { Chaos = 1 }),
+                Description = "Ancient firebird embodying eternal rebirth, blazing critical strikes, and hellfire pillars."
+            },
+            new()
+            {
+                Id = "frost_warden", Name = "The Frost Warden", Affiliation = "Eldritch", Tier = "Tier 1", TotalStars = 4,
+                AffinityGrantedJson = JsonSerializer.Serialize(new { Eldritch = 3 }),
+                AffinityRequiredJson = JsonSerializer.Serialize(new { Eldritch = 1 }),
+                Description = "Glacial guardian providing impenetrable energy shield bastions and freezing blasts."
+            },
+            new()
+            {
+                Id = "storm_herald", Name = "The Storm Herald", Affiliation = "Ascendant", Tier = "Tier 2", TotalStars = 4,
+                AffinityGrantedJson = JsonSerializer.Serialize(new { Ascendant = 4 }),
+                AffinityRequiredJson = JsonSerializer.Serialize(new { Ascendant = 2 }),
+                Description = "Tempestuous thunder lord amplifying lightning penetration and chain shock procs."
+            },
+            new()
+            {
+                Id = "void_leviathan", Name = "The Void Leviathan", Affiliation = "Primordial", Tier = "Tier 3", TotalStars = 4,
+                AffinityGrantedJson = JsonSerializer.Serialize(new { Primordial = 5 }),
+                AffinityRequiredJson = JsonSerializer.Serialize(new { Primordial = 4 }),
+                Description = "Abyssal behemoth commanding singularity black holes and cosmic disintegration."
+            }
+        };
+
+        var nodes = new List<DevotionNodeEntity>
+        {
+            // Core Origin Nexus
+            new() { Id = "nexus_root", ConstellationId = "", Name = "Genesis Nexus", Lore = "The primordial origin where all celestial leylines converge.", Description = "+10 to All Attributes (Core Origin)", StatKey = "allStats", StatValue = 10, X = 50, Y = 50, Color = "#00f2fe", Icon = "✨", IsRoot = true },
+
+            // Constellation 1: The Phoenix (Fire / Crit)
+            new() { Id = "ph_1", ConstellationId = "phoenix", Name = "Ember Heart", Description = "+15% Fire Damage", StatKey = "fireDmg", StatValue = 15, X = 63, Y = 38, ParentNodeId = "nexus_root", Color = "#ff7700", Icon = "🔥" },
+            new() { Id = "ph_2", ConstellationId = "phoenix", Name = "Ash Walker", Description = "+15% Fire Resistance", StatKey = "fireRes", StatValue = 15, X = 74, Y = 28, ParentNodeId = "ph_1", Color = "#ff7700", Icon = "🛡️" },
+            new() { Id = "ph_3", ConstellationId = "phoenix", Name = "Ignited Fury", Description = "+20% Critical Strike Multiplier", StatKey = "critMulti", StatValue = 20, X = 84, Y = 20, ParentNodeId = "ph_2", Color = "#ff7700", Icon = "⚡" },
+            new() { Id = "ph_proc", ConstellationId = "phoenix", Name = "★ Phoenix Firestorm", Description = "Proc on Crit: Calls down a blazing celestial flame pillar", StatKey = "proc", StatValue = 1, StringValue = "proc_phoenix_firestorm", X = 92, Y = 12, ParentNodeId = "ph_3", Color = "#ff4400", Icon = "🦅", IsProc = true },
+
+            // Constellation 2: The Frost Warden (Cold / Energy Shield)
+            new() { Id = "fw_1", ConstellationId = "frost_warden", Name = "Frozen Veins", Description = "+60 Maximum Energy Shield", StatKey = "es", StatValue = 60, X = 37, Y = 38, ParentNodeId = "nexus_root", Color = "#00f2fe", Icon = "❄️" },
+            new() { Id = "fw_2", ConstellationId = "frost_warden", Name = "Glacial Plating", Description = "+100 Armor Mitigation", StatKey = "armor", StatValue = 100, X = 26, Y = 28, ParentNodeId = "fw_1", Color = "#00f2fe", Icon = "🛡️" },
+            new() { Id = "fw_3", ConstellationId = "frost_warden", Name = "Absolute Zero", Description = "+15% Cold Damage & +10% Freeze Duration", StatKey = "coldDmg", StatValue = 15, X = 16, Y = 20, ParentNodeId = "fw_2", Color = "#00f2fe", Icon = "🧊" },
+            new() { Id = "fw_proc", ConstellationId = "frost_warden", Name = "★ Glacial Barrier", Description = "Proc on Hit Taken: Triggers a 250 HP Frost Barrier and freezes nearby enemies", StatKey = "proc", StatValue = 1, StringValue = "proc_glacial_barrier", X = 8, Y = 12, ParentNodeId = "fw_3", Color = "#00b4d8", Icon = "🏰", IsProc = true },
+
+            // Constellation 3: The Storm Herald (Lightning / Speed)
+            new() { Id = "sh_1", ConstellationId = "storm_herald", Name = "Spark Conduit", Description = "+15% Lightning Damage", StatKey = "lightDmg", StatValue = 15, X = 63, Y = 62, ParentNodeId = "nexus_root", Color = "#ffd700", Icon = "⚡" },
+            new() { Id = "sh_2", ConstellationId = "storm_herald", Name = "Static Velocity", Description = "+10% Movement Speed & +8% Cast Speed", StatKey = "moveSpeed", StatValue = 10, X = 74, Y = 72, ParentNodeId = "sh_1", Color = "#ffd700", Icon = "💨" },
+            new() { Id = "sh_3", ConstellationId = "storm_herald", Name = "Thunder Penetration", Description = "+15% Lightning Penetration", StatKey = "lightPen", StatValue = 15, X = 84, Y = 80, ParentNodeId = "sh_2", Color = "#ffd700", Icon = "🌩️" },
+            new() { Id = "sh_proc", ConstellationId = "storm_herald", Name = "★ Chain Lightning Surge", Description = "Proc on Spell Cast: Releases 3 leaping lightning bolts across enemies", StatKey = "proc", StatValue = 1, StringValue = "proc_chain_lightning", X = 92, Y = 88, ParentNodeId = "sh_3", Color = "#ffb703", Icon = "⚡", IsProc = true },
+
+            // Constellation 4: The Void Leviathan (Chaos / Maximum Life)
+            new() { Id = "vl_1", ConstellationId = "void_leviathan", Name = "Abyssal Siphon", Description = "+80 Maximum Life", StatKey = "life", StatValue = 80, X = 37, Y = 62, ParentNodeId = "nexus_root", Color = "#c678dd", Icon = "💜" },
+            new() { Id = "vl_2", ConstellationId = "void_leviathan", Name = "Warp Resilience", Description = "+20% Chaos Resistance & +5% Max Chaos Res", StatKey = "chaosRes", StatValue = 20, X = 26, Y = 72, ParentNodeId = "vl_1", Color = "#c678dd", Icon = "🛡️" },
+            new() { Id = "vl_3", ConstellationId = "void_leviathan", Name = "Cosmic Decay", Description = "+25% Chaos Damage & +10% Damage Over Time", StatKey = "chaosDmg", StatValue = 25, X = 16, Y = 80, ParentNodeId = "vl_2", Color = "#c678dd", Icon = "🌌" },
+            new() { Id = "vl_proc", ConstellationId = "void_leviathan", Name = "★ Singularity Vortex", Description = "Proc on Kill: Spawns a gravitational vortex pulling enemies and dealing Chaos DoT", StatKey = "proc", StatValue = 1, StringValue = "proc_singularity_vortex", X = 8, Y = 88, ParentNodeId = "vl_3", Color = "#9d4edd", Icon = "🕳️", IsProc = true }
+        };
+
+        return (constellations, nodes);
+    }
 }
+

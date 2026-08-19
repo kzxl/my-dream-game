@@ -22,6 +22,16 @@ public sealed class GameDatabaseService
             try { db.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS UserAccounts (Id TEXT PRIMARY KEY, Email TEXT, Name TEXT, PictureUrl TEXT, CreatedAt TEXT, LastLoginAt TEXT);"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE SharedStash ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN MonsterKillsJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN FamilyTalentsJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN FamilyPointsJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN DevotionNodesJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN CompletedQuestsJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN ActiveQuestsJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN WaypointsJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN CurrenciesJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN DevotionPoints INTEGER DEFAULT 8;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN Ascendance TEXT DEFAULT '';"); } catch { }
         }
         catch { }
     }
@@ -291,10 +301,12 @@ public sealed class GameDatabaseService
         entity.Name = data.Name ?? "Novice Adventurer";
         entity.Gender = data.Gender ?? "Male";
         entity.ClassSpec = data.ClassSpec ?? "Novice";
+        entity.Ascendance = data.Ascendance ?? "";
         entity.Level = data.Level;
         entity.CurrentExp = data.CurrentExp;
         entity.ExpToNext = data.ExpToNext;
         entity.SkillPoints = data.SkillPoints;
+        entity.DevotionPoints = data.DevotionPoints > 0 ? data.DevotionPoints : 8;
         entity.Life = data.Life;
         entity.MaxLife = data.MaxLife;
         entity.Mana = data.Mana;
@@ -307,6 +319,14 @@ public sealed class GameDatabaseService
         entity.Skills = data.Skills ?? new();
         entity.EquippedGear = data.EquippedGear ?? new();
         entity.BackpackItems = data.BackpackItems ?? new();
+        entity.MonsterKills = data.MonsterKills ?? new();
+        entity.FamilyTalents = data.FamilyTalents ?? new();
+        entity.FamilyPoints = data.FamilyPoints ?? new();
+        entity.AllocatedDevotionNodes = data.AllocatedDevotionNodes ?? new();
+        entity.CompletedQuests = data.CompletedQuests ?? new();
+        entity.ActiveQuests = data.ActiveQuests ?? new();
+        entity.UnlockedWaypoints = data.UnlockedWaypoints ?? new();
+        entity.Currencies = data.Currencies ?? new();
         entity.UpdatedAt = DateTime.UtcNow.ToString("o");
 
         var rows = await db.SaveChangesAsync();
@@ -326,10 +346,12 @@ public sealed class GameDatabaseService
             Name = c.Name,
             Gender = c.Gender,
             ClassSpec = c.ClassSpec,
+            Ascendance = c.Ascendance,
             Level = c.Level,
             CurrentExp = c.CurrentExp,
             ExpToNext = c.ExpToNext,
             SkillPoints = c.SkillPoints,
+            DevotionPoints = c.DevotionPoints,
             Life = c.Life,
             MaxLife = c.MaxLife,
             Mana = c.Mana,
@@ -341,7 +363,15 @@ public sealed class GameDatabaseService
             PositionY = c.PositionY,
             Skills = c.Skills,
             EquippedGear = c.EquippedGear,
-            BackpackItems = c.BackpackItems
+            BackpackItems = c.BackpackItems,
+            MonsterKills = c.MonsterKills,
+            FamilyTalents = c.FamilyTalents,
+            FamilyPoints = c.FamilyPoints,
+            AllocatedDevotionNodes = c.AllocatedDevotionNodes,
+            CompletedQuests = c.CompletedQuests,
+            ActiveQuests = c.ActiveQuests,
+            UnlockedWaypoints = c.UnlockedWaypoints,
+            Currencies = c.Currencies
         };
     }
 
@@ -524,6 +554,40 @@ public sealed class GameDatabaseService
 
         return result;
     }
+
+    public async Task<List<QuestTemplateEntity>> GetQuestTemplatesAsync(int? actNumber = null)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var query = db.QuestTemplates.AsNoTracking();
+        if (actNumber.HasValue && actNumber.Value > 0)
+        {
+            query = query.Where(q => q.ActNumber == actNumber.Value);
+        }
+        return await query.ToListAsync();
+    }
+
+    public async Task<List<NpcDialogueTemplateEntity>> GetNpcDialoguesAsync(string? zoneId = null)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var query = db.NpcDialogues.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(zoneId))
+        {
+            query = query.Where(n => n.ZoneId == zoneId);
+        }
+        return await query.ToListAsync();
+    }
+
+    public async Task<object> GetDevotionDataAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var constellations = await db.DevotionConstellations.AsNoTracking().ToListAsync();
+        var nodes = await db.DevotionNodes.AsNoTracking().ToListAsync();
+        return new
+        {
+            constellations,
+            nodes
+        };
+    }
 }
 
 public sealed class GoogleAuthRequestDto
@@ -569,10 +633,12 @@ public sealed class SaveGameDto
     public string? Name { get; set; } = "Novice Adventurer";
     public string? Gender { get; set; } = "Male";
     public string? ClassSpec { get; set; } = "Novice";
+    public string? Ascendance { get; set; } = "";
     public int Level { get; set; } = 1;
     public int CurrentExp { get; set; } = 0;
     public int ExpToNext { get; set; } = 100;
     public int SkillPoints { get; set; } = 3;
+    public int DevotionPoints { get; set; } = 8;
     public double Life { get; set; } = 250;
     public double MaxLife { get; set; } = 250;
     public double Mana { get; set; } = 120;
@@ -585,6 +651,14 @@ public sealed class SaveGameDto
     public Dictionary<string, object>? Skills { get; set; }
     public Dictionary<string, object>? EquippedGear { get; set; }
     public List<object>? BackpackItems { get; set; }
+    public Dictionary<string, int>? MonsterKills { get; set; }
+    public Dictionary<string, List<string>>? FamilyTalents { get; set; }
+    public Dictionary<string, int>? FamilyPoints { get; set; }
+    public List<string>? AllocatedDevotionNodes { get; set; }
+    public List<string>? CompletedQuests { get; set; }
+    public Dictionary<string, object>? ActiveQuests { get; set; }
+    public List<string>? UnlockedWaypoints { get; set; }
+    public Dictionary<string, int>? Currencies { get; set; }
 }
 
 public sealed class CustomLoginRequestDto
@@ -593,4 +667,5 @@ public sealed class CustomLoginRequestDto
     public string? Password { get; set; }
     public string? Email { get; set; }
 }
+
 

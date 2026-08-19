@@ -6,6 +6,7 @@
 import { player, groundLoot, particles } from './state.js';
 import { AudioEngine } from './audio.js';
 import { spawnDamageNumber } from './combat.js';
+import { ApiClient } from './services/api-client.js';
 
 export const COMPANION_AURAS = {
   SWIFT_WINGS: {
@@ -68,24 +69,32 @@ export function updateCompanion(dt) {
       companion.isDeliveringToTown = false;
       companion.deliveryTimer = 0;
 
-      // Convert junk in bag to currency reward
-      const itemCount = companion.muleBag.length;
-      companion.goldOrCurrencyEarned = Math.max(1, Math.floor(itemCount / 2) + 1);
+      const itemsSold = [...companion.muleBag];
       companion.muleBag = [];
 
-      // Add currency directly to player bag
-      player.bag.push({
-        id: 'c_spark_' + Date.now(),
-        name: 'Aether Spark',
-        slot: 'Currency',
-        rarity: 'Currency',
-        color: '#aa9e82',
-        description: 'Returned from Town Market: Awakens latent magic in normal items.',
-        stats: {}
+      // Authoritative Server Economy Valuation
+      ApiClient.sellPetItems(itemsSold, player.id || 'hero_default').then(res => {
+        if (res && res.success) {
+          if (Array.isArray(res.items)) {
+            res.items.forEach(it => player.bag.push(it));
+          }
+          const goldText = res.goldEarned > 0 ? ` +${res.goldEarned} Gold` : '';
+          spawnDamageNumber(player.x, player.y - 60, `🐾 Pet returned: ${res.message}${goldText}`, false, '#ffd700');
+        } else {
+          // Fallback
+          player.bag.push({
+            id: 'c_spark_' + Date.now(),
+            name: 'Aether Spark',
+            slot: 'Currency',
+            rarity: 'Currency',
+            color: '#aa9e82',
+            description: 'Returned from Town Market: Awakens latent magic in normal items.',
+            stats: {}
+          });
+          spawnDamageNumber(player.x, player.y - 60, `🐾 Pet returned with Aether Spark!`, false, '#ffd700');
+        }
+        AudioEngine.playTone(523, 'sine', 0.2, 0.15);
       });
-
-      spawnDamageNumber(player.x, player.y - 60, `🐾 Pet returned with ${companion.goldOrCurrencyEarned}x Aether Spark!`, false, '#ffd700');
-      AudioEngine.playTone(523, 'sine', 0.2, 0.15);
     }
     return;
   }

@@ -135,10 +135,12 @@ export async function saveToDatabase(silent = false) {
     name: document.getElementById('hud-name')?.innerText || 'Novice Adventurer',
     gender: player.gender,
     classSpec: player.classSpec,
+    ascendance: player.ascendance || '',
     level: player.level,
     currentExp: player.currentExp,
     expToNext: player.expToNext,
     skillPoints: player.skillPoints,
+    devotionPoints: player.devotionPoints || 8,
     life: player.life,
     maxLife: player.maxLife,
     mana: player.mana,
@@ -150,7 +152,15 @@ export async function saveToDatabase(silent = false) {
     positionY: player.y,
     skills: skillsPayload,
     equippedGear: player.equipped,
-    backpackItems: player.bag
+    backpackItems: player.bag,
+    monsterKills: player.monsterKills || {},
+    familyTalents: player.allocatedFamilyTalents || {},
+    familyPoints: player.familyMasteryPoints || {},
+    allocatedDevotionNodes: player.allocatedDevotionNodes || [],
+    completedQuests: player.completedQuests || [],
+    activeQuests: player.activeQuests || {},
+    unlockedWaypoints: player.unlockedWaypoints || [],
+    currencies: player.currencies || {}
   };
 
   try {
@@ -186,10 +196,12 @@ export async function loadFromDatabase(charId) {
     setActiveCharacterId(data.characterId);
     player.gender = data.gender || 'Male';
     player.classSpec = data.classSpec || 'Novice';
+    player.ascendance = data.ascendance || '';
     player.level = data.level || 1;
     player.currentExp = data.currentExp || 0;
     player.expToNext = data.expToNext || 100;
     player.skillPoints = data.skillPoints !== undefined ? data.skillPoints : 3;
+    player.devotionPoints = data.devotionPoints !== undefined ? data.devotionPoints : 8;
 
     player.maxLife = data.maxLife || 250;
     player.life = data.life || player.maxLife;
@@ -220,6 +232,14 @@ export async function loadFromDatabase(charId) {
 
     if (data.equippedGear) player.equipped = data.equippedGear;
     if (data.backpackItems) player.bag = data.backpackItems;
+    if (data.monsterKills) player.monsterKills = data.monsterKills;
+    if (data.familyTalents) player.allocatedFamilyTalents = data.familyTalents;
+    if (data.familyPoints) player.familyMasteryPoints = data.familyPoints;
+    if (data.allocatedDevotionNodes) player.allocatedDevotionNodes = data.allocatedDevotionNodes;
+    if (data.completedQuests) player.completedQuests = data.completedQuests;
+    if (data.activeQuests) player.activeQuests = data.activeQuests;
+    if (data.unlockedWaypoints) player.unlockedWaypoints = data.unlockedWaypoints;
+    if (data.currencies) player.currencies = data.currencies;
 
     updateBackpackUI();
     updatePaperdollUI();

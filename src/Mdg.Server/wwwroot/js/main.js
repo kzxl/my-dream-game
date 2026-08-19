@@ -4,9 +4,9 @@
  */
 
 import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
-import { ZONES } from './data/zones.js';
+import { ZONES, fetchMasterZonesFromServer } from './data/zones.js';
 import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
-import { SKILLS } from './data/skills.js';
+import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
 import { AudioEngine } from './audio.js';
 import { renderGame } from './renderer.js';
 import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js';
@@ -17,13 +17,14 @@ import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.j
 import { MapGenerator } from './map-generator.js';
 import { updateCompanion } from './companion.js';
 import { renderSharedStashModal } from './ui/stash-ui.js';
-import { openNpcDialogue } from './ui/npc-dialog-ui.js';
+import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js';
 import { renderMapDeviceModal } from './ui/map-device-ui.js';
 import { initDefeatUI } from './ui/defeat-ui.js';
 import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
 import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
+import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js';
 import { MPClient } from './services/multiplayer-client.js';
-import { getTownForAct } from './data/campaign.js';
+import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js';
 import { checkGoogleOAuthRedirectResult } from './auth.js';
 import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js';
 

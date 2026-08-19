@@ -147,3 +147,64 @@ public class CampaignActEntity
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
 
+public class QuestTemplateEntity
+{
+    public string Id { get; set; } = string.Empty; // e.g. q1_1, q1_2
+    public int ActNumber { get; set; } = 1;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int RequiredLevel { get; set; } = 1;
+    public string TargetZoneId { get; set; } = string.Empty;
+    public string TargetNpcId { get; set; } = string.Empty;
+    public string ObjectivesJson { get; set; } = "[]";
+    public string RewardsJson { get; set; } = "{}";
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}
+
+public class NpcDialogueTemplateEntity
+{
+    public string Id { get; set; } = string.Empty; // e.g. npc_elder_aethel, npc_doran
+    public string NpcName { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string ZoneId { get; set; } = "SanctuaryHaven";
+    public string AvatarIcon { get; set; } = "🧙‍♂️";
+    public string Color { get; set; } = "#61afef";
+    public string Greeting { get; set; } = string.Empty;
+    public string OptionsJson { get; set; } = "[]";
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}
+
+public class DevotionConstellationEntity
+{
+    public string Id { get; set; } = string.Empty; // e.g. phoenix, frost_warden, storm_herald
+    public string Name { get; set; } = string.Empty;
+    public string Affiliation { get; set; } = "Chaos"; // Chaos, Eldritch, Ascendant, Order, Primordial
+    public string Tier { get; set; } = "Tier 1";
+    public int TotalStars { get; set; } = 4;
+    public string AffinityGrantedJson { get; set; } = "{}";
+    public string AffinityRequiredJson { get; set; } = "{}";
+    public string Description { get; set; } = string.Empty;
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}
+
+public class DevotionNodeEntity
+{
+    public string Id { get; set; } = string.Empty; // e.g. nexus_root, ph_1, ph_proc
+    public string ConstellationId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Lore { get; set; } = string.Empty;
+    public string StatKey { get; set; } = string.Empty;
+    public float StatValue { get; set; } = 0;
+    public string? StringValue { get; set; }
+    public float X { get; set; } = 50;
+    public float Y { get; set; } = 50;
+    public string? ParentNodeId { get; set; }
+    public string Color { get; set; } = "#00f2fe";
+    public string Icon { get; set; } = "✨";
+    public bool IsRoot { get; set; } = false;
+    public bool IsProc { get; set; } = false;
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}
+
+

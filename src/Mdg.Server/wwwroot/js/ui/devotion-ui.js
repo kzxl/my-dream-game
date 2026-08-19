@@ -494,3 +494,34 @@ function renderDevotionStatsSummary() {
     </div>
   `).join('');
 }
+
+export async function fetchMasterDevotionFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/devotion');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && Array.isArray(data.nodes) && data.nodes.length > 0) {
+      data.nodes.forEach(dn => {
+        DEVOTION_TREE_NODES[dn.id] = {
+          id: dn.id,
+          name: dn.name,
+          lore: dn.lore,
+          desc: dn.description,
+          stat: dn.statKey,
+          val: dn.isProc ? dn.stringValue : dn.statValue,
+          x: dn.x,
+          y: dn.y,
+          parentId: dn.parentNodeId,
+          color: dn.color,
+          icon: dn.icon,
+          isRoot: !!dn.isRoot,
+          isProc: !!dn.isProc
+        };
+      });
+      console.log(`[MasterData] Hydrated ${data.nodes.length} Devotion Stars from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline devotion fallback:', e.message);
+  }
+}
+

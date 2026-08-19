@@ -174,5 +174,102 @@ export const ApiClient = {
       console.warn('[ApiClient] saveGame fallback:', err);
     }
     return null;
+  },
+
+  /**
+   * Master Data APIs
+   */
+  async fetchMasterQuests(actNumber = null) {
+    try {
+      const url = actNumber ? `/api/v1/data/quests?actNumber=${actNumber}` : '/api/v1/data/quests';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] fetchMasterQuests fallback:', err);
+    }
+    return [];
+  },
+
+  async fetchMasterNpcs(zoneId = null) {
+    try {
+      const url = zoneId ? `/api/v1/data/npcs?zoneId=${encodeURIComponent(zoneId)}` : '/api/v1/data/npcs';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] fetchMasterNpcs fallback:', err);
+    }
+    return [];
+  },
+
+  async fetchMasterDevotion() {
+    try {
+      const res = await fetch('/api/v1/data/devotion');
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] fetchMasterDevotion fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Economy & Pet Selling APIs
+   */
+  async sellPetItems(items, characterId = 'hero_default') {
+    try {
+      const res = await fetch('/api/v1/economy/pet-sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: characterId,
+          items: items || []
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] sellPetItems fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Quest Rewards APIs
+   */
+  async claimQuestReward(questId, characterId = 'hero_default') {
+    try {
+      const res = await fetch('/api/v1/quests/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: characterId,
+          questId: questId
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] claimQuestReward fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Devotion Validation APIs
+   */
+  async validateDevotionTree(characterId = 'hero_default', totalDevotionPoints = 8, allocatedNodeIds = []) {
+    try {
+      const res = await fetch('/api/v1/devotion/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: characterId,
+          totalDevotionPoints: totalDevotionPoints,
+          allocatedNodeIds: allocatedNodeIds
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] validateDevotionTree fallback:', err);
+    }
+    return null;
   }
 };
+

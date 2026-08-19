@@ -260,3 +260,27 @@ export function getSkillExpMultiplier(skillKey, player) {
 
   return Math.max(0.5, multiplier);
 }
+
+export async function fetchMasterSkillsFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/skills');
+    if (!res.ok) return;
+    const serverSkills = await res.json();
+    if (Array.isArray(serverSkills) && serverSkills.length > 0) {
+      serverSkills.forEach(ss => {
+        const key = ss.skillKey || ss.id;
+        if (SKILLS[key]) {
+          SKILLS[key].name = ss.name || SKILLS[key].name;
+          SKILLS[key].baseDamage = ss.baseDamage || SKILLS[key].baseDamage;
+          SKILLS[key].cooldown = ss.baseCooldown !== undefined ? ss.baseCooldown : SKILLS[key].cooldown;
+          SKILLS[key].manaCost = ss.manaCost !== undefined ? ss.manaCost : SKILLS[key].manaCost;
+          SKILLS[key].description = ss.description || SKILLS[key].description;
+        }
+      });
+      console.log(`[MasterData] Hydrated ${serverSkills.length} Skills from SQLite database.`);
+    }
+  } catch (e) {
+    console.warn('[MasterData] Using bundled offline skills fallback:', e.message);
+  }
+}
+
