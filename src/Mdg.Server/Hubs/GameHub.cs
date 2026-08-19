@@ -111,6 +111,8 @@ public sealed class GameHub : Hub
 
             await Clients.Group(player.ZoneId).SendAsync("ZoneChatMessage", new
             {
+                id = Guid.NewGuid().ToString("N"),
+                characterId = player.CharacterId,
                 characterName = player.CharacterName,
                 classSpec = player.ClassSpec,
                 message = cleanMsg,

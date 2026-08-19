@@ -19,6 +19,7 @@ public sealed class GameDatabaseService
         {
             using var db = _contextFactory.CreateDbContext();
             db.Database.EnsureCreated();
+            try { db.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS UserAccounts (Id TEXT PRIMARY KEY, Email TEXT, Name TEXT, PictureUrl TEXT, CreatedAt TEXT, LastLoginAt TEXT);"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE SharedStash ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
         }
@@ -123,6 +124,69 @@ public sealed class GameDatabaseService
             account.LastLoginAt = DateTime.UtcNow.ToString("o");
             if (!string.IsNullOrEmpty(picture)) account.PictureUrl = picture;
             if (!string.IsNullOrEmpty(name)) account.Name = name;
+            await db.SaveChangesAsync();
+        }
+
+        var characters = await GetAllCharactersAsync(userId);
+        return (account, characters);
+    }
+
+    public async Task<(UserAccountEntity User, List<CharacterSummaryDto> Characters)> ProcessCustomLoginAsync(string username, string? password, string? email = null)
+    {
+        var cleanName = (username ?? "Adventurer").Trim();
+        if (string.IsNullOrWhiteSpace(cleanName)) cleanName = "Adventurer";
+        var safeKey = cleanName.ToLowerInvariant().Replace(" ", "_").Replace("@", "_").Replace(".", "_");
+        var userId = "acc_" + safeKey;
+        var userEmail = string.IsNullOrWhiteSpace(email) ? $"{safeKey}@aethelis.realm" : email;
+        var avatarUrl = $"https://api.dicebear.com/7.x/bottts/svg?seed={Uri.EscapeDataString(cleanName)}";
+
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var account = await db.UserAccounts.FindAsync(userId);
+        if (account == null)
+        {
+            account = new UserAccountEntity
+            {
+                Id = userId,
+                Email = userEmail,
+                Name = cleanName,
+                PictureUrl = avatarUrl,
+                CreatedAt = DateTime.UtcNow.ToString("o"),
+                LastLoginAt = DateTime.UtcNow.ToString("o")
+            };
+            db.UserAccounts.Add(account);
+            await db.SaveChangesAsync();
+
+            // Create initial default character for new custom user
+            var initialHero = new CharacterEntity
+            {
+                Id = "hero_" + Guid.NewGuid().ToString("N")[..8],
+                AccountId = userId,
+                Name = cleanName,
+                Gender = "Male",
+                ClassSpec = "Vanguard",
+                Level = 1,
+                CurrentExp = 0,
+                ExpToNext = 100,
+                SkillPoints = 3,
+                Life = 250,
+                MaxLife = 250,
+                Mana = 120,
+                MaxMana = 120,
+                Es = 100,
+                MaxEs = 100,
+                ZoneId = "SanctuaryHaven",
+                PositionX = 2000,
+                PositionY = 2000,
+                CreatedAt = DateTime.UtcNow.ToString("o"),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            };
+            db.Characters.Add(initialHero);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            account.LastLoginAt = DateTime.UtcNow.ToString("o");
+            account.Name = cleanName;
             await db.SaveChangesAsync();
         }
 
@@ -414,5 +478,12 @@ public sealed class SaveGameDto
     public Dictionary<string, object>? Skills { get; set; }
     public Dictionary<string, object>? EquippedGear { get; set; }
     public List<object>? BackpackItems { get; set; }
+}
+
+public sealed class CustomLoginRequestDto
+{
+    public string Username { get; set; } = string.Empty;
+    public string? Password { get; set; }
+    public string? Email { get; set; }
 }
 

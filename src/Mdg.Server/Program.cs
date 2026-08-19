@@ -61,10 +61,27 @@ app.MapGet("/api/v1/zones/{zoneId}", (string zoneId) =>
     return Results.Ok(map);
 });
 
-// GOOGLE AUTHENTICATION APIS
+// AUTHENTICATION APIS (Google & Custom Account Login)
 app.MapPost("/api/v1/auth/google", async (GameDatabaseService db, GoogleAuthRequestDto req) =>
 {
     var (user, characters) = await db.ProcessGoogleAuthAsync(req);
+    return Results.Ok(new
+    {
+        success = true,
+        user = new
+        {
+            id = user.Id,
+            email = user.Email,
+            name = user.Name,
+            picture = user.PictureUrl
+        },
+        characters
+    });
+});
+
+app.MapPost("/api/v1/auth/login", async (GameDatabaseService db, CustomLoginRequestDto req) =>
+{
+    var (user, characters) = await db.ProcessCustomLoginAsync(req.Username, req.Password, req.Email);
     return Results.Ok(new
     {
         success = true,

@@ -7,6 +7,9 @@ import { ApiClient } from '../services/api-client.js';
 import { player } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { getTownForAct } from '../data/campaign.js';
+import { getCurrentUser } from '../auth.js';
+import { setActiveCharacterId } from '../save-system.js';
+import { MPClient } from '../services/multiplayer-client.js';
 
 let rosterList = [];
 let selectedClass = 'Vanguard';
@@ -20,6 +23,18 @@ export function setupRosterUI() {
   if (btnClose) {
     btnClose.onclick = () => closeRosterUI();
   }
+
+  // Handle Google Auth state changes automatically
+  window.addEventListener('auth_state_changed', async (e) => {
+    const user = e.detail?.user || getCurrentUser();
+    const chars = e.detail?.characters;
+    if (chars && chars.length > 0) {
+      setActiveCharacterId(chars[0].id);
+      await switchActiveCharacter(chars[0].id);
+    } else {
+      await refreshRosterList();
+    }
+  });
 }
 
 export async function openRosterUI() {
@@ -45,12 +60,13 @@ export async function refreshRosterList() {
 
   container.innerHTML = `<div style="text-align:center; padding:40px; color:#ffd700;">⏳ Loading character roster...</div>`;
 
-  rosterList = await ApiClient.fetchCharacters('guest');
+  const user = getCurrentUser();
+  rosterList = await ApiClient.fetchCharacters(user.id);
   if (!rosterList || rosterList.length === 0) {
     // If empty, add active character as first default
     rosterList = [{
       id: player.id || 'hero_default',
-      name: player.name || 'Aethel Hero',
+      name: player.name || (user.id !== 'guest' ? user.name.split(' ')[0] : 'Aethel Hero'),
       classSpec: player.classSpec || 'Vanguard',
       gender: player.gender || 'Male',
       level: player.level || 1,
@@ -181,7 +197,8 @@ export async function refreshRosterList() {
       btnCreate.disabled = true;
       btnCreate.innerText = '⏳ Creating Hero...';
 
-      const res = await ApiClient.createCharacter(name, selectedClass, selectedGender, 'guest');
+      const user = getCurrentUser();
+      const res = await ApiClient.createCharacter(name, selectedClass, selectedGender, user.id);
       if (res && res.id) {
         AudioEngine.playLevelUp();
         await switchActiveCharacter(res.id);
@@ -196,6 +213,7 @@ export async function refreshRosterList() {
 }
 
 export async function switchActiveCharacter(characterId) {
+  setActiveCharacterId(characterId);
   const savegame = await ApiClient.loadSavegame(characterId);
   if (savegame) {
     player.id = savegame.id;
@@ -218,6 +236,7 @@ export async function switchActiveCharacter(characterId) {
     if (savegame.skills) player.skills = savegame.skills;
 
     AudioEngine.playTone(600, 'sine', 0.2, 0.15);
+    MPClient.joinCurrentZone();
     window.location.reload();
   }
 }

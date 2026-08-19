@@ -24,6 +24,7 @@ import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
 import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
 import { MPClient } from './services/multiplayer-client.js';
 import { getTownForAct } from './data/campaign.js';
+import { checkGoogleOAuthRedirectResult } from './auth.js';
 
 window.keys = keys;
 window.loadZone = loadZone;
@@ -1032,6 +1033,7 @@ MPClient.init();
 
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {
+  await checkGoogleOAuthRedirectResult();
   await fetchMasterItemsFromServer();
   const loaded = await loadFromDatabase();
   

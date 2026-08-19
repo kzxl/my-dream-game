@@ -11,12 +11,16 @@ class MultiplayerClient {
   constructor() {
     this.ws = null;
     this.isConnected = false;
+    this.isInitialized = false;
     this.reconnectTimer = null;
     this.lastSentPos = { x: 0, y: 0 };
     this.posSendInterval = null;
+    this.processedChatIds = new Set();
   }
 
   init() {
+    if (this.isInitialized) return;
+    this.isInitialized = true;
     this.connect();
     
     // Position broadcast loop (20 TPS)
@@ -32,6 +36,20 @@ class MultiplayerClient {
   }
 
   connect() {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    if (this.ws) {
+      try {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.onmessage = null;
+        this.ws.close();
+      } catch (e) {}
+      this.ws = null;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const hubUrl = `${protocol}//${window.location.host}/gamehub`;
 
@@ -71,7 +89,9 @@ class MultiplayerClient {
       };
 
       this.ws.onerror = () => {
-        this.ws.close();
+        if (this.ws) {
+          try { this.ws.close(); } catch (e) {}
+        }
       };
     } catch (err) {
       console.warn('[MultiplayerClient] Connection error:', err);
@@ -128,6 +148,16 @@ class MultiplayerClient {
         this.triggerRemoteSkillVisual(sc);
       } else if (target === 'ZoneChatMessage' && args[0]) {
         const chat = args[0];
+        const msgKey = chat.id || `${chat.characterName}_${chat.timestamp}_${chat.message}`;
+        if (this.processedChatIds.has(msgKey)) {
+          return;
+        }
+        this.processedChatIds.add(msgKey);
+        if (this.processedChatIds.size > 200) {
+          const firstKey = this.processedChatIds.values().next().value;
+          this.processedChatIds.delete(firstKey);
+        }
+
         zoneChatMessages.push(chat);
         if (zoneChatMessages.length > 50) zoneChatMessages.shift();
         this.appendChatMessage(chat);
