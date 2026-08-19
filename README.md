@@ -54,9 +54,14 @@ csharp, dotnet8, aspnetcore, signalr, game-development, arpg, pixel-art, vanilla
 ### 4. ✨ Celestial Devotion Grid (`V`)
 - Passive constellation node allocations granting maximum Life, Energy Shield, Elemental Resistances (Fire, Cold, Lightning, Chaos), Attack/Cast Speed, Critical Strike Multiplier, and Life Leech.
 
-### 5. 📖 Bestiary Codex & Monster Lore Mastery (`Y`)
-- Comprehensive monster catalogue tracking 15+ species across 5 Acts.
-- Automated kill tracking unlocking 4 progressive **Hunter Lore Perks** (+5% $\to$ +25% Damage, Crit Chance, Crit Multi, and Increased Item Rarity / Quantity).
+### 5. 📖 Bestiary Codex & 3-Branch Family Mastery (`Y`)
+- **Absolute Fog of Discovery**: Monster intel, weaknesses, and signature relics are concealed without numerical milestone spoilers, deciphering organically as players hunt.
+- **3-Branch Non-Linear Family Talent Trees**: Specialize across 5 Great Families (*Beast, Undead, Fiend, Elemental, Construct*) with 3 distinct paths:
+  - 🌿 *Harvest & Spoils*: Extra crafting catalysts, rare sockets, and double boss loot.
+  - ⚔️ *Combat & Lethality*: Critical multiplier surges, execution strikes below 20% Life, and frenzy speed.
+  - 🛡️ *Survival & Wards*: Family-specific damage mitigation, ailment immunities (*Bleed/Poison/Ignite/Freeze/Shock*), and emergency barriers.
+- **🔄 Respec Points**: Full flexibility to refund allocated Family Mastery Points and experiment with alternative builds.
+- **Server-Authoritative Drop Tables**: All signature unique artifacts and catalyst rolls are authoritatively computed on the backend server.
 
 ### 6. 👥 Multi-Character Roster & Independent Progression (`P`)
 - Manage multiple heroes per account with independent progression, inventory, skills, and stash.
