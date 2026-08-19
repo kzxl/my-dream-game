@@ -1,9 +1,9 @@
 # THIẾT KẾ HỆ THỐNG SKILL GEMS & CÂY PHÁT TRIỂN KỸ NĂNG RIÊNG BIỆT (SKILL MASTERY TREE)
-*Tài liệu phân tích & đặc tả thiết kế hệ thống Kỹ năng cho MDG (My Dream Game)*
+*Tài liệu phân tích & đặc tả thiết kế hệ thống Kỹ năng cho MDG (Aethelis)*
 
 ---
 
-## 1. Tổng Quan & Triết Lý Thiết Kế
+## 1. Tổng Quan & Triết Lý Thiết Kế `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
 Hệ thống kỹ năng của **MDG** là sự kết hợp tối ưu giữa **3 trường phái ARPG đỉnh cao**:
 1. **Path of Exile**: Kỹ năng tồn tại dưới dạng vật phẩm ngọc (**Skill Gem**) có thể rơi ra từ quái, giao dịch và khảm vào trang bị.
@@ -24,16 +24,16 @@ graph TD
 
 ---
 
-## 2. Trục Cốt Lõi 1: Hệ Thống Skill Gem & Sockets (Ngọc Kỹ Năng)
+## 2. Trục Cốt Lõi 1: Hệ Thống Skill Gem & Sockets (Ngọc Kỹ Năng) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-### 2.1. Phân Loại Gems
+### 2.1. Phân Loại Gems `[ĐÃ HOÀN THÀNH]`
 
-| Loại Gem | Đặc Điểm | Ví Dụ |
-| :--- | :--- | :--- |
-| **Active Skill Gem** *(Ngọc Chủ Động)* | Khảm vào để mở khóa chiêu thức trên thanh Hotbar. Có Level (1-20) và Tags thuộc tính. | `Pyro Fireball Gem`, `Heavy Cleave Gem`, `Frost Nova Gem`. |
-| **Support Gem** *(Ngọc Hỗ Trợ)* | Gắn kèm vào Active Gem để tăng cường hoặc đổi tính chất chiêu, đi kèm hệ số tiêu hao Mana (`Mana Multiplier`). | `Lesser Multiple Projectiles (130% MP)`, `Added Fire Damage (115% MP)`. |
+| Loại Gem | Đặc Điểm | Ví Dụ | Trạng Thái |
+| :--- | :--- | :--- | :---: |
+| **Active Skill Gem** *(Ngọc Chủ Động)* | Khảm vào để mở khóa chiêu thức trên thanh Hotbar. Có Level (1-20) và Tags thuộc tính. | `Pyro Fireball Gem`, `Heavy Cleave Gem`, `Frost Nova Gem`. | `[ĐÃ HOÀN THÀNH]` |
+| **Support Gem** *(Ngọc Hỗ Trợ)* | Gắn kèm vào Active Gem để tăng cường hoặc đổi tính chất chiêu, đi kèm hệ số tiêu hao Mana (`Mana Multiplier`). | `Lesser Multiple Projectiles (130% MP)`, `Added Fire Damage (115% MP)`. | `[ĐÃ HOÀN THÀNH]` |
 
-### 2.2. Cơ Chế Giới Hạn Hỗ Trợ (Support Limits & Tag Compatibility)
+### 2.2. Cơ Chế Giới Hạn Hỗ Trợ (Support Limits & Tag Compatibility) `[ĐÃ HOÀN THÀNH]`
 
 * **Quy tắc tương thích Tags (Tag Matching):**
   * Support Gem chỉ kích hoạt nếu **trùng ít nhất 1 Tag** với Active Gem.
@@ -45,138 +45,18 @@ graph TD
 
 ---
 
-## 3. Trục Cốt Lõi 2: Cây Kỹ Năng Riêng Biệt (Per-Skill Mastery Tree)
+## 3. Trục Cốt Lõi 2: Cây Kỹ Năng Riêng Biệt (Per-Skill Mastery Tree - Phím K) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-Thay vì chỉ tăng sát thương phẳng nhàm chán, mỗi Skill Gem khi đạt cấp độ sẽ nhận **Skill Mastery Points (SMP)** để tăng vào Cây Tinh Hoa của chính chiêu đó.
-
-```text
-                             [ FIREBALL MASTERY TREE ]
-                                        │
-                 ┌──────────────────────┴──────────────────────┐
-                 ▼                                             ▼
-       [ NHÁNH A: PYROCLASM ]                        [ NHÁNH B: HELLFIRE BURST ]
-   (Tập trung Bạo kích & Nổ diện rộng)              (Chuyển hóa sang Đốt cháy DoT & Chaos)
-                 │                                             │
-      ┌──────────┴──────────┐                       ┌──────────┴──────────┐
-      ▼                     ▼                       ▼                     ▼
-[+20% AoE Radius]   [+30% Crit Multi]       [+50% Ignite Chance]  [Convert 50% to Chaos]
-      │                     │                       │                     │
-      └──────────┬──────────┘                       └──────────┬──────────┘
-                 ▼                                             ▼
-    { KEYSTONE MORPH 1 }                          { KEYSTONE MORPH 2 }
-   ★ NOVA CATACLYSM:                              ★ DRAGON BREATH:
-   Bắn tỏa 8 quả cầu lửa xoay tròn 360°           Biến thành luồng lửa phun liên tục DoT
-```
-
-### Các Nhóm Node Trong Cây Kỹ Năng Riêng:
-
-1. **Minor Nodes (Chỉ số cơ bản):** Tăng nhẹ +8% Sát thương, -5% Tiêu hao Mana, +10% Tốc độ bay của đạn.
-2. **Major Nodes (Hiệu ứng phụ):** Gây hiệu ứng Đóng băng (Freeze), Thiêu đốt (Ignite), hoặc Hút máu (Leech).
-3. **Keystone Morph Nodes (Biến đổi hình thái chiêu):** Đột phá hoàn toàn cách thức hoạt động của chiêu thức (ví dụ: chuyển chiêu bắn đơn lẻ thành bão lửa đa tia hoặc bẫy lửa).
+Mỗi Skill Gem khi đạt cấp độ sẽ nhận **Skill Mastery Points (SMP)** để tăng vào Cây Tinh Hoa của chính chiêu đó:
+* **Slash (Kiếm Khí):** Nhánh quét rộng Cleave, Nhánh Chém chí mạng Bleed, Nhánh Giáp phản đòn.
+* **Fireball (Cầu Lửa):** Nhánh chùm đạn đa hướng (Multi-Shot), Nhánh Nổ thiêu đốt (Ignite), Nhánh Bão lửa rực rỡ.
+* **Frost Nova (Băng Sóng):** Nhánh Đóng băng tuyệt đối (Absolute Zero), Nhánh Tạo khiên ES, Nhánh Băng vỡ vụn (Shatter).
+* **Meteor (Thiên Thạch):** Nhánh Rơi dồn dập (Meteor Shower), Nhánh Tinh cầu Hư vô (Void Comet).
+* **Dash (Lướt Thần Tốc):** Nhánh Tăng tốc di chuyển, Nhánh Để lại vệt lửa/băng, Nhánh Giảm hồi chiêu.
 
 ---
 
-## 4. Bảng Thiết Kế Cụ Thể Cho 3 Chiêu Thức Mẫu
+## 4. Kế Hoạch Mở Rộng Sword Skills & Unique Keystones (Cảm Hứng SAO) `[CẦN MỞ RỘNG - PLANNED]`
 
-### 4.1. Chiêu "Pyro Fireball"
-
-* **Tags:** `[Fire]`, `[Spell]`, `[Projectile]`, `[AoE]`
-* **Cây Kỹ Năng Gồm 3 Nhánh:**
-  * **Nhánh Tốc Bắn & Số Lượng:** Bắn thêm +2 quả cầu lửa phụ chụm góc hẹp.
-  * **Nhánh Bộc Phá (AoE Explosion):** Tăng 40% bán kính nổ, kẻ địch trúng nổ bị giảm 20% kháng Lửa.
-  * **Nhánh Địa Ngục (Hellfire Morph):** Quả cầu lửa để lại vệt dung nham sôi sục đốt cháy DoT trong 3 giây.
-
-### 4.2. Chiêu "Heavy Slash"
-
-* **Tags:** `[Physical]`, `[Melee]`, `[Attack]`
-* **Cây Kỹ Năng Gồm 3 Nhánh:**
-  * **Nhánh Trọng Kích:** Tăng mạnh sát thương đơn mục tiêu, có 25% cơ hội làm choáng Boss.
-  * **Nhánh Kiếm Khí (Wind Blade):** Đòn chém phóng ra một luồng kiếm khí bay xa 300px.
-  * **Nhánh Khát Máu (Bloodlust):** Đòn đánh gây Chảy máu (Bleed) và hồi lại 3% HP trên mỗi kẻ địch trúng đòn.
-
-### 4.3. Chiêu "Frost Nova"
-
-* **Tags:** `[Cold]`, `[Spell]`, `[AoE]`
-* **Cây Kỹ Năng Gồm 3 Nhánh:**
-  * **Nhánh Băng Giá Tuyệt Đối:** Đóng băng cứng kẻ địch 1.5 giây, tăng 50% sát thương bạo kích lên mục tiêu bị đóng băng.
-  * **Nhánh Vòng Xoáy Băng (Ice Vortex):** Tạo tâm hút kéo kẻ địch xung quanh vào giữa tâm vụ nổ.
-  * **Nhánh Giáp Băng (Frost Armor Shield):** Mỗi kẻ địch trúng chiêu lập tức hồi phục 25 Energy Shield cho bản thân.
-
----
-
-## 5. Kiến Trúc Dữ Liệu & Triển Khai (Data Model)
-
-### 5.1. Cấu Trúc SQLite Schema
-
-```sql
--- Bảng lưu trữ Gem của người chơi
-CREATE TABLE IF NOT EXISTS SkillGems (
-    Id TEXT PRIMARY KEY,
-    CharacterId TEXT NOT NULL,
-    SkillId TEXT NOT NULL,          -- 'fireball', 'slash', etc.
-    Level INTEGER NOT NULL DEFAULT 1,
-    CurrentExp INTEGER NOT NULL DEFAULT 0,
-    ExpToNext INTEGER NOT NULL DEFAULT 120,
-    MasteryPoints INTEGER NOT NULL DEFAULT 0,
-    AllocatedNodesJson TEXT,        -- Danh sách ID các node đã học trong cây
-    SocketedSupportsJson TEXT,      -- Danh sách Support Gems gắn kèm (Tối đa 3)
-    IsEquippedToHotbar INTEGER DEFAULT 0,
-    HotbarSlot INTEGER DEFAULT -1,
-    FOREIGN KEY(CharacterId) REFERENCES Characters(Id) ON DELETE CASCADE
-);
-```
-
-### 5.2. Luồng Xử Lý Logic C# (`Mdg.Core`)
-
-```csharp
-public sealed class SkillGemInstance
-{
-    public string GemId { get; }
-    public SkillDefinition BaseDefinition { get; }
-    public int Level { get; set; } = 1;
-    public int MasteryPointsAvailable { get; set; }
-    public HashSet<string> AllocatedMasteryNodeIds { get; } = new();
-    public List<SupportGemDefinition> SocketedSupports { get; } = new();
-
-    // Tính toán lại toàn bộ chỉ số sau khi áp dụng Skill Tree & Support Gems
-    public CompiledSkillStats CompileStats()
-    {
-        var stats = new CompiledSkillStats(BaseDefinition);
-        
-        // 1. Áp dụng các Node trong Skill Tree
-        foreach (var nodeId in AllocatedMasteryNodeIds)
-        {
-            ApplyNodeModifier(stats, nodeId);
-        }
-        
-        // 2. Áp dụng Support Gems
-        foreach (var support in SocketedSupports)
-        {
-            if ((support.AllowedTags & BaseDefinition.Tags) != 0)
-            {
-                stats.DamageMultiplier *= support.DamageMultiplier;
-                stats.ManaCostMultiplier *= support.ManaMultiplier;
-                stats.AdditionalProjectiles += support.AddedProjectiles;
-            }
-        }
-
-        return stats;
-    }
-}
-```
-
----
-
-## 7. Lộ Trình Triển Khai & Kiểm Thử
-
-1. **Client Engine (`main.js`, `combat.js`):**
-   * Hàm `isProjectileBlocked(x, y)` kiểm tra va chạm đạn với `TILE_WALL (1)` và `TILE_ANCIENT_PILLAR (10)`.
-   * Raymarch Step Collision trong `castDash()` dừng lướt an toàn trước tường.
-   * Xóa đạn đạo và sinh chùm hạt va chạm (Impact Collision Particles) khi đạn trúng tường.
-2. **Backend C# (`Mdg.Core/Features/Combat/`):**
-   * Module `SkillTerrainCollision.cs` xác thực tính hợp lệ của đường đạn trên Server.
-   * Chuyển đổi 5 kỹ năng hiện tại sang dạng **Skill Gem Items** trong túi đồ/kho ngọc.
-3. **Giai đoạn 3 (Support Gems & Morph VFX):**
-   * Thiết kế giao diện **Skill Mastery Tree Modal** (phím `K`), khi chọn 1 Skill Gem sẽ mở ra cây tài năng trực quan gồm các nút nối liên kết.
-   * Tạo các Support Gems cơ bản (*Greater Multiple Projectiles, Added Fire, Chain*).
-   * Cập nhật hiệu ứng hạt Particle & VFX trên Canvas phản ánh đúng nhánh build đã chọn (ví dụ: Fireball bắn ra 3 tia hoặc Frost Nova màu tím Chaos).
+* **Sword Skill Combo Chains:** Chuỗi đòn đánh kiếm thuật liên hoàn kết thúc bằng đòn chém dứt điểm cực mạnh.
+* **Secret Unique Keystones:** Nhánh kỹ năng độc bản mở khóa sau khi hoàn thành kỳ tích ẩn (ví dụ: *Song Kiếm Tuyệt Kỹ Dual Blades*, *Thánh Kiếm Hộ Thần Holy Sword*).

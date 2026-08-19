@@ -1,8 +1,10 @@
 # Đặc Tả Thiết Kế Hệ Thống Sổ Tay Am Hiểu & Khắc Tinh Quái Vật (Bestiary & Monster Lore Mastery)
 
-## 1. Tổng Quan Triết Lý Thiết Kế (Design Philosophy)
+---
 
-Hệ thống **Monster Lore Mastery (Am Hiểu Quái Vật)** trong **My Dream Game (MDG)** được thiết kế nhằm khuyến khích cày cuốc (Grinding with Purpose), biến mỗi mạng hạ gục của người chơi thành một sự tiến bộ vĩnh viễn (Permanent Account/Character Progression).
+## 1. Tổng Quan Triết Lý Thiết Kế `[ĐÃ HOÀN THÀNH - ACTIVE]`
+
+Hệ thống **Monster Lore Mastery (Am Hiểu Quái Vật - Phím Y)** trong **My Dream Game (MDG)** được thiết kế nhằm khuyến khích cày cuốc (Grinding with Purpose), biến mỗi mạng hạ gục của người chơi thành một sự tiến bộ vĩnh viễn (Permanent Account/Character Progression).
 
 Khi tiêu diệt một loài quái vật đủ nhiều lần, nhân vật sẽ tích lũy kinh nghiệm chiến đấu, thấu hiểu cấu trúc cơ thể, điểm yếu nguyên tố và thói quen ra đòn của chúng. Từ đó, người chơi nhận được các chỉ số gia tăng vượt trội: **tăng Sát thương cộng thêm**, **tăng Tỷ lệ Chí mạng**, **tăng Sát thương Chí mạng**, **giảm Sát thương nhận vào** và **tăng Tỷ lệ Rơi đồ (IIR/IIQ)** từ chính loài quái vật đó.
 
@@ -18,19 +20,19 @@ graph TD
 
 ---
 
-## 2. Bảng Phân Tầng Bậc Am Hiểu (Lore Mastery Tiers & Milestones)
+## 2. Bảng Phân Tầng Bậc Am Hiểu (Lore Mastery Tiers & Milestones) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-| Bậc Am Hiểu | Danh Hiệu Hunter | Ngưỡng Kills Thường | Ngưỡng Kills Boss | Tăng Sát Thương (Extra Damage) | Tăng Tỷ Lệ Crit (Bonus Crit) | Tăng Sát Thương Crit (Bonus Crit Multi) | Giảm Thương Nhận Vào (Dmg Taken Reduction) | Thưởng Rơi Đồ (Drop Multipliers) |
-| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Tier 0** | *Unfamiliar (Chưa Biết)* | `0` | `0` | $+0\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ |
-| **Tier 1** | *Novice Hunter (Thợ Săn Mới)* | `50` | `5` | $+5\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ |
-| **Tier 2** | *Adept Slayer (Sát Thủ Thông Thạo)* | `250` | `20` | $+10\%$ | $+5\%$ | $+0\%$ | $0\%$ | $+10\%\text{ IIR}$ |
-| **Tier 3** | *Master Inquisitor (Thầy Trừ Tà)* | `1,000` | `50` | $+18\%$ | $+10\%$ | $+25\%$ | $-5\%$ | $+20\%\text{ IIR} / +10\%\text{ IIQ}$ |
-| **Tier 4** | *Apex Nemesis (Khắc Tinh Tuyệt Đối)*| `3,000` | `120` | $+25\%$ | $+15\%$ | $+35\%$ | $-15\%$ | $+35\%\text{ IIR} / +20\%\text{ IIQ}$ |
+| Bậc Am Hiểu | Danh Hiệu Hunter | Ngưỡng Kills Thường | Ngưỡng Kills Boss | Tăng Sát Thương (Extra Damage) | Tăng Tỷ Lệ Crit (Bonus Crit) | Tăng Sát Thương Crit (Bonus Crit Multi) | Giảm Thương Nhận Vào (Dmg Taken Reduction) | Thưởng Rơi Đồ (Drop Multipliers) | Trạng Thái |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Tier 0** | *Unfamiliar (Chưa Biết)* | `0` | `0` | $+0\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ | `[ĐÃ HOÀN THÀNH]` |
+| **Tier 1** | *Novice Hunter (Thợ Săn Mới)* | `50` | `5` | $+5\%$ | $+0\%$ | $+0\%$ | $0\%$ | $0\%$ | `[ĐÃ HOÀN THÀNH]` |
+| **Tier 2** | *Adept Slayer (Sát Thủ Thông Thạo)* | `250` | `20` | $+10\%$ | $+5\%$ | $+0\%$ | $0\%$ | $+10\%\text{ IIR}$ | `[ĐÃ HOÀN THÀNH]` |
+| **Tier 3** | *Master Inquisitor (Thầy Trừ Tà)* | `1,000` | `50` | $+18\%$ | $+10\%$ | $+25\%$ | $-5\%$ | $+20\%\text{ IIR} / +10\%\text{ IIQ}$ | `[ĐÃ HOÀN THÀNH]` |
+| **Tier 4** | *Apex Nemesis (Khắc Tinh Tuyệt Đối)*| `3,000` | `120` | $+25\%$ | $+15\%$ | $+35\%$ | $-15\%$ | $+35\%\text{ IIR} / +20\%\text{ IIQ}$ | `[ĐÃ HOÀN THÀNH]` |
 
 ---
 
-## 3. Công Thức Tác Động Vào Pipeline Chiến Đấu
+## 3. Công Thức Tác Động Vào Pipeline Chiến Đấu `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
 Khi đòn đánh hoặc kỹ năng của người chơi tác động lên mục tiêu loài quái $M$:
 
@@ -46,10 +48,9 @@ $$\text{Damage Received} = \text{RawMonsterDamage} \times \left(1 - \frac{\text{
 
 ---
 
-## 4. Giao Diện & Trải Nghiệm Người Dùng (UI & Feedback FX)
+## 4. Giao Diện Sổ Tay & Mở Rộng Tiếp Theo `[ĐÃ HOÀN THÀNH & KẾ HOẠCH MỞ RỘNG]`
 
-1. **Hiệu ứng thăng cấp Am Hiểu (Level Up Flash):** Khi đạt mốc Tier mới, màn hình hiển thị Banner và hiệu ứng vàng kim lấp lánh: `📖 BESTIARY UNLOCKED: Goblin Slayer Tier 2 (+5% Crit Chance)!` cùng âm thanh chúc mừng.
-2. **Huy hiệu trên đầu quái vật (Targeting Badge):**
-   - Quái vật có huy hiệu đồng/bạc/vàng/kim cương `🎖️` thể hiện cấp độ am hiểu của người chơi với loài quái đó.
-3. **Sổ Tay Bách Quái (Bestiary Codex UI):**
-   - Người chơi có thể mở tab Bestiary trong menu Stats (`C`) để xem danh sách toàn bộ quái vật đã gặp, số lượng đã tiêu diệt, thanh tiến trình đạt Tier tiếp theo và các buff đang được kích hoạt.
+1. **Sổ Tay Bách Quái (Bestiary Codex Modal - Phím Y):** `[ĐÃ HOÀN THÀNH]`
+   - Xem danh sách toàn bộ quái vật, số lượng đã tiêu diệt, cấp độ am hiểu, lore và điểm yếu nguyên tố.
+2. **Boss Weakness Scouting & Prep (Cảm hứng SAO):** `[CẦN MỞ RỘNG - PLANNED]`
+   - Xem trước các giai đoạn biến hình (Boss Phases) và chuẩn bị các bình kháng trước khi bước vào phòng đấu trùm.

@@ -955,8 +955,6 @@ document.getElementById('slot-meteor')?.addEventListener('click', castMeteor);
 document.getElementById('slot-dash')?.addEventListener('click', castDash);
 
 // Setup World Map Fast Travel & HUD Buttons
-document.getElementById('btn-toggle-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
-document.getElementById('btn-close-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
 document.getElementById('btn-toggle-bestiary')?.addEventListener('click', toggleBestiaryUI);
 document.getElementById('btn-toggle-roster')?.addEventListener('click', openRosterUI);
 

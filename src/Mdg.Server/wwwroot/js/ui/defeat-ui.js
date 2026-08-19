@@ -5,7 +5,6 @@
  */
 
 import { player, particles, floatingTexts } from '../state.js';
-import { loadZone } from '../main.js';
 import { updateBackpackUI } from './inventory.js';
 import { spawnDamageNumber } from '../combat.js';
 import { AudioEngine } from '../audio.js';

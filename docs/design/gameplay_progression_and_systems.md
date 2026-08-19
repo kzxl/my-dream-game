@@ -1,33 +1,33 @@
-# MDG (Aethelis) - Thiết Kế & Lộ Trình Cải Thiện Gameplay & Hệ Thống
+# MDG (Aethelis) - Thiết Kế & Lộ Trình Gameplay & Hệ Thống Đa Vũ Trụ
 
-Tài liệu thiết kế chi tiết vòng lặp gameplay, hệ thống rơi đồ (Itemization & Loot), kiến trúc bản đồ (Map & Atlas System), cây nội tại (Passive Tree) và lộ trình phát triển theo từng giai đoạn chuẩn **PoE / Diablo + Universe Architecture v4.0**.
+Tài liệu thiết kế chi tiết vòng lặp gameplay, hệ thống vật phẩm (Itemization & Loot), kiến trúc bản đồ (Map & Atlas System), cây nội tại (Passive / Devotion Tree), tích hợp cảm hứng từ **Sword Art Online (SAO)** và lộ trình phát triển theo chuẩn **ARPG Universe Architecture v4.0**.
 
 ---
 
-## 1. Vòng Lặp Gameplay Cốt Lõi (Core Gameplay Loop)
+## 1. Vòng Lặp Gameplay Cốt Lõi (Core Gameplay Loop) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
 ```mermaid
 graph TD
     A[Safe Zone / Town] -->|Nhận Nhiệm Vụ / Chuẩn Bị Trang Bị| B[Overworld & Dungeons]
-    B -->|Tiêu Diệt Quái / Tránh Đòn / Cast Combo| C[Drop Loot: Gear + Currency]
-    C -->|Lọc Đồ / Nhặt Currency Orbs| D[Crafting / Socketing / Gem Links]
-    D -->|Nâng Cấp Chỉ Số / Passive Tree| E[Thử Thách Boss / Mở Khóa Zone Mới]
-    E -->|Mở Rừng Rương / Đạt Cấp Độ Mới| A
-    E -->|Endgame| F[Atlas Map Device / Void Rifts]
+    B -->|Tiêu Diệt Quái / Tránh Đòn / Cast Combo| C[Drop Loot: Gear + Genesis Catalysts]
+    C -->|Lọc Đồ / Nhặt Currency Catalysts| D[Genesis Forge / Socketing / Gem Links]
+    D -->|Nâng Cấp Chỉ Số / Devotion & Skill Mastery Tree| E[Thử Thách Boss / Mở Khóa Zone Mới]
+    E -->|Mở Rương Báu / Hoàn Thành Act| A
+    E -->|Endgame| F[Atlas Map Device / Void Rifts / Aethel Spire]
 ```
 
-### 1.1. Chu kỳ cảm xúc của người chơi (Player Engagement Cycle)
-1. **Kill Fast (Cảm giác hành động đã tay):** Đòn đánh dứt khoát, sát thương nổ số màu sắc theo loại nguyên tố (Physical, Fire, Cold, Lightning, Chaos), hiệu ứng âm thanh va chạm (Hit Impact) và rung màn hình nhẹ (Screen Shake khi Crit).
-2. **Loot Excitement (Cảm giác rơi đồ kích thích):** Cột sáng (Loot Beam), âm thanh rơi đồ kim loại/ngọc quý ("Clink!"), phân loại màu sắc rõ ràng (Normal, Magic, Rare, Unique, Currency).
-3. **Deep Customization (Độ sâu build đồ):** Không cố định class, sức mạnh đến từ việc phối hợp: **Chỉ số cơ bản + Cây Passive Tree + Ngọc kỹ năng (Gems & Links) + Trang bị rèn (Affixes)**.
+### 1.1. Chu kỳ cảm xúc của người chơi (Player Engagement Cycle) `[ĐÃ HOÀN THÀNH - ACTIVE]`
+1. **Kill Fast (Cảm giác hành động đã tay):** Đòn đánh dứt khoát, sát thương nổ số theo loại nguyên tố (Physical, Fire, Cold, Lightning, Chaos), hiệu ứng va chạm (Hit Impact) và rung màn hình nhẹ (Screen Shake khi Crit).
+2. **Loot Excitement (Cảm giác rơi đồ kích thích):** Cột sáng (Loot Beam), âm thanh rơi đồ kim loại/ngọc quý ("Clink!"), phân loại màu sắc rõ ràng (Normal, Magic, Rare, Unique, Genesis Currency).
+3. **Deep Customization (Độ sâu build đồ):** Không cố định class, sức mạnh đến từ việc phối hợp: **Chỉ số cơ bản + Cây Celestial Devotion Tree + Cây Tinh Hoa Kỹ Năng (Skill Mastery) + Trang bị rèn (Affixes)**.
 
 ---
 
-## 2. Hệ Thống Vật Phẩm & Rơi Đồ (Itemization & Loot Drops)
+## 2. Hệ Thống Vật Phẩm & Rơi Đồ (Itemization & Loot Drops) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-Áp dụng trọn vẹn triết lý Itemization của *Path of Exile*: **Không dùng tiền vàng vô nghĩa, toàn bộ nền kinh tế vận hành bằng Currency Orbs dùng để chế tác**.
+Áp dụng trọn vẹn triết lý Itemization nguyên bản: **Toàn bộ nền kinh tế vận hành bằng Genesis Catalysts & Cores dùng để chế tác**.
 
-### 2.1. Phân cấp độ hiếm (Item Rarity)
+### 2.1. Phân cấp độ hiếm (Item Rarity) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
 | Cấp Độ Hiếm | Màu Sắc | Số Lượng Thuộc Tính (Affixes) | Ý Nghĩa / Mục Đích Sử Dụng |
 | :--- | :---: | :---: | :--- |
@@ -37,105 +37,69 @@ graph TD
 | **Unique (Cam nâu)** | `#AF6025` | Thuộc tính cố định đặc dị | Không thể đổi mod, thay đổi cơ chế gameplay (Keystone Changer). |
 | **Genesis Currency (Vàng kim)** | `#AA9E82` | Tinh thể rèn đúc & xúc tác | Vừa là tiền tệ giao dịch, vừa là nguyên liệu ép đồ trực tiếp. |
 
-### 2.2. Hệ Thống Tiền Tệ & Tinh Thể Rèn Đúc (Genesis Crafting Catalysts & Resonators)
+### 2.2. Hệ Thống Tinh Thể Rèn Đúc (Genesis Crafting Catalysts & Cores) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-| Tinh Thể Khởi Nguyên | Độ Hiếm (Drop Weight) | Tác Dụng Rèn Đúc | Vai Trò Kinh Tế (Sink / Faucet) |
+| Tinh Thể Khởi Nguyên | Độ Hiếm (Weight) | Tác Dụng Rèn Đúc | Vai Trò Kinh Tế (Sink / Faucet) |
 | :--- | :---: | :--- | :--- |
 | **Aether Spark** | $100$ (Common) | Đánh thức ma lực: Đồ Trắng $\rightarrow$ Đồ Xanh (Magic 1-2 mods). | Dễ nhặt ở đầu game, dùng chế đồ chuyển tiếp. |
 | **Flux Catalyst** | $80$ (Common) | Reroll lại toàn bộ dòng của đồ Xanh (Magic). | Tiêu hao khi roll đồ phôi đầu game hoặc bình máu (Flasks). |
 | **Genesis Prism** | $20$ (Uncommon) | Nâng cấp đồ Trắng $\rightarrow$ Đồ Vàng (Rare) với 4-6 dòng ngẫu nhiên. | Rèn trang bị Rare và ép tăng độ khó Map Endgame. |
 | **Fracture Core** | $10$ (Rare) | Reroll lại toàn bộ dòng của đồ Vàng (Rare). | **Đơn vị tiền tệ chuẩn trong giao dịch server** và phí bàn rèn. |
-| **Ascendant Catalyst** | $1.5$ (Very Rare) | Thêm 1 dòng ngẫu nhiên cực phẩm vào đồ Vàng chưa đủ 6 dòng. | Tiền tệ cao cấp cho việc hoàn thiện đồ End-game (Exalt Slam). |
+| **Ascendant Catalyst** | $1.5$ (Very Rare) | Thêm 1 dòng ngẫu nhiên cực phẩm vào đồ Vàng chưa đủ 6 dòng. | Tiền tệ cao cấp cho việc hoàn thiện đồ End-game. |
 | **Origin Matrix** | $0.3$ (Ultra Rare) | Tái cân chỉnh giá trị số (Roll min-max) của các dòng hiện có. | Đỉnh cao hoàn thiện trang bị God-tier. |
 | **Socketing Core** | $30$ (Uncommon) | Thay đổi ngẫu nhiên số lượng rãnh khảm (Sockets 1-4). | Đục lỗ trang bị phục vụ gắn Skill Gems. |
 | **Harmonic Tether** | $15$ (Uncommon) | Tái thiết lập các liên kết chuỗi (Socket Links) giữa các rãnh khảm. | Kết nối Active Gem với nhiều Support Gems. |
 
-#### Cơ chế Tiêu Thụ Tiền Tệ Tránh Lạm Phát (Economy Sinks):
-1. **Genesis Forge (Bàn Rèn Cổ Đại):** Khóa Tiền tố (Prefix Lock) tốn $2\times$ *Fracture Core*, Chế tạo dòng cố định tốn $1\times$ *Ascendant Catalyst*.
-2. **Rift Infusion (Khuếch đại Bản Đồ):** Ép *Genesis Prism* / *Fracture Core* lên Rift Maps để tăng $+80\%$ Quantity đồ rơi.
-3. **Mastery Respec:** Dùng *Flux Catalyst* để tẩy và phân bổ lại điểm trên Cây Tinh Hoa Kỹ Năng.
+---
 
-### 2.3. Cấu trúc Thuộc tính (Affix Pool: Prefixes & Suffixes)
-Mỗi trang bị Rare có tối đa 3 Tiền tố (Prefix) và 3 Hậu tố (Suffix):
-* **Prefixes (Chỉ số nền & Sát thương):** Flat Physical Damage, % Increased Physical Damage, Flat Max Life, Flat Energy Shield, +1 All Skill Gems.
-* **Suffixes (Tiện ích & Phòng thủ):** % Resistances (Fire/Cold/Lightning/Chaos), % Attack/Cast Speed, % Critical Strike Chance, Attributes (Strength/Dexterity/Intelligence).
+## 3. Hệ Thống Bản Đồ & Tiến Trình Thế Giới (Map & World Atlas) `[ĐÃ HOÀN THÀNH - ACTIVE]`
+
+### 3.1. Phân cấp 3 Tầng Thế Giới `[ĐÃ HOÀN THÀNH - ACTIVE]`
+* **Tầng 1: 9 Acts Campaign Overworld:** Trải dài từ Act 1 (`Sanctuary Haven`) đến Act 9 (`Genesis Core`), có đồ họa background đặc trưng, địa hình sinh tự động, quái tinh anh và Boss theo từng Act.
+* **Tầng 2: Continental Atlas & Waypoint Network (Phím M):** Mở giao diện bản đồ đại lục toàn màn hình, hiển thị mạng lưới Leylines nối các điểm dịch chuyển, cho phép Teleport tức thời giữa các vùng đã khám phá.
+* **Tầng 3: Endgame Map Device & Void Rifts (Phím O):** Đặt bản đồ Khe Nứt Vực Thẳm (Tier 1-16) kết hợp 3 mảnh đá cổ ngữ (Fragments) để tăng tỉ lệ rơi đồ và độ khó.
 
 ---
 
-## 3. Hệ Thống Bản Đồ & Tiến Trình Thế Giới (Map & World Progression)
+## 4. Cây Kỹ Năng & Thiên Cung Thần Lực (Devotion & Skill Mastery) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-### 3.1. Phân cấp 3 Tầng Thế Giới (Three-Tier World Model)
+### 4.1. Cây Chòm Sao Thiên Ân (Celestial Devotion Star Tree - Phím V) `[ĐÃ HOÀN THÀNH - ACTIVE]`
+* **Gốc khởi nguyên (Genesis Nexus):** Nút trung tâm kết nối với 4 nhánh chòm sao cổ đại:
+  1. 🔥 **The Phoenix:** Tăng Sát thương Hỏa, Kháng Hỏa, Bạo kích, kích hoạt bão lửa *Phoenix Firestorm* khi Crit.
+  2. ❄️ **The Frost Warden:** Tăng Khiên ES, Giáp, Kháng Băng, kích hoạt khiên hộ mệnh *Glacial Barrier* khi dưới 35% máu.
+  3. ⚡ **The Thunder Lord:** Tăng Tốc độ đánh/phép, Sát thương Sét, Tỉ lệ Crit, kích hoạt phóng điện *Chain Lightning* 3 mục tiêu.
+  4. ☠️ **The Void Reaper:** Tăng Kháng Chaos, Hút máu (Leech), Sát thương Chaos, kích hoạt hút 10% Máu & ES khi hạ gục quái (*Void Siphon*).
 
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│ TẦNG 1: CAMPAIGN OVERWORLD (Cốt truyện & Khám phá tuyến tính)           │
-│  Act 1: Sanctuary Haven -> Whispering Plains -> Forgotten Crypt        │
-│  Act 2: Sunken Marshlands -> Sunken Ruins -> Abyssal Depths            │
-│  Act 3: Molten Caldera -> Dragonspine Peak -> The Core Rift            │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ TẦNG 2: WAYPOINT & FAST TRAVEL NETWORK (Hệ thống cổng dịch chuyển)      │
-│  - Mở khóa mạng lưới bia đá (Waystones) khi bước qua.                  │
-│  - Phím M mở World Map để dịch chuyển tức thời giữa các vùng an toàn.  │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ TẦNG 3: ENDGAME GENESIS RIFT SYSTEM (Hệ thống Rifts & Map Modifiers)   │
-│  - Đặt "Rift Map Item" (Tier 1 -> 16) vào Cổng Vực Thẳm (Map Device).  │
-│  - Ép Genesis Prism / Fracture Core lên Map để tăng độ khó và % Drop:  │
-│    + "Monsters reflect 15% Elemental Damage" (+20% Quantity)           │
-│    + "Monsters gain 100% Extra Physical as Fire" (+25% Rarity)         │
-│    + "Players have -20% to all Maximum Resistances" (+35% Pack Size)   │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.2. Thuật toán sinh Map ngẫu nhiên (Procedural Map Generation)
-* **Overworld:** Sinh địa hình dạng Cellular Automata / Perlin Noise kết hợp Spline Road (Đường mòn nối giữa 2 cổng Portal).
-* **Dungeon/Crypt:** Sinh theo thuật toán **BSP (Binary Space Partitioning)** hoặc **Room & Corridor Graph** tạo các căn phòng vuông vức kết nối bởi hành lang đá, có phòng Boss ở góc xa nhất.
+### 4.2. Cây Tinh Hoa Kỹ Năng Riêng Biệt (Per-Skill Mastery Tree - Phím K) `[ĐÃ HOÀN THÀNH - ACTIVE]`
+* Mỗi kỹ năng (Slash, Fireball, Frost Nova, Meteor, Dash) sở hữu bảng Socket Board và nhánh nâng cấp bổ trợ độc lập.
 
 ---
 
-## 4. Cây Kỹ Năng & Nội Tại (Skill Gems & Passive Tree)
+## 5. Tích Hợp Đánh Giá & Cơ Chế Vũ Trụ Sword Art Online (SAO) `[KẾ HOẠCH MỞ RỘNG - PLANNED]`
 
-### 4.1. Hệ thống Kỹ Năng dạng Ngọc (Socket & Link System)
-1. **Active Skill Gem (Ngọc chủ động):** Gắn vào lỗ trên áo/vũ khí để có skill (ví dụ: *Fireball, Cyclone, Frost Nova*).
-2. **Support Gem (Ngọc bổ trợ):** Gắn vào lỗ **được liên kết (Linked)** với ngọc chủ động để thay đổi bản chất skill:
-   * *Fireball* + *Multiple Projectiles Support* $\rightarrow$ Bắn ra 5 quả cầu lửa hình quạt.
-   * *Fireball* + *Cast On Critical Strike Support* $\rightarrow$ Tự động phóng hỏa khi đánh thường trúng chí mạng.
-   * *Cyclone* + *Cast While Channelling* + *Meteor* $\rightarrow$ Vừa xoay kiếm vừa gọi thiên thạch dội xuống.
-
-### 4.2. Cây Nội Tại Bát Ngát (Passive Skill Tree)
-* Tất cả nhân vật xuất phát từ các điểm khác nhau trên 1 cây nội tại khổng lồ chung (Strength/Armor bên trái, Dexterity/Evasion bên phải, Intelligence/ES ở trên).
-* **Keystones (Điểm then chốt thay đổi luật chơi):**
-  * *Chaos Inoculation:* Máu tối đa trở thành 1, nhưng Miễn nhiễm 100% sát thương Chaos (Dồn toàn lực vào Energy Shield).
-  * *Iron Reflexes:* Toàn bộ điểm Né tránh (Evasion) chuyển đổi thành Giáp (Armor).
-  * *Avatar of Fire:* 50% sát thương vật lý/băng/sét chuyển thành Hỏa, không thể gây sát thương ngoài Hỏa.
+| Cơ chế SAO | Tiềm năng trong MDG | Phân tích Thiết kế Đề xuất cho MDG: Aethelis | Trạng thái |
+| :--- | :--- | :--- | :--- |
+| **Tháp 100 Tầng (Aincrad Spire)** | ⭐⭐⭐⭐⭐ (Rất cao) | **Endless Spire of Aethelis (Tháp Vô Tận)**:<br>- Chế độ leo tầng sau 9 Act chính tuyến.<br>- Mỗi tầng có quái tinh anh + Boss tầng canh cổng.<br>- Mở khóa Waypoint vĩnh viễn và bảng xếp hạng (Leaderboard) theo tài khoản. | `[CẦN MỞ RỘNG - PLANNED]` |
+| **Cơ chế Switch (Co-op Burst)** | ⭐⭐⭐⭐⭐ (Rất cao) | **Co-op Stagger & Switch Window**:<br>- Khi người chơi A dùng kỹ năng tạo trạng thái *Stagger* (Choáng váng), boss xuất hiện vòng sáng *Switch Target* trong 3s.<br>- Người chơi B lao vào đánh skill sẽ kích hoạt x2.0 Sát thương bạo kích và hiệu ứng âm thanh đặc biệt. | `[CẦN MỞ RỘNG - PLANNED]` |
+| **Kỹ năng Ẩn (Unique Mastery)** | ⭐⭐⭐⭐ (Cao) | **Ascendant Keystones (Nút Thiên Phú Ẩn)**:<br>- Mở khóa trong Skill Tree khi hoàn thành thử thách bí mật (ví dụ: Diệt Boss Act 4 không mất máu mở nhánh *Song kiếm Phản xạ* hoặc *Thánh thuẫn Hộ mệnh*). | `[CẦN MỞ RỘNG - PLANNED]` |
+| **Hệ thống Danh tiếng (Karma Cursor)** | ⭐⭐⭐⭐ (Cao) | **Aethel Alignment (Hệ thống Khí sắc)**:<br>- Viền avatar/tên nhân vật đổi màu theo trạng thái: 🟢 *Guardian* (hỗ trợ đồng đội), 🟡 *Wanderer* (trung lập), 🔴 *Shadow Outlaw* (khu vực PvP Contested Zone). | `[CẦN MỞ RỘNG - PLANNED]` |
+| **Rèn Vũ khí Độc bản (Lisbeth Forge)** | ⭐⭐⭐⭐ (Cao) | **Genesis Boss Core Synthesizer**:<br>- Ghép các lõi rớt từ Boss (`Dragon Core`, `Void Core`) với Catalyst để rèn vũ khí mang tên định danh riêng với chỉ số ngẫu nhiên cực đại. | `[CẦN MỞ RỘNG - PLANNED]` |
 
 ---
 
-## 5. Lộ Trình Triển Khai Kỹ Thuật Theo Từng Giai Đoạn (Phased Roadmap)
+## 6. Tổng Hợp Bảng Trạng Thái Tiến Độ Toàn Dự Án (System Status Matrix)
 
-### Giai đoạn 1: Hoàn thiện Combat Feel & Loot Drop Cơ Bản (Sprint 1)
-- [x] Tạo chuyển động mượt mà, khử sạch viền lưới và zoom camera in/out.
-- [ ] Thêm hiệu ứng rơi đồ (Loot Drop Animation) khi quái chết:
-  - Vật phẩm rơi dạng thẻ chữ màu bay lên rồi rơi xuống đất kèm tia sáng (Loot Beam).
-  - Bấm chuột/phím `Space` hoặc `F` để nhặt đồ vào túi (Inventory).
-- [ ] Thêm thanh máu Boss to phía trên đỉnh màn hình (Boss Health Bar).
-
-### Giai đoạn 2: Hệ thống Trang bị & Currency Crafting trong Core C# (Sprint 2)
-- [ ] Xây dựng `ItemEntity`, `ItemAffix`, `RarityEnum` trong `Mdg.Core.Features.Items`.
-- [ ] Xây dựng bộ tính toán rơi đồ `LootTableCalculator` theo cấp độ quái (`MonsterLevel`) và chỉ số `ItemQuantity / ItemRarity` của người chơi.
-- [ ] Hiện thực các Currency Orbs cơ bản (`Transmute`, `Augment`, `Alchemy`, `Chaos`).
-
-### Giai đoạn 3: Hệ thống Gem Sockets & Support Links (Sprint 3)
-- [ ] Cấu trúc dữ liệu `SocketLinkGroup` trên từng trang bị (1-6 lỗ, màu Red/Green/Blue).
-- [ ] Kết nối logic Support Gem vào `SkillManager` của Core để tự động nhân multiplier (More/Less damage, Area of Effect, Extra Projectiles).
-
-### Giai đoạn 4: Thuật toán Sinh Map Ngẫu Nhiên & Fog of War (Sprint 4)
-- [ ] Viết bộ sinh Dungeon ngẫu nhiên bằng C# thuần (`ProceduralDungeonGenerator`).
-- [ ] Tích hợp sương mù che khuất tầm nhìn (Fog of War / Darkness Exploration) trên Canvas và Minimap.
-
-### Giai đoạn 5: Endgame Atlas & Server Multiplayer Synchronization (Sprint 5)
-- [ ] Hệ thống Map Device và Affixes biến đổi quái vật trong hầm ngục.
-- [ ] Đồng bộ hóa trạng thái qua WebSockets / WebRTC trên `Mdg.Server` với fixed tick 30 Hz.
+| Hệ Thống / Module | Phân Hệ | Trạng Thái | Ghi Chú Kỹ Thuật |
+| :--- | :--- | :---: | :--- |
+| **Single Deep Progression (The Unbound)** | Core RPG | `[ĐÃ HOÀN THÀNH]` | 4 bậc tiến trình, 3 nhánh Ascendant class |
+| **Hệ thống Combat & Mitigation** | Combat Engine | `[ĐÃ HOÀN THÀNH]` | Kháng nguyên tố, Giáp, ES, Evasion, Block Cap 75% |
+| **Genesis Crafting & Currency** | Crafting / Forge | `[ĐÃ HOÀN THÀNH]` | Bàn rèn Genesis Forge Bench, 8 loại Catalysts & Cores |
+| **Celestial Devotion Tree** | Passive System | `[ĐÃ HOÀN THÀNH]` | Cây chòm sao thiên văn, SVG leylines, 4 combat procs |
+| **World Map Atlas & 9 Acts** | Map & Exploration | `[ĐÃ HOÀN THÀNH]` | Fullscreen Atlas (Phím M), 9 Acts, Fast Travel |
+| **Multi-Character Roster & Google Auth** | Cloud & Account | `[ĐÃ HOÀN THÀNH]` | Google OAuth 2.0 Direct Auth, Roster nhiều nhân vật |
+| **SignalR Multiplayer Co-op & Chat** | Multiplayer | `[ĐÃ HOÀN THÀNH]` | Thấy nhau trong cùng map, chat khu vực, sync combat |
+| **Defeat & Resurrection Engine** | Death Penalty | `[ĐÃ HOÀN THÀNH]` | Scroll of Resurrection, Server-Authoritative Check |
+| **Bestiary Lore & Codex** | Lore System | `[ĐÃ HOÀN THÀNH]` | Tra cứu quái vật, lore, chỉ số điểm yếu nguyên tố |
+| **Endless Spire 100 Tầng (SAO)** | Endgame Mode | `[CẦN MỞ RỘNG]` | Tích hợp vào Map Device (Phím O) |
+| **Co-op Stagger & Switch (SAO)** | Combat Sync | `[CẦN MỞ RỘNG]` | Tận dụng SignalR GameHub broadcast Stagger window |
+| **Genesis Boss Core Synthesizer (SAO)** | Forge Expansion | `[CẦN MỞ RỘNG]` | Ghép Lõi Boss chế tạo vũ khí Unique |
