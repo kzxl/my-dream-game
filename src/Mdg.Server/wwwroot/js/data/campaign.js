@@ -266,7 +266,28 @@ export const CAMPAIGN_ACTS = [
     quests: [
       { id: 'q5_1', title: 'Ascendance to Heaven', desc: 'Activate the Celestial Beacon at Aethelis Citadel.', reward: '15000 EXP + Divine Orb' },
       { id: 'q5_2', title: 'The Event Horizon', desc: 'Survive the chaos storms inside the Void Abyss.', reward: '25000 EXP + Unique Void Amulet' },
-      { id: 'q5_3', title: 'End of Eternity', desc: 'Defeat The Void Sovereign Prime to unlock the Endgame Atlas Device.', reward: '50000 EXP + Sovereign Crown' }
+      { id: 'q5_3', title: 'End of Eternity', desc: 'Defeat The Void Sovereign Prime to unlock the Endgame Atlas Device.', reward: '5000 EXP + Sovereign Crown' }
     ]
   }
 ];
+
+/**
+ * Returns the Safe-Haven Town zone ID corresponding to an Act or Zone
+ */
+export function getTownForAct(zoneIdOrAct) {
+  if (typeof zoneIdOrAct === 'number') {
+    const act = CAMPAIGN_ACTS.find(a => a.id === `act${zoneIdOrAct}`) || CAMPAIGN_ACTS[0];
+    return act?.townZoneId || 'SanctuaryHaven';
+  }
+  if (typeof zoneIdOrAct === 'string') {
+    const actDirect = CAMPAIGN_ACTS.find(a => a.id === zoneIdOrAct || a.townZoneId === zoneIdOrAct);
+    if (actDirect) return actDirect.townZoneId;
+
+    for (const act of CAMPAIGN_ACTS) {
+      if (act.zones && act.zones.some(z => z.id === zoneIdOrAct)) {
+        return act.townZoneId;
+      }
+    }
+  }
+  return 'SanctuaryHaven';
+}

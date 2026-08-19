@@ -137,8 +137,8 @@ public static class ZoneMapGenerator
             SpawnY = cy * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = (w - 2) * TILE_SIZE, Y = cy * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 220, TargetY = 1536, Name = "🌀 To Whispering Plains" },
-                new() { X = cx * TILE_SIZE, Y = (h - 2) * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 280, TargetY = 280, Name = "🏰 To Forgotten Crypt" }
+                new() { X = (w - 2) * TILE_SIZE, Y = cy * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 400, TargetY = 1536, Name = "🌀 To Whispering Plains" },
+                new() { X = cx * TILE_SIZE, Y = (h - 2) * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 550, TargetY = 550, Name = "🏰 To Forgotten Crypt" }
             },
             Npcs = new List<ZoneNpcDto>
             {

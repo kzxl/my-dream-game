@@ -28,6 +28,7 @@ export const player = {
   isDead: false,
   invulnerableTimer: 0,
   zoneResurrectionsUsed: 0,
+  portalCooldown: 0,
   animFrame: 0,
   animTimer: 0,
   freezeTimer: 0,

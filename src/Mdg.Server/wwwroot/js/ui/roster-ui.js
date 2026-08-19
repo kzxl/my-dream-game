@@ -6,6 +6,7 @@
 import { ApiClient } from '../services/api-client.js';
 import { player } from '../state.js';
 import { AudioEngine } from '../audio.js';
+import { getTownForAct } from '../data/campaign.js';
 
 let rosterList = [];
 let selectedClass = 'Vanguard';
@@ -210,7 +211,7 @@ export async function switchActiveCharacter(characterId) {
     player.maxMana = savegame.maxMana || 200;
     player.es = savegame.es || 0;
     player.maxEs = savegame.maxEs || 0;
-    player.zoneId = savegame.zoneId || 'SanctuaryHaven';
+    player.zoneId = getTownForAct(savegame.zoneId || 'SanctuaryHaven');
 
     if (savegame.equipped) player.equipped = savegame.equipped;
     if (savegame.bag) player.bag = savegame.bag;

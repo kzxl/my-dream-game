@@ -23,6 +23,7 @@ import { initDefeatUI } from './ui/defeat-ui.js';
 import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
 import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
 import { MPClient } from './services/multiplayer-client.js';
+import { getTownForAct } from './data/campaign.js';
 
 window.keys = keys;
 window.loadZone = loadZone;
@@ -74,28 +75,63 @@ export function findSafeWalkableCoord(reqX, reqY) {
   if (!currentZoneMap || !currentZoneMap.grid) return { x: reqX || 672, y: reqY || 672 };
   const mapW = currentZoneMap.worldWidth || (currentZoneMap.widthInTiles * 48) || 1344;
   const mapH = currentZoneMap.worldHeight || (currentZoneMap.heightInTiles * 48) || 1344;
+  const centerMapX = Math.floor(mapW / 2);
+  const centerMapY = Math.floor(mapH / 2);
 
-  let cx = Math.max(96, Math.min(mapW - 96, reqX || 672));
-  let cy = Math.max(96, Math.min(mapH - 96, reqY || 672));
+  let cx = reqX !== undefined ? reqX : (currentZoneMap.spawnX || centerMapX);
+  let cy = reqY !== undefined ? reqY : (currentZoneMap.spawnY || centerMapY);
 
-  if (canWalk(cx, cy)) return { x: cx, y: cy };
+  // 1. Detect if target coordinates overlap or are dangerously near any portal in the new map
+  if (currentZoneMap.portals && currentZoneMap.portals.length > 0) {
+    for (const p of currentZoneMap.portals) {
+      const distToPortal = Math.hypot(cx - p.x, cy - p.y);
+      if (distToPortal < 130) {
+        // Calculate direction pointing away from portal into map center
+        const dirX = centerMapX - p.x;
+        const dirY = centerMapY - p.y;
+        const len = Math.hypot(dirX, dirY) || 1;
+        cx = Math.round(p.x + (dirX / len) * 180);
+        cy = Math.round(p.y + (dirY / len) * 180);
+        break;
+      }
+    }
+  }
 
-  // Spiral search for nearest floor tile
-  for (let radius = 1; radius <= 16; radius++) {
+  // 2. Prevent being cornered against map perimeter walls (keep 144px / 3 tiles buffer)
+  cx = Math.max(144, Math.min(mapW - 144, cx));
+  cy = Math.max(144, Math.min(mapH - 144, cy));
+
+  // Helper: check walkable tile and not directly inside a portal circle
+  const isCoordSafe = (x, y) => {
+    if (!canWalk(x, y)) return false;
+    if (currentZoneMap.portals) {
+      for (const p of currentZoneMap.portals) {
+        if (Math.hypot(x - p.x, y - p.y) < 80) return false;
+      }
+    }
+    return true;
+  };
+
+  if (isCoordSafe(cx, cy)) return { x: cx, y: cy };
+
+  // 3. Spiral search for nearest open safe floor tile
+  for (let radius = 1; radius <= 20; radius++) {
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {
         if (Math.abs(dx) === radius || Math.abs(dy) === radius) {
           const testX = cx + dx * 48;
           const testY = cy + dy * 48;
-          if (canWalk(testX, testY)) {
-            return { x: testX, y: testY };
+          if (testX >= 144 && testX <= mapW - 144 && testY >= 144 && testY <= mapH - 144) {
+            if (isCoordSafe(testX, testY)) {
+              return { x: testX, y: testY };
+            }
           }
         }
       }
     }
   }
 
-  return { x: currentZoneMap.spawnX || 672, y: currentZoneMap.spawnY || 672 };
+  return { x: currentZoneMap.spawnX || centerMapX, y: currentZoneMap.spawnY || centerMapY };
 }
 
 export async function loadZone(zoneId, spawnX, spawnY) {
@@ -103,6 +139,7 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   currentZone = ZONES[currentZoneId] || { id: currentZoneId, name: currentZoneId, subtitle: '' };
   window.currentZoneId = currentZoneId;
   player.zoneResurrectionsUsed = 0; // Reset map resurrection counter per map session
+  player.portalCooldown = 2.0; // 2s portal cooldown to prevent bounce loops
 
   // 1. Fetch Server-Authoritative Procedural Zone Map (with fallback)
   try {
@@ -512,12 +549,17 @@ function update(dt) {
     });
   }
 
-  // 3. Portals & Loot
-  portals.forEach(p => {
-    if (Math.hypot(player.x - p.x, player.y - p.y) < 55) {
-      loadZone(p.targetZone, p.targetX, p.targetY);
-    }
-  });
+  // 3. Portals & Loot (Protected by portal cooldown)
+  if (player.portalCooldown > 0) {
+    player.portalCooldown -= dt;
+  } else {
+    portals.forEach(p => {
+      if (Math.hypot(player.x - p.x, player.y - p.y) < 45) {
+        player.portalCooldown = 2.0;
+        loadZone(p.targetZone, p.targetX, p.targetY);
+      }
+    });
+  }
 
   groundLoot.forEach(loot => {
     if (loot.bounceTimer > 0) {
@@ -952,8 +994,17 @@ MPClient.init();
 (async function initSave() {
   await fetchMasterItemsFromServer();
   const loaded = await loadFromDatabase();
-  const targetZone = (player.zoneId && ZONES[player.zoneId]) ? player.zoneId : 'SanctuaryHaven';
-  await loadZone(targetZone, player.x, player.y);
+  
+  // Always return player safely to the Safe-Haven Town of their current Act upon login / session start
+  const targetTown = getTownForAct(player.zoneId || 'SanctuaryHaven');
+  await loadZone(targetTown);
+  
+  // Restore life and mana upon entering town
+  player.life = player.maxLife || 500;
+  player.mana = player.maxMana || 200;
+  player.es = player.maxEs || 0;
+  player.isDead = false;
+
   updateHudAvatar();
   updateExpBar();
   startAutoSave(10000);
