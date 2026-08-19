@@ -14,6 +14,12 @@
 
 ---
 
+## 📸 Visual Showcase & Screenshots
+
+![MDG Gameplay Overview](docs/images/gameplay_overview.png)
+
+---
+
 ## 🏷️ Suggested GitHub Topics
 ```
 csharp, dotnet8, aspnetcore, signalr, game-development, arpg, pixel-art, vanilla-javascript, canvas2d, multiplayer, game-engine, sqlite, entity-framework-core, educational-project, gemini-ai, banana-ai
@@ -33,6 +39,8 @@ csharp, dotnet8, aspnetcore, signalr, game-development, arpg, pixel-art, vanilla
 - **Interactive Continental World Map Atlas (`M`)**: High-resolution act artwork, glowing SVG leylines, waypoint nodes, regional intel dossiers, and fast-travel.
 - **Dynamic Biome Hazards**: Lava burns, toxic miasma bogs, deep frost, and static electric ground with elemental resistance mitigating mechanics.
 
+![Continental World Map Atlas](docs/images/world_map_atlas.png)
+
 ### 2. 🔨 Deep Itemization & Genesis Forge Crafting
 - **6-Tier Rarity System**: Common, Magic, Rare, Epic, Legendary, and Divine / Set Items with rolled affix pools.
 - **Deterministic Crafting Bench (`B`) & Genesis Catalysts**:
@@ -45,6 +53,8 @@ csharp, dotnet8, aspnetcore, signalr, game-development, arpg, pixel-art, vanilla
   - *Origin Matrix* 👑: Reroll explicit modifier numeric values to their maximum tier ranges.
   - *Socketing Core* ⚪: Reforge equipment sockets (1 to 4 sockets).
   - *Harmonic Tether* 🔗: Reforge socket links for support gem chaining.
+
+![Genesis Crafting Forge](docs/images/crafting_forge.png)
 
 ### 3. ⚡ Skill Tree, Socket Board & Support Gems
 - **5 Core Archetype Skills**: *Slash Cleave, Pyro Fireball, Frost Nova, Meteor Strike, Phase Dash*.
@@ -63,9 +73,15 @@ csharp, dotnet8, aspnetcore, signalr, game-development, arpg, pixel-art, vanilla
 - **🔄 Respec Points**: Full flexibility to refund allocated Family Mastery Points and experiment with alternative builds.
 - **Server-Authoritative Drop Tables**: All signature unique artifacts and catalyst rolls are authoritatively computed on the backend server.
 
+| Bestiary Lore Codex | 3-Branch Family Mastery Tree |
+| :---: | :---: |
+| ![Bestiary Codex](docs/images/bestiary_codex.png) | ![Family Mastery Tree](docs/images/family_mastery_tree.png) |
+
 ### 6. 👥 Multi-Character Roster & Independent Progression (`P`)
 - Manage multiple heroes per account with independent progression, inventory, skills, and stash.
 - Character creation form supporting **Vanguard 🛡️**, **Arcanist 🔮**, and **ShadowRogue 🗡️** classes with gender selection.
+
+![Multi-Character Roster](docs/images/character_roster.png)
 
 ### 7. 🌐 Real-Time Multiplayer Co-op (SignalR GameHub)
 - Spatial zone grouping on `/gamehub` (`JoinZone`, `ChangeZone`, `LeaveZone`).
