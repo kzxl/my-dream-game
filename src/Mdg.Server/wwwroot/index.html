@@ -172,114 +172,210 @@
 
     <!-- INVENTORY & PAPERDOLL MODAL (Hotkey I) -->
     <div id="inventory-modal" class="pixel-modal inv-modal-overhaul hidden">
-      <div class="modal-header">
+      <div class="modal-header inv-header-premium">
         <div class="inv-title-group">
           <span class="inv-main-title">🎒 INVENTORY & EQUIPMENT</span>
-          <span class="inv-sub-title">Aethelis Armory System</span>
+          <span class="inv-sub-title">Aethelis Armory & Artifact Vault</span>
+        </div>
+        <div class="inv-search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="bag-search-input" placeholder="Search item, stats, tier, rarity..." maxlength="40" autocomplete="off" />
+          <button id="btn-clear-search" class="clear-search-btn" title="Clear Search">✕</button>
         </div>
         <button id="btn-close-inventory" class="close-btn">✖</button>
       </div>
 
       <div class="inv-content-grid">
-        <!-- LEFT: Character Paperdoll -->
+        <!-- LEFT: Character Paperdoll & Live Dynamic Stats -->
         <div class="paperdoll-panel">
-          <div class="panel-section-title">EQUIPPED GEAR</div>
+          <div class="panel-section-title">
+            <span>⚔️ EQUIPPED GEAR</span>
+            <span class="section-badge" id="paperdoll-gear-score">Score: 450</span>
+          </div>
           
           <div class="paperdoll-slots-layout">
             <!-- Row 1: Helm & Amulet -->
-            <div class="doll-slot-frame slot-helm" data-slot="Helm" title="Headgear Slot">
+            <div class="doll-slot-frame slot-helm" data-slot="Helm" title="Headgear Slot (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">👑</div>
               <div class="doll-slot-icon" id="slot-icon-helm">👑</div>
               <span class="doll-slot-label">HELM</span>
             </div>
-            <div class="doll-slot-frame slot-amulet" data-slot="Amulet" title="Amulet Slot">
+            <div class="doll-slot-frame slot-amulet" data-slot="Amulet" title="Amulet Slot (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">📿</div>
               <div class="doll-slot-icon" id="slot-icon-amulet">📿</div>
               <span class="doll-slot-label">AMULET</span>
             </div>
 
-            <!-- Row 2: Weapon, Armor, Shield -->
-            <div class="doll-slot-frame slot-weapon" data-slot="MainHand" title="Main Hand Weapon">
+            <!-- Row 2: MainHand, Chest, OffHand -->
+            <div class="doll-slot-frame slot-weapon" data-slot="MainHand" title="Main Hand Weapon (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">⚔️</div>
               <div class="doll-slot-icon" id="slot-icon-mainhand">⚔️</div>
               <span class="doll-slot-label">MAIN HAND</span>
             </div>
-            <div class="doll-slot-frame slot-chest" data-slot="BodyArmor" title="Body Armor Slot">
+            <div class="doll-slot-frame slot-chest" data-slot="BodyArmor" title="Body Armor Slot (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">🛡️</div>
               <div class="doll-slot-icon" id="slot-icon-bodyarmor">🛡️</div>
               <span class="doll-slot-label">CHEST</span>
             </div>
-            <div class="doll-slot-frame slot-offhand" data-slot="OffHand" title="Off-Hand / Shield">
+            <div class="doll-slot-frame slot-offhand" data-slot="OffHand" title="Off-Hand / Shield (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">🛡️</div>
               <div class="doll-slot-icon" id="slot-icon-offhand">🛡️</div>
               <span class="doll-slot-label">OFF HAND</span>
             </div>
 
             <!-- Row 3: Ring & Boots -->
-            <div class="doll-slot-frame slot-ring" data-slot="Ring" title="Ring Slot">
+            <div class="doll-slot-frame slot-ring" data-slot="Ring" title="Ring Slot (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">💍</div>
               <div class="doll-slot-icon" id="slot-icon-ring">💍</div>
               <span class="doll-slot-label">RING</span>
             </div>
-            <div class="doll-slot-frame slot-boots" data-slot="Boots" title="Boots Slot">
+            <div class="doll-slot-frame slot-boots" data-slot="Boots" title="Boots Slot (Drag or Click to Equip)">
+              <div class="doll-slot-watermark">👢</div>
               <div class="doll-slot-icon" id="slot-icon-boots">👢</div>
               <span class="doll-slot-label">BOOTS</span>
             </div>
           </div>
 
-          <!-- Total Gear Summary Box -->
+          <!-- Active Set Bonuses Box -->
+          <div class="paperdoll-set-bonuses-box hidden" id="paperdoll-sets-container">
+            <div class="set-bonuses-title">🌿 ACTIVE SET BONUSES</div>
+            <div class="set-bonuses-list" id="paperdoll-sets-list"></div>
+          </div>
+
+          <!-- Total Gear Summary Box (100% Dynamically Calculated) -->
           <div class="gear-stats-summary">
-            <div class="gss-title">EQUIPMENT BONUSES</div>
+            <div class="gss-title">📊 TOTAL EQUIPMENT BONUSES</div>
             <div class="gss-grid" id="gear-summary-grid">
-              <div>Armor: <b id="gss-armor">+750</b></div>
-              <div>ES: <b id="gss-es">+120</b></div>
-              <div>Phys Dmg: <b id="gss-phys">+45</b></div>
-              <div>Fire Dmg: <b id="gss-fire">+40</b></div>
-              <div>All Res: <b id="gss-res">+15%</b></div>
-              <div>Crit Multi: <b id="gss-crit">+20%</b></div>
+              <div>Armor: <b id="gss-armor">+0</b></div>
+              <div>Energy Shield: <b id="gss-es">+0</b></div>
+              <div>Phys Dmg: <b id="gss-phys">+0</b></div>
+              <div>Elem Dmg: <b id="gss-elem">+0</b></div>
+              <div>All Resist: <b id="gss-res">+0%</b></div>
+              <div>Crit (Ch/M): <b id="gss-crit">+0% / +0%</b></div>
+              <div>Move Speed: <b id="gss-speed">+0%</b></div>
+              <div>Atk/Cast Spd: <b id="gss-as">+0%</b></div>
             </div>
           </div>
         </div>
 
-        <!-- RIGHT: Backpack Grid & Tabs -->
+        <!-- RIGHT: Backpack Grid, Tabs & Wealth Bar -->
         <div class="backpack-panel">
           <div class="bag-toolbar">
             <div class="bag-tabs">
-              <button class="bag-tab active-tab" data-filter="all">All</button>
-              <button class="bag-tab" data-filter="weapon">Weapons</button>
-              <button class="bag-tab" data-filter="armor">Armor</button>
-              <button class="bag-tab" data-filter="currency">Currency</button>
+              <button class="bag-tab active-tab" data-filter="all">All <span class="tab-cnt" id="tab-cnt-all">0</span></button>
+              <button class="bag-tab" data-filter="weapon">Weapons <span class="tab-cnt" id="tab-cnt-weapon">0</span></button>
+              <button class="bag-tab" data-filter="armor">Armor <span class="tab-cnt" id="tab-cnt-armor">0</span></button>
+              <button class="bag-tab" data-filter="accessory">Jewelry <span class="tab-cnt" id="tab-cnt-accessory">0</span></button>
+              <button class="bag-tab" data-filter="currency">Currency <span class="tab-cnt" id="tab-cnt-currency">0</span></button>
+              <button class="bag-tab" data-filter="consumable">Usable <span class="tab-cnt" id="tab-cnt-consumable">0</span></button>
             </div>
             <div class="bag-actions">
-              <span id="bag-count-tag" class="bag-count-badge">0 / 16</span>
-              <button id="btn-sort-bag" class="bag-tool-btn" title="Sort Items">⚡ Sort</button>
+              <span id="bag-count-tag" class="bag-count-badge">0 / 32</span>
+              <div class="bag-sort-wrapper">
+                <select id="bag-sort-select" class="bag-sort-select" title="Sort Mode">
+                  <option value="rarity">Rarity</option>
+                  <option value="ilvl">Item Lvl</option>
+                  <option value="type">Category</option>
+                </select>
+                <button id="btn-sort-bag" class="bag-tool-btn" title="Sort & Consolidate Stacks">⚡ Sort</button>
+              </div>
             </div>
           </div>
 
-          <!-- 16-Slot Interactive Grid -->
-          <div id="backpack-grid" class="backpack-grid-16"></div>
+          <!-- 32-Slot Interactive Grid with Drag & Drop -->
+          <div id="backpack-grid" class="backpack-grid-32"></div>
+
+          <!-- Wealth & Currency Counter Bar -->
+          <div class="bag-wealth-bar">
+            <div class="wealth-item" title="Gold Coins">
+              <span class="wealth-icon">🪙</span>
+              <span id="wealth-gold" class="wealth-val">1,500</span>
+            </div>
+            <div class="wealth-item" title="Aether Sparks">
+              <span class="wealth-icon">✨</span>
+              <span id="wealth-sparks" class="wealth-val">12</span>
+            </div>
+            <div class="wealth-item" title="Genesis Prisms">
+              <span class="wealth-icon">🔮</span>
+              <span id="wealth-prisms" class="wealth-val">4</span>
+            </div>
+            <div class="wealth-item" title="Fracture Cores">
+              <span class="wealth-icon">💎</span>
+              <span id="wealth-cores" class="wealth-val">2</span>
+            </div>
+            <div class="wealth-item" title="Resurrection Scrolls">
+              <span class="wealth-icon">📜</span>
+              <span id="wealth-scrolls" class="wealth-val">3</span>
+            </div>
+          </div>
 
           <div class="bag-hint-footer">
-            <span>💡 <b>LMB</b>: Equip / Use item | <b>Hover</b>: Detailed PoE Tooltip | <b>F</b>: Ground Pickup</span>
+            <span>💡 <b>LMB</b>: Select/Equip | <b>RMB</b>: Quick Action | <b>Drag & Drop</b>: Move/Equip | <b>Alt+LMB</b>: Lock (🔒)</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- High-End PoE Style Item Tooltip -->
-    <div id="item-tooltip" class="item-tooltip-poe hidden">
-      <div class="poe-tt-header" id="tt-header-box">
-        <div class="poe-tt-icon-wrap" id="tt-icon-wrap">
-          <span id="tt-icon-text">⚔️</span>
+    <!-- Interactive Context Menu for Inventory Items -->
+    <div id="inv-context-menu" class="inv-context-menu hidden">
+      <div class="context-menu-header" id="ctx-item-name">Item Name</div>
+      <div class="context-menu-items">
+        <button class="context-menu-btn" id="ctx-btn-equip">⚡ <span>Equip / Use Item</span></button>
+        <button class="context-menu-btn" id="ctx-btn-lock">🔒 <span>Toggle Lock (Protect)</span></button>
+        <button class="context-menu-btn" id="ctx-btn-pet">🐾 <span>Send to Pet Mule</span></button>
+        <button class="context-menu-btn" id="ctx-btn-stash">📦 <span>Send to Stash Vault</span></button>
+        <button class="context-menu-btn" id="ctx-btn-forge">🔨 <span>Place on Forge Anvil</span></button>
+        <div class="context-menu-divider"></div>
+        <button class="context-menu-btn danger-btn" id="ctx-btn-drop">🗑️ <span>Drop to Ground</span></button>
+      </div>
+    </div>
+
+    <!-- High-End PoE Style Item Tooltip & Side-by-Side Comparison -->
+    <div id="item-tooltip-container" class="item-tooltip-container hidden">
+      <!-- Main Hovered Item Tooltip -->
+      <div id="item-tooltip" class="item-tooltip-poe">
+        <div class="poe-tt-header" id="tt-header-box">
+          <div class="poe-tt-icon-wrap" id="tt-icon-wrap">
+            <span id="tt-icon-text">⚔️</span>
+          </div>
+          <div class="poe-tt-title-wrap">
+            <h4 id="tt-name">Exquisite Dragonbone Greataxe</h4>
+            <span id="tt-type">Rare Two Hand Axe</span>
+          </div>
         </div>
-        <div class="poe-tt-title-wrap">
-          <h4 id="tt-name">Exquisite Dragonbone Greataxe</h4>
-          <span id="tt-type">Rare Two Hand Axe</span>
+        <div class="poe-separator"><span>✦</span></div>
+        <div class="poe-tt-body">
+          <div id="tt-stats" class="poe-tt-stats"></div>
+          <div class="poe-separator separator-sub"><span>✦</span></div>
+          <div id="tt-mods" class="poe-tt-mods"></div>
+          <div id="tt-lore" class="poe-tt-lore"></div>
+        </div>
+        <div class="poe-tt-footer">
+          <span>[LMB] Equip / Menu &nbsp;|&nbsp; [RMB] Fast Action &nbsp;|&nbsp; [Alt+LMB] Lock</span>
         </div>
       </div>
-      <div class="poe-separator"><span>✦</span></div>
-      <div class="poe-tt-body">
-        <div id="tt-stats" class="poe-tt-stats"></div>
-        <div class="poe-separator separator-sub"><span>✦</span></div>
-        <div id="tt-mods" class="poe-tt-mods"></div>
-        <div id="tt-lore" class="poe-tt-lore"></div>
-      </div>
-      <div class="poe-tt-footer">
-        <span>[LMB] Equip to Slot &nbsp;|&nbsp; [RMB] Inspect</span>
+
+      <!-- Side-by-Side Equipped Item Comparison Tooltip -->
+      <div id="item-compare-tooltip" class="item-tooltip-poe compare-tooltip hidden">
+        <div class="compare-badge">CURRENTLY EQUIPPED</div>
+        <div class="poe-tt-header" id="tt-comp-header-box">
+          <div class="poe-tt-icon-wrap" id="tt-comp-icon-wrap">
+            <span id="tt-comp-icon-text">⚔️</span>
+          </div>
+          <div class="poe-tt-title-wrap">
+            <h4 id="tt-comp-name">Equipped Item Name</h4>
+            <span id="tt-comp-type">Equipped Item Type</span>
+          </div>
+        </div>
+        <div class="poe-separator"><span>✦</span></div>
+        <div class="poe-tt-body">
+          <div id="tt-comp-stats" class="poe-tt-stats"></div>
+          <div class="poe-separator separator-sub"><span>✦</span></div>
+          <div id="tt-comp-mods" class="poe-tt-mods"></div>
+        </div>
+        <div class="poe-tt-footer">
+          <span style="color:#98c379;">Equipped Gear Comparison</span>
+        </div>
       </div>
     </div>
 

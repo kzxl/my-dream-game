@@ -32,6 +32,7 @@ window.keys = keys;
 window.loadZone = loadZone;
 window.toggleModal = toggleModal;
 window.showZoneBanner = showZoneBanner;
+window.renderSkillUpgradeModal = renderSkillUpgradeModal;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');

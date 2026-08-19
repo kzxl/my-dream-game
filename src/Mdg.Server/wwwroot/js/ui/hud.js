@@ -5,7 +5,7 @@
 import { player, camera } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
-import { updateBackpackUI, updatePaperdollUI, sortAndConsolidateBackpack } from './inventory.js';
+import { updateBackpackUI, updatePaperdollUI, sortAndConsolidateBackpack, setupContextMenuListeners } from './inventory.js';
 import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js';
 import { saveToDatabase, renderCharacterRosterUI, createNewCharacter } from '../save-system.js';
 import { renderWorldMapUI } from './worldmap-ui.js';
@@ -263,6 +263,9 @@ export function setupUIListeners() {
     });
   });
 
+  // Setup Inventory Context Menu
+  setupContextMenuListeners();
+
   // Inventory Filters
   document.querySelectorAll('.bag-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -273,9 +276,32 @@ export function setupUIListeners() {
     });
   });
 
+  // Inventory Live Search
+  const searchInput = document.getElementById('bag-search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', e => {
+      player.bagSearchQuery = e.target.value;
+      updateBackpackUI();
+    });
+  }
+
+  const btnClearSearch = document.getElementById('btn-clear-search');
+  if (btnClearSearch) {
+    btnClearSearch.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      player.bagSearchQuery = '';
+      updateBackpackUI();
+    });
+  }
+
   // Sort Bag & Consolidate Currency Stacks
   document.getElementById('btn-sort-bag')?.addEventListener('click', () => {
-    sortAndConsolidateBackpack();
+    const sortMode = document.getElementById('bag-sort-select')?.value || 'rarity';
+    sortAndConsolidateBackpack(sortMode);
+  });
+
+  document.getElementById('bag-sort-select')?.addEventListener('change', e => {
+    sortAndConsolidateBackpack(e.target.value);
   });
 
   // Character Roster & Creation Listeners
