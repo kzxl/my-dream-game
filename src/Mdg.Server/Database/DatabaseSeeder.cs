@@ -243,7 +243,7 @@ CREATE INDEX IF NOT EXISTS ""IX_DevotionNodes_ConstellationId"" ON ""DevotionNod
         };
         foreach (var col in characterColumns)
         {
-            try { await db.Database.ExecuteSqlRawAsync($@"ALTER TABLE ""Characters"" ADD COLUMN {col};"); } catch { }
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Characters\" ADD COLUMN " + col + ";"); } catch { }
         }
 
         // 2. Seed Item Templates

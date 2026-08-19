@@ -64,6 +64,24 @@ public sealed class DatabaseSeederTests : IDisposable
         Assert.Contains(acts, a => a.ActNumber == 3 && a.Boss.Contains("Ignis"));
         Assert.Contains(acts, a => a.ActNumber == 4 && a.Boss.Contains("Morvath"));
         Assert.Contains(acts, a => a.ActNumber == 5 && a.Boss.Contains("Void Sovereign"));
+
+        // 6. Verify Quest Templates
+        var quests = await db.QuestTemplates.ToListAsync();
+        Assert.True(quests.Count >= 3);
+        Assert.Contains(quests, q => q.Id == "q1_1" && q.ActNumber == 1);
+
+        // 7. Verify NPC Dialogues
+        var npcs = await db.NpcDialogues.ToListAsync();
+        Assert.True(npcs.Count >= 3);
+        Assert.Contains(npcs, n => n.NpcName == "Elder Aethel");
+        Assert.Contains(npcs, n => n.NpcName.Contains("Doran"));
+
+        // 8. Verify Devotion System
+        var constellations = await db.DevotionConstellations.ToListAsync();
+        var nodes = await db.DevotionNodes.ToListAsync();
+        Assert.True(constellations.Count >= 4);
+        Assert.True(nodes.Count >= 5);
+        Assert.Contains(nodes, n => n.Id == "nexus_root" && n.IsRoot);
     }
 
     [Fact]

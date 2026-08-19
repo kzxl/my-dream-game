@@ -137,5 +137,28 @@ namespace Mdg.Core.Tests
             var invalidRes = service.ValidateSkillAllocations(invalidReq);
             Assert.False(invalidRes.Valid);
         }
+
+        [Fact]
+        public void EconomyService_Calculates_Pet_Selling_Currencies_And_Gold()
+        {
+            var service = new EconomyService();
+
+            var itemsToSell = new List<LootItemDto>
+            {
+                new() { Name = "Rusty Sword", Rarity = "Normal", ItemLevel = 10, Slot = "mainhand" },
+                new() { Name = "Glinting Dagger", Rarity = "Magic", ItemLevel = 25, Slot = "mainhand", ExplicitMods = new List<string> { "+10 Damage" } },
+                new() { Name = "Dragon Helm", Rarity = "Rare", ItemLevel = 55, Slot = "helm", ExplicitMods = new List<string> { "+50 Life", "+20 Fire Res" } }
+            };
+
+            var req = new PetSellRequestDto("hero_test", itemsToSell);
+            var res = service.ProcessPetDelivery(req);
+
+            Assert.True(res.Success);
+            Assert.True(res.GoldEarned > 0);
+            Assert.True(res.CurrenciesEarned.Count > 0);
+            Assert.Contains(res.CurrenciesEarned.Keys, k => k == "Genesis Prism" || k == "Aether Spark" || k == "Fracture Core");
+            Assert.NotEmpty(res.Items);
+        }
     }
 }
+

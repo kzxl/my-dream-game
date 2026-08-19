@@ -1037,7 +1037,13 @@ MPClient.init();
   await Promise.all([
     fetchMasterItemsFromServer(),
     fetchMasterMonstersFromServer(),
-    fetchMasterFamilyMasteryFromServer()
+    fetchMasterFamilyMasteryFromServer(),
+    fetchMasterSkillsFromServer(),
+    fetchMasterZonesFromServer(),
+    fetchMasterCampaignFromServer(),
+    fetchMasterQuestsFromServer(),
+    fetchMasterNpcsFromServer(),
+    fetchMasterDevotionFromServer()
   ]);
   const loaded = await loadFromDatabase();
   
