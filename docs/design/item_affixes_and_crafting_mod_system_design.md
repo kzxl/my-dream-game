@@ -12,17 +12,17 @@ Hệ thống vật phẩm trong **MDG (Aethelis)** tuân theo chuẩn mực chi�
    - **Rare (Vàng kim):** Tối đa 3 Prefixes + 3 Suffixes = **6 Mods**.
    - **Unique (Cam nâu):** Sở hữu bộ Mod độc bản cố định, không thể can thiệp bằng chế tác thông thường.
 3. **Phân Tầng Theo Cấp Độ Vật Phẩm (Item Level - iLvl & Tier Scaling):** Cấp độ phôi trang bị (iLvl) quyết định trần Tier của Affix (Tier 1 là mạnh nhất - God Roll, Tier 5 là cơ bản).
-4. **Luyện Kim Ngẫu Nhiên & Có Điều Hướng (Deterministic & RNG Crafting):** Người chơi có thể dùng các loại Tinh Thể Khởi Nguyên (Genesis Orbs) hoặc Bàn Luyện Kim (Forge Bench) để thêm, xóa, reroll hoặc khóa thuộc tính.
+4. **Luyện Kim Ngẫu Nhiên & Có Điều Hướng (Deterministic & RNG Crafting):** Người chơi có thể dùng các loại Tinh Thể Khởi Nguyên (Genesis Catalysts) hoặc Bàn Luyện Kim (Forge Bench) để thêm, xóa, reroll hoặc khóa thuộc tính.
 
 ```mermaid
 graph TD
-    Base[Phôi Trang Bị Trắng - Normal Base<br>Chỉ có chỉ số cơ bản & Implicit Mod] -->|Orb of Transmutation| Magic[Trang Bị Ma Thuật - Magic Item<br>1-2 Mods: 1 Prefix / 1 Suffix]
-    Magic -->|Orb of Augmentation| Magic2[Magic Item Đầy Đủ<br>1 Prefix + 1 Suffix]
-    Magic2 -->|Regal Orb| Rare3[Trang Bị Hiếm - Rare Item<br>3 Mods: Giữ nguyên 2 mods cũ + Thêm 1 mod mới]
-    Rare3 -->|Exalted Orb / Forge| Rare6[Rare Item Hoàn Chỉnh - 6 Mods<br>3 Prefixes + 3 Suffixes]
-    Rare6 -->|Chaos Orb| RareNew[Reroll Toàn Bộ 4-6 Mods Mới]
-    Rare6 -->|Divine Orb| RarePefect[Reroll Giá Trị Min-Max Trong Cùng Tier]
-    Rare6 -->|Orb of Annulment| RareMinus[Xóa Ngẫu Nhiên 1 Mod Để Lấy Lại Slot Trống]
+    Base[Phôi Trang Bị Trắng - Normal Base<br>Chỉ có chỉ số cơ bản & Implicit Mod] -->|Aether Spark| Magic[Trang Bị Ma Thuật - Magic Item<br>1-2 Mods: 1 Prefix / 1 Suffix]
+    Magic -->|Flux Catalyst| Magic2[Reroll Lại Thuộc Tính Magic]
+    Magic2 -->|Genesis Prism| Rare3[Trang Bị Hiếm - Rare Item<br>4-6 Mods Ngẫu Nhiên]
+    Rare3 -->|Ascendant Catalyst| Rare6[Rare Item Hoàn Chỉnh - 6 Mods<br>3 Prefixes + 3 Suffixes]
+    Rare6 -->|Fracture Core| RareNew[Reroll Toàn Bộ 4-6 Mods Mới]
+    Rare6 -->|Origin Matrix| RarePefect[Reroll Giá Trị Min-Max Trong Cùng Tier Lên Max]
+    Rare6 -->|Null Void Core| RareMinus[Xóa Ngẫu Nhiên 1 Mod Để Lấy Lại Slot Trống]
 ```
 
 ---
@@ -90,20 +90,21 @@ Mỗi Affix có **5 Tiers**, yêu cầu cấp độ vật phẩm (`iLvl`) tươn
 
 ---
 
-## 4. Cơ Chế Luyện Kim & Chế Tác Vật Phẩm (Genesis Crafting Currency Pipeline)
+## 4. Cơ Chế Luyện Kim & Chế Tác Vật Phẩm (Genesis Crafting Catalyst Pipeline)
 
-Hệ thống cung cấp **8 loại Tinh thể Khởi Nguyên (Genesis Orbs)** để thao tác với Affix Slots:
+Hệ thống cung cấp **8 loại Tinh thể Khởi Nguyên (Genesis Catalysts)** để thao tác với Affix Slots:
 
-| Tên Currency | Icon | Chức Năng Luyện Kim | Quy Tắc Nghiệp Vụ |
+| Tên Catalyst | Icon | Chức Năng Luyện Kim | Quy Tắc Nghiệp Vụ |
 | :--- | :---: | :--- | :--- |
-| **Orb of Transmutation** | 🔵 | Nâng cấp trang bị Normal thành **Magic** | Sinh ngẫu nhiên 1 hoặc 2 Affixes (1P hoặc 1P+1S). |
-| **Orb of Augmentation** | 🔷 | Thêm 1 Affix vào trang bị **Magic** có 1 mod | Nếu đã có Prefix $\rightarrow$ thêm Suffix (và ngược lại). |
-| **Orb of Alteration** | 🔄 | Reroll lại toàn bộ thuộc tính trang bị **Magic** | Xóa sạch mod cũ, roll lại 1-2 Affixes mới. |
-| **Regal Orb** | 👑 | Nâng cấp trang bị Magic thành **Rare** | Giữ nguyên các mod Magic hiện có và **thêm chính xác 1 Affix mới**. |
-| **Chaos Orb** | 🌀 | Reroll ngẫu nhiên toàn bộ trang bị **Rare** | Xóa sạch mod cũ, roll lại ngẫu nhiên từ $4$ đến $6$ Affixes mới. |
-| **Exalted Orb** | ✨ | Thêm 1 Affix cao cấp vào trang bị **Rare** | Chỉ áp dụng khi Rare item có $< 6$ mods. Giữ nguyên các mod cũ. |
-| **Orb of Annulment** | ❌ | Xóa ngẫu nhiên $1$ Affix trên trang bị | Giúp giải phóng 1 slot mod xấu để tiếp tục craft. |
-| **Divine Orb** | 💎 | Reroll giá trị số bên trong cùng Tier | Không làm đổi Tier của mod, chỉ roll lại điểm Min-Max trong dải Tier đó. |
+| **Aether Spark** | 🔵 | Nâng cấp trang bị Normal thành **Magic** | Sinh ngẫu nhiên 1 hoặc 2 Affixes (1P hoặc 1P+1S). |
+| **Flux Catalyst** | 🔄 | Reroll lại toàn bộ thuộc tính trang bị **Magic** | Xóa sạch mod cũ, roll lại 1-2 Affixes mới. |
+| **Genesis Prism** | 💎 | Nâng cấp trang bị Normal thành **Rare** | Sinh ngẫu nhiên từ $4$ đến $6$ Affixes mới (2P+2S tới 3P+3S). |
+| **Fracture Core** | 🔮 | Reroll ngẫu nhiên toàn bộ trang bị **Rare** | Xóa sạch mod cũ, roll lại ngẫu nhiên từ $4$ đến $6$ Affixes mới. |
+| **Ascendant Catalyst** | ✨ | Thêm 1 Affix cao cấp vào trang bị **Rare** (Exalt Slam) | Chỉ áp dụng khi Rare item có $< 6$ mods. Giữ nguyên các mod cũ. |
+| **Null Void Core** | ❌ | Xóa ngẫu nhiên $1$ Affix trên trang bị | Giúp giải phóng 1 slot mod xấu để tiếp tục craft. |
+| **Origin Matrix** | 👑 | Reroll giá trị số bên trong cùng Tier lên max range | Không làm đổi Tier của mod, roll lại điểm Min-Max tối ưu trong dải Tier đó. |
+| **Socketing Core** | ⚪ | Tái cấu trúc số lượng Socket (1 đến 4 lỗ) | Phân bố lại số lượng ngọc có thể khảm vào trang bị. |
+| **Harmonic Tether** | 🔗 | Liên kết chuỗi các Socket (Socket Links) | Kích hoạt hiệu ứng liên kết hỗ trợ kỹ năng (Support Gem Links). |
 
 ---
 

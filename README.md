@@ -24,26 +24,27 @@ csharp, dotnet8, aspnetcore, signalr, game-development, arpg, pixel-art, vanilla
 ## 🌟 Key Features & Gameplay Systems
 
 ### 1. 🏰 5-Act Continental Campaign & Safe-Havens
-- **5 Thematic Acts with Procedural Dungeons**:
-  - **Act I: Sylvan Frontier** *(Sanctuary Haven, Whispering Plains, Forgotten Crypt — Boss: Malakor)*
-  - **Act II: Frozen Spires** *(Glacial Outpost, Frostpeak Tundra, Stormpeak Ridge — Boss: Cryomancer Vael)*
-  - **Act III: Infernal Caldera** *(Ashen Redoubt, Molten Caldera, Infernal Heart — Boss: Ignis the Undying)*
-  - **Act IV: Sunken Necropolis** *(Oasis Sanctum, Dread Tombs, Necropolis of Souls — Boss: High Inquisitor Morvath)*
-  - **Act V: Celestial Void & Pinnacle** *(Aethelis Citadel, Void Abyss, Pinnacle of Eternity — Boss: Void Sovereign)*
+- **5 Thematic Acts with Procedural Dungeons & Waypoints**:
+  - **Act I: Sylvan Frontier** *(Sanctuary Haven, Whispering Plains, Verdant Canopy, Forgotten Crypt — Boss: Malakor)*
+  - **Act II: Frozen Spires** *(Glacial Outpost, Frostpeak Tundra, Howling Ice Caverns, Stormpeak Ridge — Boss: Cryomancer Vael)*
+  - **Act III: Infernal Caldera** *(Ashen Redoubt, Obsidian Wastes, Molten Caldera, Infernal Heart — Boss: Ignis the Undying)*
+  - **Act IV: Sunken Necropolis** *(Oasis Sanctum, Shifting Dunes, Dread Tombs, Necropolis of Souls — Boss: High Inquisitor Morvath)*
+  - **Act V: Celestial Void & Pinnacle** *(Aethelis Citadel, Void Abyss, Citadel of the Void, Pinnacle Arenas — Boss: Void Sovereign)*
 - **Interactive Continental World Map Atlas (`M`)**: High-resolution act artwork, glowing SVG leylines, waypoint nodes, regional intel dossiers, and fast-travel.
 - **Dynamic Biome Hazards**: Lava burns, toxic miasma bogs, deep frost, and static electric ground with elemental resistance mitigating mechanics.
 
 ### 2. 🔨 Deep Itemization & Genesis Forge Crafting
 - **6-Tier Rarity System**: Common, Magic, Rare, Epic, Legendary, and Divine / Set Items with rolled affix pools.
-- **Deterministic Crafting Bench (`B`)**:
-  - *Orb of Transmutation*: Upgrade Normal $\to$ Magic.
-  - *Orb of Augmentation*: Add random affix to Magic item.
-  - *Orb of Alteration*: Reroll Magic item affixes.
-  - *Regal Orb*: Upgrade Magic $\to$ Rare.
-  - *Chaos Orb*: Reroll all affixes on a Rare item.
-  - *Exalted Orb*: Add a high-tier modifier to Rare item.
-  - *Orb of Annulment*: Strip a random modifier.
-  - *Divine Orb*: Reroll explicit modifier values within tiers.
+- **Deterministic Crafting Bench (`B`) & Genesis Catalysts**:
+  - *Aether Spark* 🔵: Awaken Normal base item $\to$ Magic item (1-2 random modifiers).
+  - *Flux Catalyst* 🔄: Reforge all modifiers on a Magic item.
+  - *Genesis Prism* 💎: Awaken Normal base $\to$ Rare item with 4-6 powerful modifiers.
+  - *Fracture Core* 🔮: Reforge a Rare item with completely new random modifiers.
+  - *Ascendant Catalyst* ✨: Augment a high-tier modifier onto a Rare item (Exalt Slam).
+  - *Null Void Core* ❌: Strip/purify a random modifier to reclaim an open affix slot.
+  - *Origin Matrix* 👑: Reroll explicit modifier numeric values to their maximum tier ranges.
+  - *Socketing Core* ⚪: Reforge equipment sockets (1 to 4 sockets).
+  - *Harmonic Tether* 🔗: Reforge socket links for support gem chaining.
 
 ### 3. ⚡ Skill Tree, Socket Board & Support Gems
 - **5 Core Archetype Skills**: *Slash Cleave, Pyro Fireball, Frost Nova, Meteor Strike, Phase Dash*.
