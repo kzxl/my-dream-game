@@ -19,6 +19,96 @@ var builder = WebApplication.CreateBuilder(args);
 var dataDir = builder.Environment.ContentRootPath;
 var dbPath = Path.Combine(dataDir, "mdg_world.db");
 
+// Direct SQLite schema migration before EF Core initialization
+try
+{
+    using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}");
+    conn.Open();
+    using var cmd = conn.CreateCommand();
+    cmd.CommandText = @"
+        PRAGMA foreign_keys = OFF;
+        CREATE TABLE IF NOT EXISTS ""Characters"" (
+            ""Id"" TEXT PRIMARY KEY,
+            ""AccountId"" TEXT DEFAULT 'guest',
+            ""Name"" TEXT DEFAULT 'Novice Adventurer',
+            ""Gender"" TEXT DEFAULT 'Male',
+            ""ClassSpec"" TEXT DEFAULT 'Novice',
+            ""Ascendance"" TEXT DEFAULT '',
+            ""Level"" INTEGER DEFAULT 1,
+            ""CurrentExp"" INTEGER DEFAULT 0,
+            ""ExpToNext"" INTEGER DEFAULT 100,
+            ""SkillPoints"" INTEGER DEFAULT 3,
+            ""DevotionPoints"" INTEGER DEFAULT 8,
+            ""Life"" REAL DEFAULT 250,
+            ""MaxLife"" REAL DEFAULT 250,
+            ""Mana"" REAL DEFAULT 120,
+            ""MaxMana"" REAL DEFAULT 120,
+            ""Es"" REAL DEFAULT 100,
+            ""MaxEs"" REAL DEFAULT 100,
+            ""ZoneId"" TEXT DEFAULT 'SanctuaryHaven',
+            ""PositionX"" REAL DEFAULT 2000,
+            ""PositionY"" REAL DEFAULT 2000,
+            ""SkillsJson"" TEXT DEFAULT '{}',
+            ""EquippedJson"" TEXT DEFAULT '{}',
+            ""BackpackJson"" TEXT DEFAULT '[]',
+            ""MonsterKillsJson"" TEXT DEFAULT '{}',
+            ""FamilyTalentsJson"" TEXT DEFAULT '{}',
+            ""FamilyPointsJson"" TEXT DEFAULT '{}',
+            ""DevotionNodesJson"" TEXT DEFAULT '[]',
+            ""CompletedQuestsJson"" TEXT DEFAULT '[]',
+            ""ActiveQuestsJson"" TEXT DEFAULT '{}',
+            ""WaypointsJson"" TEXT DEFAULT '[]',
+            ""CurrenciesJson"" TEXT DEFAULT '{}',
+            ""CreatedAt"" TEXT,
+            ""UpdatedAt"" TEXT
+        );
+    ";
+    cmd.ExecuteNonQuery();
+
+    var cols = new[]
+    {
+        ("AccountId", "TEXT DEFAULT 'guest'"),
+        ("MonsterKillsJson", "TEXT DEFAULT '{}'"),
+        ("FamilyTalentsJson", "TEXT DEFAULT '{}'"),
+        ("FamilyPointsJson", "TEXT DEFAULT '{}'"),
+        ("DevotionNodesJson", "TEXT DEFAULT '[]'"),
+        ("CompletedQuestsJson", "TEXT DEFAULT '[]'"),
+        ("ActiveQuestsJson", "TEXT DEFAULT '{}'"),
+        ("WaypointsJson", "TEXT DEFAULT '[]'"),
+        ("CurrenciesJson", "TEXT DEFAULT '{}'"),
+        ("DevotionPoints", "INTEGER DEFAULT 8"),
+        ("Ascendance", "TEXT DEFAULT ''")
+    };
+    foreach (var (colName, colDef) in cols)
+    {
+        try
+        {
+            cmd.CommandText = $"ALTER TABLE \"Characters\" ADD COLUMN \"{colName}\" {colDef};";
+            cmd.ExecuteNonQuery();
+        }
+        catch { }
+    }
+
+    cmd.CommandText = @"
+        UPDATE ""Characters"" SET ""ActiveQuestsJson"" = '{}' WHERE ""ActiveQuestsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""DevotionNodesJson"" = '[]' WHERE ""DevotionNodesJson"" IS NULL;
+        UPDATE ""Characters"" SET ""CompletedQuestsJson"" = '[]' WHERE ""CompletedQuestsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""CurrenciesJson"" = '{}' WHERE ""CurrenciesJson"" IS NULL;
+        UPDATE ""Characters"" SET ""FamilyPointsJson"" = '{}' WHERE ""FamilyPointsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""FamilyTalentsJson"" = '{}' WHERE ""FamilyTalentsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""MonsterKillsJson"" = '{}' WHERE ""MonsterKillsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""WaypointsJson"" = '[]' WHERE ""WaypointsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""SkillsJson"" = '{}' WHERE ""SkillsJson"" IS NULL;
+        UPDATE ""Characters"" SET ""EquippedJson"" = '{}' WHERE ""EquippedJson"" IS NULL;
+        UPDATE ""Characters"" SET ""BackpackJson"" = '[]' WHERE ""BackpackJson"" IS NULL;
+        UPDATE ""Characters"" SET ""Ascendance"" = '' WHERE ""Ascendance"" IS NULL;
+        UPDATE ""Characters"" SET ""DevotionPoints"" = 8 WHERE ""DevotionPoints"" IS NULL;
+        UPDATE ""Characters"" SET ""AccountId"" = 'guest' WHERE ""AccountId"" IS NULL;
+    ";
+    cmd.ExecuteNonQuery();
+}
+catch { }
+
 // Register EF Core DbContextFactory & Services
 builder.Services.AddDbContextFactory<MdgDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));

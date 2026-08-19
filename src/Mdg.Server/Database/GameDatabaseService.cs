@@ -22,16 +22,37 @@ public sealed class GameDatabaseService
             try { db.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS UserAccounts (Id TEXT PRIMARY KEY, Email TEXT, Name TEXT, PictureUrl TEXT, CreatedAt TEXT, LastLoginAt TEXT);"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE SharedStash ADD COLUMN AccountId TEXT DEFAULT 'guest';"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN MonsterKillsJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN FamilyTalentsJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN FamilyPointsJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN DevotionNodesJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN CompletedQuestsJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN ActiveQuestsJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN WaypointsJson TEXT;"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN CurrenciesJson TEXT;"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN MonsterKillsJson TEXT DEFAULT '{}';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN FamilyTalentsJson TEXT DEFAULT '{}';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN FamilyPointsJson TEXT DEFAULT '{}';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN DevotionNodesJson TEXT DEFAULT '[]';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN CompletedQuestsJson TEXT DEFAULT '[]';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN ActiveQuestsJson TEXT DEFAULT '{}';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN WaypointsJson TEXT DEFAULT '[]';"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN CurrenciesJson TEXT DEFAULT '{}';"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN DevotionPoints INTEGER DEFAULT 8;"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Characters ADD COLUMN Ascendance TEXT DEFAULT '';"); } catch { }
+
+            // Ensure no NULL values exist for JSON converter columns
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    UPDATE Characters SET ActiveQuestsJson = '{}' WHERE ActiveQuestsJson IS NULL;
+                    UPDATE Characters SET DevotionNodesJson = '[]' WHERE DevotionNodesJson IS NULL;
+                    UPDATE Characters SET CompletedQuestsJson = '[]' WHERE CompletedQuestsJson IS NULL;
+                    UPDATE Characters SET CurrenciesJson = '{}' WHERE CurrenciesJson IS NULL;
+                    UPDATE Characters SET FamilyPointsJson = '{}' WHERE FamilyPointsJson IS NULL;
+                    UPDATE Characters SET FamilyTalentsJson = '{}' WHERE FamilyTalentsJson IS NULL;
+                    UPDATE Characters SET MonsterKillsJson = '{}' WHERE MonsterKillsJson IS NULL;
+                    UPDATE Characters SET WaypointsJson = '[]' WHERE WaypointsJson IS NULL;
+                    UPDATE Characters SET SkillsJson = '{}' WHERE SkillsJson IS NULL;
+                    UPDATE Characters SET EquippedJson = '{}' WHERE EquippedJson IS NULL;
+                    UPDATE Characters SET BackpackJson = '[]' WHERE BackpackJson IS NULL;
+                    UPDATE Characters SET Ascendance = '' WHERE Ascendance IS NULL;
+                    UPDATE Characters SET DevotionPoints = 8 WHERE DevotionPoints IS NULL;
+                ");
+            }
+            catch { }
         }
         catch { }
     }
