@@ -983,6 +983,46 @@ if (btnSendChat && chatInput) {
   };
 }
 
+// Zone Chat minimize / expand controls
+const chatPanel = document.getElementById('zone-chat-panel');
+const btnMinimizeChat = document.getElementById('btnMinimizeChat');
+const btnExpandChat = document.getElementById('btnExpandChat');
+const chatHeaderToggle = document.getElementById('chatHeaderToggle');
+
+if (chatPanel) {
+  let isChatMinimized = false;
+  let isChatExpanded = false;
+
+  const updateChatState = () => {
+    chatPanel.classList.toggle('is-minimized', isChatMinimized);
+    chatPanel.classList.toggle('is-expanded', isChatExpanded);
+    if (btnMinimizeChat) btnMinimizeChat.innerText = isChatMinimized ? '▢' : '─';
+    if (btnExpandChat) btnExpandChat.innerText = isChatExpanded ? '⤡' : '⤢';
+  };
+
+  btnMinimizeChat?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isChatMinimized = !isChatMinimized;
+    if (isChatMinimized) isChatExpanded = false;
+    updateChatState();
+  });
+
+  btnExpandChat?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isChatExpanded = !isChatExpanded;
+    if (isChatExpanded) isChatMinimized = false;
+    updateChatState();
+  });
+
+  chatHeaderToggle?.addEventListener('click', (e) => {
+    if (e.target === btnMinimizeChat || e.target === btnExpandChat) return;
+    if (isChatMinimized) {
+      isChatMinimized = false;
+      updateChatState();
+    }
+  });
+}
+
 // Initialize UI and Game
 setupUIListeners();
 initDefeatUI();

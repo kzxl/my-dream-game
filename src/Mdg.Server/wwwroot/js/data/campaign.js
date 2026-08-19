@@ -22,32 +22,42 @@ export const CAMPAIGN_ACTS = [
         type: 'Town Safe-Haven',
         level: 'Lv. 1-5',
         isTown: true,
-        coords: { x: 20, y: 70 },
+        coords: { x: 15, y: 75 },
         desc: 'The fortified starting safe haven. Home to Doran the Blacksmith, Elder Aethel, and Vault Keeper Kaelen.'
       },
       {
         id: 'WhisperingPlains',
         name: 'Whispering Plains',
         type: 'Wilderness',
-        level: 'Lv. 5-10',
+        level: 'Lv. 5-9',
         isTown: false,
-        coords: { x: 45, y: 55 },
+        coords: { x: 38, y: 62 },
         desc: 'Vast rolling grasslands overrun by goblin raiding parties and feral direwolf packs.'
+      },
+      {
+        id: 'VerdantCanopy',
+        name: 'Verdant Canopy',
+        type: 'Enchanted Forest',
+        level: 'Lv. 9-12',
+        isTown: false,
+        coords: { x: 62, y: 48 },
+        desc: 'Ancient bioluminescent deep forest guarded by primal treants, spiders, and venomous beasts.'
       },
       {
         id: 'ForgottenCrypt',
         name: 'Forgotten Crypt',
         type: 'Dungeon (Boss Lair)',
-        level: 'Lv. 10-15',
+        level: 'Lv. 12-15',
         isTown: false,
-        coords: { x: 75, y: 35 },
+        coords: { x: 85, y: 30 },
         desc: 'Ancient catacombs infested with undead fiends. Malakor awaits in the deep ceremonial vault.'
       }
     ],
     quests: [
       { id: 'q1_1', title: 'Awakening in Haven', desc: 'Consult Elder Aethel and forge your first weapon with Doran.', reward: '100 EXP + Bronze Ring' },
       { id: 'q1_2', title: 'Securing the Plains', desc: 'Hunt down goblin scouts and alpha wolves in Whispering Plains.', reward: '350 EXP + Rare Boots' },
-      { id: 'q1_3', title: 'Malakor\'s Demise', desc: 'Descend into the Forgotten Crypt and slay Malakor.', reward: '1000 EXP + Class Ascension' }
+      { id: 'q1_3', title: 'The Deep Forest', desc: 'Cleanse the venom brood lurking within Verdant Canopy.', reward: '600 EXP + Emerald Gem' },
+      { id: 'q1_4', title: 'Malakor\'s Demise', desc: 'Descend into the Forgotten Crypt and slay Malakor.', reward: '1200 EXP + Class Ascension' }
     ]
   },
 
@@ -68,34 +78,44 @@ export const CAMPAIGN_ACTS = [
         id: 'GlacialOutpost',
         name: 'Glacial Outpost',
         type: 'Town Safe-Haven',
-        level: 'Lv. 15-20',
+        level: 'Lv. 15-18',
         isTown: true,
-        coords: { x: 20, y: 70 },
+        coords: { x: 15, y: 75 },
         desc: 'Permafrost frontier garrison protected by ancient thermal ward runes. Refuge against blizzards.'
       },
       {
         id: 'FrostpeakTundra',
         name: 'Frostpeak Tundra',
         type: 'Glacial Plateau',
-        level: 'Lv. 20-25',
+        level: 'Lv. 18-22',
         isTown: false,
-        coords: { x: 50, y: 50 },
+        coords: { x: 38, y: 60 },
         desc: 'Biting ice plateaus with howling gales (-20% move speed without cold resistance).'
+      },
+      {
+        id: 'HowlingIceCaverns',
+        name: 'Howling Ice Caverns',
+        type: 'Glacial Dungeon',
+        level: 'Lv. 22-26',
+        isTown: false,
+        coords: { x: 62, y: 45 },
+        desc: 'Deep subterranean ice caverns echoing with frost shrieks and crystalline ice golem clusters.'
       },
       {
         id: 'StormpeakRidge',
         name: 'Stormpeak Ridge',
         type: 'Glacial Spire (Boss Lair)',
-        level: 'Lv. 25-30',
+        level: 'Lv. 26-30',
         isTown: false,
-        coords: { x: 80, y: 30 },
+        coords: { x: 85, y: 28 },
         desc: 'The frozen mountain crest where Cryomancer Vael channels absolute zero storm vortexes.'
       }
     ],
     quests: [
       { id: 'q2_1', title: 'The Frost Garrison', desc: 'Reach Glacial Outpost and kindle the protective Thermal Pyre.', reward: '800 EXP + Warm Flask' },
       { id: 'q2_2', title: 'Goliaths of the Tundra', desc: 'Defeat 10 Frost Yetis in Frostpeak Tundra.', reward: '1500 EXP + Cold Resist Ring' },
-      { id: 'q2_3', title: 'Sovereign of Absolute Zero', desc: 'Ascend Stormpeak Ridge and defeat Cryomancer Vael.', reward: '3000 EXP + Glacial Catalyst' }
+      { id: 'q2_3', title: 'The Crystal Caves', desc: 'Navigate Howling Ice Caverns and retrieve the Glacial Core.', reward: '2200 EXP + Frostforged Gauntlets' },
+      { id: 'q2_4', title: 'Sovereign of Absolute Zero', desc: 'Ascend Stormpeak Ridge and defeat Cryomancer Vael.', reward: '3500 EXP + Glacial Catalyst' }
     ]
   },
 
@@ -116,34 +136,44 @@ export const CAMPAIGN_ACTS = [
         id: 'AshenRedoubt',
         name: 'Ashen Redoubt',
         type: 'Town Safe-Haven',
-        level: 'Lv. 30-35',
+        level: 'Lv. 30-34',
         isTown: true,
-        coords: { x: 20, y: 70 },
+        coords: { x: 15, y: 75 },
         desc: 'Subterranean obsidian fortress built around an ancient heat-sink core by dwarven artificers.'
+      },
+      {
+        id: 'ObsidianWastes',
+        name: 'Obsidian Wastes',
+        type: 'Scorched Wilds',
+        level: 'Lv. 34-38',
+        isTown: false,
+        coords: { x: 38, y: 58 },
+        desc: 'Desolate volcanic basalt plains covered in ash storms and patrolling fire hounds.'
       },
       {
         id: 'MoltenCaldera',
         name: 'Molten Caldera',
         type: 'Volcanic Core',
-        level: 'Lv. 35-40',
+        level: 'Lv. 38-42',
         isTown: false,
-        coords: { x: 50, y: 55 },
+        coords: { x: 62, y: 45 },
         desc: 'Superheated volcanic rivers and bubbling magma pools. Extreme fire hazards.'
       },
       {
         id: 'InfernalHeart',
         name: 'Infernal Heart',
         type: 'Core Chamber (Boss Lair)',
-        level: 'Lv. 40-45',
+        level: 'Lv. 42-45',
         isTown: false,
-        coords: { x: 80, y: 35 },
+        coords: { x: 85, y: 28 },
         desc: 'The primordial heart of Mount Caelum where Ignis the Undying Archon reigns supreme.'
       }
     ],
     quests: [
       { id: 'q3_1', title: 'The Obsidian Fortress', desc: 'Reactivate the heat dissipation vents in Ashen Redoubt.', reward: '2000 EXP + Flame Ward Belt' },
-      { id: 'q3_2', title: 'Magma Incursion', desc: 'Clear the fire drakes and lava hounds roaming Molten Caldera.', reward: '3500 EXP + Genesis Prism' },
-      { id: 'q3_3', title: 'Extinguishing the Archon', desc: 'Confront and defeat Ignis in the Infernal Heart.', reward: '6000 EXP + Cinderforged Cuirass' }
+      { id: 'q3_2', title: 'Ashfall Scouring', desc: 'Defeat 12 Magma Hounds in Obsidian Wastes.', reward: '2800 EXP + Ruby Ring' },
+      { id: 'q3_3', title: 'Magma Incursion', desc: 'Clear the fire drakes and lava golems roaming Molten Caldera.', reward: '4000 EXP + Genesis Prism' },
+      { id: 'q3_4', title: 'Extinguishing the Archon', desc: 'Confront and defeat Ignis in the Infernal Heart.', reward: '7000 EXP + Cinderforged Cuirass' }
     ]
   },
 
@@ -164,34 +194,44 @@ export const CAMPAIGN_ACTS = [
         id: 'OasisSanctum',
         name: 'Oasis Sanctum',
         type: 'Town Safe-Haven',
-        level: 'Lv. 45-50',
+        level: 'Lv. 45-48',
         isTown: true,
-        coords: { x: 20, y: 70 },
+        coords: { x: 15, y: 75 },
         desc: 'A hidden twilight oasis sanctuary sheltered by ancient celestial obelisks.'
+      },
+      {
+        id: 'ShiftingDunes',
+        name: 'Shifting Dunes',
+        type: 'Desert Wilderness',
+        level: 'Lv. 48-52',
+        isTown: false,
+        coords: { x: 38, y: 60 },
+        desc: 'Vast shifting golden sand dunes with sandstorm vortexes and ancient tomb scarabs.'
       },
       {
         id: 'DreadTombs',
         name: 'Dread Tombs of the Ancients',
         type: 'Sunken Catacombs',
-        level: 'Lv. 50-55',
+        level: 'Lv. 52-56',
         isTown: false,
-        coords: { x: 50, y: 50 },
+        coords: { x: 62, y: 45 },
         desc: 'Crumbling desert crypts haunted by plague spectres and mummy guardians.'
       },
       {
         id: 'NecropolisOfSouls',
         name: 'Necropolis of Souls',
         type: 'Cathedral of Souls (Boss Lair)',
-        level: 'Lv. 55-60',
+        level: 'Lv. 56-60',
         isTown: false,
-        coords: { x: 80, y: 30 },
+        coords: { x: 85, y: 28 },
         desc: 'The sunken grand cathedral where High Inquisitor Morvath harvests restless souls.'
       }
     ],
     quests: [
       { id: 'q4_1', title: 'The Oasis of Light', desc: 'Meet the Nomad Seer at Oasis Sanctum and unlock soul wards.', reward: '5000 EXP + Chaos Charm' },
-      { id: 'q4_2', title: 'Tomb of the Phantoms', desc: 'Destroy 12 Soul Totems inside Dread Tombs.', reward: '8000 EXP + Ascendant Catalyst' },
-      { id: 'q4_3', title: 'Judgment of Souls', desc: 'Vanquish High Inquisitor Morvath in the Necropolis of Souls.', reward: '12000 EXP + Soul Reaver Scythe' }
+      { id: 'q4_2', title: 'Dune Stalkers', desc: 'Hunt the Sand Wyrms in Shifting Dunes.', reward: '7500 EXP + Sandstride Boots' },
+      { id: 'q4_3', title: 'Tomb of the Phantoms', desc: 'Destroy 12 Soul Totems inside Dread Tombs.', reward: '10000 EXP + Ascendant Catalyst' },
+      { id: 'q4_4', title: 'Judgment of Souls', desc: 'Vanquish High Inquisitor Morvath in the Necropolis of Souls.', reward: '15000 EXP + Soul Reaver Scythe' }
     ]
   },
 

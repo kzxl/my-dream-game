@@ -528,6 +528,18 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
             },
             new()
             {
+                Id = "VerdantCanopy",
+                Name = "Verdant Canopy",
+                Subtitle = "Ancient Bioluminescent Forest & Spider Brood",
+                BiomeType = "Plains",
+                RecommendedLevel = 10,
+                ActNumber = 1,
+                BossName = "Broodmother Sylva",
+                MonsterTypesJson = JsonSerializer.Serialize(new[] { "spider", "direwolf", "slime" }),
+                HazardsJson = JsonSerializer.Serialize(new[] { "poison_spores", "web_traps" })
+            },
+            new()
+            {
                 Id = "ForgottenCrypt",
                 Name = "Forgotten Crypt",
                 Subtitle = "Ancient Catacombs of Malakor",
@@ -556,11 +568,23 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 Name = "Frostpeak Tundra",
                 Subtitle = "Frozen Glaciers & Howling Blizzards",
                 BiomeType = "Tundra",
-                RecommendedLevel = 22,
+                RecommendedLevel = 20,
                 ActNumber = 2,
                 BossName = "Yeti Frost Goliath",
                 MonsterTypesJson = JsonSerializer.Serialize(new[] { "frost_elemental", "ice_golem", "yeti" }),
                 HazardsJson = JsonSerializer.Serialize(new[] { "blizzard_zone", "slippery_ice" })
+            },
+            new()
+            {
+                Id = "HowlingIceCaverns",
+                Name = "Howling Ice Caverns",
+                Subtitle = "Subterranean Ice Grotto & Crystal Guardians",
+                BiomeType = "Tundra",
+                RecommendedLevel = 25,
+                ActNumber = 2,
+                BossName = "Glacial Behemoth Frosthorn",
+                MonsterTypesJson = JsonSerializer.Serialize(new[] { "ice_wraith", "frost_golem", "blizzard_beast" }),
+                HazardsJson = JsonSerializer.Serialize(new[] { "falling_stalactites", "deep_frost" })
             },
             new()
             {
@@ -588,11 +612,23 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
             },
             new()
             {
+                Id = "ObsidianWastes",
+                Name = "Obsidian Wastes",
+                Subtitle = "Basalt Wilderness & Ash Storms",
+                BiomeType = "Volcanic",
+                RecommendedLevel = 35,
+                ActNumber = 3,
+                BossName = "Cinder Drake Pyroth",
+                MonsterTypesJson = JsonSerializer.Serialize(new[] { "fire_imp", "magma_hound", "lava_golem" }),
+                HazardsJson = JsonSerializer.Serialize(new[] { "ash_storm", "basalt_fissure" })
+            },
+            new()
+            {
                 Id = "MoltenCaldera",
                 Name = "Molten Caldera",
                 Subtitle = "Infernal Core of Mount Caelum",
                 BiomeType = "Volcanic",
-                RecommendedLevel = 38,
+                RecommendedLevel = 40,
                 ActNumber = 3,
                 BossName = "Magma Hound Alpha",
                 MonsterTypesJson = JsonSerializer.Serialize(new[] { "fire_imp", "lava_golem", "magma_hound" }),
@@ -624,11 +660,23 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
             },
             new()
             {
+                Id = "ShiftingDunes",
+                Name = "Shifting Dunes",
+                Subtitle = "Endless Desert Canyon & Sand Wyrms",
+                BiomeType = "Dungeon",
+                RecommendedLevel = 50,
+                ActNumber = 4,
+                BossName = "Great Sand Wyrm Ouroboros",
+                MonsterTypesJson = JsonSerializer.Serialize(new[] { "sand_wyrm", "tomb_scarab", "desert_bandit" }),
+                HazardsJson = JsonSerializer.Serialize(new[] { "sandstorm_vortex", "quicksand_pit" })
+            },
+            new()
+            {
                 Id = "DreadTombs",
                 Name = "Dread Tombs of the Ancients",
                 Subtitle = "Sunken Catacombs of Forgotten Kings",
                 BiomeType = "Dungeon",
-                RecommendedLevel = 52,
+                RecommendedLevel = 55,
                 ActNumber = 4,
                 BossName = "Anubis Shade Guardian",
                 MonsterTypesJson = JsonSerializer.Serialize(new[] { "mummy_warrior", "tomb_scorpion", "plague_spectre" }),
@@ -727,7 +775,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 LevelRange = "Lv. 1 - 15",
                 Boss = "Malakor the Shadow Fiend",
                 CoverArt = "assets/acts/act1_sylvan.jpg",
-                ZonesJson = JsonSerializer.Serialize(new[] { "SanctuaryHaven", "WhisperingPlains", "ForgottenCrypt" })
+                ZonesJson = JsonSerializer.Serialize(new[] { "SanctuaryHaven", "WhisperingPlains", "VerdantCanopy", "ForgottenCrypt" })
             },
             new()
             {
@@ -737,7 +785,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 LevelRange = "Lv. 15 - 30",
                 Boss = "Cryomancer Vael the Frost Sovereign",
                 CoverArt = "assets/acts/act2_frozen.jpg",
-                ZonesJson = JsonSerializer.Serialize(new[] { "GlacialOutpost", "FrostpeakTundra", "StormpeakRidge" })
+                ZonesJson = JsonSerializer.Serialize(new[] { "GlacialOutpost", "FrostpeakTundra", "HowlingIceCaverns", "StormpeakRidge" })
             },
             new()
             {
@@ -747,7 +795,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 LevelRange = "Lv. 30 - 45",
                 Boss = "Ignis the Undying Archon",
                 CoverArt = "assets/acts/act3_infernal.jpg",
-                ZonesJson = JsonSerializer.Serialize(new[] { "AshenRedoubt", "MoltenCaldera", "InfernalHeart" })
+                ZonesJson = JsonSerializer.Serialize(new[] { "AshenRedoubt", "ObsidianWastes", "MoltenCaldera", "InfernalHeart" })
             },
             new()
             {
@@ -757,7 +805,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 LevelRange = "Lv. 45 - 60",
                 Boss = "High Inquisitor Morvath",
                 CoverArt = "assets/acts/act4_necropolis.jpg",
-                ZonesJson = JsonSerializer.Serialize(new[] { "OasisSanctum", "DreadTombs", "NecropolisOfSouls" })
+                ZonesJson = JsonSerializer.Serialize(new[] { "OasisSanctum", "ShiftingDunes", "DreadTombs", "NecropolisOfSouls" })
             },
             new()
             {
@@ -767,7 +815,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 LevelRange = "Lv. 60 - 85+",
                 Boss = "The Void Sovereign Prime",
                 CoverArt = "assets/acts/act5_celestial.jpg",
-                ZonesJson = JsonSerializer.Serialize(new[] { "AethelisCitadel", "VoidAbyss", "PinnacleOfEternity", "ArenaCaldera", "ArenaGlacial", "ArenaVoid" })
+                ZonesJson = JsonSerializer.Serialize(new[] { "AethelisCitadel", "VoidAbyss", "CitadelOfTheVoid", "ArenaCaldera", "ArenaGlacial", "ArenaVoid" })
             }
         };
     }

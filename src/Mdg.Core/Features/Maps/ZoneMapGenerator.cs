@@ -28,20 +28,24 @@ public static class ZoneMapGenerator
             // Act 1
             "SanctuaryHaven" => GenerateHaven(),
             "WhisperingPlains" => GeneratePlains(),
+            "VerdantCanopy" => GenerateCanopy(),
             "ForgottenCrypt" => GenerateCrypt(),
 
             // Act 2
             "GlacialOutpost" => GenerateHaven(),
             "FrostpeakTundra" => GenerateTundra(),
+            "HowlingIceCaverns" => GenerateIceCaverns(),
             "StormpeakRidge" => GenerateStormpeak(),
 
             // Act 3
             "AshenRedoubt" => GenerateHaven(),
+            "ObsidianWastes" => GenerateObsidianWastes(),
             "MoltenCaldera" => GenerateCaldera(),
             "InfernalHeart" => GenerateCaldera(),
 
             // Act 4
             "OasisSanctum" => GenerateHaven(),
+            "ShiftingDunes" => GenerateShiftingDunes(),
             "DreadTombs" => GenerateCrypt(),
             "NecropolisOfSouls" => GenerateCrypt(),
 
@@ -847,6 +851,225 @@ public static class ZoneMapGenerator
                 new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "malakor_boss" },
                 new() { X = (cx - 5) * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 4, Type = "undead_knight" },
                 new() { X = (cx + 5) * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 4, Type = "undead_knight" }
+            }
+        };
+    }
+
+    // 8. VERDANT CANOPY (64x64 - Deep Bioluminescent Forest)
+    private static ZoneMapDto GenerateCanopy()
+    {
+        const int w = 64, h = 64;
+        var grid = InitializeGrid(w, h, TILE_FLOOR);
+        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
+        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
+
+        int midY = h / 2;
+        for (int x = 1; x < w - 1; x++)
+        {
+            grid[midY][x] = TILE_PATH;
+            grid[midY + 1][x] = TILE_PATH;
+        }
+
+        // Dense ancient trees and poisonous ponds
+        for (int y = 4; y < h - 4; y += 4)
+        {
+            for (int x = 4; x < w - 4; x += 4)
+            {
+                if (Math.Abs(y - midY) > 3)
+                {
+                    grid[y][x] = TILE_ANCIENT_PILLAR;
+                    if ((x + y) % 6 == 0) grid[y][x + 1] = TILE_TOXIC_MIASMA;
+                }
+            }
+        }
+
+        return new ZoneMapDto
+        {
+            Id = "VerdantCanopy",
+            Name = "Verdant Canopy",
+            Subtitle = "🌲 Ancient Bioluminescent Forest & Spider Brood",
+            Biome = ZoneBiomeType.WhisperingPlains,
+            LevelRange = "Lv. 9-12",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            TileSize = TILE_SIZE,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = 350,
+            SpawnY = midY * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 2650, TargetY = midY * TILE_SIZE, Name = "🌾 Return to Plains" },
+                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 550, TargetY = 550, Name = "🏰 Enter Forgotten Crypt" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = 800, Y = 800, Count = 8, Type = "spider" },
+                new() { X = 2000, Y = 1800, Count = 7, Type = "wolf" },
+                new() { X = 1600, Y = 1200, Count = 8, Type = "slime" }
+            }
+        };
+    }
+
+    // 9. HOWLING ICE CAVERNS (60x60 - Glacial Chasm & Ice Crystals)
+    private static ZoneMapDto GenerateIceCaverns()
+    {
+        const int w = 60, h = 60;
+        var grid = InitializeGrid(w, h, TILE_FLOOR);
+        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
+        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
+
+        int midY = h / 2;
+        for (int x = 1; x < w - 1; x++)
+        {
+            grid[midY][x] = TILE_PATH;
+        }
+
+        // Glacial Ice Slippery Patches
+        for (int y = 6; y < h - 6; y++)
+        {
+            for (int x = 6; x < w - 6; x++)
+            {
+                if (Math.Abs(y - midY) > 2 && (x * y) % 7 == 0)
+                {
+                    grid[y][x] = TILE_GLACIAL_ICE;
+                }
+            }
+        }
+
+        return new ZoneMapDto
+        {
+            Id = "HowlingIceCaverns",
+            Name = "Howling Ice Caverns",
+            Subtitle = "🧊 Subterranean Ice Grotto & Crystal Guardians",
+            Biome = ZoneBiomeType.FrostpeakTundra,
+            LevelRange = "Lv. 22-26",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            TileSize = TILE_SIZE,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = 350,
+            SpawnY = midY * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 2500, TargetY = midY * TILE_SIZE, Name = "❄️ Return to Tundra" },
+                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 400, TargetY = midY * TILE_SIZE, Name = "⚡ Climb Stormpeak Ridge" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = 800, Y = 900, Count = 8, Type = "frost_golem" },
+                new() { X = 1800, Y = 1800, Count = 7, Type = "frost_golem" }
+            }
+        };
+    }
+
+    // 10. OBSIDIAN WASTES (60x60 - Scorched Basalt Wilderness)
+    private static ZoneMapDto GenerateObsidianWastes()
+    {
+        const int w = 60, h = 60;
+        var grid = InitializeGrid(w, h, TILE_FLOOR);
+        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
+        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
+
+        int midY = h / 2;
+        for (int x = 1; x < w - 1; x++)
+        {
+            grid[midY][x] = TILE_PATH;
+            grid[midY + 1][x] = TILE_PATH;
+        }
+
+        for (int y = 5; y < h - 5; y += 3)
+        {
+            for (int x = 5; x < w - 5; x += 3)
+            {
+                if (Math.Abs(y - midY) > 3 && (x + y) % 4 == 0)
+                {
+                    grid[y][x] = TILE_BURNT_GROUND;
+                }
+            }
+        }
+
+        return new ZoneMapDto
+        {
+            Id = "ObsidianWastes",
+            Name = "Obsidian Wastes",
+            Subtitle = "🌋 Basalt Wilderness & Ash Storms",
+            Biome = ZoneBiomeType.MoltenCaldera,
+            LevelRange = "Lv. 34-38",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            TileSize = TILE_SIZE,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = 350,
+            SpawnY = midY * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "AshenRedoubt", TargetX = 1632, TargetY = 960, Name = "🏰 Return to Redoubt" },
+                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 400, TargetY = midY * TILE_SIZE, Name = "🔥 Enter Molten Caldera" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = 900, Y = 900, Count = 8, Type = "fire_imp" },
+                new() { X = 1900, Y = 1900, Count = 7, Type = "magma_golem" }
+            }
+        };
+    }
+
+    // 11. SHIFTING DUNES (60x60 - Desert Canyon & Sand Vortexes)
+    private static ZoneMapDto GenerateShiftingDunes()
+    {
+        const int w = 60, h = 60;
+        var grid = InitializeGrid(w, h, TILE_FLOOR);
+        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
+        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
+
+        int midY = h / 2;
+        for (int x = 1; x < w - 1; x++)
+        {
+            grid[midY][x] = TILE_PATH;
+            grid[midY + 1][x] = TILE_PATH;
+        }
+
+        for (int y = 4; y < h - 4; y += 3)
+        {
+            for (int x = 4; x < w - 4; x += 3)
+            {
+                if (Math.Abs(y - midY) > 3)
+                {
+                    grid[y][x] = TILE_SHALLOW_WATER_SAND;
+                }
+            }
+        }
+
+        return new ZoneMapDto
+        {
+            Id = "ShiftingDunes",
+            Name = "Shifting Dunes",
+            Subtitle = "🏜️ Endless Desert Canyon & Sand Wyrms",
+            Biome = ZoneBiomeType.ForgottenCrypt,
+            LevelRange = "Lv. 48-52",
+            WidthInTiles = w,
+            HeightInTiles = h,
+            TileSize = TILE_SIZE,
+            WorldWidth = w * TILE_SIZE,
+            WorldHeight = h * TILE_SIZE,
+            SpawnX = 350,
+            SpawnY = midY * TILE_SIZE,
+            Grid = grid,
+            Portals = new List<ZonePortalDto>
+            {
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "OasisSanctum", TargetX = 1632, TargetY = 960, Name = "🌴 Return to Oasis" },
+                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "DreadTombs", TargetX = 550, TargetY = 550, Name = "💀 Enter Dread Tombs" }
+            },
+            MonsterSpawns = new List<MonsterClusterSpawnDto>
+            {
+                new() { X = 900, Y = 900, Count = 8, Type = "undead_knight" },
+                new() { X = 2000, Y = 2000, Count = 8, Type = "skeleton" }
             }
         };
     }

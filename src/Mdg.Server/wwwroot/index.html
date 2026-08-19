@@ -631,18 +631,26 @@
       </div>
     </div>
 
-    <!-- Bottom Left: Zone Chat Box -->
+    <!-- Bottom Left: Zone Chat Box (Collapsible & Expandable) -->
     <div id="zone-chat-panel" class="zone-chat-box">
-      <div class="chat-header">
-        <span>💬 ZONE CHAT</span>
-        <span class="chat-hint">Press Enter to talk</span>
+      <div class="chat-header" id="chatHeaderToggle" title="Click to collapse / expand chat">
+        <div class="ch-title-wrap">
+          <span>💬 ZONE CHAT</span>
+          <span class="chat-hint">Press Enter to talk</span>
+        </div>
+        <div class="chat-header-actions">
+          <button id="btnExpandChat" class="chat-action-btn" title="Toggle Expanded Mode (⤢ / ⤡)">⤢</button>
+          <button id="btnMinimizeChat" class="chat-action-btn" title="Minimize / Collapse (─ / ▢)">─</button>
+        </div>
       </div>
-      <div id="zoneChatLog" class="chat-messages-scroll">
-        <div class="chat-entry"><span class="ce-time">[Sys]</span> <span class="ce-msg info-msg">Welcome to Aethelis. Connected to SignalR GameHub.</span></div>
-      </div>
-      <div class="chat-input-row">
-        <input type="text" id="zoneChatInput" placeholder="Say something..." maxlength="150" />
-        <button id="btnSendChat">Send</button>
+      <div id="zoneChatBody" class="chat-body-container">
+        <div id="zoneChatLog" class="chat-messages-scroll">
+          <div class="chat-entry"><span class="ce-time">[Sys]</span> <span class="ce-msg info-msg">Welcome to Aethelis. Connected to SignalR GameHub.</span></div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="zoneChatInput" placeholder="Say something in zone..." maxlength="150" />
+          <button id="btnSendChat">Send</button>
+        </div>
       </div>
     </div>
 

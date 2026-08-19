@@ -31,19 +31,27 @@ export const TILE_TYPES = {
 
 export class MapGenerator {
   static generateZone(zoneId) {
-    if (zoneId === 'SanctuaryHaven') {
+    if (zoneId === 'SanctuaryHaven' || zoneId === 'GlacialOutpost' || zoneId === 'AshenRedoubt' || zoneId === 'OasisSanctum' || zoneId === 'AethelisCitadel') {
       return this.generateHaven(40, 40);
     } else if (zoneId === 'WhisperingPlains') {
       return this.generatePlains(64, 64);
-    } else if (zoneId === 'ForgottenCrypt') {
+    } else if (zoneId === 'VerdantCanopy') {
+      return this.generateCanopy(64, 64);
+    } else if (zoneId === 'ForgottenCrypt' || zoneId === 'DreadTombs' || zoneId === 'NecropolisOfSouls') {
       return this.generateCryptDungeon(60, 60);
     } else if (zoneId === 'FrostpeakTundra') {
       return this.generateTundra(60, 60);
-    } else if (zoneId === 'MoltenCaldera') {
-      return this.generateCaldera(60, 60);
+    } else if (zoneId === 'HowlingIceCaverns') {
+      return this.generateIceCaverns(60, 60);
     } else if (zoneId === 'StormpeakRidge') {
       return this.generateStormpeak(64, 64);
-    } else if (zoneId === 'VoidAbyss') {
+    } else if (zoneId === 'ObsidianWastes') {
+      return this.generateObsidianWastes(60, 60);
+    } else if (zoneId === 'MoltenCaldera' || zoneId === 'InfernalHeart') {
+      return this.generateCaldera(60, 60);
+    } else if (zoneId === 'ShiftingDunes') {
+      return this.generateShiftingDunes(60, 60);
+    } else if (zoneId === 'VoidAbyss' || zoneId === 'CitadelOfTheVoid') {
       return this.generateVoidAbyss(60, 60);
     }
 
@@ -494,6 +502,178 @@ export class MapGenerator {
         { x: cx * TILE_SIZE, y: cy * TILE_SIZE, count: 1, type: 'boss' },
         { x: (cx - 8) * TILE_SIZE, y: (cy - 8) * TILE_SIZE, count: 6, type: 'undead_knight' },
         { x: (cx + 8) * TILE_SIZE, y: (cy + 8) * TILE_SIZE, count: 6, type: 'fire_imp' }
+      ]
+    };
+  }
+
+  // 8. VERDANT CANOPY (64x64)
+  static generateCanopy(w, h) {
+    const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
+    for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
+    for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
+
+    const midY = Math.floor(h / 2);
+    for (let x = 1; x < w - 1; x++) {
+      grid[midY][x] = TILE_TYPES.PATH;
+      grid[midY + 1][x] = TILE_TYPES.PATH;
+    }
+
+    for (let y = 4; y < h - 4; y += 4) {
+      for (let x = 4; x < w - 4; x += 4) {
+        if (Math.abs(y - midY) > 3) {
+          grid[y][x] = TILE_TYPES.ANCIENT_PILLAR;
+          if ((x + y) % 6 === 0) grid[y][x + 1] = TILE_TYPES.TOXIC_MIASMA;
+        }
+      }
+    }
+
+    return {
+      id: 'VerdantCanopy',
+      name: 'Verdant Canopy',
+      subtitle: '🌲 Ancient Bioluminescent Forest & Spider Brood',
+      levelRange: 'Lv. 9-12',
+      hazard: { hazardName: 'Poison Spores', description: 'Webs slow movement. Toxic spores deal Chaos damage.' },
+      widthInTiles: w,
+      heightInTiles: h,
+      worldWidth: w * TILE_SIZE,
+      worldHeight: h * TILE_SIZE,
+      grid: grid,
+      spawn: { x: 350, y: midY * TILE_SIZE },
+      portals: [
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'WhisperingPlains', targetX: 2650, targetY: midY * TILE_SIZE, name: '🌾 Return to Plains' },
+        { x: (w - 2) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'ForgottenCrypt', targetX: 550, targetY: 550, name: '🏰 Enter Forgotten Crypt' }
+      ],
+      monsterSpawns: [
+        { x: 800, y: 800, count: 8, type: 'spider' },
+        { x: 2000, y: 1800, count: 7, type: 'wolf' }
+      ]
+    };
+  }
+
+  // 9. HOWLING ICE CAVERNS (60x60)
+  static generateIceCaverns(w, h) {
+    const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
+    for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
+    for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
+
+    const midY = Math.floor(h / 2);
+    for (let x = 1; x < w - 1; x++) {
+      grid[midY][x] = TILE_TYPES.PATH;
+    }
+
+    for (let y = 6; y < h - 6; y++) {
+      for (let x = 6; x < w - 6; x++) {
+        if (Math.abs(y - midY) > 2 && (x * y) % 7 === 0) {
+          grid[y][x] = TILE_TYPES.GLACIAL_ICE;
+        }
+      }
+    }
+
+    return {
+      id: 'HowlingIceCaverns',
+      name: 'Howling Ice Caverns',
+      subtitle: '🧊 Subterranean Ice Grotto & Crystal Guardians',
+      levelRange: 'Lv. 22-26',
+      hazard: { hazardName: 'Deep Glacial Frost', description: 'Permafrost slows speed and causes chilling spikes.' },
+      widthInTiles: w,
+      heightInTiles: h,
+      worldWidth: w * TILE_SIZE,
+      worldHeight: h * TILE_SIZE,
+      grid: grid,
+      spawn: { x: 350, y: midY * TILE_SIZE },
+      portals: [
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'FrostpeakTundra', targetX: 2500, targetY: midY * TILE_SIZE, name: '❄️ Return to Tundra' },
+        { x: (w - 2) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'StormpeakRidge', targetX: 400, targetY: midY * TILE_SIZE, name: '⚡ Climb Stormpeak Ridge' }
+      ],
+      monsterSpawns: [
+        { x: 800, y: 900, count: 8, type: 'frost_golem' },
+        { x: 1800, y: 1800, count: 7, type: 'frost_golem' }
+      ]
+    };
+  }
+
+  // 10. OBSIDIAN WASTES (60x60)
+  static generateObsidianWastes(w, h) {
+    const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
+    for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
+    for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
+
+    const midY = Math.floor(h / 2);
+    for (let x = 1; x < w - 1; x++) {
+      grid[midY][x] = TILE_TYPES.PATH;
+      grid[midY + 1][x] = TILE_TYPES.PATH;
+    }
+
+    for (let y = 5; y < h - 5; y += 3) {
+      for (let x = 5; x < w - 5; x += 3) {
+        if (Math.abs(y - midY) > 3 && (x + y) % 4 === 0) {
+          grid[y][x] = TILE_TYPES.BURNT_GROUND;
+        }
+      }
+    }
+
+    return {
+      id: 'ObsidianWastes',
+      name: 'Obsidian Wastes',
+      subtitle: '🌋 Basalt Wilderness & Ash Storms',
+      levelRange: 'Lv. 34-38',
+      hazard: { hazardName: 'Ash Storm', description: 'Ash clouds obscure vision and scorching earth deals burn damage.' },
+      widthInTiles: w,
+      heightInTiles: h,
+      worldWidth: w * TILE_SIZE,
+      worldHeight: h * TILE_SIZE,
+      grid: grid,
+      spawn: { x: 350, y: midY * TILE_SIZE },
+      portals: [
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'AshenRedoubt', targetX: 1632, targetY: 960, name: '🏰 Return to Redoubt' },
+        { x: (w - 2) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'MoltenCaldera', targetX: 400, targetY: midY * TILE_SIZE, name: '🔥 Enter Molten Caldera' }
+      ],
+      monsterSpawns: [
+        { x: 900, y: 900, count: 8, type: 'fire_imp' },
+        { x: 1900, y: 1900, count: 7, type: 'magma_golem' }
+      ]
+    };
+  }
+
+  // 11. SHIFTING DUNES (60x60)
+  static generateShiftingDunes(w, h) {
+    const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
+    for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
+    for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
+
+    const midY = Math.floor(h / 2);
+    for (let x = 1; x < w - 1; x++) {
+      grid[midY][x] = TILE_TYPES.PATH;
+      grid[midY + 1][x] = TILE_TYPES.PATH;
+    }
+
+    for (let y = 4; y < h - 4; y += 3) {
+      for (let x = 4; x < w - 4; x += 3) {
+        if (Math.abs(y - midY) > 3) {
+          grid[y][x] = TILE_TYPES.SHALLOW_WATER_SAND;
+        }
+      }
+    }
+
+    return {
+      id: 'ShiftingDunes',
+      name: 'Shifting Dunes',
+      subtitle: '🏜️ Endless Desert Canyon & Sand Wyrms',
+      levelRange: 'Lv. 48-52',
+      hazard: { hazardName: 'Quicksand & Sandstorms', description: 'Quicksand slows movement. Sandstorms buffet adventurers.' },
+      widthInTiles: w,
+      heightInTiles: h,
+      worldWidth: w * TILE_SIZE,
+      worldHeight: h * TILE_SIZE,
+      grid: grid,
+      spawn: { x: 350, y: midY * TILE_SIZE },
+      portals: [
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'OasisSanctum', targetX: 1632, targetY: 960, name: '🌴 Return to Oasis' },
+        { x: (w - 2) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'DreadTombs', targetX: 550, targetY: 550, name: '💀 Enter Dread Tombs' }
+      ],
+      monsterSpawns: [
+        { x: 900, y: 900, count: 8, type: 'undead_knight' },
+        { x: 2000, y: 2000, count: 8, type: 'skeleton' }
       ]
     };
   }
