@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="stylesheet" href="style.css?v=mp2" />
 </head>
 <body>
   <div id="game-container">
@@ -46,6 +46,7 @@
           <span id="hud-name" class="char-name">Novice Adventurer</span>
           <button id="btn-ascend-trigger" class="ascend-pulse-btn hidden" title="Class Ascension Available!">⭐ Ascend Class!</button>
           <span class="zone-badge" id="hud-zone-tag">🌿 Sanctuary Haven</span>
+          <span id="multiplayerStatusPill" class="mp-pill mp-online">🟢 Online</span>
         </div>
         <!-- Energy Shield Bar -->
         <div class="bar-wrapper es-bar-wrap" id="wrap-es">
@@ -85,7 +86,8 @@
 
       <div class="quick-buttons">
         <button id="btn-google-auth" class="hud-btn highlight-btn" title="Google Account Login & Sync" style="color:#4285F4; grid-column: span 2;">🔑 Google Account</button>
-        <button id="btn-toggle-roster" class="hud-btn highlight-btn" title="Character Roster (Select / Create Hero) [P]">👥 Roster (P)</button>
+        <button id="btn-toggle-roster" class="hud-btn highlight-btn" title="Character Roster (Select / Create Hero) [P]" style="color:#00e676;">👥 Roster (P)</button>
+        <button id="btn-toggle-bestiary" class="hud-btn highlight-btn" title="Bestiary Codex & Monster Lore [Y]" style="color:#ffd700;">📖 Bestiary (Y)</button>
         <button id="btn-forge" class="hud-btn highlight-btn" title="Genesis Forge Bench (Crafting) [B]" style="color:#ffd700;">🔨 Forge (B)</button>
         <button id="btn-map-device" class="hud-btn highlight-btn" title="Gate of Eternity Map Device [O]" style="color:#00f2fe;">🌌 Rifts (O)</button>
         <button id="btn-devotion" class="hud-btn highlight-btn" title="Celestial Devotion Grid [V]" style="color:#c678dd;">✨ Devotion (V)</button>
@@ -629,13 +631,62 @@
       </div>
     </div>
 
+    <!-- Bottom Left: Zone Chat Box -->
+    <div id="zone-chat-panel" class="zone-chat-box">
+      <div class="chat-header">
+        <span>💬 ZONE CHAT</span>
+        <span class="chat-hint">Press Enter to talk</span>
+      </div>
+      <div id="zoneChatLog" class="chat-messages-scroll">
+        <div class="chat-entry"><span class="ce-time">[Sys]</span> <span class="ce-msg info-msg">Welcome to Aethelis. Connected to SignalR GameHub.</span></div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="zoneChatInput" placeholder="Say something..." maxlength="150" />
+        <button id="btnSendChat">Send</button>
+      </div>
+    </div>
+
     <!-- Controls Hint (Clean - No Debug Info) -->
     <div id="controls-hint">
-      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Stats | <b>B</b>: Forge | <b>O</b>: Rifts | <b>V</b>: Devotion | <b>X</b>: Stash | <b>P</b>: Roster | <b>F</b>: Pickup | <b>ESC</b>: Close</span>
+      <span>🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Stats | <b>B</b>: Forge | <b>Y</b>: Bestiary | <b>P</b>: Roster | <b>O</b>: Rifts | <b>V</b>: Devotion | <b>X</b>: Stash | <b>M</b>: Map | <b>F</b>: Pickup | <b>ESC</b>: Close</span>
+    </div>
+  </div>
+
+  <!-- Bestiary Codex Modal -->
+  <div id="bestiaryModal" class="modal-overlay">
+    <div class="modal-content bestiary-modal-box">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">📖</span>
+          <div>
+            <h2 style="margin:0; font-size:18px; color:#ffd700;">BESTIARY & MONSTER LORE CODEX</h2>
+            <span style="font-size:11px; color:#888;">Hunter Lore Mastery, Species Weaknesses & Permanent Character Buffs [Y]</span>
+          </div>
+        </div>
+        <button id="closeBestiaryBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="bestiaryContent" class="bestiary-inner-scroll"></div>
+    </div>
+  </div>
+
+  <!-- Character Roster Modal -->
+  <div id="rosterModal" class="modal-overlay">
+    <div class="modal-content roster-modal-box">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">👥</span>
+          <div>
+            <h2 style="margin:0; font-size:18px; color:#ffd700;">HERO ROSTER & CHARACTER SWITCHER</h2>
+            <span style="font-size:11px; color:#888;">Manage multiple heroes on account with independent progression [P]</span>
+          </div>
+        </div>
+        <button id="closeRosterBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="rosterContent" class="roster-inner-scroll"></div>
     </div>
   </div>
 
   <!-- Load Main ES Module -->
-  <script type="module" src="js/main.js?v=atlas3"></script>
+  <script type="module" src="js/main.js?v=mp2"></script>
 </body>
 </html>

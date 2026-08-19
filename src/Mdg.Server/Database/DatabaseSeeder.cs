@@ -726,7 +726,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 Subtitle = "Awaken in Haven and cleanse the ancient crypt of Malakor.",
                 LevelRange = "Lv. 1 - 15",
                 Boss = "Malakor the Shadow Fiend",
-                CoverArt = "assets/map_overworld_sample.png",
+                CoverArt = "assets/acts/act1_sylvan.jpg",
                 ZonesJson = JsonSerializer.Serialize(new[] { "SanctuaryHaven", "WhisperingPlains", "ForgottenCrypt" })
             },
             new()
@@ -736,7 +736,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 Subtitle = "Establish Glacial Outpost and conquer Sovereign Vael atop the summit.",
                 LevelRange = "Lv. 15 - 30",
                 Boss = "Cryomancer Vael the Frost Sovereign",
-                CoverArt = "assets/map_overworld_sample.png",
+                CoverArt = "assets/acts/act2_frozen.jpg",
                 ZonesJson = JsonSerializer.Serialize(new[] { "GlacialOutpost", "FrostpeakTundra", "StormpeakRidge" })
             },
             new()
@@ -746,7 +746,7 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 Subtitle = "Enter Ashen Redoubt and pierce into Mount Caelum to defeat Ignis.",
                 LevelRange = "Lv. 30 - 45",
                 Boss = "Ignis the Undying Archon",
-                CoverArt = "assets/dungeon_lava_sample.png",
+                CoverArt = "assets/acts/act3_infernal.jpg",
                 ZonesJson = JsonSerializer.Serialize(new[] { "AshenRedoubt", "MoltenCaldera", "InfernalHeart" })
             },
             new()
@@ -756,18 +756,18 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 Subtitle = "Discover Oasis Sanctum and purge the undead lords within the Necropolis.",
                 LevelRange = "Lv. 45 - 60",
                 Boss = "High Inquisitor Morvath",
-                CoverArt = "assets/dungeon_lava_sample.png",
+                CoverArt = "assets/acts/act4_necropolis.jpg",
                 ZonesJson = JsonSerializer.Serialize(new[] { "OasisSanctum", "DreadTombs", "NecropolisOfSouls" })
             },
             new()
             {
                 ActNumber = 5,
                 Name = "Act V: Celestial Void & Pinnacle",
-                Subtitle = "Ascend to Aethelis Citadel, defeat the Void Sovereign, and unlock the Atlas Map Device.",
+                Subtitle = "Ascend to Aethelis Citadel, slay the Void Sovereign, and master the Map Device.",
                 LevelRange = "Lv. 60 - 85+",
                 Boss = "The Void Sovereign Prime",
-                CoverArt = "assets/buildings_master_pack.png",
-                ZonesJson = JsonSerializer.Serialize(new[] { "AethelisCitadel", "VoidAbyss", "CitadelOfTheVoid", "ArenaCaldera", "ArenaGlacial", "ArenaVoid" })
+                CoverArt = "assets/acts/act5_celestial.jpg",
+                ZonesJson = JsonSerializer.Serialize(new[] { "AethelisCitadel", "VoidAbyss", "PinnacleOfEternity", "ArenaCaldera", "ArenaGlacial", "ArenaVoid" })
             }
         };
     }

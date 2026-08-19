@@ -3,7 +3,7 @@
  * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
 import { ZONES } from './data/zones.js';
 import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
 import { SKILLS } from './data/skills.js';
@@ -20,6 +20,9 @@ import { renderSharedStashModal } from './ui/stash-ui.js';
 import { openNpcDialogue } from './ui/npc-dialog-ui.js';
 import { renderMapDeviceModal } from './ui/map-device-ui.js';
 import { initDefeatUI } from './ui/defeat-ui.js';
+import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
+import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
+import { MPClient } from './services/multiplayer-client.js';
 
 window.keys = keys;
 window.loadZone = loadZone;
@@ -139,6 +142,9 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   player.vy = 0;
   camera.x = safe.x;
   camera.y = safe.y;
+
+  // Notify Multiplayer Server of Zone Transition
+  MPClient.changeZone(currentZoneId, safe.x, safe.y);
 
   // 2. Load Elements from ZoneMap
   if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
@@ -888,10 +894,39 @@ document.getElementById('slot-dash')?.addEventListener('click', castDash);
 // Setup World Map Fast Travel & HUD Buttons
 document.getElementById('btn-toggle-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
 document.getElementById('btn-close-worldmap')?.addEventListener('click', () => toggleModal('worldmap-modal'));
+document.getElementById('btn-toggle-bestiary')?.addEventListener('click', toggleBestiaryUI);
+document.getElementById('btn-toggle-roster')?.addEventListener('click', openRosterUI);
+
+// Zone Chat input listener
+const chatInput = document.getElementById('zoneChatInput');
+const btnSendChat = document.getElementById('btnSendChat');
+if (chatInput) {
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const msg = chatInput.value.trim();
+      if (msg) {
+        MPClient.sendChat(msg);
+        chatInput.value = '';
+      }
+    }
+  });
+}
+if (btnSendChat && chatInput) {
+  btnSendChat.onclick = () => {
+    const msg = chatInput.value.trim();
+    if (msg) {
+      MPClient.sendChat(msg);
+      chatInput.value = '';
+    }
+  };
+}
 
 // Initialize UI and Game
 setupUIListeners();
 initDefeatUI();
+setupBestiaryUI();
+setupRosterUI();
+MPClient.init();
 
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {

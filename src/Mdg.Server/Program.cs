@@ -4,6 +4,7 @@ using Mdg.Core.Features.Items.Crafting;
 using Mdg.Core.Features.Maps;
 using Mdg.Core.Features.Progression;
 using Mdg.Server.Database;
+using Mdg.Server.Hubs;
 using Mdg.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -22,6 +23,7 @@ var dbPath = Path.Combine(dataDir, "mdg_world.db");
 builder.Services.AddDbContextFactory<MdgDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 
+builder.Services.AddSignalR();
 builder.Services.AddSingleton<GameDatabaseService>();
 builder.Services.AddSingleton<GameSessionService>();
 builder.Services.AddSingleton<CompanionManager>();
@@ -40,6 +42,9 @@ var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+// Map SignalR GameHub
+app.MapHub<GameHub>("/gamehub");
 
 // Health Check API
 app.MapGet("/api/v1/health", () => new

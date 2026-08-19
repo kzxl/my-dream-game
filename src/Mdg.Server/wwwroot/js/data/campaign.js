@@ -14,6 +14,7 @@ export const CAMPAIGN_ACTS = [
     levelRange: 'Lv. 1 - 15',
     boss: '🔥 Malakor the Shadow Fiend',
     townZoneId: 'SanctuaryHaven',
+    bgImage: '/assets/acts/act1_sylvan.jpg',
     zones: [
       {
         id: 'SanctuaryHaven',
@@ -61,6 +62,7 @@ export const CAMPAIGN_ACTS = [
     levelRange: 'Lv. 15 - 30',
     boss: '❄️ Cryomancer Vael the Frost Sovereign',
     townZoneId: 'GlacialOutpost',
+    bgImage: '/assets/acts/act2_frozen.jpg',
     zones: [
       {
         id: 'GlacialOutpost',
@@ -108,6 +110,7 @@ export const CAMPAIGN_ACTS = [
     levelRange: 'Lv. 30 - 45',
     boss: '🌋 Ignis the Undying Archon',
     townZoneId: 'AshenRedoubt',
+    bgImage: '/assets/acts/act3_infernal.jpg',
     zones: [
       {
         id: 'AshenRedoubt',
@@ -155,6 +158,7 @@ export const CAMPAIGN_ACTS = [
     levelRange: 'Lv. 45 - 60',
     boss: '💀 High Inquisitor Morvath',
     townZoneId: 'OasisSanctum',
+    bgImage: '/assets/acts/act4_necropolis.jpg',
     zones: [
       {
         id: 'OasisSanctum',
@@ -202,6 +206,7 @@ export const CAMPAIGN_ACTS = [
     levelRange: 'Lv. 60 - 85+',
     boss: '👑 The Void Sovereign Prime',
     townZoneId: 'AethelisCitadel',
+    bgImage: '/assets/acts/act5_celestial.jpg',
     zones: [
       {
         id: 'AethelisCitadel',

@@ -52,7 +52,7 @@ export function renderWorldMapUI() {
           <span class="atlas-level-badge">${currentAct.levelRange}</span>
         </div>
 
-        <div class="atlas-canvas-container" id="atlas-canvas-board">
+        <div class="atlas-canvas-container" id="atlas-canvas-board" style="background-image: linear-gradient(180deg, rgba(10, 14, 22, 0.4), rgba(8, 10, 16, 0.75)), url('${currentAct.bgImage || '/assets/acts/act1_sylvan.jpg'}'); background-size: cover; background-position: center; border-radius: 8px;">
           <!-- Ambient Map Background Grid -->
           <div class="atlas-grid-overlay"></div>
 

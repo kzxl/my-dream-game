@@ -1,193 +1,222 @@
 /**
- * MDG: Aethelis - Multi-Character Roster UI
- * Hero Selection, Character Creation (Gender, Archetype, Name) & Character Deletion (English)
- * Integrated with Google OAuth & Account-bound Cloud Saves
+ * Character Roster & Selection Modal UI
+ * Allows managing multiple characters per account with independent progression.
  */
 
+import { ApiClient } from '../services/api-client.js';
 import { player } from '../state.js';
 import { AudioEngine } from '../audio.js';
-import { loadFromDatabase, saveToDatabase } from '../save-system.js';
-import { updateHudAvatar, getAvatarPath } from './hud.js';
-import { getCurrentUser, renderAuthHeaderWidget, isUserLoggedIn } from '../auth.js';
 
-export async function renderRosterModal() {
-  let modal = document.getElementById('rosterModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'rosterModal';
-    modal.className = 'game-modal-backdrop';
-    modal.innerHTML = `
-      <div class="roster-modal-card">
-        <div class="modal-header">
-          <h2>👥 Character Roster & Hero Selection</h2>
-          <button class="close-btn" id="closeRosterBtn">✕</button>
-        </div>
+let rosterList = [];
+let selectedClass = 'Vanguard';
+let selectedGender = 'Male';
 
-        <!-- Google Auth Status & Profile Widget -->
-        <div id="authHeaderWidget" style="padding: 14px 20px 0 20px;"></div>
+export function setupRosterUI() {
+  const modal = document.getElementById('rosterModal');
+  if (!modal) return;
 
-        <div class="roster-body">
-          <div class="roster-characters-list" id="rosterCharList">
-            <div style="color:#aaa; text-align:center; padding:20px;">Loading characters from server...</div>
-          </div>
-
-          <!-- Create New Character Section -->
-          <div class="create-char-panel">
-            <h3>✨ Forge New Character</h3>
-            <div class="create-form-row">
-              <input type="text" id="newCharName" placeholder="Hero Name (e.g. Kaelen)" class="form-input" maxlength="20" />
-              <select id="newCharGender" class="form-select">
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
-              <select id="newCharClass" class="form-select">
-                <option value="Novice">The Unbound (Novice)</option>
-                <option value="Vanguard">Iron Vanguard (Knight)</option>
-                <option value="Seeker">Aether Seeker (Arcanist)</option>
-                <option value="Syndicate">Shadow Syndicate (Rogue)</option>
-              </select>
-              <button class="forge-btn btn-craft" id="btnCreateChar">➕ Create Hero</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('closeRosterBtn').onclick = () => {
-      modal.style.display = 'none';
-    };
-
-    document.getElementById('btnCreateChar').onclick = async () => {
-      const user = getCurrentUser();
-      const name = document.getElementById('newCharName').value.trim();
-      const gender = document.getElementById('newCharGender').value;
-      const classSpec = document.getElementById('newCharClass').value;
-
-      if (!name) return alert('Please enter a valid character name!');
-
-      const newId = 'char_' + Date.now();
-      const payload = {
-        id: newId,
-        accountId: user.id,
-        name: name,
-        gender: gender,
-        classSpec: classSpec,
-        level: 1,
-        life: 250,
-        maxLife: 250,
-        mana: 120,
-        maxMana: 120,
-        es: 100,
-        maxEs: 100,
-        zoneId: 'SanctuaryHaven',
-        positionX: 2000,
-        positionY: 2000
-      };
-
-      try {
-        const res = await fetch('/api/v1/characters', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          AudioEngine.playTone(660, 'sine', 0.25, 0.2);
-          document.getElementById('newCharName').value = '';
-          await fetchAndRenderCharacters();
-        } else {
-          alert('Failed to create character on server.');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    // Listen for Google Auth changes to refresh characters
-    window.addEventListener('auth_state_changed', async (e) => {
-      renderAuthHeaderWidget('authHeaderWidget');
-      await fetchAndRenderCharacters();
-    });
+  const btnClose = document.getElementById('closeRosterBtn');
+  if (btnClose) {
+    btnClose.onclick = () => closeRosterUI();
   }
-
-  renderAuthHeaderWidget('authHeaderWidget');
-  await fetchAndRenderCharacters();
-  modal.style.display = 'flex';
 }
 
-async function fetchAndRenderCharacters() {
-  const container = document.getElementById('rosterCharList');
+export async function openRosterUI() {
+  const modal = document.getElementById('rosterModal');
+  if (!modal) return;
+  modal.classList.add('active');
+  AudioEngine.playTone(480, 'sine', 0.15, 0.1);
+  await refreshRosterList();
+}
+
+export function closeRosterUI() {
+  const modal = document.getElementById('rosterModal');
+  if (!modal) return;
+  modal.classList.remove('active');
+  AudioEngine.playTone(330, 'triangle', 0.1, 0.08);
+}
+
+export const renderRosterModal = openRosterUI;
+
+export async function refreshRosterList() {
+  const container = document.getElementById('rosterContent');
   if (!container) return;
 
-  const user = getCurrentUser();
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#ffd700;">⏳ Loading character roster...</div>`;
 
-  try {
-    const res = await fetch(`/api/v1/characters?accountId=${encodeURIComponent(user.id)}`);
-    let list = [];
-    if (res.ok) {
-      list = await res.json();
-    }
+  rosterList = await ApiClient.fetchCharacters('guest');
+  if (!rosterList || rosterList.length === 0) {
+    // If empty, add active character as first default
+    rosterList = [{
+      id: player.id || 'hero_default',
+      name: player.name || 'Aethel Hero',
+      classSpec: player.classSpec || 'Vanguard',
+      gender: player.gender || 'Male',
+      level: player.level || 1,
+      zoneId: player.zoneId || 'SanctuaryHaven',
+      updatedAt: new Date().toISOString()
+    }];
+  }
 
-    if (list.length === 0) {
-      // If none, provide initial character for this account
-      list = [{
-        id: 'hero_' + user.id.replace(/[^a-zA-Z0-9]/g, '_'),
-        accountId: user.id,
-        name: user.name ? user.name.split(' ')[0] : 'The Unbound',
-        gender: 'Male',
-        classSpec: 'Novice',
-        level: 1,
-        zoneId: 'SanctuaryHaven'
-      }];
-    }
-
-    container.innerHTML = '';
-    list.forEach(c => {
-      const card = document.createElement('div');
-      card.className = `roster-hero-card ${player.id === c.id ? 'active-hero' : ''}`;
-      const avatarPath = getAvatarPath(c.classSpec, c.gender);
-      card.innerHTML = `
-        <div class="hero-avatar-box">
-          <img src="${avatarPath}" alt="${c.name}" class="roster-avatar-img" />
+  container.innerHTML = `
+    <div class="roster-split-layout">
+      <!-- Left: Character List -->
+      <div class="roster-list-col">
+        <h3 class="roster-col-title">📜 YOUR ACTIVE HEROES (${rosterList.length})</h3>
+        <div class="roster-card-stack">
+          ${rosterList.map(c => {
+            const isCurrent = (player.id === c.id || (player.name === c.name && !player.id));
+            return `
+              <div class="roster-char-card ${isCurrent ? 'is-active-char' : ''}" data-char-id="${c.id}">
+                <div class="rcc-avatar">
+                  ${c.classSpec === 'Arcanist' ? '🔮' : (c.classSpec === 'ShadowRogue' ? '🗡️' : '🛡️')}
+                </div>
+                <div class="rcc-info">
+                  <div class="rcc-name-row">
+                    <span class="rcc-name">${c.name}</span>
+                    <span class="rcc-class-pill ${c.classSpec.toLowerCase()}">${c.classSpec}</span>
+                  </div>
+                  <div class="rcc-meta-row">
+                    <span class="rcc-lvl">Level ${c.level || 1}</span>
+                    <span class="rcc-zone">📍 ${c.zoneId || 'SanctuaryHaven'}</span>
+                  </div>
+                </div>
+                <div class="rcc-actions">
+                  ${isCurrent ? '<span class="rcc-playing-tag">PLAYING</span>' : `<button class="rcc-btn-select" data-char-id="${c.id}">Select</button>`}
+                  ${rosterList.length > 1 && !isCurrent ? `<button class="rcc-btn-del" data-char-id="${c.id}" title="Delete Hero">🗑️</button>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
-        <div class="hero-info-box">
-          <div class="hero-name-row">
-            <span class="hero-name">${c.name}</span>
-            <span class="hero-lvl">Lv. ${c.level}</span>
+      </div>
+
+      <!-- Right: Create New Character Form -->
+      <div class="roster-create-col">
+        <h3 class="roster-col-title">✨ CREATE NEW HERO</h3>
+        <div class="create-hero-box">
+          <div class="ch-field">
+            <label>Hero Name</label>
+            <input type="text" id="newHeroName" placeholder="Enter hero name..." maxlength="20" value="Valerius" />
           </div>
-          <div class="hero-details">${c.classSpec} • Location: ${c.zoneId || 'SanctuaryHaven'}</div>
-        </div>
-        <div class="hero-actions-box">
-          <button class="forge-btn btn-craft btn-play-hero" data-id="${c.id}">🎮 Play</button>
-          ${c.id !== 'hero_default' ? `<button class="forge-btn btn-lock btn-del-hero" data-id="${c.id}" style="color:#ff6666;">🗑️</button>` : ''}
-        </div>
-      `;
 
-      card.querySelector('.btn-play-hero').onclick = async () => {
-        player.id = c.id;
-        player.accountId = user.id;
-        player.name = c.name;
-        player.gender = c.gender;
-        player.classSpec = c.classSpec;
-        await loadFromDatabase(c.id);
-        updateHudAvatar();
-        AudioEngine.playTone(523, 'sine', 0.25, 0.2);
-        document.getElementById('rosterModal').style.display = 'none';
-      };
+          <div class="ch-field">
+            <label>Select Archetype Class</label>
+            <div class="class-select-grid">
+              <div class="cs-option ${selectedClass === 'Vanguard' ? 'selected' : ''}" data-class="Vanguard">
+                <span class="cs-icon">🛡️</span>
+                <span class="cs-name">Iron Vanguard</span>
+                <span class="cs-desc">Heavy Armor, Melee Cleave & Life Pool</span>
+              </div>
+              <div class="cs-option ${selectedClass === 'Arcanist' ? 'selected' : ''}" data-class="Arcanist">
+                <span class="cs-icon">🔮</span>
+                <span class="cs-name">Aether Arcanist</span>
+                <span class="cs-desc">Elemental Magic, Fireballs & Energy Shield</span>
+              </div>
+              <div class="cs-option ${selectedClass === 'ShadowRogue' ? 'selected' : ''}" data-class="ShadowRogue">
+                <span class="cs-icon">🗡️</span>
+                <span class="cs-name">Shadow Rogue</span>
+                <span class="cs-desc">Critical Strikes, Evasion & Fast Attacks</span>
+              </div>
+            </div>
+          </div>
 
-      const delBtn = card.querySelector('.btn-del-hero');
-      if (delBtn) {
-        delBtn.onclick = async () => {
-          if (confirm(`Permanently delete character ${c.name}?`)) {
-            await fetch(`/api/v1/characters/${c.id}`, { method: 'DELETE' });
-            await fetchAndRenderCharacters();
-          }
-        };
+          <div class="ch-field">
+            <label>Gender & Voice</label>
+            <div class="gender-toggle-row">
+              <button class="gender-btn ${selectedGender === 'Male' ? 'active' : ''}" data-gender="Male">♂ Male</button>
+              <button class="gender-btn ${selectedGender === 'Female' ? 'active' : ''}" data-gender="Female">♀ Female</button>
+            </div>
+          </div>
+
+          <button id="btnCreateAndEnter" class="btn-create-enter">🌟 FORGE HERO & ENTER WORLD</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Attach Event Listeners
+  container.querySelectorAll('.rcc-btn-select').forEach(btn => {
+    btn.onclick = async () => {
+      const charId = btn.getAttribute('data-char-id');
+      await switchActiveCharacter(charId);
+    };
+  });
+
+  container.querySelectorAll('.rcc-btn-del').forEach(btn => {
+    btn.onclick = async () => {
+      const charId = btn.getAttribute('data-char-id');
+      if (confirm('Are you sure you want to delete this hero permanently?')) {
+        await ApiClient.deleteCharacter(charId);
+        AudioEngine.playTone(200, 'sawtooth', 0.2, 0.1);
+        await refreshRosterList();
       }
+    };
+  });
 
-      container.appendChild(card);
-    });
-  } catch (e) {
-    console.error(e);
+  container.querySelectorAll('.cs-option').forEach(opt => {
+    opt.onclick = () => {
+      selectedClass = opt.getAttribute('data-class');
+      AudioEngine.playTone(500, 'sine', 0.08, 0.08);
+      refreshRosterList();
+    };
+  });
+
+  container.querySelectorAll('.gender-btn').forEach(btn => {
+    btn.onclick = () => {
+      selectedGender = btn.getAttribute('data-gender');
+      AudioEngine.playTone(400, 'triangle', 0.08, 0.08);
+      refreshRosterList();
+    };
+  });
+
+  const btnCreate = document.getElementById('btnCreateAndEnter');
+  if (btnCreate) {
+    btnCreate.onclick = async () => {
+      const nameInput = document.getElementById('newHeroName');
+      const name = nameInput ? nameInput.value.trim() : 'Hero';
+      if (!name) return alert('Please enter a character name.');
+
+      btnCreate.disabled = true;
+      btnCreate.innerText = '⏳ Creating Hero...';
+
+      const res = await ApiClient.createCharacter(name, selectedClass, selectedGender, 'guest');
+      if (res && res.id) {
+        AudioEngine.playLevelUp();
+        await switchActiveCharacter(res.id);
+        closeRosterUI();
+      } else {
+        alert('Failed to create character.');
+        btnCreate.disabled = false;
+        btnCreate.innerText = '🌟 FORGE HERO & ENTER WORLD';
+      }
+    };
+  }
+}
+
+export async function switchActiveCharacter(characterId) {
+  const savegame = await ApiClient.loadSavegame(characterId);
+  if (savegame) {
+    player.id = savegame.id;
+    player.name = savegame.name;
+    player.classSpec = savegame.classSpec || 'Vanguard';
+    player.gender = savegame.gender || 'Male';
+    player.level = savegame.level || 1;
+    player.currentExp = savegame.currentExp || 0;
+    player.expToNext = savegame.expToNext || 100;
+    player.life = savegame.life || 500;
+    player.maxLife = savegame.maxLife || 500;
+    player.mana = savegame.mana || 200;
+    player.maxMana = savegame.maxMana || 200;
+    player.es = savegame.es || 0;
+    player.maxEs = savegame.maxEs || 0;
+    player.zoneId = savegame.zoneId || 'SanctuaryHaven';
+
+    if (savegame.equipped) player.equipped = savegame.equipped;
+    if (savegame.bag) player.bag = savegame.bag;
+    if (savegame.skills) player.skills = savegame.skills;
+
+    AudioEngine.playTone(600, 'sine', 0.2, 0.15);
+    window.location.reload();
   }
 }

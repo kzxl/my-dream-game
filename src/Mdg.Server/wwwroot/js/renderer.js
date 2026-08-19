@@ -1,4 +1,4 @@
-import { TILE_SIZE, camera, player, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
 import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
 import { getMonsterLoreBonus } from './combat.js';
@@ -25,6 +25,11 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
 
   monsters.forEach(m => {
     if (m.isAlive) renderList.push({ y: m.y, render: () => drawMonsterClean(ctx, m) });
+  });
+
+  // Render Other Multiplayer Co-op Peers
+  otherPlayers.forEach(peer => {
+    renderList.push({ y: peer.y, render: () => drawOtherPlayer(ctx, peer) });
   });
 
   renderList.push({ y: player.y, render: () => drawPlayerClean(ctx) });
@@ -381,6 +386,74 @@ export function drawPlayerClean(ctx) {
     ctx.stroke();
     ctx.restore();
   }
+
+  ctx.restore();
+}
+
+export function drawOtherPlayer(ctx, p) {
+  // Smooth position interpolation
+  if (p.targetX !== undefined) {
+    p.x += (p.targetX - p.x) * 0.25;
+    p.y += (p.targetY - p.y) * 0.25;
+  }
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 20, 18, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sprite
+  const img = assets.maleHero;
+  if (img.complete && img.naturalWidth > 0) {
+    const frameW = img.naturalWidth / 4;
+    const frameH = img.naturalHeight / 4;
+    let row = 0;
+    let flipX = false;
+
+    if (p.facing === 'down') row = 0;
+    else if (p.facing === 'up') row = 1;
+    else if (p.facing === 'right') row = 2;
+    else if (p.facing === 'left') {
+      row = 2;
+      flipX = true;
+    }
+
+    const sx = 0;
+    const sy = row * frameH;
+    const destW = 56;
+    const destH = 56;
+
+    if (flipX) {
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      ctx.restore();
+    } else {
+      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+    }
+  } else {
+    ctx.fillStyle = '#61afef';
+    ctx.fillRect(-12, -12, 24, 24);
+  }
+
+  // Nameplate & Class tag
+  const titleColor = p.classSpec === 'Vanguard' ? '#e5c07b' : (p.classSpec === 'Arcanist' ? '#61afef' : (p.classSpec === 'ShadowRogue' ? '#c678dd' : '#00e676'));
+  ctx.font = 'bold 10px "Outfit", sans-serif';
+  ctx.fillStyle = titleColor;
+  ctx.textAlign = 'center';
+  ctx.fillText(`${p.characterName || 'Hero'} [${p.classSpec || 'Novice'}]`, 0, -42);
+
+  // Health bar
+  const hpPct = Math.max(0, Math.min(1, (p.life || 500) / (p.maxLife || 500)));
+  const barW = 36;
+  ctx.fillStyle = '#1e222b';
+  ctx.fillRect(-barW / 2, -38, barW, 4);
+  ctx.fillStyle = '#00e676';
+  ctx.fillRect(-barW / 2 + 1, -37, (barW - 2) * hpPct, 2);
 
   ctx.restore();
 }

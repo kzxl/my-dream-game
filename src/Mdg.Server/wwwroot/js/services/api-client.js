@@ -103,5 +103,74 @@ export const ApiClient = {
       console.warn('[ApiClient] Skill tree validation fallback:', err);
     }
     return null;
+  },
+
+  /**
+   * Character Roster APIs
+   */
+  async fetchCharacters(accountId = 'guest') {
+    try {
+      const res = await fetch(`/api/v1/characters?accountId=${encodeURIComponent(accountId)}`);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] fetchCharacters fallback:', err);
+    }
+    return [];
+  },
+
+  async createCharacter(name, classSpec, gender, accountId = 'guest') {
+    try {
+      const res = await fetch('/api/v1/characters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'char_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 4),
+          name: name || 'Aria',
+          classSpec: classSpec || 'Novice',
+          gender: gender || 'Male',
+          accountId: accountId
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] createCharacter fallback:', err);
+    }
+    return null;
+  },
+
+  async deleteCharacter(characterId) {
+    try {
+      const res = await fetch(`/api/v1/characters/${encodeURIComponent(characterId)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] deleteCharacter fallback:', err);
+    }
+    return null;
+  },
+
+  async loadSavegame(characterId = 'hero_default') {
+    try {
+      const res = await fetch(`/api/v1/savegame?characterId=${encodeURIComponent(characterId)}`);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] loadSavegame fallback:', err);
+    }
+    return null;
+  },
+
+  async saveGame(savePayload) {
+    try {
+      const res = await fetch('/api/v1/savegame', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(savePayload)
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] saveGame fallback:', err);
+    }
+    return null;
   }
 };

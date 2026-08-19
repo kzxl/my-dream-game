@@ -96,6 +96,8 @@ export const projectiles = [];
 export const particles = [];
 export const floatingTexts = [];
 export const groundLoot = [];
+export const otherPlayers = new Map();
+export const zoneChatMessages = [];
 
 export const keys = {};
-export const mouse = { x: 0, y: 0, worldX: 2000, worldY: 2000, isDown: false };
+export const mouse = { x: 0, y: 0, worldX: 0, worldY: 0, down: false };
