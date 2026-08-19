@@ -417,6 +417,113 @@ public sealed class GameDatabaseService
         await using var db = await _contextFactory.CreateDbContextAsync();
         return await db.CampaignActs.AsNoTracking().OrderBy(a => a.ActNumber).ToListAsync();
     }
+
+    public async Task<List<MonsterTemplateEntity>> GetMonsterTemplatesAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.MonsterTemplates.AsNoTracking().OrderBy(m => m.Act).ThenBy(m => m.BaseHp).ToListAsync();
+    }
+
+    public async Task<List<UnifiedModifierTemplateEntity>> GetUnifiedModifiersAsync(string? targetCategory = null)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var q = db.UnifiedModifiers.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(targetCategory))
+        {
+            q = q.Where(m => m.TargetCategory == targetCategory);
+        }
+        return await q.OrderBy(m => m.Tier).ThenBy(m => m.Weight).ToListAsync();
+    }
+
+    public async Task<List<DropTableEntryEntity>> GetDropTablesAsync(string? sourceKey = null)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var q = db.DropTables.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(sourceKey))
+        {
+            q = q.Where(d => d.SourceKey == sourceKey || d.SourceType == "Global");
+        }
+        return await q.OrderByDescending(d => d.DropChancePercent).ToListAsync();
+    }
+
+    public async Task<object> GetFamilyMasterySystemAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var families = await db.FamilyMasteries.AsNoTracking().ToListAsync();
+        var nodes = await db.FamilyTalentNodes.AsNoTracking().ToListAsync();
+
+        var result = new Dictionary<string, object>();
+        foreach (var fam in families)
+        {
+            var famNodes = nodes.Where(n => n.FamilyId == fam.Id).ToList();
+            var rootNode = famNodes.FirstOrDefault(n => n.Branch == "root") ?? famNodes.FirstOrDefault();
+
+            var branches = new List<object>
+            {
+                new
+                {
+                    id = "harvest",
+                    title = "🌿 Harvest & Spoils",
+                    nodes = famNodes.Where(n => n.Branch == "harvest").OrderBy(n => n.Tier).Select(n => new
+                    {
+                        id = n.Id,
+                        name = n.Name,
+                        desc = n.Description,
+                        icon = n.Icon,
+                        parentId = n.ParentNodeId,
+                        isKeystone = n.IsKeystone
+                    })
+                },
+                new
+                {
+                    id = "combat",
+                    title = "⚔️ Combat & Lethality",
+                    nodes = famNodes.Where(n => n.Branch == "combat").OrderBy(n => n.Tier).Select(n => new
+                    {
+                        id = n.Id,
+                        name = n.Name,
+                        desc = n.Description,
+                        icon = n.Icon,
+                        parentId = n.ParentNodeId,
+                        isKeystone = n.IsKeystone
+                    })
+                },
+                new
+                {
+                    id = "survival",
+                    title = "🛡️ Survival & Wards",
+                    nodes = famNodes.Where(n => n.Branch == "survival").OrderBy(n => n.Tier).Select(n => new
+                    {
+                        id = n.Id,
+                        name = n.Name,
+                        desc = n.Description,
+                        icon = n.Icon,
+                        parentId = n.ParentNodeId,
+                        isKeystone = n.IsKeystone
+                    })
+                }
+            };
+
+            result[fam.Id] = new
+            {
+                id = fam.Id,
+                name = fam.Name,
+                icon = fam.Icon,
+                color = fam.Color,
+                desc = fam.Description,
+                root = rootNode == null ? null : new
+                {
+                    id = rootNode.Id,
+                    name = rootNode.Name,
+                    desc = rootNode.Description,
+                    icon = rootNode.Icon
+                },
+                branches
+            };
+        }
+
+        return result;
+    }
 }
 
 public sealed class GoogleAuthRequestDto

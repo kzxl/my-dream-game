@@ -8,12 +8,133 @@ namespace Mdg.Core.Features.Items
     {
         private static readonly Random _rng = new();
 
+        // Master Dictionary of Signature Monster Artifacts on Server
+        public static readonly Dictionary<string, (string Name, string Slot, string Icon, string Desc, Action<ItemEntity> ModBuilder)> SignatureUniqueTemplates = new()
+        {
+            ["goblin_scout"] = (
+                "Scout's Poisoned Pouch",
+                "Amulet",
+                "🎒",
+                "+25% Movement Speed after Dash & Attacks inflict +40 Poison Damage over 3s",
+                item => {
+                    item.AddMod("+25% Movement Speed after Dash", "MoveSpeed", 25);
+                    item.AddMod("+40 Poison Damage over 3s", "PoisonDmg", 40);
+                }
+            ),
+            ["direwolf"] = (
+                "Fang of the Alpha Wolf",
+                "MainHand",
+                "🐺",
+                "+35% Critical Strike Multiplier & Bleed damage dealt to enemies is tripled",
+                item => {
+                    item.AddMod("+35% Critical Strike Multiplier", "CritMulti", 35);
+                    item.AddMod("Bleed damage dealt to enemies is tripled", "BleedTripled", 1);
+                }
+            ),
+            ["skeleton_warrior"] = (
+                "Aegis of the Forgotten Crypt",
+                "OffHand",
+                "🛡️",
+                "+25% Block Chance (Cap 75%) & Blocking grants +120 Temporary Energy Shield",
+                item => {
+                    item.AddMod("+25% Block Chance (Cap 75%)", "BlockChance", 25);
+                    item.AddMod("+120 Energy Shield on Block", "EsOnBlock", 120);
+                }
+            ),
+            ["malakor"] = (
+                "Malakor’s Dreadfire Cleaver",
+                "MainHand",
+                "🗡️",
+                "Converts 50% Physical Damage to Chaos & Calls down a blazing Hellfire Pillar on Critical Hit",
+                item => {
+                    item.AddMod("50% Physical Converted to Chaos", "PhysToChaos", 50);
+                    item.AddMod("+65 to Chaos Damage", "FlatChaos", 65);
+                    item.AddMod("Spawns Hellfire Pillar on Critical Hit", "HellfirePillar", 1);
+                }
+            ),
+            ["frost_elemental"] = (
+                "Core of Absolute Zero",
+                "Amulet",
+                "💎",
+                "+40% Cold Damage & Shatters frozen enemies into explosive ice shrapnel",
+                item => {
+                    item.AddMod("+40% to Cold Damage", "ColdDmg", 40);
+                    item.AddMod("Shatters frozen enemies into explosive ice shrapnel", "IceShatterAoE", 1);
+                }
+            ),
+            ["yeti"] = (
+                "Yeti Warmaster Hide",
+                "BodyArmor",
+                "🥋",
+                "+350 Armor & Grants complete immunity to Stun and Freeze effects",
+                item => {
+                    item.AddMod("+350 to Armor", "Armor", 350);
+                    item.AddMod("100% Immunity to Stun and Freeze", "ImmuneFreezeStun", 1);
+                }
+            ),
+            ["vael_frost"] = (
+                "Vael’s Glacial Spire Staff",
+                "MainHand",
+                "🪄",
+                "+3 to All Cold Skill Gems & Frost Nova releases a second expanding vortex ring",
+                item => {
+                    item.AddMod("+3 to All Cold Skill Gems", "ColdGemLevel", 3);
+                    item.AddMod("+55% to Cold Damage", "ColdDmg", 55);
+                    item.AddMod("Frost Nova releases a second expanding vortex ring", "DoubleFrostNova", 1);
+                }
+            ),
+            ["magma_golem"] = (
+                "Heart of the Molten Colossus",
+                "Ring",
+                "❤️‍🔥",
+                "+20% Maximum Life & Taking Fire damage grants 40% Increased Attack & Cast Speed",
+                item => {
+                    item.AddMod("+20% Maximum Life", "MaxLifePercent", 20);
+                    item.AddMod("+40% Attack & Cast Speed on Fire hit", "FireSpeedBuff", 40);
+                }
+            ),
+            ["ignis_dragon"] = (
+                "Crown of the Scourge Wyrm",
+                "Helm",
+                "👑",
+                "Fireball transforms into Draconic Flame (Fires 3 piercing fire dragons with 100% Ignite chance)",
+                item => {
+                    item.AddMod("+150 to Maximum Life", "MaxLife", 150);
+                    item.AddMod("+50% to Fire Damage", "FireDmg", 50);
+                    item.AddMod("Fireball fires 3 piercing Draconic Dragons", "DraconicFireball", 1);
+                }
+            ),
+            ["abyssal_stalker"] = (
+                "Eye of the Deep Trench",
+                "Ring",
+                "👁️",
+                "+30% Chaos Damage & Crits inflict Void Siphon, restoring 10% Energy Shield",
+                item => {
+                    item.AddMod("+30% to Chaos Damage", "ChaosDmg", 30);
+                    item.AddMod("Crits restore 10% Energy Shield", "VoidSiphonEs", 10);
+                }
+            ),
+            ["leviathan"] = (
+                "Tenebris Abyssal Trident",
+                "MainHand",
+                "🔱",
+                "All attacks discharge expanding tidal waves that pull enemies inward and deal 250 Chaos Damage",
+                item => {
+                    item.AddMod("+80 to Physical Damage", "FlatPhys", 80);
+                    item.AddMod("+60 to Chaos Damage", "FlatChaos", 60);
+                    item.AddMod("Attacks discharge pulling Tidal Vortex", "TidalVortexProc", 1);
+                }
+            )
+        };
+
         public static List<ItemEntity> GenerateMonsterDrops(
             string monsterType,
             MonsterRarity rarity = MonsterRarity.Normal,
             int zoneLevel = 1,
             float quantityBonus = 1.0f,
-            float rarityBonus = 1.0f)
+            float rarityBonus = 1.0f,
+            int masteryRank = 0,
+            int kills = 0)
         {
             var drops = new List<ItemEntity>();
 
@@ -25,40 +146,66 @@ namespace Mdg.Core.Features.Items
                 _ => 0
             };
 
+            // Mastery Rank 4 provides authoritative +30% IIR and +15% IIQ
+            if (masteryRank >= 4)
+            {
+                rarityBonus += 0.30f;
+                quantityBonus += 0.15f;
+            }
+            else if (masteryRank >= 3)
+            {
+                rarityBonus += 0.20f;
+                quantityBonus += 0.10f;
+            }
+            else if (masteryRank >= 2)
+            {
+                rarityBonus += 0.15f;
+            }
+
+            // Calibrated balanced drop count (not too easy)
             int baseDropCount = rarity switch
             {
-                MonsterRarity.PinnacleBoss => _rng.Next(4, 9), // 4-8 items
-                MonsterRarity.Rare => _rng.Next(2, 5),         // 2-4 items
-                MonsterRarity.Champion => _rng.Next(1, 3),     // 1-2 items
-                _ => (_rng.NextDouble() < 0.25f * quantityBonus) ? 1 : 0 // 25% drop rate
+                MonsterRarity.PinnacleBoss => _rng.Next(3, 7), // 3-6 items for Boss
+                MonsterRarity.Rare => _rng.Next(1, 3),         // 1-2 items for Rare
+                MonsterRarity.Champion => (_rng.NextDouble() < 0.65f) ? 1 : 0,
+                _ => (_rng.NextDouble() < (0.18f * quantityBonus)) ? 1 : 0 // 18% base drop rate
             };
 
             int dropCount = Math.Max(0, (int)Math.Round(baseDropCount * Math.Max(1.0f, quantityBonus)));
 
+            // 1. Signature Unique Artifact Drop Check (Requires Mastery Rank >= 3)
+            if (masteryRank >= 3 && SignatureUniqueTemplates.TryGetValue(monsterType.ToLowerInvariant(), out var sigTpl))
+            {
+                double sigRoll = _rng.NextDouble() * 100f;
+                double sigThreshold = rarity == MonsterRarity.PinnacleBoss ? 12.0f : 2.5f; // 12% Boss, 2.5% Elite/Monster
+
+                if (sigRoll < sigThreshold * rarityBonus)
+                {
+                    var sigItem = new ItemEntity(
+                        sigTpl.Name,
+                        "Signature Artifact",
+                        ItemRarity.Unique,
+                        Enum.TryParse<ItemSlot>(sigTpl.Slot, true, out var parsedSlot) ? parsedSlot : ItemSlot.Amulet,
+                        iLvl,
+                        sigTpl.Icon,
+                        sockets: 3,
+                        links: 3
+                    );
+                    sigTpl.ModBuilder(sigItem);
+                    drops.Add(sigItem);
+                }
+            }
+
+            // 2. Generate standard equipment & currency drops
             for (int i = 0; i < dropCount; i++)
             {
-                drops.Add(RollRandomItemByMonsterTier(rarity, iLvl, rarityBonus));
+                drops.Add(RollRandomItemByMonsterTier(rarity, iLvl, rarityBonus, masteryRank));
             }
 
             return drops;
         }
 
-        public static List<ItemEntity> GenerateMonsterDrops(string monsterType, bool isBoss, float quantityBonus = 1.0f, float rarityBonus = 1.0f)
-        {
-            return GenerateMonsterDrops(
-                monsterType,
-                isBoss ? MonsterRarity.PinnacleBoss : MonsterRarity.Normal,
-                1,
-                quantityBonus,
-                rarityBonus);
-        }
-
-        public static ItemEntity RollRandomItem(bool isBoss, int itemLevel = 1, float rarityBonus = 1.0f)
-        {
-            return RollRandomItemByMonsterTier(isBoss ? MonsterRarity.PinnacleBoss : MonsterRarity.Normal, itemLevel, rarityBonus);
-        }
-
-        public static ItemEntity RollRandomItemByMonsterTier(MonsterRarity monsterTier, int itemLevel = 1, float rarityBonus = 1.0f)
+        public static ItemEntity RollRandomItemByMonsterTier(MonsterRarity monsterTier, int itemLevel = 1, float rarityBonus = 1.0f, int masteryRank = 0)
         {
             double roll = _rng.NextDouble() * 100f / Math.Max(1.0f, rarityBonus);
 
@@ -76,10 +223,10 @@ namespace Mdg.Core.Features.Items
             double currencyRoll = _rng.NextDouble() * 100f;
             double currencyThreshold = monsterTier switch
             {
-                MonsterRarity.PinnacleBoss => 35f,
-                MonsterRarity.Rare => 22f,
-                MonsterRarity.Champion => 16f,
-                _ => 10f
+                MonsterRarity.PinnacleBoss => 32f,
+                MonsterRarity.Rare => 20f,
+                MonsterRarity.Champion => 14f,
+                _ => 8f
             };
 
             if (currencyRoll < currencyThreshold)
@@ -105,46 +252,40 @@ namespace Mdg.Core.Features.Items
             }
 
             // 2. Equipment Rarity Thresholds by Monster Tier
-            // Boss: Unique 12%, Set 18%, Rare 55%, Magic 15%, Normal 0%
-            // Rare: Unique 5%, Set 8%, Rare 52%, Magic 30%, Normal 5%
-            // Champion: Unique 2%, Set 4%, Rare 24%, Magic 45%, Normal 25%
-            // Normal: Unique 1%, Set 2%, Rare 10%, Magic 32%, Normal 55%
-
             double uniqueThreshold = monsterTier switch
             {
-                MonsterRarity.PinnacleBoss => 12f,
-                MonsterRarity.Rare => 5f,
-                MonsterRarity.Champion => 2f,
-                _ => 1f
+                MonsterRarity.PinnacleBoss => 8.0f,
+                MonsterRarity.Rare => 3.0f,
+                MonsterRarity.Champion => 1.0f,
+                _ => 0.3f
             };
 
             double setThreshold = uniqueThreshold + monsterTier switch
             {
-                MonsterRarity.PinnacleBoss => 18f,
-                MonsterRarity.Rare => 8f,
-                MonsterRarity.Champion => 4f,
-                _ => 2f
+                MonsterRarity.PinnacleBoss => 14.0f,
+                MonsterRarity.Rare => 6.0f,
+                MonsterRarity.Champion => 3.0f,
+                _ => 1.0f
             };
 
             double rareThreshold = setThreshold + monsterTier switch
             {
-                MonsterRarity.PinnacleBoss => 55f,
-                MonsterRarity.Rare => 52f,
-                MonsterRarity.Champion => 24f,
-                _ => 10f
+                MonsterRarity.PinnacleBoss => 55.0f,
+                MonsterRarity.Rare => 48.0f,
+                MonsterRarity.Champion => 22.0f,
+                _ => (masteryRank >= 2 ? 14.0f : 6.0f) // Rare items unlocked/boosted with Mastery
             };
 
             double magicThreshold = rareThreshold + monsterTier switch
             {
-                MonsterRarity.PinnacleBoss => 15f,
-                MonsterRarity.Rare => 30f,
-                MonsterRarity.Champion => 45f,
-                _ => 32f
+                MonsterRarity.PinnacleBoss => 15.0f,
+                MonsterRarity.Rare => 32.0f,
+                MonsterRarity.Champion => 48.0f,
+                _ => 36.0f
             };
 
             if (roll < uniqueThreshold)
             {
-                // Unique
                 var unique = new ItemEntity("Crown of the Void", "Hubris Circlet", ItemRarity.Unique, ItemSlot.Helm, itemLevel, "👑", sockets, links);
                 unique.AddMod("+120 to Maximum Energy Shield", "MaxEs", 120);
                 unique.AddMod("+30% to Chaos Resistance", "ChaosRes", 30);
@@ -154,7 +295,6 @@ namespace Mdg.Core.Features.Items
 
             if (roll < setThreshold)
             {
-                // Set Item
                 int setRoll = _rng.Next(3);
                 if (setRoll == 0)
                 {
@@ -187,7 +327,6 @@ namespace Mdg.Core.Features.Items
 
             if (roll < rareThreshold)
             {
-                // Rare Item
                 var rare = new ItemEntity("Dragonbone Greataxe", "Battle Axe", ItemRarity.Rare, ItemSlot.MainHand, itemLevel, "🪓", sockets, links);
                 rare.AddMod("+45 to Physical Damage", "FlatPhys", 45);
                 rare.AddMod("+35% Increased Attack Speed", "AttackSpeed", 35);
@@ -201,14 +340,12 @@ namespace Mdg.Core.Features.Items
 
             if (roll < magicThreshold)
             {
-                // Magic Item
                 var magic = new ItemEntity("Reinforced Kite Shield", "Shield", ItemRarity.Magic, ItemSlot.OffHand, itemLevel, "🛡️", sockets, links);
                 magic.AddMod("+150 to Armor", "Armor", 150);
                 magic.AddMod("+25% to Fire Resistance", "FireRes", 25);
                 return magic;
             }
 
-            // Normal Item
             var normal = new ItemEntity("Iron Greaves", "Boots", ItemRarity.Normal, ItemSlot.None, itemLevel, "👢", sockets, links);
             return normal;
         }

@@ -1,14 +1,17 @@
 /**
- * Bestiary Codex UI - Monster Lore Mastery, Kill Tracking & Hunter Perks
+ * MDG: Aethelis - Progressive Discovery Bestiary Codex & Branching Family Mastery Trees
+ * 100% English UI, Absolute Fog of Discovery (No Spoilers), 3-Branch Talent Specialization & Respec
  */
 
-import { MONSTERS } from '../data/monsters.js';
-import { getMonsterLoreBonus } from '../combat.js';
 import { player } from '../state.js';
+import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from '../data/monsters.js';
 import { AudioEngine } from '../audio.js';
+import { saveToDatabase } from '../save-system.js';
 
+let activeMainTab = 'codex'; // 'codex' | 'family_trees'
+let activeFilter = 'all'; // 'all', 'act1', 'act2', 'act3', 'act4', 'boss', 'Beast', 'Undead', 'Fiend', 'Elemental', 'Construct'
 let selectedMonsterKey = 'goblin_scout';
-let activeFilter = 'all'; // 'all', 'act1', 'act2', 'act3', 'act4', 'act5', 'boss'
+let selectedFamilyKey = 'Beast';
 
 export function setupBestiaryUI() {
   const modal = document.getElementById('bestiaryModal');
@@ -19,10 +22,11 @@ export function setupBestiaryUI() {
     btnClose.onclick = () => closeBestiaryUI();
   }
 
-  // Keyboard shortcut [Y]
+  // Hotkey Y
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'y' || e.key === 'Y') {
-      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.key.toLowerCase() === 'y' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
       toggleBestiaryUI();
     }
   });
@@ -31,6 +35,7 @@ export function setupBestiaryUI() {
 export function toggleBestiaryUI() {
   const modal = document.getElementById('bestiaryModal');
   if (!modal) return;
+
   if (modal.classList.contains('active')) {
     closeBestiaryUI();
   } else {
@@ -42,7 +47,7 @@ export function openBestiaryUI() {
   const modal = document.getElementById('bestiaryModal');
   if (!modal) return;
   modal.classList.add('active');
-  AudioEngine.playTone(520, 'sine', 0.15, 0.1);
+  AudioEngine.playTone(440, 'triangle', 0.1, 0.1);
   renderBestiaryContent();
 }
 
@@ -57,7 +62,10 @@ export function renderBestiaryContent() {
   const container = document.getElementById('bestiaryContent');
   if (!container) return;
 
-  if (!player.monsterKills) player.monsterKills = {};
+  // Initialize state structures if missing
+  if (!player.monsterKills) player.monsterKills = { goblin_scout: 120, direwolf: 45, skeleton_warrior: 620 };
+  if (!player.allocatedFamilyTalents) player.allocatedFamilyTalents = {};
+  if (!player.familyMasteryPoints) player.familyMasteryPoints = { Beast: 3, Undead: 2, Fiend: 1, Elemental: 1, Construct: 1 };
 
   const monsterEntries = Object.entries(MONSTERS);
   const filtered = monsterEntries.filter(([key, m]) => {
@@ -66,58 +74,77 @@ export function renderBestiaryContent() {
       const actNum = parseInt(activeFilter.replace('act', ''), 10);
       return m.act === actNum;
     }
+    if (activeFilter in MONSTER_FAMILIES) {
+      return m.family === activeFilter;
+    }
     return true;
   });
 
   const activeMonster = MONSTERS[selectedMonsterKey] || monsterEntries[0][1];
   const kills = player.monsterKills[selectedMonsterKey] || 0;
-  const loreBonus = getMonsterLoreBonus(selectedMonsterKey, activeMonster.isBoss);
-
-  const t1Threshold = activeMonster.isBoss ? 5 : 50;
-  const t2Threshold = activeMonster.isBoss ? 20 : 250;
-  const t3Threshold = activeMonster.isBoss ? 50 : 1000;
-  const t4Threshold = activeMonster.isBoss ? 120 : 3000;
-
-  let nextThreshold = t1Threshold;
-  if (kills >= t4Threshold) nextThreshold = t4Threshold;
-  else if (kills >= t3Threshold) nextThreshold = t4Threshold;
-  else if (kills >= t2Threshold) nextThreshold = t3Threshold;
-  else if (kills >= t1Threshold) nextThreshold = t2Threshold;
-
-  const progressPercent = Math.min(100, Math.round((kills / nextThreshold) * 100));
+  const profile = getMonsterDiscoveryProfile(selectedMonsterKey, kills, activeMonster.isBoss);
 
   container.innerHTML = `
-    <!-- Top Filter Tabs -->
+    <!-- Top Navigation Header -->
+    <div class="bestiary-top-nav">
+      <div class="bestiary-nav-tabs">
+        <button class="bnt-tab ${activeMainTab === 'codex' ? 'active-tab' : ''}" id="tab-nav-codex">
+          📖 MONSTER LORE CODEX
+        </button>
+        <button class="bnt-tab ${activeMainTab === 'family_trees' ? 'active-tab' : ''}" id="tab-nav-family">
+          🌳 FAMILY MASTERY TREES
+        </button>
+      </div>
+      <div class="total-mastery-badge">
+        <span>👑 Apex Nemesis Mastered: <strong>${countApexMonsters()} / ${monsterEntries.length}</strong></span>
+      </div>
+    </div>
+
+    ${activeMainTab === 'codex' ? renderCodexView(filtered, activeMonster, kills, profile) : renderFamilyTreesView()}
+  `;
+
+  attachBestiaryEvents(container);
+}
+
+function renderCodexView(filtered, activeMonster, kills, profile) {
+  return `
+    <!-- Filter Tabs Row -->
     <div class="bestiary-filter-row">
       <button class="bf-btn ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">📜 All Species</button>
       <button class="bf-btn ${activeFilter === 'act1' ? 'active' : ''}" data-filter="act1">Act I</button>
       <button class="bf-btn ${activeFilter === 'act2' ? 'active' : ''}" data-filter="act2">Act II</button>
       <button class="bf-btn ${activeFilter === 'act3' ? 'active' : ''}" data-filter="act3">Act III</button>
       <button class="bf-btn ${activeFilter === 'act4' ? 'active' : ''}" data-filter="act4">Act IV</button>
-      <button class="bf-btn ${activeFilter === 'act5' ? 'active' : ''}" data-filter="act5">Act V</button>
+      <button class="bf-btn ${activeFilter === 'Beast' ? 'active' : ''}" data-filter="Beast">🐺 Beasts</button>
+      <button class="bf-btn ${activeFilter === 'Undead' ? 'active' : ''}" data-filter="Undead">💀 Undead</button>
+      <button class="bf-btn ${activeFilter === 'Fiend' ? 'active' : ''}" data-filter="Fiend">🔥 Fiends</button>
+      <button class="bf-btn ${activeFilter === 'Elemental' ? 'active' : ''}" data-filter="Elemental">⚡ Elementals</button>
       <button class="bf-btn bf-boss ${activeFilter === 'boss' ? 'active' : ''}" data-filter="boss">👑 Bosses Only</button>
     </div>
 
-    <!-- Main Layout: Grid Left, Dossier Right -->
+    <!-- Main Layout: Species List Left, Hunter Dossier Right -->
     <div class="bestiary-body-grid">
-      <!-- Left: Monster Species Cards Grid -->
+      <!-- Left: Monster Species Cards List -->
       <div class="bestiary-species-list">
         ${filtered.map(([key, m]) => {
           const mKills = player.monsterKills[key] || 0;
-          const mBonus = getMonsterLoreBonus(key, m.isBoss);
+          const mProfile = getMonsterDiscoveryProfile(key, mKills, m.isBoss);
           const isSelected = selectedMonsterKey === key;
+          const isFogged = mProfile.rank === 0;
 
           return `
-            <div class="species-card ${isSelected ? 'is-selected' : ''} ${m.isBoss ? 'is-boss-card' : ''}" data-monster-key="${key}">
-              <div class="sc-icon">${m.icon || '👾'}</div>
+            <div class="species-card ${isSelected ? 'is-selected' : ''} ${m.isBoss ? 'is-boss-card' : ''} ${isFogged ? 'is-fogged-card' : ''}" data-monster-key="${key}">
+              <div class="sc-icon ${isFogged ? 'silhouette-icon' : ''}">${isFogged ? '❓' : (m.icon || '👾')}</div>
               <div class="sc-info">
                 <div class="sc-name-row">
-                  <span class="sc-name">${m.name}</span>
+                  <span class="sc-name" style="color: ${isFogged ? '#7f848e' : '#fff'};">${isFogged ? '??? Uncharted Entity' : m.name}</span>
                   ${m.isBoss ? '<span class="sc-boss-tag">BOSS</span>' : ''}
                 </div>
                 <div class="sc-tier-row">
-                  <span class="sc-tier-badge tier-${mBonus.tier}">${mBonus.name}</span>
-                  <span class="sc-kills">⚔️ ${mKills.toLocaleString()} Kills</span>
+                  <span class="sc-tier-badge" style="border-color: ${mProfile.color}; color: ${mProfile.color};">
+                    ${mProfile.title}
+                  </span>
+                  <span class="sc-kills">⚔️ ${mKills.toLocaleString()} Slain</span>
                 </div>
               </div>
             </div>
@@ -125,104 +152,349 @@ export function renderBestiaryContent() {
         }).join('')}
       </div>
 
-      <!-- Right: Detailed Hunter Dossier & Lore Tiers -->
+      <!-- Right: Hunter Dossier (Absolute Fog of Discovery) -->
       <div class="bestiary-dossier-card">
         <div class="bdc-header">
-          <div class="bdc-icon-large">${activeMonster.icon || '👾'}</div>
+          <div class="bdc-icon-large ${profile.rank === 0 ? 'silhouette-icon' : ''}">
+            ${profile.rank === 0 ? '❓' : (activeMonster.icon || '👾')}
+          </div>
           <div>
-            <h3 class="bdc-title">${activeMonster.name}</h3>
-            <span class="bdc-sub">Act ${activeMonster.act} • ${activeMonster.biome} Biome • ${activeMonster.element} Element</span>
+            <h3 class="bdc-title" style="color: ${profile.rank === 0 ? '#7f848e' : '#ffd700'};">
+              ${profile.rank === 0 ? '??? Uncharted Entity' : activeMonster.name}
+            </h3>
+            <span class="bdc-sub">
+              ${profile.rank === 0 
+                ? `Act ${activeMonster.act} • [🔒 Discovery Fog - Slay specimens in combat to decipher]` 
+                : `Act ${activeMonster.act} • ${activeMonster.biome} Biome • ${activeMonster.family || 'Beast'} Family`}
+            </span>
           </div>
         </div>
 
-        <!-- Kill Progress Bar -->
+        <!-- Hunter Discovery Status Bar -->
         <div class="bdc-progress-box">
           <div class="bpb-header">
-            <span>Current Hunter Mastery: <b class="tier-text-${loreBonus.tier}">${loreBonus.name}</b></span>
-            <span><b>${kills.toLocaleString()}</b> / ${nextThreshold.toLocaleString()} Kills</span>
+            <span>Discovery Status: <strong style="color: ${profile.color};">${profile.title}</strong></span>
+            <span><b>${kills.toLocaleString()}</b> Total Slain</span>
           </div>
-          <div class="bpb-bar-bg">
-            <div class="bpb-bar-fill" style="width: ${progressPercent}%;"></div>
-          </div>
+          <p class="bpb-hint">
+            ${profile.isMax 
+              ? '👑 Apex Mastery complete! Full drop rate multiplier active & Family Mastery Point awarded.' 
+              : '✨ Continue slaying specimens of this species in combat to decipher hidden anatomical weaknesses and signature relic drops.'}
+          </p>
         </div>
 
-        <!-- Monster Intel Info -->
+        <!-- Progressively Deciphered Intel Grid (No Spoilers) -->
         <div class="bdc-intel-grid">
-          <div class="intel-item">
-            <span class="ii-label">🛡️ Primary Weakness</span>
-            <span class="ii-val weakness-val">${activeMonster.weakness}</span>
+          ${profile.revealStats ? `
+            <div class="intel-item">
+              <span class="ii-label">⚔️ Threat Attributes</span>
+              <span class="ii-val">${activeMonster.baseHp} Base HP • ${activeMonster.element} Damage</span>
+            </div>
+          ` : `
+            <div class="intel-item locked-intel-item">
+              <span class="ii-label">⚔️ Threat Attributes</span>
+              <span class="ii-val locked-text">??? • Uncharted Intel</span>
+            </div>
+          `}
+
+          ${profile.revealWeakness ? `
+            <div class="intel-item">
+              <span class="ii-label">🛡️ Primary Weakness</span>
+              <span class="ii-val weakness-val">${activeMonster.weakness}</span>
+            </div>
+          ` : `
+            <div class="intel-item locked-intel-item">
+              <span class="ii-label">🛡️ Primary Weakness</span>
+              <span class="ii-val locked-text">??? • Uncharted Intel</span>
+            </div>
+          `}
+
+          ${profile.revealSkills ? `
+            <div class="intel-item ii-full">
+              <span class="ii-label">⚡ Combat Behaviors & Hazards</span>
+              <span class="ii-val">${activeMonster.skills}</span>
+            </div>
+          ` : `
+            <div class="intel-item ii-full locked-intel-item">
+              <span class="ii-label">⚡ Combat Behaviors & Hazards</span>
+              <span class="ii-val locked-text">??? • Uncharted Intel (Fight specimens to study combat patterns)</span>
+            </div>
+          `}
+
+          ${profile.revealDrops ? `
+            <div class="intel-item ii-full">
+              <span class="ii-label">🎁 Discovered Item Drops</span>
+              <span class="ii-val">${activeMonster.drops}</span>
+            </div>
+          ` : `
+            <div class="intel-item ii-full locked-intel-item">
+              <span class="ii-label">🎁 Discovered Item Drops</span>
+              <span class="ii-val locked-text">??? • Uncharted Drops (Common base items only)</span>
+            </div>
+          `}
+
+          <!-- Signature Monster Unique Artifact Box -->
+          <div class="intel-item ii-full signature-drop-box ${profile.revealSignature ? 'sig-unlocked' : 'sig-locked'}">
+            <div class="sig-header">
+              <span class="sig-tag">✨ SIGNATURE MONSTER RELIC</span>
+              <span class="sig-status">${profile.revealSignature ? '✅ ACTIVE IN DROP POOL' : '🔒 CONCEALED IN MYSTERY'}</span>
+            </div>
+            ${activeMonster.signatureDrop ? `
+              <div class="sig-content">
+                <span class="sig-icon">${profile.revealSignature ? activeMonster.signatureDrop.icon : '❓'}</span>
+                <div>
+                  <div class="sig-name" style="color: ${profile.revealSignature ? '#ff7700' : '#7f848e'};">
+                    ${profile.revealSignature ? activeMonster.signatureDrop.name : '??? Hidden Signature Artifact'}
+                  </div>
+                  <div class="sig-desc">
+                    ${profile.revealSignature 
+                      ? activeMonster.signatureDrop.desc 
+                      : 'Achieve advanced tactical mastery over this species to awaken this unique relic in the drop table.'}
+                  </div>
+                </div>
+              </div>
+            ` : ''}
           </div>
-          <div class="intel-item">
-            <span class="ii-label">⚔️ Base Threat</span>
-            <span class="ii-val">${activeMonster.baseHp} Base HP</span>
-          </div>
-          <div class="intel-item ii-full">
-            <span class="ii-label">🎁 Notable Drops</span>
-            <span class="ii-val">${activeMonster.drops}</span>
-          </div>
-          <div class="intel-item ii-full">
-            <span class="ii-label">📜 Hunter Lore Notes</span>
-            <span class="ii-val-lore">"${activeMonster.desc}"</span>
+
+          <!-- Deep Lore Codex Notes -->
+          ${profile.revealLore ? `
+            <div class="intel-item ii-full">
+              <span class="ii-label">📜 Hunter Lore Notes</span>
+              <span class="ii-val-lore">"${activeMonster.desc}"</span>
+            </div>
+          ` : `
+            <div class="intel-item ii-full locked-intel-item">
+              <span class="ii-label">📜 Hunter Lore Notes</span>
+              <span class="ii-val locked-text">??? • Ancient lore cipher locked</span>
+            </div>
+          `}
+        </div>
+
+        <!-- Active Combat Perks -->
+        <div class="bdc-perks-footer">
+          <div class="bpf-title">🎖️ ACTIVE HUNTER PERKS VS THIS SPECIES:</div>
+          <div class="bpf-badges">
+            <span class="bpf-badge ${profile.bonusDmg > 0 ? 'badge-on' : 'badge-off'}">⚔️ +${profile.bonusDmg}% Extra Damage</span>
+            <span class="bpf-badge ${profile.bonusCrit > 0 ? 'badge-on' : 'badge-off'}">⚡ +${profile.bonusCrit}% Crit Chance</span>
+            <span class="bpf-badge ${profile.bonusIir > 0 ? 'badge-on' : 'badge-off'}">🎁 +${profile.bonusIir}% Rare Drop Rarity</span>
+            <span class="bpf-badge ${profile.dmgReduction > 0 ? 'badge-on' : 'badge-off'}">🛡️ -${profile.dmgReduction}% Damage Taken</span>
           </div>
         </div>
 
-        <!-- 4 Hunter Lore Mastery Tiers -->
-        <h4 class="bdc-tiers-title">🎖️ HUNTER LORE MASTERY PERKS</h4>
-        <div class="bdc-tier-milestones">
-          <!-- Tier 1 -->
-          <div class="tier-milestone ${loreBonus.tier >= 1 ? 'unlocked' : 'locked'}">
-            <div class="tm-head">
-              <span>🎖️ Tier 1: Novice Hunter (${t1Threshold} Kills)</span>
-              <span>${loreBonus.tier >= 1 ? '✅ UNLOCKED' : '🔒 LOCKED'}</span>
-            </div>
-            <p class="tm-desc">• +5% Extra Damage dealt to this species</p>
-          </div>
-
-          <!-- Tier 2 -->
-          <div class="tier-milestone ${loreBonus.tier >= 2 ? 'unlocked' : 'locked'}">
-            <div class="tm-head">
-              <span>🥈 Tier 2: Adept Slayer (${t2Threshold} Kills)</span>
-              <span>${loreBonus.tier >= 2 ? '✅ UNLOCKED' : '🔒 LOCKED'}</span>
-            </div>
-            <p class="tm-desc">• +10% Extra Damage • +5% Critical Strike Chance • +10% Item Rarity (IIR)</p>
-          </div>
-
-          <!-- Tier 3 -->
-          <div class="tier-milestone ${loreBonus.tier >= 3 ? 'unlocked' : 'locked'}">
-            <div class="tm-head">
-              <span>🥇 Tier 3: Master Inquisitor (${t3Threshold} Kills)</span>
-              <span>${loreBonus.tier >= 3 ? '✅ UNLOCKED' : '🔒 LOCKED'}</span>
-            </div>
-            <p class="tm-desc">• +18% Extra Damage • +10% Crit Chance • +25% Crit Multi • +20% IIR / +10% IIQ</p>
-          </div>
-
-          <!-- Tier 4 -->
-          <div class="tier-milestone ${loreBonus.tier >= 4 ? 'unlocked' : 'locked'}">
-            <div class="tm-head">
-              <span>👑 Tier 4: Apex Nemesis (${t4Threshold} Kills)</span>
-              <span>${loreBonus.tier >= 4 ? '✅ UNLOCKED' : '🔒 LOCKED'}</span>
-            </div>
-            <p class="tm-desc">• +25% Extra Damage • +15% Crit Chance • +35% Crit Multi • -15% Damage Taken • +35% IIR / +20% IIQ</p>
-          </div>
-        </div>
       </div>
     </div>
   `;
+}
 
-  // Attach Event Listeners
+function renderFamilyTreesView() {
+  const family = MONSTER_FAMILIES[selectedFamilyKey] || MONSTER_FAMILIES.Beast;
+  const availablePoints = player.familyMasteryPoints[selectedFamilyKey] || 0;
+  const allocated = player.allocatedFamilyTalents[selectedFamilyKey] || [];
+  const isRootAllocated = allocated.includes(family.root.id);
+
+  return `
+    <div class="family-trees-layout">
+      <!-- Left: 5 Monster Families Selector Sidebar -->
+      <div class="family-selector-sidebar">
+        <h4 class="fss-title">🐾 MONSTER FAMILIES</h4>
+        ${Object.values(MONSTER_FAMILIES).map(f => {
+          const isSelected = selectedFamilyKey === f.id;
+          const points = player.familyMasteryPoints[f.id] || 0;
+          return `
+            <div class="family-tab-btn ${isSelected ? 'is-selected' : ''}" data-family-id="${f.id}" style="border-left-color: ${f.color};">
+              <span class="ftb-icon">${f.icon}</span>
+              <div class="ftb-info">
+                <div class="ftb-name">${f.name}</div>
+                <div class="ftb-points">🌟 ${points} Mastery Points</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Right: 3-Branch Family Talent Tree Viewport -->
+      <div class="family-tree-viewport">
+        
+        <!-- Viewport Header Strip with Respec Button -->
+        <div class="ftv-header" style="border-left: 4px solid ${family.color};">
+          <div>
+            <h3 class="ftv-title">${family.icon} ${family.name} Mastery Tree</h3>
+            <p class="ftv-desc">${family.desc}</p>
+          </div>
+          <div class="ftv-actions-box">
+            <div class="ftv-points-pill">
+              <span>Points Available:</span>
+              <strong style="color: ${family.color};">${availablePoints} FMP</strong>
+            </div>
+            <button class="btn-respec-family" id="btnRespecFamily" data-family-id="${family.id}">
+              🔄 Respec Points
+            </button>
+          </div>
+        </div>
+
+        <!-- Root Foundation Node -->
+        <div class="tree-root-container">
+          <div class="branch-node-card root-node-card ${isRootAllocated ? 'node-allocated' : (availablePoints > 0 ? 'node-available' : 'node-locked')}">
+            <div class="bnc-icon">${family.root.icon || '🎯'}</div>
+            <div class="bnc-info">
+              <div class="bnc-name">${family.root.name} (Foundation)</div>
+              <div class="bnc-desc">${family.root.desc}</div>
+            </div>
+            <div class="bnc-action">
+              ${isRootAllocated ? `
+                <span class="badge-allocated">✅ ACTIVE</span>
+              ` : `
+                <button class="btn-alloc-node ${availablePoints > 0 ? 'btn-alloc-active' : 'btn-alloc-disabled'}" 
+                        data-talent-id="${family.root.id}" 
+                        data-family-id="${family.id}"
+                        ${availablePoints > 0 ? '' : 'disabled'}>
+                  Unlock Foundation (1 Point)
+                </button>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Branching Specializations (Harvest / Combat / Survival) -->
+        <div class="tree-branches-grid">
+          ${family.branches.map(branch => {
+            return `
+              <div class="tree-branch-column">
+                <div class="tbc-header" style="color: ${branch.color}; border-color: ${branch.color};">
+                  ${branch.title}
+                </div>
+                <div class="tbc-nodes-stack">
+                  ${branch.nodes.map((node, nIdx) => {
+                    const isAllocated = allocated.includes(node.id);
+                    const prevNodeId = nIdx === 0 ? family.root.id : branch.nodes[nIdx - 1].id;
+                    const prevAllocated = allocated.includes(prevNodeId);
+                    const canAllocate = !isAllocated && prevAllocated && availablePoints >= 1;
+
+                    return `
+                      <div class="branch-node-card ${isAllocated ? 'node-allocated' : ''} ${canAllocate ? 'node-available' : ''} ${!isAllocated && !prevAllocated ? 'node-locked' : ''} ${node.isKeystone ? 'bnc-keystone' : ''}">
+                        <div class="bnc-icon" style="border-color: ${isAllocated ? branch.color : '#3d4452'};">${node.icon}</div>
+                        <div class="bnc-info">
+                          <div class="bnc-name" style="color:${isAllocated ? branch.color : (node.isKeystone ? '#ffd700' : '#fff')};">
+                            ${node.name}
+                          </div>
+                          <div class="bnc-desc">${node.desc}</div>
+                        </div>
+                        <div class="bnc-action">
+                          ${isAllocated ? `
+                            <span class="badge-allocated">✅ ACTIVE</span>
+                          ` : `
+                            <button class="btn-alloc-node ${canAllocate ? 'btn-alloc-active' : 'btn-alloc-disabled'}"
+                                    data-talent-id="${node.id}"
+                                    data-family-id="${family.id}"
+                                    ${canAllocate ? '' : 'disabled'}>
+                              ${prevAllocated ? 'Learn (1 Point)' : '🔒 Locked'}
+                            </button>
+                          `}
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Footer Hint -->
+        <div class="family-tree-footer-hint">
+          💡 Earn Family Mastery Points (FMP) by defeating monster species up to <strong>👑 Apex Nemesis</strong> status. Specialize your builds across Harvest, Lethality, or Survival paths!
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function countApexMonsters() {
+  let count = 0;
+  if (!player.monsterKills) return 0;
+  Object.entries(MONSTERS).forEach(([key, m]) => {
+    const kills = player.monsterKills[key] || 0;
+    const req = m.isBoss ? 250 : 5000;
+    if (kills >= req) count++;
+  });
+  return count;
+}
+
+function attachBestiaryEvents(container) {
+  // Main Navigation Tabs
+  container.querySelector('#tab-nav-codex')?.addEventListener('click', () => {
+    activeMainTab = 'codex';
+    AudioEngine.playPickup();
+    renderBestiaryContent();
+  });
+
+  container.querySelector('#tab-nav-family')?.addEventListener('click', () => {
+    activeMainTab = 'family_trees';
+    AudioEngine.playPickup();
+    renderBestiaryContent();
+  });
+
+  // Filter buttons in Codex
   container.querySelectorAll('.bf-btn').forEach(btn => {
     btn.onclick = () => {
       activeFilter = btn.getAttribute('data-filter');
-      AudioEngine.playTone(440, 'triangle', 0.08, 0.08);
+      AudioEngine.playPickup();
       renderBestiaryContent();
     };
   });
 
+  // Species Cards click
   container.querySelectorAll('.species-card').forEach(card => {
     card.onclick = () => {
       selectedMonsterKey = card.getAttribute('data-monster-key');
-      AudioEngine.playTone(550, 'sine', 0.1, 0.08);
+      AudioEngine.playPickup();
       renderBestiaryContent();
     };
+  });
+
+  // Family tab selector in Trees view
+  container.querySelectorAll('.family-tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      selectedFamilyKey = btn.getAttribute('data-family-id');
+      AudioEngine.playPickup();
+      renderBestiaryContent();
+    };
+  });
+
+  // Talent Node Allocation
+  container.querySelectorAll('.btn-alloc-node').forEach(btn => {
+    btn.onclick = () => {
+      const talentId = btn.getAttribute('data-talent-id');
+      const familyId = btn.getAttribute('data-family-id');
+
+      if ((player.familyMasteryPoints[familyId] || 0) <= 0) return;
+
+      if (!player.allocatedFamilyTalents[familyId]) {
+        player.allocatedFamilyTalents[familyId] = [];
+      }
+
+      player.allocatedFamilyTalents[familyId].push(talentId);
+      player.familyMasteryPoints[familyId]--;
+
+      AudioEngine.playTone(880, 'sine', 0.25, 0.2);
+      saveToDatabase(true);
+      renderBestiaryContent();
+    };
+  });
+
+  // Respec Talents Button
+  container.querySelector('#btnRespecFamily')?.addEventListener('click', () => {
+    const familyId = selectedFamilyKey;
+    const allocated = player.allocatedFamilyTalents[familyId] || [];
+    if (allocated.length === 0) return;
+
+    if (confirm(`Refund all allocated talent points for ${familyId} Family?`)) {
+      player.familyMasteryPoints[familyId] = (player.familyMasteryPoints[familyId] || 0) + allocated.length;
+      player.allocatedFamilyTalents[familyId] = [];
+      AudioEngine.playTone(330, 'square', 0.2, 0.15);
+      saveToDatabase(true);
+      renderBestiaryContent();
+    }
   });
 }

@@ -62,6 +62,11 @@ public class MdgDbContext : DbContext
     public DbSet<SkillTemplateEntity> SkillTemplates => Set<SkillTemplateEntity>();
     public DbSet<ZoneTemplateEntity> ZoneTemplates => Set<ZoneTemplateEntity>();
     public DbSet<CampaignActEntity> CampaignActs => Set<CampaignActEntity>();
+    public DbSet<MonsterTemplateEntity> MonsterTemplates => Set<MonsterTemplateEntity>();
+    public DbSet<UnifiedModifierTemplateEntity> UnifiedModifiers => Set<UnifiedModifierTemplateEntity>();
+    public DbSet<DropTableEntryEntity> DropTables => Set<DropTableEntryEntity>();
+    public DbSet<FamilyMasteryTemplateEntity> FamilyMasteries => Set<FamilyMasteryTemplateEntity>();
+    public DbSet<FamilyTalentNodeEntity> FamilyTalentNodes => Set<FamilyTalentNodeEntity>();
 
     public MdgDbContext(DbContextOptions<MdgDbContext> options) : base(options) { }
 
@@ -135,6 +140,48 @@ public class MdgDbContext : DbContext
         {
             b.ToTable("CampaignActs");
             b.HasKey(a => a.ActNumber);
+        });
+
+        modelBuilder.Entity<MonsterTemplateEntity>(b =>
+        {
+            b.ToTable("MonsterTemplates");
+            b.HasKey(m => m.Id);
+            b.HasIndex(m => m.Family);
+            b.HasIndex(m => m.Act);
+            b.HasIndex(m => m.IsBoss);
+        });
+
+        modelBuilder.Entity<UnifiedModifierTemplateEntity>(b =>
+        {
+            b.ToTable("UnifiedModifierTemplates");
+            b.HasKey(m => m.Id);
+            b.HasIndex(m => m.TargetCategory);
+            b.HasIndex(m => m.ModType);
+            b.HasIndex(m => m.StatKey);
+        });
+
+        modelBuilder.Entity<DropTableEntryEntity>(b =>
+        {
+            b.ToTable("DropTableEntries");
+            b.HasKey(d => d.Id);
+            b.HasIndex(d => d.SourceKey);
+            b.HasIndex(d => d.SourceType);
+            b.HasIndex(d => d.RequiredMasteryRank);
+            b.HasIndex(d => d.IsSignature);
+        });
+
+        modelBuilder.Entity<FamilyMasteryTemplateEntity>(b =>
+        {
+            b.ToTable("FamilyMasteryTemplates");
+            b.HasKey(f => f.Id);
+        });
+
+        modelBuilder.Entity<FamilyTalentNodeEntity>(b =>
+        {
+            b.ToTable("FamilyTalentNodes");
+            b.HasKey(t => t.Id);
+            b.HasIndex(t => t.FamilyId);
+            b.HasIndex(t => t.Branch);
         });
     }
 }

@@ -256,6 +256,30 @@ app.MapGet("/api/v1/data/campaign", async (GameDatabaseService db) =>
     return Results.Ok(acts);
 });
 
+app.MapGet("/api/v1/data/monsters", async (GameDatabaseService db) =>
+{
+    var monsters = await db.GetMonsterTemplatesAsync();
+    return Results.Ok(monsters);
+});
+
+app.MapGet("/api/v1/data/modifiers", async (GameDatabaseService db, string? category) =>
+{
+    var modifiers = await db.GetUnifiedModifiersAsync(category);
+    return Results.Ok(modifiers);
+});
+
+app.MapGet("/api/v1/data/droptables", async (GameDatabaseService db, string? sourceKey) =>
+{
+    var dropTables = await db.GetDropTablesAsync(sourceKey);
+    return Results.Ok(dropTables);
+});
+
+app.MapGet("/api/v1/data/family-mastery", async (GameDatabaseService db) =>
+{
+    var mastery = await db.GetFamilyMasterySystemAsync();
+    return Results.Ok(mastery);
+});
+
 // SERVER-AUTHORITATIVE GAMEPLAY LOGIC APIS
 app.MapPost("/api/v1/loot/drop", (LootService lootService, LootDropRequestDto req) =>
 {

@@ -8,21 +8,21 @@ import { generateLootItem } from './data/items.js';
 import { AudioEngine } from './audio.js';
 import { showDefeatModal } from './ui/defeat-ui.js';
 import { ApiClient } from './services/api-client.js';
+import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from './data/monsters.js';
 
 export function getMonsterLoreBonus(monsterType, isBoss = false) {
   const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
-  if (isBoss) {
-    if (kills >= 120) return { tier: 4, name: 'Apex Nemesis 👑', bonusDmg: 0.25, bonusCrit: 15, bonusCritMulti: 35, iir: 35 };
-    if (kills >= 50)  return { tier: 3, name: 'Master Inquisitor 🥇', bonusDmg: 0.18, bonusCrit: 10, bonusCritMulti: 25, iir: 20 };
-    if (kills >= 20)  return { tier: 2, name: 'Adept Slayer 🥈', bonusDmg: 0.10, bonusCrit: 5, bonusCritMulti: 0, iir: 10 };
-    if (kills >= 5)   return { tier: 1, name: 'Novice Hunter 🎖️', bonusDmg: 0.05, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
-    return { tier: 0, name: 'Unfamiliar', bonusDmg: 0, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
-  }
-  if (kills >= 3000) return { tier: 4, name: 'Apex Nemesis 👑', bonusDmg: 0.25, bonusCrit: 15, bonusCritMulti: 35, iir: 35 };
-  if (kills >= 1000) return { tier: 3, name: 'Master Inquisitor 🥇', bonusDmg: 0.18, bonusCrit: 10, bonusCritMulti: 25, iir: 20 };
-  if (kills >= 250)  return { tier: 2, name: 'Adept Slayer 🥈', bonusDmg: 0.10, bonusCrit: 5, bonusCritMulti: 0, iir: 10 };
-  if (kills >= 50)   return { tier: 1, name: 'Novice Hunter 🎖️', bonusDmg: 0.05, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
-  return { tier: 0, name: 'Unfamiliar', bonusDmg: 0, bonusCrit: 0, bonusCritMulti: 0, iir: 0 };
+  const profile = getMonsterDiscoveryProfile(monsterType, kills, isBoss);
+  return {
+    tier: profile.rank,
+    name: profile.title,
+    bonusDmg: profile.bonusDmg / 100,
+    bonusCrit: profile.bonusCrit,
+    bonusCritMulti: profile.bonusCrit * 2,
+    iir: profile.bonusIir,
+    iiq: profile.bonusIiq,
+    dmgReduction: profile.dmgReduction
+  };
 }
 
 export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true, sourcePos = null, isSlash = false, isProc = false) {
@@ -280,18 +280,27 @@ export function handleMonsterDefeated(target) {
 
   if (newLore.tier > oldTier) {
     AudioEngine.playLevelUp();
-    spawnDamageNumber(target.x, target.y - 70, `📖 LORE UP: ${newLore.name} (+${Math.round(newLore.bonusDmg * 100)}% Dmg)!`, true, '#ffd700');
+    spawnDamageNumber(target.x, target.y - 70, `📖 DISCOVERY UNLOCKED: ${newLore.name}!`, true, '#ffd700');
+    
+    // Award Family Mastery Point if Apex reached
+    if (newLore.tier === 4) {
+      const mDef = MONSTERS[mType];
+      const fam = mDef?.family || 'Beast';
+      if (!player.familyMasteryPoints) player.familyMasteryPoints = {};
+      player.familyMasteryPoints[fam] = (player.familyMasteryPoints[fam] || 0) + 1;
+      spawnDamageNumber(target.x, target.y - 100, `🌟 +1 ${fam} Mastery Point Earned!`, true, '#00f2fe');
+    }
   }
 
   if (window.gainExp) window.gainExp(target.expValue || 35);
-  dropMonsterLoot(target.x, target.y, target.type === 'boss' || target.isBoss, target.rarity || (target.type === 'boss' ? 'boss' : 'normal'));
+  dropMonsterLoot(target.x, target.y, target.type === 'boss' || target.isBoss, target.rarity || (target.type === 'boss' ? 'boss' : 'normal'), mType);
 
   if (target.type === 'boss' && player.classSpec === 'Novice') {
     document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
   }
 }
 
-export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal') {
+export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', monsterType = 'monster') {
   const zoneId = window.currentZoneId || player.zoneId || 'SanctuaryHaven';
   let monsterLevel = player.level || 1;
   if (zoneId === 'WhisperingPlains') monsterLevel = 10;
@@ -304,18 +313,24 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal') {
   else if (zoneId === 'ArenaGlacial') monsterLevel = 80;
   else if (zoneId === 'ArenaVoid') monsterLevel = 84;
 
-  const playerIir = player.iir || 0;
-  const playerIiq = player.iiq || 0;
+  const lore = getMonsterLoreBonus(monsterType, isBoss);
+  const playerIir = (player.iir || 0) + (lore.iir || 0);
+  const playerIiq = (player.iiq || 0) + (lore.iiq || 0);
 
-  // 1. Try server-authoritative loot generation
+  // Server-Authoritative Drop Generation (Using monsterType, MasteryRank & Kills)
+  const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
+  const profile = getMonsterDiscoveryProfile(monsterType, kills, isBoss);
+
   const serverResult = await ApiClient.generateMonsterLoot(
-    'monster',
+    monsterType,
     monsterRarity,
     isBoss,
     monsterLevel,
     zoneId,
     playerIir,
-    playerIiq
+    playerIiq,
+    profile.rank,
+    kills
   );
 
   let itemsToDrop = [];
@@ -326,7 +341,7 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal') {
     // Local fallback if server unreachable
     const isChampion = monsterRarity === 'champion' || monsterRarity === 'magic';
     const isRare = monsterRarity === 'rare';
-    let dropCount = isBoss ? (Math.floor(Math.random() * 4) + 4) : isRare ? (Math.floor(Math.random() * 3) + 2) : isChampion ? (Math.floor(Math.random() * 2) + 1) : (Math.random() < 0.25 ? 1 : 0);
+    let dropCount = isBoss ? (Math.floor(Math.random() * 4) + 3) : isRare ? (Math.floor(Math.random() * 2) + 1) : isChampion ? 1 : (Math.random() < 0.18 ? 1 : 0);
     for (let i = 0; i < dropCount; i++) {
       itemsToDrop.push(generateLootItem(monsterLevel, isBoss, monsterRarity));
     }
@@ -812,8 +827,22 @@ export function dealDamageToPlayer(monster) {
     AudioEngine.playTone(160, 'square', 0.15, 0.12);
   }
 
-  // 3. Raw Damage Calculation & Defense Mitigations
-  const baseDmg = (monster.attackDmg || 20) * blockMult;
+  // 3. Raw Damage Calculation & Defense Mitigations (Scaled Difficulty)
+  const lore = getMonsterLoreBonus(monster.type || 'monster', monster.isBoss || monster.type === 'boss');
+  const rawAttack = (monster.attackDmg || 32) * 1.55; // +55% difficulty baseline
+  let familyMitigation = (lore.dmgReduction || 0) / 100;
+
+  // Family Mastery Talents Check
+  const mDef = MONSTERS[monster.type];
+  const fam = mDef?.family;
+  if (fam && player.allocatedFamilyTalents?.[fam]) {
+    const talents = player.allocatedFamilyTalents[fam];
+    if (talents.includes('beast_t3') || talents.includes('undead_t3') || talents.includes('fiend_t3')) {
+      familyMitigation += 0.20; // -20% extra damage taken from this family
+    }
+  }
+
+  const baseDmg = rawAttack * (1 - Math.min(0.60, familyMitigation)) * blockMult;
   let finalDmg = 0;
 
   if (monster.dmgType === 'fire') {

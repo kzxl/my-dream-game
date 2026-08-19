@@ -25,6 +25,7 @@ import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
 import { MPClient } from './services/multiplayer-client.js';
 import { getTownForAct } from './data/campaign.js';
 import { checkGoogleOAuthRedirectResult } from './auth.js';
+import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js';
 
 window.keys = keys;
 window.loadZone = loadZone;
@@ -1032,7 +1033,11 @@ MPClient.init();
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {
   await checkGoogleOAuthRedirectResult();
-  await fetchMasterItemsFromServer();
+  await Promise.all([
+    fetchMasterItemsFromServer(),
+    fetchMasterMonstersFromServer(),
+    fetchMasterFamilyMasteryFromServer()
+  ]);
   const loaded = await loadFromDatabase();
   
   // Always return player safely to the Safe-Haven Town of their current Act upon login / session start

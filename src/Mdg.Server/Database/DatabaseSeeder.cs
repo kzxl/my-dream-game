@@ -80,6 +80,89 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
     ""ZonesJson"" TEXT NOT NULL,
     ""CreatedAt"" TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS ""MonsterTemplates"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_MonsterTemplates"" PRIMARY KEY,
+    ""Name"" TEXT NOT NULL,
+    ""Icon"" TEXT NOT NULL,
+    ""Family"" TEXT NOT NULL,
+    ""Act"" INTEGER NOT NULL,
+    ""Biome"" TEXT NOT NULL,
+    ""IsBoss"" INTEGER NOT NULL,
+    ""BaseHp"" INTEGER NOT NULL,
+    ""BaseDmg"" INTEGER NOT NULL,
+    ""Speed"" REAL NOT NULL,
+    ""Element"" TEXT NOT NULL,
+    ""PrimaryWeakness"" TEXT NOT NULL,
+    ""Skills"" TEXT NOT NULL,
+    ""Description"" TEXT NOT NULL,
+    ""SignatureItemId"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_MonsterTemplates_Family"" ON ""MonsterTemplates"" (""Family"");
+CREATE INDEX IF NOT EXISTS ""IX_MonsterTemplates_Act"" ON ""MonsterTemplates"" (""Act"");
+
+CREATE TABLE IF NOT EXISTS ""UnifiedModifierTemplates"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_UnifiedModifierTemplates"" PRIMARY KEY,
+    ""TargetCategory"" TEXT NOT NULL,
+    ""ModType"" TEXT NOT NULL,
+    ""StatKey"" TEXT NOT NULL,
+    ""ValueMin"" REAL NOT NULL,
+    ""ValueMax"" REAL NOT NULL,
+    ""Tier"" INTEGER NOT NULL,
+    ""Weight"" INTEGER NOT NULL,
+    ""DescriptionTemplate"" TEXT NOT NULL,
+    ""TagsJson"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_UnifiedModifierTemplates_TargetCategory"" ON ""UnifiedModifierTemplates"" (""TargetCategory"");
+CREATE INDEX IF NOT EXISTS ""IX_UnifiedModifierTemplates_ModType"" ON ""UnifiedModifierTemplates"" (""ModType"");
+CREATE INDEX IF NOT EXISTS ""IX_UnifiedModifierTemplates_StatKey"" ON ""UnifiedModifierTemplates"" (""StatKey"");
+
+CREATE TABLE IF NOT EXISTS ""DropTableEntries"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_DropTableEntries"" PRIMARY KEY,
+    ""SourceType"" TEXT NOT NULL,
+    ""SourceKey"" TEXT NOT NULL,
+    ""ItemTemplateId"" TEXT NOT NULL,
+    ""ItemName"" TEXT NOT NULL,
+    ""ItemRarity"" TEXT NOT NULL,
+    ""ItemSlot"" TEXT NOT NULL,
+    ""DropChancePercent"" REAL NOT NULL,
+    ""MinQuantity"" INTEGER NOT NULL,
+    ""MaxQuantity"" INTEGER NOT NULL,
+    ""RequiredMasteryRank"" INTEGER NOT NULL,
+    ""IsSignature"" INTEGER NOT NULL,
+    ""MinIlvl"" INTEGER NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_DropTableEntries_SourceKey"" ON ""DropTableEntries"" (""SourceKey"");
+CREATE INDEX IF NOT EXISTS ""IX_DropTableEntries_RequiredMasteryRank"" ON ""DropTableEntries"" (""RequiredMasteryRank"");
+
+CREATE TABLE IF NOT EXISTS ""FamilyMasteryTemplates"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_FamilyMasteryTemplates"" PRIMARY KEY,
+    ""Name"" TEXT NOT NULL,
+    ""Icon"" TEXT NOT NULL,
+    ""Color"" TEXT NOT NULL,
+    ""Description"" TEXT NOT NULL,
+    ""RootNodeId"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ""FamilyTalentNodes"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_FamilyTalentNodes"" PRIMARY KEY,
+    ""FamilyId"" TEXT NOT NULL,
+    ""Branch"" TEXT NOT NULL,
+    ""Name"" TEXT NOT NULL,
+    ""Icon"" TEXT NOT NULL,
+    ""Description"" TEXT NOT NULL,
+    ""ParentNodeId"" TEXT NOT NULL,
+    ""IsKeystone"" INTEGER NOT NULL,
+    ""StatKey"" TEXT NOT NULL,
+    ""StatValue"" REAL NOT NULL,
+    ""Tier"" INTEGER NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_FamilyTalentNodes_FamilyId"" ON ""FamilyTalentNodes"" (""FamilyId"");
 ");
         }
         catch { }
@@ -113,6 +196,39 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
         {
             var acts = BuildDefaultCampaignActs();
             await db.CampaignActs.AddRangeAsync(acts);
+            await db.SaveChangesAsync();
+        }
+
+        // 6. Seed Monster Master Templates
+        if (!await db.MonsterTemplates.AnyAsync())
+        {
+            var monsters = BuildDefaultMonsterTemplates();
+            await db.MonsterTemplates.AddRangeAsync(monsters);
+            await db.SaveChangesAsync();
+        }
+
+        // 7. Seed Unified Modifier Templates (Equipment + Monster + Map)
+        if (!await db.UnifiedModifiers.AnyAsync())
+        {
+            var modifiers = BuildDefaultUnifiedModifiers();
+            await db.UnifiedModifiers.AddRangeAsync(modifiers);
+            await db.SaveChangesAsync();
+        }
+
+        // 8. Seed Drop Table Entries
+        if (!await db.DropTables.AnyAsync())
+        {
+            var dropTables = BuildDefaultDropTableEntries();
+            await db.DropTables.AddRangeAsync(dropTables);
+            await db.SaveChangesAsync();
+        }
+
+        // 9. Seed Family Mastery Templates & Branching Talent Nodes
+        if (!await db.FamilyMasteries.AnyAsync())
+        {
+            var (families, nodes) = BuildDefaultFamilyMasterySystem();
+            await db.FamilyMasteries.AddRangeAsync(families);
+            await db.FamilyTalentNodes.AddRangeAsync(nodes);
             await db.SaveChangesAsync();
         }
     }
@@ -818,5 +934,403 @@ CREATE TABLE IF NOT EXISTS ""CampaignActs"" (
                 ZonesJson = JsonSerializer.Serialize(new[] { "AethelisCitadel", "VoidAbyss", "CitadelOfTheVoid", "ArenaCaldera", "ArenaGlacial", "ArenaVoid" })
             }
         };
+    }
+
+    public static List<MonsterTemplateEntity> BuildDefaultMonsterTemplates()
+    {
+        return new List<MonsterTemplateEntity>
+        {
+            // Act 1
+            new()
+            {
+                Id = "goblin_scout",
+                Name = "Goblin Scout",
+                Icon = "👺",
+                Family = "Beast",
+                Act = 1,
+                Biome = "Plains",
+                IsBoss = false,
+                BaseHp = 180,
+                BaseDmg = 28,
+                Speed = 3.8f,
+                Element = "Physical",
+                PrimaryWeakness = "Fire",
+                Skills = "Poison Dart (DoT), Rapid Ambush Dash",
+                Description = "Nimble green raiders who ambush travelers in Whispering Plains using poisoned darts.",
+                SignatureItemId = "sig_goblin_pouch"
+            },
+            new()
+            {
+                Id = "direwolf",
+                Name = "Feral Direwolf",
+                Icon = "🐺",
+                Family = "Beast",
+                Act = 1,
+                Biome = "Plains",
+                IsBoss = false,
+                BaseHp = 320,
+                BaseDmg = 45,
+                Speed = 4.2f,
+                Element = "Physical",
+                PrimaryWeakness = "Cold",
+                Skills = "Lacerating Bite, Pack Howl (+30% Speed)",
+                Description = "Fierce apex predators hunting in packs. Their savage bites induce heavy bleeding and armor shred.",
+                SignatureItemId = "sig_alpha_fang"
+            },
+            new()
+            {
+                Id = "skeleton_warrior",
+                Name = "Skeleton Warrior",
+                Icon = "💀",
+                Family = "Undead",
+                Act = 1,
+                Biome = "Dungeon",
+                IsBoss = false,
+                BaseHp = 420,
+                BaseDmg = 52,
+                Speed = 3.4f,
+                Element = "Chaos / Physical",
+                PrimaryWeakness = "Holy / Lightning",
+                Skills = "Shield Slam (Stun 1s), Bone Cleave",
+                Description = "Ancient resurrected crypt sentinels clad in rusted iron armor and wielding razor bone greatswords.",
+                SignatureItemId = "sig_crypt_shield"
+            },
+            new()
+            {
+                Id = "malakor",
+                Name = "Malakor the Shadow Fiend",
+                Icon = "🔥",
+                Family = "Fiend",
+                Act = 1,
+                Biome = "Dungeon",
+                IsBoss = true,
+                BaseHp = 4800,
+                BaseDmg = 120,
+                Speed = 4.5f,
+                Element = "Fire / Chaos",
+                PrimaryWeakness = "Cold / Holy",
+                Skills = "Hellfire Eruption, Shadow Shockwave, Void Teleport",
+                Description = "The ancient dreadlord of the Forgotten Crypt. Commands soul flames, sweeping shadow pillars, and teleports behind heroes.",
+                SignatureItemId = "sig_malakor_blade"
+            },
+
+            // Act 2
+            new()
+            {
+                Id = "frost_elemental",
+                Name = "Frost Elemental",
+                Icon = "❄️",
+                Family = "Elemental",
+                Act = 2,
+                Biome = "Tundra",
+                IsBoss = false,
+                BaseHp = 650,
+                BaseDmg = 75,
+                Speed = 3.6f,
+                Element = "Cold",
+                PrimaryWeakness = "Fire",
+                Skills = "Glacial Cone (Freeze 2s), Frost Nova Discharge",
+                Description = "Living crystal spirits of absolute zero who shatter upon death into piercing ice shards.",
+                SignatureItemId = "sig_glacial_core"
+            },
+            new()
+            {
+                Id = "yeti",
+                Name = "Yeti Frost Goliath",
+                Icon = "🦣",
+                Family = "Beast",
+                Act = 2,
+                Biome = "Tundra",
+                IsBoss = false,
+                BaseHp = 1250,
+                BaseDmg = 110,
+                Speed = 3.2f,
+                Element = "Cold / Physical",
+                PrimaryWeakness = "Fire",
+                Skills = "Earthquake Slam (Stun), Ice Avalanche Roar",
+                Description = "Colossal mountain beasts capable of ground-slam tremors that stun all nearby prey.",
+                SignatureItemId = "sig_yeti_hide"
+            },
+            new()
+            {
+                Id = "vael_frost",
+                Name = "Cryomancer Vael the Frost Sovereign",
+                Icon = "👑",
+                Family = "Elemental",
+                Act = 2,
+                Biome = "Tundra",
+                IsBoss = true,
+                BaseHp = 9500,
+                BaseDmg = 180,
+                Speed = 4.6f,
+                Element = "Cold / Arcane",
+                PrimaryWeakness = "Fire / Lightning",
+                Skills = "Blizzard Vortex, Glacial Prison, Frost Storm Beam",
+                Description = "Ruler of the Permafrost Peaks who casts blizzards, summons ice prisons, and discharges absolute zero beams.",
+                SignatureItemId = "sig_vael_staff"
+            },
+
+            // Act 3
+            new()
+            {
+                Id = "magma_golem",
+                Name = "Magma Golem",
+                Icon = "🗿",
+                Family = "Construct",
+                Act = 3,
+                Biome = "Volcano",
+                IsBoss = false,
+                BaseHp = 1600,
+                BaseDmg = 135,
+                Speed = 3.0f,
+                Element = "Fire / Physical",
+                PrimaryWeakness = "Cold",
+                Skills = "Molten Smash, Scorched Earth Aura",
+                Description = "Forged within subterranean lava cauldrons. Leaves burning trails that incinerate boots.",
+                SignatureItemId = "sig_magma_heart"
+            },
+            new()
+            {
+                Id = "ignis_dragon",
+                Name = "Ignis the Scourge Wyrm",
+                Icon = "🐉",
+                Family = "Fiend",
+                Act = 3,
+                Biome = "Volcano",
+                IsBoss = true,
+                BaseHp = 16000,
+                BaseDmg = 260,
+                Speed = 5.0f,
+                Element = "Fire",
+                PrimaryWeakness = "Cold / Lightning",
+                Skills = "Infernal Breath, Fireball Barrage, Cataclysm Flight",
+                Description = "Ancient draconic calamity. Soars across the battlefield raining meteors and scorching the entire arena.",
+                SignatureItemId = "sig_dragon_crown"
+            },
+
+            // Act 4
+            new()
+            {
+                Id = "abyssal_stalker",
+                Name = "Abyssal Void Stalker",
+                Icon = "🐙",
+                Family = "Fiend",
+                Act = 4,
+                Biome = "Abyss",
+                IsBoss = false,
+                BaseHp = 2200,
+                BaseDmg = 170,
+                Speed = 4.8f,
+                Element = "Chaos",
+                PrimaryWeakness = "Lightning / Fire",
+                Skills = "Shadow Blink, Chaos Siphon, Miasma Cloud",
+                Description = "Eldritch predators from beneath the oceanic depths. Siphons player energy shield on contact.",
+                SignatureItemId = "sig_abyssal_eye"
+            },
+            new()
+            {
+                Id = "leviathan",
+                Name = "Tenebris the Leviathan Sovereign",
+                Icon = "🦑",
+                Family = "Fiend",
+                Act = 4,
+                Biome = "Abyss",
+                IsBoss = true,
+                BaseHp = 28000,
+                BaseDmg = 340,
+                Speed = 4.5f,
+                Element = "Chaos / Cold",
+                PrimaryWeakness = "Lightning",
+                Skills = "Abyssal Whirlpool, Tentacle Slam, Void Blackout",
+                Description = "Titan of the sunless trenches. Commands crushing tidal whirlpools and dark miasma surges.",
+                SignatureItemId = "sig_leviathan_trident"
+            }
+        };
+    }
+
+    public static List<UnifiedModifierTemplateEntity> BuildDefaultUnifiedModifiers()
+    {
+        return new List<UnifiedModifierTemplateEntity>
+        {
+            // === Equipment Prefixes ===
+            new() { Id = "aff_flat_phys_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatPhys", ValueMin = 10, ValueMax = 20, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0} to Physical Damage" },
+            new() { Id = "aff_flat_phys_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatPhys", ValueMin = 25, ValueMax = 45, Tier = 2, Weight = 600, DescriptionTemplate = "+{0} to Physical Damage" },
+            new() { Id = "aff_flat_phys_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatPhys", ValueMin = 50, ValueMax = 80, Tier = 3, Weight = 250, DescriptionTemplate = "+{0} to Physical Damage" },
+
+            new() { Id = "aff_flat_fire_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatFire", ValueMin = 12, ValueMax = 24, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0} to Fire Damage" },
+            new() { Id = "aff_flat_fire_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatFire", ValueMin = 28, ValueMax = 50, Tier = 2, Weight = 600, DescriptionTemplate = "+{0} to Fire Damage" },
+            new() { Id = "aff_flat_fire_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatFire", ValueMin = 55, ValueMax = 90, Tier = 3, Weight = 250, DescriptionTemplate = "+{0} to Fire Damage" },
+
+            new() { Id = "aff_flat_cold_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatCold", ValueMin = 10, ValueMax = 22, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0} to Cold Damage" },
+            new() { Id = "aff_flat_cold_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatCold", ValueMin = 26, ValueMax = 48, Tier = 2, Weight = 600, DescriptionTemplate = "+{0} to Cold Damage" },
+            new() { Id = "aff_flat_cold_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatCold", ValueMin = 50, ValueMax = 85, Tier = 3, Weight = 250, DescriptionTemplate = "+{0} to Cold Damage" },
+
+            new() { Id = "aff_flat_chaos_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatChaos", ValueMin = 15, ValueMax = 30, Tier = 1, Weight = 800, DescriptionTemplate = "+{0} to Chaos Damage" },
+            new() { Id = "aff_flat_chaos_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatChaos", ValueMin = 35, ValueMax = 65, Tier = 2, Weight = 450, DescriptionTemplate = "+{0} to Chaos Damage" },
+            new() { Id = "aff_flat_chaos_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "FlatChaos", ValueMin = 70, ValueMax = 110, Tier = 3, Weight = 150, DescriptionTemplate = "+{0} to Chaos Damage" },
+
+            new() { Id = "aff_max_life_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "MaxLife", ValueMin = 30, ValueMax = 60, Tier = 1, Weight = 1200, DescriptionTemplate = "+{0} to Maximum Life" },
+            new() { Id = "aff_max_life_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "MaxLife", ValueMin = 70, ValueMax = 120, Tier = 2, Weight = 700, DescriptionTemplate = "+{0} to Maximum Life" },
+            new() { Id = "aff_max_life_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "MaxLife", ValueMin = 130, ValueMax = 220, Tier = 3, Weight = 300, DescriptionTemplate = "+{0} to Maximum Life" },
+
+            new() { Id = "aff_max_es_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "MaxEs", ValueMin = 25, ValueMax = 50, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0} to Maximum Energy Shield" },
+            new() { Id = "aff_max_es_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "MaxEs", ValueMin = 60, ValueMax = 110, Tier = 2, Weight = 600, DescriptionTemplate = "+{0} to Maximum Energy Shield" },
+            new() { Id = "aff_max_es_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "MaxEs", ValueMin = 120, ValueMax = 200, Tier = 3, Weight = 250, DescriptionTemplate = "+{0} to Maximum Energy Shield" },
+
+            new() { Id = "aff_armor_t1", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "Armor", ValueMin = 50, ValueMax = 100, Tier = 1, Weight = 1200, DescriptionTemplate = "+{0} to Armor" },
+            new() { Id = "aff_armor_t2", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "Armor", ValueMin = 120, ValueMax = 220, Tier = 2, Weight = 700, DescriptionTemplate = "+{0} to Armor" },
+            new() { Id = "aff_armor_t3", TargetCategory = "Equipment", ModType = "Prefix", StatKey = "Armor", ValueMin = 250, ValueMax = 450, Tier = 3, Weight = 300, DescriptionTemplate = "+{0} to Armor" },
+
+            // === Equipment Suffixes ===
+            new() { Id = "aff_fire_res_t1", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "FireRes", ValueMin = 12, ValueMax = 20, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0}% to Fire Resistance" },
+            new() { Id = "aff_fire_res_t2", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "FireRes", ValueMin = 22, ValueMax = 32, Tier = 2, Weight = 600, DescriptionTemplate = "+{0}% to Fire Resistance" },
+            new() { Id = "aff_fire_res_t3", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "FireRes", ValueMin = 35, ValueMax = 48, Tier = 3, Weight = 250, DescriptionTemplate = "+{0}% to Fire Resistance" },
+
+            new() { Id = "aff_cold_res_t1", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "ColdRes", ValueMin = 12, ValueMax = 20, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0}% to Cold Resistance" },
+            new() { Id = "aff_cold_res_t2", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "ColdRes", ValueMin = 22, ValueMax = 32, Tier = 2, Weight = 600, DescriptionTemplate = "+{0}% to Cold Resistance" },
+            new() { Id = "aff_cold_res_t3", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "ColdRes", ValueMin = 35, ValueMax = 48, Tier = 3, Weight = 250, DescriptionTemplate = "+{0}% to Cold Resistance" },
+
+            new() { Id = "aff_light_res_t1", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "LightningRes", ValueMin = 12, ValueMax = 20, Tier = 1, Weight = 1000, DescriptionTemplate = "+{0}% to Lightning Resistance" },
+            new() { Id = "aff_light_res_t2", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "LightningRes", ValueMin = 22, ValueMax = 32, Tier = 2, Weight = 600, DescriptionTemplate = "+{0}% to Lightning Resistance" },
+            new() { Id = "aff_light_res_t3", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "LightningRes", ValueMin = 35, ValueMax = 48, Tier = 3, Weight = 250, DescriptionTemplate = "+{0}% to Lightning Resistance" },
+
+            new() { Id = "aff_chaos_res_t1", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "ChaosRes", ValueMin = 8, ValueMax = 15, Tier = 1, Weight = 700, DescriptionTemplate = "+{0}% to Chaos Resistance" },
+            new() { Id = "aff_chaos_res_t2", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "ChaosRes", ValueMin = 18, ValueMax = 26, Tier = 2, Weight = 400, DescriptionTemplate = "+{0}% to Chaos Resistance" },
+            new() { Id = "aff_chaos_res_t3", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "ChaosRes", ValueMin = 28, ValueMax = 38, Tier = 3, Weight = 150, DescriptionTemplate = "+{0}% to Chaos Resistance" },
+
+            new() { Id = "aff_attack_speed_t1", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "AttackSpeed", ValueMin = 8, ValueMax = 14, Tier = 1, Weight = 800, DescriptionTemplate = "+{0}% Increased Attack Speed" },
+            new() { Id = "aff_attack_speed_t2", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "AttackSpeed", ValueMin = 16, ValueMax = 24, Tier = 2, Weight = 500, DescriptionTemplate = "+{0}% Increased Attack Speed" },
+            new() { Id = "aff_attack_speed_t3", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "AttackSpeed", ValueMin = 26, ValueMax = 38, Tier = 3, Weight = 200, DescriptionTemplate = "+{0}% Increased Attack Speed" },
+
+            new() { Id = "aff_crit_multi_t1", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "CritMulti", ValueMin = 15, ValueMax = 25, Tier = 1, Weight = 800, DescriptionTemplate = "+{0}% to Global Critical Multiplier" },
+            new() { Id = "aff_crit_multi_t2", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "CritMulti", ValueMin = 28, ValueMax = 42, Tier = 2, Weight = 500, DescriptionTemplate = "+{0}% to Global Critical Multiplier" },
+            new() { Id = "aff_crit_multi_t3", TargetCategory = "Equipment", ModType = "Suffix", StatKey = "CritMulti", ValueMin = 45, ValueMax = 65, Tier = 3, Weight = 200, DescriptionTemplate = "+{0}% to Global Critical Multiplier" },
+
+            // === Monster Modifiers & Boss Auras ===
+            new() { Id = "mon_hellfire_aura", TargetCategory = "Monster", ModType = "MonsterAura", StatKey = "HellfireAura", ValueMin = 25, ValueMax = 50, Tier = 1, Weight = 100, DescriptionTemplate = "Emits Hellfire aura dealing {0} fire damage/sec" },
+            new() { Id = "mon_soul_chill", TargetCategory = "Monster", ModType = "MonsterAffix", StatKey = "SoulChill", ValueMin = 30, ValueMax = 60, Tier = 1, Weight = 100, DescriptionTemplate = "Attacks chill targets by {0}% movement speed" },
+            new() { Id = "mon_primal_rage", TargetCategory = "Monster", ModType = "MonsterAffix", StatKey = "PrimalRage", ValueMin = 35, ValueMax = 50, Tier = 1, Weight = 100, DescriptionTemplate = "Gains +{0}% Attack & Move speed below 40% Life" },
+            new() { Id = "mon_titan_armor", TargetCategory = "Monster", ModType = "MonsterAffix", StatKey = "TitanArmor", ValueMin = 50, ValueMax = 70, Tier = 1, Weight = 100, DescriptionTemplate = "Mitigates {0}% of physical damage" },
+
+            // === Map Modifiers ===
+            new() { Id = "map_extra_life", TargetCategory = "Map", ModType = "Prefix", StatKey = "MapMonsterLife", ValueMin = 30, ValueMax = 50, Tier = 1, Weight = 1000, DescriptionTemplate = "Monsters have +{0}% Maximum Life" },
+            new() { Id = "map_ele_reflect", TargetCategory = "Map", ModType = "Suffix", StatKey = "MapEleReflect", ValueMin = 10, ValueMax = 20, Tier = 1, Weight = 500, DescriptionTemplate = "Monsters reflect {0}% of Elemental Damage" }
+        };
+    }
+
+    public static List<DropTableEntryEntity> BuildDefaultDropTableEntries()
+    {
+        var list = new List<DropTableEntryEntity>
+        {
+            // Global Currency Drops
+            new() { SourceType = "Global", SourceKey = "all", ItemTemplateId = "Currency_Transmute", ItemName = "Aether Spark", ItemRarity = "Currency", ItemSlot = "None", DropChancePercent = 14.0f, MinQuantity = 1, MaxQuantity = 2, RequiredMasteryRank = 0 },
+            new() { SourceType = "Global", SourceKey = "all", ItemTemplateId = "Currency_Alteration", ItemName = "Flux Catalyst", ItemRarity = "Currency", ItemSlot = "None", DropChancePercent = 10.0f, MinQuantity = 1, MaxQuantity = 2, RequiredMasteryRank = 0 },
+            new() { SourceType = "Global", SourceKey = "all", ItemTemplateId = "Currency_Chaos", ItemName = "Fracture Core", ItemRarity = "Currency", ItemSlot = "None", DropChancePercent = 3.5f, MinQuantity = 1, MaxQuantity = 1, RequiredMasteryRank = 1 },
+            new() { SourceType = "Global", SourceKey = "all", ItemTemplateId = "Currency_Alchemy", ItemName = "Genesis Prism", ItemRarity = "Currency", ItemSlot = "None", DropChancePercent = 4.0f, MinQuantity = 1, MaxQuantity = 1, RequiredMasteryRank = 1 },
+            new() { SourceType = "Global", SourceKey = "all", ItemTemplateId = "Currency_Exalted", ItemName = "Ascendant Catalyst", ItemRarity = "Currency", ItemSlot = "None", DropChancePercent = 0.8f, MinQuantity = 1, MaxQuantity = 1, RequiredMasteryRank = 2 },
+            new() { SourceType = "Global", SourceKey = "all", ItemTemplateId = "Scroll_Resurrection", ItemName = "Scroll of Resurrection", ItemRarity = "Consumable", ItemSlot = "None", DropChancePercent = 2.5f, MinQuantity = 1, MaxQuantity = 1, RequiredMasteryRank = 0 },
+
+            // 11 Signature Monster Artifacts (Authoritative Drop Configuration)
+            new() { SourceType = "Monster", SourceKey = "goblin_scout", ItemTemplateId = "sig_goblin_pouch", ItemName = "Scout's Poisoned Pouch", ItemRarity = "Unique", ItemSlot = "Amulet", DropChancePercent = 2.5f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "direwolf", ItemTemplateId = "sig_alpha_fang", ItemName = "Fang of the Alpha Wolf", ItemRarity = "Unique", ItemSlot = "MainHand", DropChancePercent = 2.5f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "skeleton_warrior", ItemTemplateId = "sig_crypt_shield", ItemName = "Aegis of the Forgotten Crypt", ItemRarity = "Unique", ItemSlot = "OffHand", DropChancePercent = 2.5f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "malakor", ItemTemplateId = "sig_malakor_blade", ItemName = "Malakor’s Dreadfire Cleaver", ItemRarity = "Unique", ItemSlot = "MainHand", DropChancePercent = 12.0f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "frost_elemental", ItemTemplateId = "sig_glacial_core", ItemName = "Core of Absolute Zero", ItemRarity = "Unique", ItemSlot = "Amulet", DropChancePercent = 2.5f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "yeti", ItemTemplateId = "sig_yeti_hide", ItemName = "Yeti Warmaster Hide", ItemRarity = "Unique", ItemSlot = "BodyArmor", DropChancePercent = 3.0f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "vael_frost", ItemTemplateId = "sig_vael_staff", ItemName = "Vael’s Glacial Spire Staff", ItemRarity = "Unique", ItemSlot = "MainHand", DropChancePercent = 12.0f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "magma_golem", ItemTemplateId = "sig_magma_heart", ItemName = "Heart of the Molten Colossus", ItemRarity = "Unique", ItemSlot = "Ring", DropChancePercent = 2.5f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "ignis_dragon", ItemTemplateId = "sig_dragon_crown", ItemName = "Crown of the Scourge Wyrm", ItemRarity = "Unique", ItemSlot = "Helm", DropChancePercent = 12.0f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "abyssal_stalker", ItemTemplateId = "sig_abyssal_eye", ItemName = "Eye of the Deep Trench", ItemRarity = "Unique", ItemSlot = "Ring", DropChancePercent = 3.0f, RequiredMasteryRank = 3, IsSignature = true },
+            new() { SourceType = "Monster", SourceKey = "leviathan", ItemTemplateId = "sig_leviathan_trident", ItemName = "Tenebris Abyssal Trident", ItemRarity = "Unique", ItemSlot = "MainHand", DropChancePercent = 14.0f, RequiredMasteryRank = 3, IsSignature = true }
+        };
+
+        return list;
+    }
+
+    public static (List<FamilyMasteryTemplateEntity> Families, List<FamilyTalentNodeEntity> Nodes) BuildDefaultFamilyMasterySystem()
+    {
+        var families = new List<FamilyMasteryTemplateEntity>
+        {
+            new() { Id = "Beast", Name = "Ancient Beasts", Icon = "🐺", Color = "#ff9800", Description = "Savage mutated wildlife. Swift movers with deadly bleed lacerations.", RootNodeId = "beast_root" },
+            new() { Id = "Undead", Name = "Crypt Undead", Icon = "💀", Color = "#00f2fe", Description = "Resurrected sentinels of forgotten dynasties clad in rusted iron.", RootNodeId = "undead_root" },
+            new() { Id = "Fiend", Name = "Nether Fiends", Icon = "🔥", Color = "#e06c75", Description = "Demonic abyssal horrors commanding hellfire eruptions.", RootNodeId = "fiend_root" },
+            new() { Id = "Elemental", Name = "Primal Elementals", Icon = "⚡", Color = "#ffd700", Description = "Living spirits of pure lightning, ice, and flame.", RootNodeId = "elem_root" },
+            new() { Id = "Construct", Name = "Ancient Constructs", Icon = "🗿", Color = "#c678dd", Description = "Titan guardians forged from obsidian and enchanted bronze.", RootNodeId = "cons_root" }
+        };
+
+        var nodes = new List<FamilyTalentNodeEntity>
+        {
+            // === Beast Family ===
+            new() { Id = "beast_root", FamilyId = "Beast", Branch = "root", Name = "Hunter Instincts", Icon = "🎯", Description = "+10% Physical Damage vs Beasts", StatKey = "BeastDmg", StatValue = 10 },
+            new() { Id = "beast_a1", FamilyId = "Beast", Branch = "harvest", Name = "Trophy Skimmer", Icon = "🎒", Description = "+30% Raw Materials & Catalysts from Beasts", ParentNodeId = "beast_root", StatKey = "BeastHarvest", StatValue = 30 },
+            new() { Id = "beast_a2", FamilyId = "Beast", Branch = "harvest", Name = "Alpha Relic Siphon", Icon = "💎", Description = "+40% Signature Fang Drop Rarity", ParentNodeId = "beast_a1", StatKey = "BeastSigRarity", StatValue = 40 },
+            new() { Id = "beast_a_keystone", FamilyId = "Beast", Branch = "harvest", Name = "★ Primal Harvest", Icon = "👑", Description = "Beast Bosses drop double loot rolls on defeat", ParentNodeId = "beast_a2", IsKeystone = true, StatKey = "BeastDoubleBossLoot", StatValue = 1 },
+
+            new() { Id = "beast_b1", FamilyId = "Beast", Branch = "combat", Name = "Flesh Piercer", Icon = "🗡️", Description = "+15% Crit Chance & +30% Crit Multi vs Beasts", ParentNodeId = "beast_root", StatKey = "BeastCrit", StatValue = 15 },
+            new() { Id = "beast_b2", FamilyId = "Beast", Branch = "combat", Name = "Blood Frenzy", Icon = "⚡", Description = "Slaying Beasts grants +25% Attack & Move Speed for 5s", ParentNodeId = "beast_b1", StatKey = "BeastFrenzySpeed", StatValue = 25 },
+            new() { Id = "beast_b_keystone", FamilyId = "Beast", Branch = "combat", Name = "★ Apex Predator", Icon = "🩸", Description = "Critical Strikes on Beasts execute targets below 20% Life", ParentNodeId = "beast_b2", IsKeystone = true, StatKey = "BeastExecute", StatValue = 20 },
+
+            new() { Id = "beast_c1", FamilyId = "Beast", Branch = "survival", Name = "Thickened Hide", Icon = "🛡️", Description = "-20% Damage taken from all Beast attacks", ParentNodeId = "beast_root", StatKey = "BeastDmgReduction", StatValue = 20 },
+            new() { Id = "beast_c2", FamilyId = "Beast", Branch = "survival", Name = "Coagulation Ward", Icon = "🧪", Description = "100% Immunity to Bleeding and Lacerations", ParentNodeId = "beast_c1", StatKey = "ImmuneBleed", StatValue = 1 },
+            new() { Id = "beast_c_keystone", FamilyId = "Beast", Branch = "survival", Name = "★ Untamed Fortitude", Icon = "🏰", Description = "Taking a heavy hit from Beasts grants a 300 HP Barrier", ParentNodeId = "beast_c1", IsKeystone = true, StatKey = "BeastBarrier", StatValue = 300 },
+
+            // === Undead Family ===
+            new() { Id = "undead_root", FamilyId = "Undead", Branch = "root", Name = "Consecrated Striking", Icon = "✨", Description = "+10% Holy & Fire Damage vs Undead", StatKey = "UndeadDmg", StatValue = 10 },
+            new() { Id = "undead_a1", FamilyId = "Undead", Branch = "harvest", Name = "Crypt Scavenger", Icon = "🔮", Description = "+35% Gem & Socketing Core Drops from Undead", ParentNodeId = "undead_root", StatKey = "UndeadGemDrop", StatValue = 35 },
+            new() { Id = "undead_a2", FamilyId = "Undead", Branch = "harvest", Name = "Soul Gem Extractor", Icon = "💎", Description = "+40% Rare & Unique Gear Drop Rarity", ParentNodeId = "undead_a1", StatKey = "UndeadGearRarity", StatValue = 40 },
+            new() { Id = "undead_a_keystone", FamilyId = "Undead", Branch = "harvest", Name = "★ Tomb Raider", Icon = "👑", Description = "Undead Elites have 50% chance for bonus Catalysts", ParentNodeId = "undead_a2", IsKeystone = true, StatKey = "UndeadBonusCatalysts", StatValue = 50 },
+
+            new() { Id = "undead_b1", FamilyId = "Undead", Branch = "combat", Name = "Bone Breaker", Icon = "🔨", Description = "+20% Physical & Fire Penetration vs Undead", ParentNodeId = "undead_root", StatKey = "UndeadPenetration", StatValue = 20 },
+            new() { Id = "undead_b2", FamilyId = "Undead", Branch = "combat", Name = "Soul Shatter", Icon = "💥", Description = "Slain Undead explode dealing 40% Max HP as Holy AoE", ParentNodeId = "undead_b1", StatKey = "UndeadExplosion", StatValue = 40 },
+            new() { Id = "undead_b_keystone", FamilyId = "Undead", Branch = "combat", Name = "★ Inquisitor’s Wrath", Icon = "🔥", Description = "Gain +50% Crit Multiplier and +20% Attack Speed in crypts", ParentNodeId = "undead_b2", IsKeystone = true, StatKey = "UndeadInquisitorBuff", StatValue = 50 },
+
+            new() { Id = "undead_c1", FamilyId = "Undead", Branch = "survival", Name = "Soulward Cloak", Icon = "🛡️", Description = "-20% Chaos & Physical Damage taken from Undead", ParentNodeId = "undead_root", StatKey = "UndeadMitigation", StatValue = 20 },
+            new() { Id = "undead_c2", FamilyId = "Undead", Branch = "survival", Name = "Miasma Cleanser", Icon = "🧪", Description = "100% Immunity to Poison and Soul Chill ailments", ParentNodeId = "undead_c1", StatKey = "ImmunePoisonChill", StatValue = 1 },
+            new() { Id = "undead_c_keystone", FamilyId = "Undead", Branch = "survival", Name = "★ Undying Aegis", Icon = "✨", Description = "Fatal blows from Undead grant 3s Divine Invulnerability", ParentNodeId = "undead_c1", IsKeystone = true, StatKey = "UndeadDeathImmunity", StatValue = 3 },
+
+            // === Fiend Family ===
+            new() { Id = "fiend_root", FamilyId = "Fiend", Branch = "root", Name = "Demonbane Knowledge", Icon = "📖", Description = "+10% Chaos & Elemental Damage vs Fiends", StatKey = "FiendDmg", StatValue = 10 },
+            new() { Id = "fiend_a1", FamilyId = "Fiend", Branch = "harvest", Name = "Hellstone Harvester", Icon = "🔮", Description = "+40% Fracture Core & Catalyst Drops from Fiends", ParentNodeId = "fiend_root", StatKey = "FiendHarvest", StatValue = 40 },
+            new() { Id = "fiend_a2", FamilyId = "Fiend", Branch = "harvest", Name = "Abyssal Siphon", Icon = "💎", Description = "+50% Signature Artifact Drop Chance from Fiends", ParentNodeId = "fiend_a1", StatKey = "FiendSigChance", StatValue = 50 },
+            new() { Id = "fiend_a_keystone", FamilyId = "Fiend", Branch = "harvest", Name = "★ Infernal Wealth", Icon = "👑", Description = "Fiend Bosses drop guaranteed 2 Genesis Catalysts", ParentNodeId = "fiend_a2", IsKeystone = true, StatKey = "FiendGuaranteedCatalysts", StatValue = 2 },
+
+            new() { Id = "fiend_b1", FamilyId = "Fiend", Branch = "combat", Name = "Hellbreaker Cleave", Icon = "🗡️", Description = "+25% Chaos Damage & +15% Crit Chance vs Fiends", ParentNodeId = "fiend_root", StatKey = "FiendChaosDmg", StatValue = 25 },
+            new() { Id = "fiend_b2", FamilyId = "Fiend", Branch = "combat", Name = "Demon Purge", Icon = "🩸", Description = "Striking Fiends siphons 4% Mana & 5% Energy Shield per hit", ParentNodeId = "fiend_b1", StatKey = "FiendSiphon", StatValue = 5 },
+            new() { Id = "fiend_b_keystone", FamilyId = "Fiend", Branch = "combat", Name = "★ Doom Slayer", Icon = "🔥", Description = "Inflict 50% More Damage against Fiend Bosses", ParentNodeId = "fiend_b2", IsKeystone = true, StatKey = "FiendBossMoreDmg", StatValue = 50 },
+
+            new() { Id = "fiend_c1", FamilyId = "Fiend", Branch = "survival", Name = "Obsidian Shell", Icon = "🛡️", Description = "-20% Fire & Chaos Damage taken from Fiends", ParentNodeId = "fiend_root", StatKey = "FiendMitigation", StatValue = 20 },
+            new() { Id = "fiend_c2", FamilyId = "Fiend", Branch = "survival", Name = "Flameproof Aegis", Icon = "🧊", Description = "100% Immunity to Ignite and Scorched Ground", ParentNodeId = "fiend_c1", StatKey = "ImmuneIgnite", StatValue = 1 },
+            new() { Id = "fiend_c_keystone", FamilyId = "Fiend", Branch = "survival", Name = "★ Abyssal Resilience", Icon = "🏰", Description = "Gain +15% to Maximum Fire & Chaos Resistances (Cap 85%)", ParentNodeId = "fiend_c1", IsKeystone = true, StatKey = "FiendMaxResBonus", StatValue = 15 },
+
+            // === Elemental Family ===
+            new() { Id = "elem_root", FamilyId = "Elemental", Branch = "root", Name = "Arcane Attunement", Icon = "🔮", Description = "+10% Elemental Damage vs Elementals", StatKey = "ElemDmg", StatValue = 10 },
+            new() { Id = "elem_a1", FamilyId = "Elemental", Branch = "harvest", Name = "Aether Condenser", Icon = "🔮", Description = "+40% Skill Gem & Resonance Drops from Elementals", ParentNodeId = "elem_root", StatKey = "ElemGemDrop", StatValue = 40 },
+            new() { Id = "elem_a2", FamilyId = "Elemental", Branch = "harvest", Name = "Prismatic Harvest", Icon = "💎", Description = "+45% Rare Ring & Amulet Drop Rate", ParentNodeId = "elem_a1", StatKey = "ElemJewelryDrop", StatValue = 45 },
+            new() { Id = "elem_a_keystone", FamilyId = "Elemental", Branch = "harvest", Name = "★ Elemental Surge", Icon = "👑", Description = "Elementals drop double Genesis Catalysts", ParentNodeId = "elem_a2", IsKeystone = true, StatKey = "ElemDoubleCatalysts", StatValue = 1 },
+
+            new() { Id = "elem_b1", FamilyId = "Elemental", Branch = "combat", Name = "Overcharge Surge", Icon = "⚡", Description = "+20% Attack & Cast Speed in combat with Elementals", ParentNodeId = "elem_root", StatKey = "ElemCombatSpeed", StatValue = 20 },
+            new() { Id = "elem_b2", FamilyId = "Elemental", Branch = "combat", Name = "Prismatic Disruption", Icon = "🌩️", Description = "Attacks strip 50% of Elemental Resistances from targets", ParentNodeId = "elem_b1", StatKey = "ElemResistStrip", StatValue = 50 },
+            new() { Id = "elem_b_keystone", FamilyId = "Elemental", Branch = "combat", Name = "★ Arcane Cataclysm", Icon = "💥", Description = "Killing Elementals releases a Chain Lightning storm", ParentNodeId = "elem_b2", IsKeystone = true, StatKey = "ElemChainLightningOnKill", StatValue = 1 },
+
+            new() { Id = "elem_c1", FamilyId = "Elemental", Branch = "survival", Name = "Prismatic Refraction", Icon = "🛡️", Description = "-20% Elemental Damage taken from Elementals", ParentNodeId = "elem_root", StatKey = "ElemMitigation", StatValue = 20 },
+            new() { Id = "elem_c2", FamilyId = "Elemental", Branch = "survival", Name = "Tri-Element Ward", Icon = "🧪", Description = "100% Immunity to Freeze, Shock, and Ignite", ParentNodeId = "elem_c1", StatKey = "ImmuneTriElement", StatValue = 1 },
+            new() { Id = "elem_c_keystone", FamilyId = "Elemental", Branch = "survival", Name = "★ Elemental Mirror", Icon = "🪞", Description = "Reflect 35% of all incoming Elemental Damage", ParentNodeId = "elem_c1", IsKeystone = true, StatKey = "ElemReflectDamage", StatValue = 35 },
+
+            // === Construct Family ===
+            new() { Id = "cons_root", FamilyId = "Construct", Branch = "root", Name = "Shatter Theory", Icon = "🔨", Description = "+10% Armor Penetration vs Constructs", StatKey = "ConsArmorPen", StatValue = 10 },
+            new() { Id = "cons_a1", FamilyId = "Construct", Branch = "harvest", Name = "Ore Extractor", Icon = "⚒️", Description = "+50% Socketing Cores & Harmonic Tethers", ParentNodeId = "cons_root", StatKey = "ConsCoreDrops", StatValue = 50 },
+            new() { Id = "cons_a2", FamilyId = "Construct", Branch = "harvest", Name = "Titan Core Siphon", Icon = "💎", Description = "+50% Crafting Base Item Drop Rarity", ParentNodeId = "cons_a1", StatKey = "ConsBaseItemRarity", StatValue = 50 },
+            new() { Id = "cons_a_keystone", FamilyId = "Construct", Branch = "harvest", Name = "★ Foundry Master", Icon = "👑", Description = "Constructs drop guaranteed Tier 1 Crafting Bases", ParentNodeId = "cons_a2", IsKeystone = true, StatKey = "ConsGuaranteedBases", StatValue = 1 },
+
+            new() { Id = "cons_b1", FamilyId = "Construct", Branch = "combat", Name = "Crushing Impact", Icon = "💥", Description = "Attacks ignore 70% of Construct Armor & Shield", ParentNodeId = "cons_root", StatKey = "ConsIgnoreArmor", StatValue = 70 },
+            new() { Id = "cons_b2", FamilyId = "Construct", Branch = "combat", Name = "Titan Breaker", Icon = "⚡", Description = "Stun duration on Constructs is increased by +100%", ParentNodeId = "cons_b1", StatKey = "ConsStunDuration", StatValue = 100 },
+            new() { Id = "cons_b_keystone", FamilyId = "Construct", Branch = "combat", Name = "★ Core Overload", Icon = "🌋", Description = "Crits on Constructs detonate power core for massive AoE", ParentNodeId = "cons_b2", IsKeystone = true, StatKey = "ConsCoreDetonate", StatValue = 1 },
+
+            new() { Id = "cons_c1", FamilyId = "Construct", Branch = "survival", Name = "Reinforced Plating", Icon = "🛡️", Description = "-20% Physical Damage taken from Constructs", ParentNodeId = "cons_root", StatKey = "ConsMitigation", StatValue = 20 },
+            new() { Id = "cons_c2", FamilyId = "Construct", Branch = "survival", Name = "Titan Bastion", Icon = "🏰", Description = "Gain +250 Flat Armor & 100% Knockback Immunity", ParentNodeId = "cons_c1", StatKey = "ConsFlatArmor", StatValue = 250 },
+            new() { Id = "cons_c_keystone", FamilyId = "Construct", Branch = "survival", Name = "★ Iron Will", Icon = "🗿", Description = "Immune to Stun and Crushing Tremors from Golems", ParentNodeId = "cons_c1", IsKeystone = true, StatKey = "ImmuneStunTremor", StatValue = 1 }
+        };
+
+        return (families, nodes);
     }
 }

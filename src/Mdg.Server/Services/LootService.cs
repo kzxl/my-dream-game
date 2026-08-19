@@ -27,7 +27,9 @@ namespace Mdg.Server.Services
                 monsterTier,
                 monsterLevel,
                 quantityBonus,
-                rarityBonus);
+                rarityBonus,
+                req.MasteryRank,
+                req.Kills);
 
             var itemDtos = new List<LootItemDto>();
             foreach (var item in items)
@@ -79,7 +81,9 @@ namespace Mdg.Server.Services
         int MonsterLevel,
         string? ZoneId,
         float PlayerIir,
-        float PlayerIiq);
+        float PlayerIiq,
+        int MasteryRank = 0,
+        int Kills = 0);
 
     public record LootDropResultDto(
         List<LootItemDto> Items,
@@ -99,10 +103,10 @@ namespace Mdg.Server.Services
         public string BaseType { get; set; } = "";
 
         [JsonPropertyName("rarity")]
-        public string Rarity { get; set; } = "Normal";
+        public string Rarity { get; set; } = "";
 
         [JsonPropertyName("slot")]
-        public string Slot { get; set; } = "none";
+        public string Slot { get; set; } = "";
 
         [JsonPropertyName("itemLevel")]
         public int ItemLevel { get; set; } = 1;
@@ -111,18 +115,18 @@ namespace Mdg.Server.Services
         public string Icon { get; set; } = "📦";
 
         [JsonPropertyName("sockets")]
-        public int Sockets { get; set; } = 0;
+        public int Sockets { get; set; }
 
         [JsonPropertyName("socketLinks")]
-        public int SocketLinks { get; set; } = 0;
+        public int SocketLinks { get; set; }
+
+        [JsonPropertyName("beamHeight")]
+        public int BeamHeight { get; set; }
 
         [JsonPropertyName("explicitMods")]
         public List<string> ExplicitMods { get; set; } = new();
 
         [JsonPropertyName("statBonuses")]
         public Dictionary<string, float> StatBonuses { get; set; } = new();
-
-        [JsonPropertyName("beamHeight")]
-        public int BeamHeight { get; set; } = 0;
     }
 }

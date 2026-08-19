@@ -7,7 +7,7 @@ export const ApiClient = {
   /**
    * Request server-authoritative loot generation for a slain monster
    */
-  async generateMonsterLoot(monsterType, monsterRarity, isBoss, monsterLevel, zoneId, playerIir = 0, playerIiq = 0) {
+  async generateMonsterLoot(monsterType, monsterRarity, isBoss, monsterLevel, zoneId, playerIir = 0, playerIiq = 0, masteryRank = 0, kills = 0) {
     try {
       const res = await fetch('/api/v1/loot/drop', {
         method: 'POST',
@@ -19,7 +19,9 @@ export const ApiClient = {
           monsterLevel: monsterLevel || 1,
           zoneId: zoneId || 'SanctuaryHaven',
           playerIir: playerIir,
-          playerIiq: playerIiq
+          playerIiq: playerIiq,
+          masteryRank: masteryRank || 0,
+          kills: kills || 0
         })
       });
       if (res.ok) {
