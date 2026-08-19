@@ -421,8 +421,8 @@ function update(dt) {
     const pTile = currentZoneMap?.grid?.[pTileY]?.[pTileX];
 
     // Direct Tile Hazard Damage
-    if (pTile === 2 || pTile === 5) {
-      // Lava Ground (Tile 2 or 5)
+    if (pTile === 5 || pTile === 13) {
+      // Lava Ground & Scorched Earth (Tile 5 or 13)
       const lavaDmg = Math.max(8, Math.round(40 * (1 - (player.fireRes || 0) / 100)));
       player.life = Math.max(0, player.life - lavaDmg);
       spawnDamageNumber(player.x, player.y - 45, `-${lavaDmg} 🔥 Lava Burn!`, true, '#ff3d00');
@@ -441,6 +441,20 @@ function update(dt) {
           size: 3
         });
       }
+    } else if (pTile === 2 || pTile === 9) {
+      // Water Stream & Shallow Shoals (Tile 2 or 9 - Pure Water Splash, NO Burn)
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x: player.x + (Math.random() - 0.5) * 16,
+          y: player.y + 16 + (Math.random() - 0.5) * 8,
+          vx: (Math.random() - 0.5) * 40,
+          vy: -20 - Math.random() * 20,
+          color: '#4facfe',
+          life: 0.4,
+          maxLife: 0.4,
+          size: 2.5
+        });
+      }
     } else if (pTile === 6) {
       // Toxic Miasma Tile
       const toxicDmg = Math.max(6, Math.round(30 * (1 - (player.chaosRes || 0) / 100)));
@@ -453,10 +467,16 @@ function update(dt) {
       player.life = Math.max(0, player.life - iceDmg);
       spawnDamageNumber(player.x, player.y - 45, `-${iceDmg} ❄️ Deep Frost!`, false, '#4facfe');
       if (player.life <= 0) handlePlayerDefeated();
+    } else if (pTile === 8) {
+      // Static Electric Ground Tile
+      const electricDmg = Math.max(5, Math.round(25 * (1 - (player.lightningRes || 0) / 100)));
+      player.life = Math.max(0, player.life - electricDmg);
+      spawnDamageNumber(player.x, player.y - 45, `-${electricDmg} ⚡ Static Shock!`, false, '#ffd700');
+      if (player.life <= 0) handlePlayerDefeated();
     }
 
     // Biome Ambient Heat / Peace
-    if (currentZoneId === 'MoltenCaldera' && player.fireRes < 75 && pTile !== 2 && pTile !== 5) {
+    if (currentZoneId === 'MoltenCaldera' && player.fireRes < 75 && pTile !== 5) {
       const heatDmg = Math.max(5, Math.round((75 - player.fireRes) * 1.5));
       player.life = Math.max(0, player.life - heatDmg);
       spawnDamageNumber(player.x, player.y - 40, `-${heatDmg} 🔥 Heatwave!`, false, '#ff5722');
