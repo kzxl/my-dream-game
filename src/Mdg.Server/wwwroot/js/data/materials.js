@@ -139,29 +139,9 @@ export const FORGING_RECIPES = [
     icon: '🗡️',
     desc: 'Reliable iron broadsword for novice combatants.',
     baseStats: '+18 Physical Damage, 1.25 Atk Spd',
-    costs: { mat_iron_ore: 5, mat_beast_leather: 2 }
-  },
-  {
-    id: 'forge_mithril_blade',
-    name: 'Mithril Arcane Blade',
-    baseType: 'sword_1h',
-    slot: 'MainHand',
-    level: 25,
-    icon: '⚔️',
-    desc: 'Keen mithril rapier attuned to elemental spells.',
-    baseStats: '+42 Physical Damage, +20 Elemental Dmg',
-    costs: { mat_mithril_chunk: 8, mat_aether_crystal: 3 }
-  },
-  {
-    id: 'forge_adamantite_greatsword',
-    name: 'Adamantite Colossus Greatsword',
-    baseType: 'sword_2h',
-    slot: 'MainHand',
-    level: 50,
-    icon: '🗡️',
-    desc: 'Devastating two-handed colossus greatsword.',
-    baseStats: '+115 Physical Damage, +25% Crit Multi',
-    costs: { mat_adamantite_ingot: 12, mat_aether_crystal: 4 }
+    costs: { mat_iron_ore: 5, mat_beast_leather: 2 },
+    isDefaultUnlocked: true,
+    dropSource: null
   },
   {
     id: 'forge_iron_armor',
@@ -172,29 +152,9 @@ export const FORGING_RECIPES = [
     icon: '🛡️',
     desc: 'Sturdy iron breastplate providing basic armor.',
     baseStats: '+65 Armor, +40 Max Life',
-    costs: { mat_iron_ore: 6, mat_beast_leather: 4 }
-  },
-  {
-    id: 'forge_mithril_hauberk',
-    name: 'Mithril Ward Hauberk',
-    baseType: 'body_armor',
-    slot: 'BodyArmor',
-    level: 25,
-    icon: '🛡️',
-    desc: 'Woven mithril rings reinforced with beast hide.',
-    baseStats: '+140 Armor, +60 Energy Shield',
-    costs: { mat_mithril_chunk: 10, mat_beast_leather: 6 }
-  },
-  {
-    id: 'forge_adamantite_plate',
-    name: 'Adamantite Titan Warplate',
-    baseType: 'body_armor',
-    slot: 'BodyArmor',
-    level: 50,
-    icon: '🛡️',
-    desc: 'Heavy titan battleplate forged for frontline vanguards.',
-    baseStats: '+320 Armor, +120 Max Life, +15% All Res',
-    costs: { mat_adamantite_ingot: 15, mat_aether_crystal: 6 }
+    costs: { mat_iron_ore: 6, mat_beast_leather: 4 },
+    isDefaultUnlocked: true,
+    dropSource: null
   },
   {
     id: 'forge_aether_ring',
@@ -205,7 +165,59 @@ export const FORGING_RECIPES = [
     icon: '💍',
     desc: 'Intricately carved ring channeling ambient mana.',
     baseStats: '+35 Max Mana, +18% Elemental Res',
-    costs: { mat_mithril_chunk: 4, mat_aether_crystal: 4 }
+    costs: { mat_mithril_chunk: 4, mat_aether_crystal: 4 },
+    isDefaultUnlocked: false,
+    dropSource: {
+      monsterId: 'malakor',
+      monsterName: 'Malakor the Shadow Fiend',
+      altMonsterId: 'skeleton_warrior',
+      altMonsterName: 'Crypt Undead Warrior',
+      biome: 'Dungeon / Crypts (Act 1)',
+      bossChance: 0.85,
+      minionChance: 0.12
+    }
+  },
+  {
+    id: 'forge_mithril_blade',
+    name: 'Mithril Arcane Blade',
+    baseType: 'sword_1h',
+    slot: 'MainHand',
+    level: 25,
+    icon: '⚔️',
+    desc: 'Keen mithril rapier attuned to elemental spells.',
+    baseStats: '+42 Physical Damage, +20 Elemental Dmg',
+    costs: { mat_mithril_chunk: 8, mat_aether_crystal: 3 },
+    isDefaultUnlocked: false,
+    dropSource: {
+      monsterId: 'vael_frost',
+      monsterName: 'Cryomancer Vael the Frost Sovereign',
+      altMonsterId: 'frost_elemental',
+      altMonsterName: 'Frost Elemental',
+      biome: 'Frozen Spires / Tundra (Act 2)',
+      bossChance: 1.0,
+      minionChance: 0.15
+    }
+  },
+  {
+    id: 'forge_mithril_hauberk',
+    name: 'Mithril Ward Hauberk',
+    baseType: 'body_armor',
+    slot: 'BodyArmor',
+    level: 25,
+    icon: '🛡️',
+    desc: 'Woven mithril rings reinforced with beast hide.',
+    baseStats: '+140 Armor, +60 Energy Shield',
+    costs: { mat_mithril_chunk: 10, mat_beast_leather: 6 },
+    isDefaultUnlocked: false,
+    dropSource: {
+      monsterId: 'yeti',
+      monsterName: 'Yeti Frost Goliath',
+      altMonsterId: 'vael_frost',
+      altMonsterName: 'Cryomancer Vael',
+      biome: 'Frozen Spires / Tundra (Act 2)',
+      bossChance: 1.0,
+      minionChance: 0.25
+    }
   },
   {
     id: 'forge_prismatic_amulet',
@@ -216,9 +228,104 @@ export const FORGING_RECIPES = [
     icon: '📿',
     desc: 'Rare star relic adorned with a glowing Genesis Shard.',
     baseStats: '+24 All Attributes, +15% Global Damage',
-    costs: { mat_adamantite_ingot: 6, mat_aether_crystal: 8, mat_shard_genesis: 2 }
+    costs: { mat_adamantite_ingot: 6, mat_aether_crystal: 8, mat_shard_genesis: 2 },
+    isDefaultUnlocked: false,
+    dropSource: {
+      monsterId: 'ignis_dragon',
+      monsterName: 'Ignis the Scourge Wyrm',
+      altMonsterId: 'magma_golem',
+      altMonsterName: 'Magma Colossus Golem',
+      biome: 'Volcanic Core (Act 3)',
+      bossChance: 0.85,
+      minionChance: 0.18
+    }
+  },
+  {
+    id: 'forge_adamantite_greatsword',
+    name: 'Adamantite Colossus Greatsword',
+    baseType: 'sword_2h',
+    slot: 'MainHand',
+    level: 50,
+    icon: '🗡️',
+    desc: 'Devastating two-handed colossus greatsword.',
+    baseStats: '+115 Physical Damage, +25% Crit Multi',
+    costs: { mat_adamantite_ingot: 12, mat_aether_crystal: 4 },
+    isDefaultUnlocked: false,
+    dropSource: {
+      monsterId: 'ignis_dragon',
+      monsterName: 'Ignis the Scourge Wyrm',
+      biome: 'Volcanic Core (Act 3 Boss)',
+      bossChance: 1.0,
+      minionChance: 0.05
+    }
+  },
+  {
+    id: 'forge_adamantite_plate',
+    name: 'Adamantite Titan Warplate',
+    baseType: 'body_armor',
+    slot: 'BodyArmor',
+    level: 50,
+    icon: '🛡️',
+    desc: 'Heavy titan battleplate forged for frontline vanguards.',
+    baseStats: '+320 Armor, +120 Max Life, +15% All Res',
+    costs: { mat_adamantite_ingot: 15, mat_aether_crystal: 6 },
+    isDefaultUnlocked: false,
+    dropSource: {
+      monsterId: 'ignis_dragon',
+      monsterName: 'Ignis the Scourge Wyrm',
+      biome: 'Volcanic Core (Act 3 Boss)',
+      bossChance: 1.0,
+      minionChance: 0.05
+    }
   }
 ];
+
+export function createRecipeScrollItem(recipe) {
+  if (!recipe) return null;
+  const isMythic = recipe.level >= 50;
+  const isRare = recipe.level >= 25;
+  const rarity = isMythic ? 'Unique' : (isRare ? 'Rare' : 'Magic');
+  const color = isMythic ? '#ffd700' : (isRare ? '#e5c07b' : '#61afef');
+
+  return {
+    id: `recipe_${recipe.id}_${Math.random().toString(36).substring(2, 7)}`,
+    recipeId: recipe.id,
+    name: `📜 Bí Kíp: ${recipe.name}`,
+    category: 'recipe',
+    slot: 'Recipe',
+    rarity: rarity,
+    color: color,
+    icon: '📜',
+    level: recipe.level,
+    desc: `Cuộn da dê cổ phong ấn bí quyết đúc [${recipe.name}]. Chuột phải hoặc bấm vào để học vĩnh viễn cho Bàn Rèn Genesis.`,
+    beamHeight: isMythic ? 400 : 260
+  };
+}
+
+export function getRecipeDropForMonster(monsterId, isBoss) {
+  if (!monsterId) return null;
+  const mId = monsterId.toLowerCase();
+
+  const candidates = FORGING_RECIPES.filter(r => {
+    if (r.isDefaultUnlocked || !r.dropSource) return false;
+    const s = r.dropSource;
+    return (s.monsterId && s.monsterId.toLowerCase() === mId) ||
+           (s.altMonsterId && s.altMonsterId.toLowerCase() === mId);
+  });
+
+  if (candidates.length === 0) return null;
+
+  for (const recipe of candidates) {
+    const s = recipe.dropSource;
+    const isPrimaryBoss = s.monsterId && s.monsterId.toLowerCase() === mId;
+    const chance = isBoss && isPrimaryBoss ? (s.bossChance || 0.8) : (s.minionChance || 0.1);
+    if (Math.random() < chance) {
+      return createRecipeScrollItem(recipe);
+    }
+  }
+
+  return null;
+}
 
 export function getMaterialInfo(matId) {
   return MATERIALS_CATALOG[matId] || {

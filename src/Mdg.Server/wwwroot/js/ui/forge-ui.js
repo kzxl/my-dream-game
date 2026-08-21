@@ -672,25 +672,38 @@ function updateSalvageUI() {
 // =========================================================================
 // TAB 3: BASE EQUIPMENT FORGING
 // =========================================================================
+let recipeFilterMode = 'all'; // 'all' | 'unlocked' | 'locked' | 'craftable'
+
+// =========================================================================
+// TAB 3: BASE EQUIPMENT FORGING (RECIPE BLUEPRINT SYSTEM)
+// =========================================================================
 function renderBaseForgingTab(container) {
+  if (!player.unlockedRecipes) {
+    player.unlockedRecipes = ['forge_iron_sword', 'forge_iron_armor'];
+  }
+
   container.innerHTML = `
     <div class="forge-content-grid">
-      <!-- Left: Recipe List with Craftable Toggle -->
+      <!-- Left: Recipe List with Blueprint Filters -->
       <div class="forge-anvil-panel">
         <div class="forge-panel-title-row">
-          <h3>🗡️ Relic Blueprints</h3>
-          <label class="craftable-toggle-label">
-            <input type="checkbox" id="chkCraftableOnly" ${onlyCraftableFilter ? 'checked' : ''} />
-            <span>Craftable Only</span>
-          </label>
+          <h3>🗡️ Cổ Thư & Bản Vẽ Chế Tác</h3>
         </div>
+
+        <div class="forge-blueprint-filter-tabs">
+          <button class="bp-filter-btn ${recipeFilterMode === 'all' ? 'active' : ''}" data-mode="all">Tất Cả</button>
+          <button class="bp-filter-btn ${recipeFilterMode === 'unlocked' ? 'active' : ''}" data-mode="unlocked">🔓 Đã Học</button>
+          <button class="bp-filter-btn ${recipeFilterMode === 'locked' ? 'active' : ''}" data-mode="locked">🔒 Chưa Học</button>
+          <button class="bp-filter-btn ${recipeFilterMode === 'craftable' ? 'active' : ''}" data-mode="craftable">✨ Đủ NL</button>
+        </div>
+
         <div class="forge-recipe-list" id="forgeRecipeList"></div>
       </div>
 
       <!-- Right: Recipe Preview, Material Cost Slots & Forging Action -->
       <div class="forge-actions-panel">
         <div class="forge-panel-title-row">
-          <h3>🔨 Smelting & Relic Forging</h3>
+          <h3>🔨 Lò Luyện Kim & Rèn Phôi</h3>
         </div>
         <div id="recipePreviewBox" class="recipe-preview-box"></div>
         <div style="margin-top:20px;">
@@ -700,9 +713,14 @@ function renderBaseForgingTab(container) {
     </div>
   `;
 
-  document.getElementById('chkCraftableOnly')?.addEventListener('change', e => {
-    onlyCraftableFilter = e.target.checked;
-    updateBaseForgingUI();
+  container.querySelectorAll('.bp-filter-btn').forEach(btn => {
+    btn.onclick = () => {
+      container.querySelectorAll('.bp-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      recipeFilterMode = btn.getAttribute('data-mode');
+      AudioEngine.playTone(480, 'sine', 0.05, 0.04);
+      updateBaseForgingUI();
+    };
   });
 
   updateBaseForgingUI();
@@ -713,44 +731,65 @@ function updateBaseForgingUI() {
   if (!recipeList) return;
 
   if (!player.materials) player.materials = {};
+  if (!player.unlockedRecipes) {
+    player.unlockedRecipes = ['forge_iron_sword', 'forge_iron_armor'];
+  }
 
   recipeList.innerHTML = '';
 
   const displayedRecipes = FORGING_RECIPES.filter(recipe => {
-    if (!onlyCraftableFilter) return true;
-    for (const [matId, reqCount] of Object.entries(recipe.costs)) {
-      if ((player.materials[matId] || 0) < reqCount) return false;
+    const isUnlocked = recipe.isDefaultUnlocked || player.unlockedRecipes.includes(recipe.id);
+
+    if (recipeFilterMode === 'unlocked' && !isUnlocked) return false;
+    if (recipeFilterMode === 'locked' && isUnlocked) return false;
+
+    if (recipeFilterMode === 'craftable') {
+      if (!isUnlocked) return false;
+      for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+        if ((player.materials[matId] || 0) < reqCount) return false;
+      }
     }
+
     return true;
   });
 
   if (displayedRecipes.length === 0) {
     recipeList.innerHTML = `
       <div style="color:#64748b; font-size:12px; text-align:center; padding:30px 10px;">
-        No craftable blueprints with current materials.<br>Uncheck "Craftable Only" to view all blueprints.
+        Không có công thức nào phù hợp bộ lọc hiện tại.
       </div>
     `;
   } else {
     displayedRecipes.forEach(recipe => {
-      let isCraftable = true;
+      const isUnlocked = recipe.isDefaultUnlocked || player.unlockedRecipes.includes(recipe.id);
+      let hasEnoughMats = true;
       for (const [matId, reqCount] of Object.entries(recipe.costs)) {
         if ((player.materials[matId] || 0) < reqCount) {
-          isCraftable = false;
+          hasEnoughMats = false;
           break;
         }
       }
 
       const div = document.createElement('div');
-      div.className = `forge-recipe-card ${selectedRecipeId === recipe.id ? 'selected' : ''} ${!isCraftable ? 'lacking-mats' : ''}`;
+      div.className = `forge-recipe-card ${selectedRecipeId === recipe.id ? 'selected' : ''} ${!isUnlocked ? 'recipe-locked' : (!hasEnoughMats ? 'lacking-mats' : '')}`;
+      
+      let sourceTagHtml = '';
+      if (!isUnlocked && recipe.dropSource) {
+        sourceTagHtml = `<div class="frc-drop-hint">🔒 Rơi từ: <b>${recipe.dropSource.monsterName}</b></div>`;
+      }
+
       div.innerHTML = `
         <div class="frc-left">
-          <span class="frc-icon">${recipe.icon}</span>
-          <div>
-            <div class="frc-title">${recipe.name} <span style="font-size:10px; color:#4ade80;">(Lv. ${recipe.level})</span></div>
+          <span class="frc-icon">${isUnlocked ? recipe.icon : '🔒'}</span>
+          <div style="flex:1;">
+            <div class="frc-title" style="${!isUnlocked ? 'color:#94a3b8;' : ''}">
+              ${recipe.name} <span style="font-size:10px; color:${isUnlocked ? '#4ade80' : '#64748b'};">(Lv. ${recipe.level})</span>
+            </div>
             <div class="frc-sub">${recipe.slot} • ${recipe.desc}</div>
+            ${sourceTagHtml}
           </div>
         </div>
-        ${isCraftable ? '<span class="frc-ready-tag">READY</span>' : ''}
+        ${isUnlocked && hasEnoughMats ? '<span class="frc-ready-tag">SẴN SÀNG</span>' : (!isUnlocked ? '<span class="frc-locked-tag">KHÓA</span>' : '')}
       `;
       div.onclick = () => {
         selectedRecipeId = recipe.id;
@@ -763,6 +802,7 @@ function updateBaseForgingUI() {
 
   const previewBox = document.getElementById('recipePreviewBox');
   const recipe = FORGING_RECIPES.find(r => r.id === selectedRecipeId) || displayedRecipes[0] || FORGING_RECIPES[0];
+  const isSelectedUnlocked = recipe.isDefaultUnlocked || player.unlockedRecipes.includes(recipe.id);
 
   let canAfford = true;
   let costSlotsHtml = `<div class="materials-slot-grid">`;
@@ -783,20 +823,42 @@ function updateBaseForgingUI() {
   }
   costSlotsHtml += `</div>`;
 
-  previewBox.innerHTML = `
-    <div class="recipe-preview-card">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="font-size:36px;">${recipe.icon}</span>
-        <div>
-          <h3 style="margin:0; color:#ffd700; font-size:16px;">${recipe.name}</h3>
-          <div style="font-size:11px; color:#a0a8b7;">Requires Hero Level ${recipe.level} • Slot: ${recipe.slot}</div>
+  let lockNoticeHtml = '';
+  if (!isSelectedUnlocked) {
+    const drop = recipe.dropSource;
+    lockNoticeHtml = `
+      <div class="forge-locked-banner">
+        <span style="font-size:28px;">🔒</span>
+        <div style="flex:1;">
+          <h4 style="margin:0 0 4px 0; color:#ef4444; font-size:13px;">BẢN VẼ BÍ TRUYỀN CHƯA MỞ KHÓA</h4>
+          <p style="margin:0; font-size:11px; color:#cbd5e1; line-height:1.4;">
+            Bạn chưa học công thức này. Hãy tiêu diệt <b style="color:#ffd700;">${drop ? drop.monsterName : 'Quái vật đặc thù'}</b> 
+            tại khu vực <b style="color:#00f2fe;">${drop ? drop.biome : 'Dã ngoại'}</b> để thu thập <b>📜 Cuộn Bí Kíp</b>!
+          </p>
         </div>
       </div>
+    `;
+  }
+
+  previewBox.innerHTML = `
+    <div class="recipe-preview-card ${!isSelectedUnlocked ? 'preview-locked' : ''}">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:36px;">${isSelectedUnlocked ? recipe.icon : '🔒'}</span>
+        <div>
+          <h3 style="margin:0; color:${isSelectedUnlocked ? '#ffd700' : '#94a3b8'}; font-size:16px;">
+            ${recipe.name} ${!isSelectedUnlocked ? '<span style="font-size:11px; color:#ef4444;">[Chưa Học]</span>' : ''}
+          </h3>
+          <div style="font-size:11px; color:#a0a8b7;">Yêu cầu Cấp độ ${recipe.level} • Vị trí: ${recipe.slot}</div>
+        </div>
+      </div>
+      
+      ${lockNoticeHtml}
+
       <p style="font-size:12px; color:#cbd5e1; margin:10px 0;">${recipe.desc}</p>
       <div style="background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:6px; border-left:3px solid #00f2fe; margin-bottom:12px;">
-        <span style="color:#00f2fe; font-size:12px;">Inherent Base Modifiers: <b>${recipe.baseStats}</b></span>
+        <span style="color:#00f2fe; font-size:12px;">Thuộc Tính Cơ Bản Cố Định: <b>${recipe.baseStats}</b></span>
       </div>
-      <h4 style="color:#ffd700; margin-bottom:8px; font-size:12px;">Required Raw Materials:</h4>
+      <h4 style="color:#ffd700; margin-bottom:8px; font-size:12px;">Nguyên Liệu Cần Thiết:</h4>
       ${costSlotsHtml}
     </div>
   `;
@@ -813,95 +875,103 @@ function updateBaseForgingUI() {
 
   const btnForge = document.getElementById('btnExecuteForgeBase');
   if (btnForge) {
-    btnForge.disabled = !canAfford;
-    btnForge.className = `forge-btn ${canAfford ? 'btn-craft' : 'disabled'}`;
-    btnForge.onclick = () => {
-      if (!canAfford) return alert('Insufficient raw materials to forge this relic.');
+    if (!isSelectedUnlocked) {
+      btnForge.disabled = true;
+      btnForge.className = 'forge-btn disabled';
+      btnForge.innerText = '🔒 Yêu Cầu Học Bản Vẽ Từ Quái Vật';
+    } else {
+      btnForge.disabled = !canAfford;
+      btnForge.className = `forge-btn ${canAfford ? 'btn-craft' : 'disabled'}`;
+      btnForge.innerText = '✨ Đúc Trang Bị (Forge Equipment)';
+      btnForge.onclick = () => {
+        if (!isSelectedUnlocked) return alert('Bạn chưa học công thức này! Hãy săn quái đặc thù để tìm cuộn bí kíp.');
+        if (!canAfford) return alert('Không đủ nguyên liệu thô để đúc trang bị này.');
 
-      if (player.bag.length >= 16) {
-        return alert('Inventory backpack is full! (Max 16 slots)');
-      }
-
-      // 1. Evaluate Crafting Mastery Perks
-      const perks = getCraftingMasteryPerks();
-
-      // Check Resource Conservation / Refund
-      const isSaved = Math.random() * 100 < perks.resourceSaveChance;
-      if (!isSaved) {
-        for (const [matId, reqCount] of Object.entries(recipe.costs)) {
-          player.materials[matId] -= reqCount;
+        if (player.bag.length >= 32) {
+          return alert('Túi đồ đã đầy! (Tối đa 32 ô)');
         }
-      } else {
-        AudioEngine.playTone(660, 'sine', 0.25, 0.15);
-        spawnDamageNumber(player.x, player.y - 65, '🍀 RESOURCE REFUND: Materials Preserved!', true, '#4ade80');
-      }
 
-      // Check Extra Socket Blessing
-      let sockets = (recipe.slot === 'MainHand' || recipe.slot === 'BodyArmor') ? 2 : (recipe.slot === 'Ring' || recipe.slot === 'Amulet' ? 0 : 1);
-      const isExtraSocket = Math.random() * 100 < perks.extraSocketChance;
-      if (isExtraSocket && sockets < 6 && recipe.slot !== 'Ring' && recipe.slot !== 'Amulet') {
-        sockets = Math.min(6, sockets + 1);
-      }
-      const links = sockets > 1 ? 1 : 0;
+        // 1. Evaluate Crafting Mastery Perks
+        const perks = getCraftingMasteryPerks();
 
-      // Base Stats
-      let baseDmg = recipe.slot === 'MainHand' ? (recipe.level * 2 + 15) : 0;
-      let baseArmor = recipe.slot === 'BodyArmor' ? (recipe.level * 4 + 40) : 0;
-      let baseLife = recipe.slot === 'BodyArmor' ? (recipe.level * 2 + 20) : 0;
+        // Check Resource Conservation / Refund
+        const isSaved = Math.random() * 100 < perks.resourceSaveChance;
+        if (!isSaved) {
+          for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+            player.materials[matId] -= reqCount;
+          }
+        } else {
+          AudioEngine.playTone(660, 'sine', 0.25, 0.15);
+          spawnDamageNumber(player.x, player.y - 65, '🍀 BẢO TOÀN NGUYÊN LIỆU!', true, '#4ade80');
+        }
 
-      // Check Masterwork Critical (+25% Stats & Superior Quality)
-      const isMasterwork = Math.random() * 100 < perks.masterworkCritChance;
-      let itemName = recipe.name;
-      let itemRarity = 'Normal';
-      let itemColor = '#ffffff';
-      const craftedMods = [];
+        // Check Extra Socket Blessing
+        let sockets = (recipe.slot === 'MainHand' || recipe.slot === 'BodyArmor') ? 2 : (recipe.slot === 'Ring' || recipe.slot === 'Amulet' ? 0 : 1);
+        const isExtraSocket = Math.random() * 100 < perks.extraSocketChance;
+        if (isExtraSocket && sockets < 6 && recipe.slot !== 'Ring' && recipe.slot !== 'Amulet') {
+          sockets = Math.min(6, sockets + 1);
+        }
+        const links = sockets > 1 ? 1 : 0;
 
-      if (isMasterwork) {
-        itemName = '⭐ Masterwork ' + recipe.name;
-        itemRarity = 'Rare';
-        itemColor = '#ffd700';
-        baseDmg = Math.round(baseDmg * 1.25);
-        baseArmor = Math.round(baseArmor * 1.25);
-        baseLife = Math.round(baseLife * 1.25);
-        craftedMods.push('✨ Masterwork: +25% Superior Base Stats');
-      }
+        // Base Stats
+        let baseDmg = recipe.slot === 'MainHand' ? (recipe.level * 2 + 15) : 0;
+        let baseArmor = recipe.slot === 'BodyArmor' ? (recipe.level * 4 + 40) : 0;
+        let baseLife = recipe.slot === 'BodyArmor' ? (recipe.level * 2 + 20) : 0;
 
-      const newItem = {
-        name: itemName,
-        baseType: recipe.baseType,
-        slot: recipe.slot,
-        rarity: itemRarity,
-        level: recipe.level,
-        color: itemColor,
-        icon: recipe.icon,
-        sockets: sockets,
-        links: links,
-        isMasterwork: isMasterwork,
-        quality: isMasterwork ? 20 : 0,
-        stats: {
-          damage: baseDmg,
-          armor: baseArmor,
-          life: baseLife
-        },
-        craftedMods: craftedMods
+        // Check Masterwork Critical (+25% Stats & Superior Quality)
+        const isMasterwork = Math.random() * 100 < perks.masterworkCritChance;
+        let itemName = recipe.name;
+        let itemRarity = 'Normal';
+        let itemColor = '#ffffff';
+        const craftedMods = [];
+
+        if (isMasterwork) {
+          itemName = '⭐ Masterwork ' + recipe.name;
+          itemRarity = 'Rare';
+          itemColor = '#ffd700';
+          baseDmg = Math.round(baseDmg * 1.25);
+          baseArmor = Math.round(baseArmor * 1.25);
+          baseLife = Math.round(baseLife * 1.25);
+          craftedMods.push('✨ Masterwork: +25% Superior Base Stats');
+        }
+
+        const newItem = {
+          name: itemName,
+          baseType: recipe.baseType,
+          slot: recipe.slot,
+          rarity: itemRarity,
+          level: recipe.level,
+          color: itemColor,
+          icon: recipe.icon,
+          sockets: sockets,
+          links: links,
+          isMasterwork: isMasterwork,
+          quality: isMasterwork ? 20 : 0,
+          stats: {
+            damage: baseDmg,
+            armor: baseArmor,
+            life: baseLife
+          },
+          craftedMods: craftedMods
+        };
+
+        player.bag.push(newItem);
+
+        if (isMasterwork) {
+          AudioEngine.playLevelUp?.() || AudioEngine.playTone(1100, 'sine', 0.4, 0.3);
+          spawnDamageNumber(player.x, player.y - 45, `⭐ ĐẠI THÀNH CÔNG: ${itemName}!`, true, '#ffd700');
+        } else {
+          AudioEngine.playTone(880, 'sine', 0.3, 0.2);
+          spawnDamageNumber(player.x, player.y - 45, `✨ ĐÃ ĐÚC THÀNH CÔNG ${newItem.name}!`, true, '#ffd700');
+        }
+
+        addCraftingExp(35, 'Base Forging');
+
+        updateBaseForgingUI();
+        updateBackpackUI();
+        saveToDatabase();
       };
-
-      player.bag.push(newItem);
-
-      if (isMasterwork) {
-        AudioEngine.playLevelUp?.() || AudioEngine.playTone(1100, 'sine', 0.4, 0.3);
-        spawnDamageNumber(player.x, player.y - 45, `⭐ MASTERWORK CRIT: ${itemName}!`, true, '#ffd700');
-      } else {
-        AudioEngine.playTone(880, 'sine', 0.3, 0.2);
-        spawnDamageNumber(player.x, player.y - 45, `✨ FORGED ${newItem.name}!`, true, '#ffd700');
-      }
-
-      addCraftingExp(35, 'Base Forging');
-
-      updateBaseForgingUI();
-      updateBackpackUI();
-      saveToDatabase();
-    };
+    }
   }
 }
 

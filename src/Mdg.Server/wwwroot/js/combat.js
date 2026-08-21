@@ -13,6 +13,7 @@ import { addSkillExp } from './ui/skills-ui.js';
 import { addFlaskCharges } from './systems/flask-system.js';
 import { spawnExtractableCorpse } from './systems/shadow-extraction.js';
 import { handleMonsterSkinningDrop } from './systems/gathering-system.js';
+import { getRecipeDropForMonster } from './data/materials.js';
 
 export const PROFICIENCY_THRESHOLDS = [
   { rank: 'F', exp: 0, title: 'Novice Practitioner (F)', bonusDmg: 0 },
@@ -522,6 +523,14 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
       beamHeight: 450
     });
     spawnDamageNumber(x, y - 80, `✨ PRIMORDIAL ESSENCE: ${randomEssence.name}!`, true, '#ffd700');
+    AudioEngine.playLevelUp?.();
+  }
+
+  // Specific Monster Blueprint / Recipe Scroll Drop Check
+  const recipeDrop = getRecipeDropForMonster(monsterType, isBoss);
+  if (recipeDrop) {
+    itemsToDrop.push(recipeDrop);
+    spawnDamageNumber(x, y - 85, `📜 ANCIENT BLUEPRINT: ${recipeDrop.name}!`, true, '#00f2fe');
     AudioEngine.playLevelUp?.();
   }
 

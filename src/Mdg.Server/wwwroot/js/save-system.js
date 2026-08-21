@@ -163,7 +163,8 @@ export async function saveToDatabase(silent = false) {
     currencies: player.currencies || {},
     materials: player.materials || {},
     professions: player.professions || {},
-    craftingMastery: player.craftingMastery || { level: 1, exp: 0, rank: 'Apprentice', rankTitle: '🛠️ Novice Apprentice' }
+    craftingMastery: player.craftingMastery || { level: 1, exp: 0, rank: 'Apprentice', rankTitle: '🛠️ Novice Apprentice' },
+    unlockedRecipes: player.unlockedRecipes || ['forge_iron_sword', 'forge_iron_armor']
   };
 
   try {
@@ -246,6 +247,8 @@ export async function loadFromDatabase(charId) {
     if (data.materials) player.materials = data.materials;
     if (data.professions) player.professions = data.professions;
     if (data.craftingMastery) player.craftingMastery = data.craftingMastery;
+    if (data.unlockedRecipes) player.unlockedRecipes = data.unlockedRecipes;
+    else if (!player.unlockedRecipes) player.unlockedRecipes = ['forge_iron_sword', 'forge_iron_armor'];
 
     updateBackpackUI();
     updatePaperdollUI();

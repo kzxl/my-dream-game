@@ -113,7 +113,8 @@ export const player = {
     exp: 0,
     rank: 'Apprentice',
     rankTitle: '🛠️ Novice Apprentice'
-  }
+  },
+  unlockedRecipes: ['forge_iron_sword', 'forge_iron_armor']
 };
 
 export const monsters = [];

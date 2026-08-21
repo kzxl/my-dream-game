@@ -29,7 +29,7 @@ export function getItemCategory(item) {
   if (['BodyArmor', 'Helm', 'OffHand', 'Boots'].includes(item.slot) || item.category === 'armor') return 'armor';
   if (['Ring', 'Amulet'].includes(item.slot) || item.category === 'accessory') return 'accessory';
   if (item.slot === 'Currency' || item.rarity === 'Currency' || item.slot === 'Gem' || item.rarity === 'SkillGem' || item.rarity === 'SupportGem') return 'currency';
-  if (item.category === 'consumable' || item.id === 'scroll_resurrection' || item.category === 'map' || item.slot === 'Map') return 'consumable';
+  if (item.category === 'consumable' || item.id === 'scroll_resurrection' || item.category === 'map' || item.slot === 'Map' || item.category === 'recipe' || item.slot === 'Recipe') return 'consumable';
   return 'other';
 }
 
@@ -556,6 +556,28 @@ export function handleQuickEquipOrUse(item, bagIndex) {
     hideItemTooltip();
     saveToDatabase(true);
 
+  } else if (item.category === 'recipe' || item.slot === 'Recipe' || item.recipeId) {
+    if (!player.unlockedRecipes) {
+      player.unlockedRecipes = ['forge_iron_sword', 'forge_iron_armor'];
+    }
+    const recipeId = item.recipeId;
+    if (player.unlockedRecipes.includes(recipeId)) {
+      spawnDamageNumber(player.x, player.y - 45, `⚠️ Bạn đã học bí kíp này rồi!`, true, '#e5c07b');
+      AudioEngine.playTone(330, 'triangle', 0.15, 0.1);
+    } else {
+      player.unlockedRecipes.push(recipeId);
+      if (bagIndex !== undefined && bagIndex >= 0) {
+        player.bag.splice(bagIndex, 1);
+      } else {
+        const idx = player.bag.indexOf(item);
+        if (idx !== -1) player.bag.splice(idx, 1);
+      }
+      AudioEngine.playLevelUp?.() || AudioEngine.playTone(950, 'sine', 0.4, 0.25);
+      spawnDamageNumber(player.x, player.y - 65, `📜 HỌC THÀNH CÔNG: ${item.name}! Đã mở khóa tại Bàn Rèn [B]`, true, '#ffd700');
+      updateBackpackUI();
+      hideItemTooltip();
+      saveToDatabase(true);
+    }
   } else if (item.slot === 'Currency' || item.rarity === 'Currency') {
     spawnDamageNumber(player.x, player.y - 40, `🔮 ${item.name} (Use at Genesis Forge Bench [B])`, false, '#ffd700');
     AudioEngine.playPickup();
