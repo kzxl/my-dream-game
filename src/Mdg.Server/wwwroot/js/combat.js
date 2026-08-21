@@ -95,6 +95,10 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     }
   }
 
+  // Active Shrine Blessing: Cataclysmic Might (+60% damage, +35% Crit, +75% Multi)
+  const hasMightBuff = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'CataclysmicMight');
+  const hasFrostBuff = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'AbsoluteFrost');
+
   // Active Shrine Buff: Tempest Aura Chain Lightning Proc
   if (!isProc && player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'TempestAura')) {
     monsters.forEach(otherM => {
@@ -114,6 +118,12 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     });
   }
 
+  // Active Shrine Buff: Absolute Frost (All attacks discharge glacial freeze)
+  if (!isProc && hasFrostBuff) {
+    applyFreeze(target, 1.5);
+    applyChill(target, 4.0);
+  }
+
   // Active Shrine Buff: Abyssal Leech
   if (!isProc && player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'AbyssalLeech')) {
     const healAmount = Math.min(25, Math.round((rawPhysical + rawChaos) * 0.15));
@@ -122,19 +132,19 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     }
   }
 
-  // Monster Lore Mastery Amplifications
+  // Monster Lore Mastery Amplifications & Might Shrine
   const lore = getMonsterLoreBonus(target.type || 'monster', target.type === 'boss');
-  let effectiveCritChance = (player.critChance || 25) + lore.bonusCrit;
+  let effectiveCritChance = (player.critChance || 25) + lore.bonusCrit + (hasMightBuff ? 35 : 0);
   if (isSlash && isNodeAllocated('slash', 'sl_crit')) {
     effectiveCritChance += 15; // +15% Crit chance for Slash
   }
-  const effectiveCritMulti = (player.critMulti || 200) + lore.bonusCritMulti;
+  const effectiveCritMulti = (player.critMulti || 200) + lore.bonusCritMulti + (hasMightBuff ? 75 : 0);
 
   let isCrit = false;
-  let multiplier = 1.0;
+  let multiplier = hasMightBuff ? 1.60 : 1.0;
   if (canCrit && !isProc && Math.random() * 100 <= effectiveCritChance) {
     isCrit = true;
-    multiplier = effectiveCritMulti / 100;
+    multiplier = (effectiveCritMulti / 100) * (hasMightBuff ? 1.60 : 1.0);
   }
 
   // Lore bonus extra damage against familiar monster species
@@ -358,7 +368,34 @@ export function handleMonsterDefeated(target) {
     }
   }
 
-  if (window.gainExp) window.gainExp(target.expValue || 35);
+  if (window.gainExp) {
+    const hasFortune = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'CelestialFortune');
+    const baseExp = target.expValue || 35;
+    window.gainExp(hasFortune ? Math.round(baseExp * 2.0) : baseExp);
+  }
+
+  // Solar Inferno Shrine: Corpse Explosion
+  if (player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'SolarInferno')) {
+    spawnDamageNumber(target.x, target.y - 45, '💥 SOLAR CORPSE EXPLOSION!', true, '#ff5722');
+    for (let i = 0; i < 16; i++) {
+      particles.push({
+        x: target.x,
+        y: target.y,
+        vx: (Math.random() - 0.5) * 220,
+        vy: (Math.random() - 0.5) * 220,
+        color: '#ff7849',
+        life: 0.45,
+        maxLife: 0.45,
+        size: 5
+      });
+    }
+    monsters.forEach(otherM => {
+      if (otherM !== target && otherM.isAlive && Math.hypot(otherM.x - target.x, otherM.y - target.y) < 140) {
+        dealDamage(otherM, 0, 160, 0, 0, 0, false, { x: target.x, y: target.y }, false, true);
+      }
+    });
+  }
+
   const rTier = target.rarityTier || target.rarity || (target.type === 'boss' ? 'boss' : 'normal');
   dropMonsterLoot(target.x, target.y, target.type === 'boss' || target.isBoss, rTier, mType);
 
@@ -383,8 +420,9 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
   else if (zoneId === 'ArenaVoid') monsterLevel = 84;
 
   const lore = getMonsterLoreBonus(monsterType, isBoss);
-  const playerIir = (player.iir || 0) + (lore.iir || 0);
-  const playerIiq = (player.iiq || 0) + (lore.iiq || 0);
+  const hasFortune = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'CelestialFortune');
+  const playerIir = (player.iir || 0) + (lore.iir || 0) + (hasFortune ? 150 : 0);
+  const playerIiq = (player.iiq || 0) + (lore.iiq || 0) + (hasFortune ? 100 : 0);
 
   // Server-Authoritative Drop Generation (Using monsterType, MasteryRank & Kills)
   const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
@@ -1034,6 +1072,12 @@ export function dealDamageToPlayer(monster) {
   const rawAttack = (monster.attackDmg || 32) * 1.55; // +55% difficulty baseline
   let familyMitigation = (lore.dmgReduction || 0) / 100;
 
+  // Active Shrine Blessing: Aegis Sanctuary (-35% damage taken)
+  const hasAegisSanctuary = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'AegisSanctuary');
+  if (hasAegisSanctuary) {
+    familyMitigation += 0.35;
+  }
+
   // Family Mastery Talents Check
   const mDef = MONSTERS[monster.type];
   const fam = mDef?.family;
@@ -1044,21 +1088,22 @@ export function dealDamageToPlayer(monster) {
     }
   }
 
-  const baseDmg = rawAttack * (1 - Math.min(0.60, familyMitigation)) * blockMult;
+  const baseDmg = rawAttack * (1 - Math.min(0.75, familyMitigation)) * blockMult;
   let finalDmg = 0;
 
+  const resBonus = hasAegisSanctuary ? 35 : 0;
   if (monster.dmgType === 'fire') {
-    finalDmg = baseDmg * (1 - (player.fireRes || 0) / 100);
+    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.fireRes || 0) + resBonus) / 100));
   } else if (monster.dmgType === 'cold') {
-    finalDmg = baseDmg * (1 - (player.coldRes || 0) / 100);
+    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.coldRes || 0) + resBonus) / 100));
     if (Math.random() < 0.25) applyChill(player, 1.5);
   } else if (monster.dmgType === 'lightning') {
-    finalDmg = baseDmg * (1 - (player.lightningRes || player.lightRes || 0) / 100);
+    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.lightningRes || player.lightRes || 0) + resBonus) / 100));
   } else if (monster.dmgType === 'chaos') {
-    finalDmg = baseDmg * (1 - (player.chaosRes || 0) / 100);
+    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.chaosRes || 0) + resBonus) / 100));
   } else {
     // Physical Armor Mitigation
-    const pArmor = player.armor || 60;
+    const pArmor = (player.armor || 60) * (hasAegisSanctuary ? 1.8 : 1.0);
     const physMitigation = Math.min(0.85, pArmor / (pArmor + 5 * baseDmg));
     finalDmg = baseDmg * (1 - physMitigation);
   }

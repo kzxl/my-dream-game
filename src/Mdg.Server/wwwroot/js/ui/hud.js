@@ -330,3 +330,38 @@ export function setupUIListeners() {
   document.getElementById('btn-toggle-inventory')?.addEventListener('click', () => toggleModal('inventory-modal'));
   document.getElementById('btn-close-inventory')?.addEventListener('click', () => toggleModal('inventory-modal'));
 }
+
+/**
+ * Updates Active Shrine Blessing Buffs on HUD
+ */
+export function updateBuffsHUD() {
+  let container = document.getElementById('hud-buffs-container');
+  if (!container) {
+    const hudPanel = document.getElementById('player-hud');
+    if (hudPanel) {
+      container = document.createElement('div');
+      container.id = 'hud-buffs-container';
+      container.className = 'hud-buffs-container';
+      hudPanel.appendChild(container);
+    } else {
+      return;
+    }
+  }
+
+  if (!player.activeBuffs || player.activeBuffs.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = player.activeBuffs.map(b => {
+    const durSec = Math.ceil(b.duration);
+    const col = b.color || '#ffd700';
+    return `
+      <div class="hud-buff-pill" style="border-color:${col}; box-shadow: 0 0 10px ${col}66;" title="${b.name}\n${b.description || ''}">
+        <span class="buff-icon">${b.icon || '✨'}</span>
+        <span class="buff-name" style="color:${col};">${b.name.replace(/^[^\w]+/, '')}</span>
+        <span class="buff-time" style="color:${col};">(${durSec}s)</span>
+      </div>
+    `;
+  }).join('');
+}

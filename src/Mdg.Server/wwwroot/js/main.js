@@ -12,7 +12,7 @@ import { renderGame } from './renderer.js';
 import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
-import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar } from './ui/hud.js';
+import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD } from './ui/hud.js';
 import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
 import { MapGenerator } from './map-generator.js';
 import { updateCompanion } from './companion.js';
@@ -27,8 +27,12 @@ import { MPClient } from './services/multiplayer-client.js';
 import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js';
 import { checkGoogleOAuthRedirectResult } from './auth.js';
 import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js';
+import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js';
 
 window.keys = keys;
+window.player = player;
+window.pois = pois;
+window.monsters = monsters;
 window.loadZone = loadZone;
 window.toggleModal = toggleModal;
 window.showZoneBanner = showZoneBanner;
@@ -54,6 +58,7 @@ let currentZone = ZONES[currentZoneId];
 let currentZoneMap = null;
 let zoneMonsterSpawners = [];
 let zoneRespawnTimer = 0;
+let shrineInfernoTimer = 0;
 window.currentZoneId = currentZoneId;
 
 export function canWalk(x, y) {
@@ -193,13 +198,17 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   // 2. Load Elements from ZoneMap
   if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
   if (currentZoneMap.npcs) currentZoneMap.npcs.forEach(n => npcs.push({ ...n }));
-  if (currentZoneMap.pois) currentZoneMap.pois.forEach(p => pois.push({ ...p }));
   if (currentZoneMap.dummies) {
     currentZoneMap.dummies.forEach(d => {
       trainingDummies.push({ x: d.x, y: d.y, name: d.name, life: 99999, maxLife: 99999, armor: 200, isAlive: true, hurtTimer: 0 });
     });
   }
   if (currentZoneMap.props) currentZoneMap.props.forEach(pr => props.push({ ...pr }));
+
+  // Procedural High-Fantasy Shrines (Only in Wild / Combat Zones, NEVER in Town)
+  if (currentZoneId !== 'SanctuaryHaven') {
+    spawnRandomMapShrines();
+  }
 
   // 3. Spawn Monster Clusters & Track Zone Spawners
   zoneMonsterSpawners = currentZoneMap.monsterSpawns || [];
@@ -229,6 +238,70 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   updatePaperdollUI();
   updateSkillBadges();
   renderSkillUpgradeModal();
+}
+
+/**
+ * Procedural Shrine Spawner for Wild Zones (1 to 3 unique shrines per map, NEVER in town)
+ */
+export function spawnRandomMapShrines() {
+  if (!currentZoneMap || currentZoneId === 'SanctuaryHaven') return;
+
+  const mapW = currentZoneMap.worldWidth || (currentZoneMap.widthInTiles * 48) || 1344;
+  const mapH = currentZoneMap.worldHeight || (currentZoneMap.heightInTiles * 48) || 1344;
+
+  const isLargeMap = mapW >= 2000 || mapH >= 2000 || currentZoneMap.isRift;
+  const targetCount = isLargeMap ? (Math.floor(Math.random() * 2) + 2) : (Math.floor(Math.random() * 2) + 1);
+
+  const availableKeys = [...ALL_SHRINE_KEYS];
+  // Shuffle available shrine keys
+  for (let i = availableKeys.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availableKeys[i], availableKeys[j]] = [availableKeys[j], availableKeys[i]];
+  }
+
+  let spawned = 0;
+  let attempts = 0;
+
+  while (spawned < targetCount && attempts < 120 && availableKeys.length > 0) {
+    attempts++;
+    const testX = Math.floor(Math.random() * (mapW - 180)) + 90;
+    const testY = Math.floor(Math.random() * (mapH - 180)) + 90;
+
+    if (!canWalk(testX, testY)) continue;
+
+    // Check distance to player
+    if (Math.hypot(testX - player.x, testY - player.y) < 200) continue;
+
+    // Check distance to other shrines
+    const tooCloseToOtherShrines = pois.some(p => Math.hypot(testX - p.x, testY - p.y) < 260);
+    if (tooCloseToOtherShrines) continue;
+
+    // Check distance to portals
+    const tooCloseToPortals = portals.some(p => Math.hypot(testX - p.x, testY - p.y) < 120);
+    if (tooCloseToPortals) continue;
+
+    const key = availableKeys.pop();
+    const sDef = SHRINE_TYPES[key];
+    if (sDef) {
+      pois.push({
+        id: 'shrine_' + Math.random().toString(36).substring(2, 9),
+        type: 'shrine',
+        shrineKey: sDef.id,
+        name: sDef.name,
+        buffType: sDef.buffType,
+        buffDuration: sDef.duration || 90,
+        icon: sDef.icon,
+        color: sDef.color,
+        description: sDef.description,
+        lore: sDef.lore,
+        x: testX,
+        y: testY,
+        radius: 80,
+        isActivated: false
+      });
+      spawned++;
+    }
+  }
 }
 
 export function spawnMonster(x, y, type = 'slime', forcedTier = null) {
@@ -566,8 +639,12 @@ function update(dt) {
   player.isMoving = (mx !== 0 || my !== 0) && !player.isDead;
   if (player.isMoving) {
     const len = Math.hypot(mx, my);
-    player.vx = (mx / len) * player.speed;
-    player.vy = (my / len) * player.speed;
+    let currentSpeed = player.speed || 240;
+    if (player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'Swiftness')) {
+      currentSpeed *= 1.50;
+    }
+    player.vx = (mx / len) * currentSpeed;
+    player.vy = (my / len) * currentSpeed;
 
     if (Math.abs(mx) > Math.abs(my)) {
       player.facing = mx > 0 ? 'right' : 'left';
@@ -761,28 +838,79 @@ function update(dt) {
           id: ch.poi.id,
           name: ch.poi.name,
           buffType: ch.poi.buffType,
-          duration: ch.poi.buffDuration || 60,
-          maxDuration: ch.poi.buffDuration || 60,
+          duration: ch.poi.buffDuration || 90,
+          maxDuration: ch.poi.buffDuration || 90,
           icon: ch.poi.icon,
-          color: ch.poi.color
+          color: ch.poi.color,
+          description: ch.poi.description
         });
         AudioEngine.playSpellCast?.('meteor');
-        floatingTexts.push({ x: player.x, y: player.y - 45, text: `✨ ${ch.poi.name} ACTIVATED!`, color: ch.poi.color || '#ffd700', isCrit: true, life: 2.2 });
-        for (let i = 0; i < 24; i++) {
+        floatingTexts.push({ x: player.x, y: player.y - 45, text: `✨ ${ch.poi.name} RECEIVED!`, color: ch.poi.color || '#ffd700', isCrit: true, life: 2.4 });
+        for (let i = 0; i < 28; i++) {
           particles.push({
             x: player.x,
             y: player.y,
-            vx: (Math.random() - 0.5) * 160,
-            vy: (Math.random() - 0.5) * 160,
+            vx: (Math.random() - 0.5) * 180,
+            vy: (Math.random() - 0.5) * 180,
             size: Math.random() * 5 + 3,
             color: ch.poi.color || '#ffd700',
             life: 1.2
           });
         }
         player.channeling = null;
+        updateBuffsHUD();
       }
     }
   }
+
+  // Active Shrine Blessings Countdown & Passive Effect Ticks
+  if (player.activeBuffs && player.activeBuffs.length > 0) {
+    for (let i = player.activeBuffs.length - 1; i >= 0; i--) {
+      const b = player.activeBuffs[i];
+      b.duration -= dt;
+      if (b.duration <= 0) {
+        floatingTexts.push({ x: player.x, y: player.y - 45, text: `⏳ ${b.name} Expired`, color: '#a0aec0', life: 1.5 });
+        player.activeBuffs.splice(i, 1);
+      } else if (!player.isDead) {
+        if (b.buffType === 'AegisSanctuary') {
+          player.life = Math.min(player.maxLife, player.life + player.maxLife * 0.06 * dt);
+        }
+        if (b.buffType === 'InfiniteAether') {
+          player.mana = Math.min(player.maxMana, player.mana + player.maxMana * 0.15 * dt);
+          player.es = Math.min(player.maxEs, (player.es || 0) + player.maxEs * 0.15 * dt);
+        }
+        if (b.buffType === 'SolarInferno') {
+          shrineInfernoTimer += dt;
+          if (shrineInfernoTimer >= 0.5) {
+            shrineInfernoTimer = 0;
+            monsters.forEach(m => {
+              if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) < 180) {
+                dealDamage(m, 0, 80, 0, 0, 0, false, { x: player.x, y: player.y }, false, true);
+              }
+            });
+            particles.push({
+              x: player.x + (Math.random() - 0.5) * 50,
+              y: player.y + (Math.random() - 0.5) * 50,
+              vx: (Math.random() - 0.5) * 40,
+              vy: -50 - Math.random() * 30,
+              color: '#ff7849',
+              life: 0.35,
+              maxLife: 0.35,
+              size: 4
+            });
+          }
+        }
+        if (b.buffType === 'AbsoluteFrost') {
+          monsters.forEach(m => {
+            if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) < 180) {
+              applyChill(m, 0.8);
+            }
+          });
+        }
+      }
+    }
+  }
+  updateBuffsHUD();
 
   // 2. Dynamic Periodic Monster Respawn Engine
   if (currentZoneId !== 'SanctuaryHaven' && zoneMonsterSpawners && zoneMonsterSpawners.length > 0) {

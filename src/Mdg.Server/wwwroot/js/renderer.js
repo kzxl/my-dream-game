@@ -418,24 +418,50 @@ export function drawPlayerClean(ctx) {
     ctx.restore();
   }
 
+  // Active Shrine Blessing Aura Rings under Player Feet
+  if (player.activeBuffs && player.activeBuffs.length > 0) {
+    const primaryBuff = player.activeBuffs[0];
+    const bColor = primaryBuff.color || '#ffd700';
+    const nowTime = performance.now() / 1000;
+    ctx.save();
+    ctx.strokeStyle = bColor;
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = bColor;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(0, 16, 22, 9, nowTime * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Floating Sparks
+    for (let i = 0; i < 2; i++) {
+      const spAng = nowTime * 2.5 + (i * Math.PI);
+      const spX = Math.cos(spAng) * 20;
+      const spY = 16 + Math.sin(spAng) * 7;
+      ctx.fillStyle = bColor;
+      ctx.fillRect(spX - 1.5, spY - 1.5, 3, 3);
+    }
+    ctx.restore();
+  }
+
   // Channeling Blessing Progress Bar (Aether Shrines)
   if (player.channeling) {
     const ch = player.channeling;
     const progressPct = Math.max(0, Math.min(1, 1 - (ch.timer / ch.duration)));
-    const barW = 64;
+    const barW = 72;
     const barH = 7;
     const barY = -58;
+    const cColor = ch.poi?.color || '#ffd700';
 
     ctx.save();
     ctx.fillStyle = 'rgba(10, 14, 22, 0.9)';
-    ctx.strokeStyle = '#ffd700';
+    ctx.strokeStyle = cColor;
     ctx.lineWidth = 1.5;
     ctx.fillRect(-barW / 2, barY, barW, barH);
     ctx.strokeRect(-barW / 2, barY, barW, barH);
 
     const fillGrad = ctx.createLinearGradient(-barW / 2, barY, barW / 2, barY);
-    fillGrad.addColorStop(0, '#f39c12');
-    fillGrad.addColorStop(1, '#ffd700');
+    fillGrad.addColorStop(0, cColor);
+    fillGrad.addColorStop(1, '#ffffff');
     ctx.fillStyle = fillGrad;
     ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * progressPct, barH - 2);
 
@@ -1136,15 +1162,33 @@ export function drawPoiClean(ctx, poi) {
       col = 2; // Col 2: Corrupted Void Monolith
     } else if (poi.type === 'sub_cave') {
       col = 3; // Col 3: Glowing Cave Portal
-    } else if (poi.buffType === 'solar' || poi.name.includes('Solar')) {
+    } else if (poi.shrineKey === 'shrine_might' || poi.shrineKey === 'shrine_inferno' || poi.shrineKey === 'shrine_sanctuary' || poi.shrineKey === 'shrine_fortune') {
       col = 1; // Col 1: Golden Solar Altar
     } else {
-      col = 0; // Col 0: Ancient Stone Shrine (Tempest)
+      col = 0; // Col 0: Ancient Stone Shrine (Tempest/Frost/Aether)
     }
 
     const dw = 70;
     const dh = 78;
     ctx.drawImage(assets.shrinesMonoliths, col * sW, 0, sW, sH, -dw / 2, -dh + 16, dw, dh);
+
+    // Glowing Celestial Orb atop Altar
+    if (poi.type === 'shrine' && !poi.isActivated) {
+      const orbY = -dh + 6 + Math.sin(time * 2.5) * 4;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(0, orbY, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, orbY, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   } else if (poi.type === 'shrine') {
     // Floating Runic Crystal
     const floatY = -24 + Math.sin(time * 2.5) * 5;
@@ -1207,22 +1251,28 @@ export function drawPoiClean(ctx, poi) {
 
   // 3. Nameplate & Interaction Prompt
   const distToPlayer = Math.hypot(player.x - poi.x, player.y - poi.y);
-  const isNear = distToPlayer < (poi.radius || 64);
+  const isNear = distToPlayer < (poi.radius || 75);
 
-  ctx.font = 'bold 10px "Outfit", sans-serif';
-  ctx.fillStyle = color;
+  ctx.font = 'bold 11px "Outfit", sans-serif';
+  ctx.fillStyle = poi.isActivated ? '#7f8c8d' : color;
   ctx.textAlign = 'center';
-  ctx.fillText(poi.name, 0, -56);
+  ctx.fillText(poi.name, 0, -68);
 
   if (!poi.isActivated) {
     ctx.font = isNear ? 'bold 10px "Outfit", sans-serif' : '8px "Outfit", sans-serif';
     ctx.fillStyle = isNear ? '#ffd700' : '#bdc3c7';
-    const actionLabel = poi.type === 'shrine' ? '[F] Receive Blessing' : (poi.type === 'monolith' ? '[F] Awaken Monolith' : '[F] Enter Cave');
-    ctx.fillText(actionLabel, 0, -70);
+    const actionLabel = poi.type === 'shrine' ? '[F] Channel Blessing (2.5s)' : (poi.type === 'monolith' ? '[F] Awaken Monolith' : '[F] Enter Cave');
+    ctx.fillText(actionLabel, 0, -82);
+
+    if (isNear && poi.description) {
+      ctx.font = 'italic 9px "Outfit", sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(poi.description, 0, -54);
+    }
   } else {
     ctx.font = '8px "Outfit", sans-serif';
     ctx.fillStyle = '#7f8c8d';
-    ctx.fillText('(Depleted)', 0, -70);
+    ctx.fillText('(Exhausted Blessing)', 0, -82);
   }
 
   ctx.restore();
