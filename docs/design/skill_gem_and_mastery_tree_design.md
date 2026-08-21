@@ -58,8 +58,20 @@ Mỗi Skill Gem khi đạt cấp độ sẽ nhận **Skill Mastery Points (SMP)*
 
 ## 4. Trục Cốt Lõi 3: Độ Thuần Thục Cực Hạn (Hardcore Skill Proficiency Curve) `[ĐÃ HOÀN THÀNH - ACTIVE]`
 
-Độ thuần thục kỹ năng phản ánh kinh nghiệm thực chiến chuyên sâu của nhân vật đối với từng chiêu thức riêng biệt. Càng tung chiêu và đánh trúng kẻ địch, kỹ năng càng tích lũy Proficiency EXP để thăng cấp:
+Độ thuần thục kỹ năng phản ánh kinh nghiệm thực chiến chuyên sâu của nhân vật đối với từng chiêu thức riêng biệt:
 
+### 4.1. Quy Tắc Tích Lũy EXP: Chỉ Tính Khi Đánh Trúng Quái (Landing Hits Only)
+> [!IMPORTANT]
+> **Quy Tắc Thực Chiến:** Nhằm đảm bảo tính cân bằng và giá trị trải nghiệm ARPG, điểm kinh nghiệm kỹ năng (**Skill EXP**) và độ thuần thục (**Proficiency EXP**) **CHỈ ĐƯỢC TÍCH LŨY KHI CHIÊU THỨC ĐÁNH TRÚNG MỤC TIÊU THỰC TẾ (Landing Hit)** trên quái vật, Boss hoặc bù nhìn tập đánh.
+> * Việc tung chiêu vào không khí (Miss / Whiff) hoặc mục tiêu Né Tránh thành công (Dodge) sẽ **hoàn toàn KHÔNG nhận EXP**.
+> * EXP nhận được theo mỗi đòn đánh trúng mục tiêu (Non-proc):
+>   * 🗡️ **Slash (Kiếm Khí):** $+12\text{ Skill EXP & Proficiency}$
+>   * 🔥 **Fireball (Cầu Lửa):** $+15\text{ Skill EXP & Proficiency}$
+>   * ❄️ **Frost Nova (Băng Sóng):** $+15\text{ Skill EXP & Proficiency}$
+>   * ☄️ **Meteor (Thiên Thạch):** $+25\text{ Skill EXP & Proficiency}$
+>   * ⚡ **Dash (Lướt Thần Tốc):** $+10\text{ Skill EXP & Proficiency}$
+
+### 4.2. Bảng Bậc Thuần Thục & Chỉ Số Cộng Dồn
 | Bậc Thuần Thục | Ngưỡng EXP Yêu Cầu | Danh Hiệu Bậc | % Sát Thương Cộng Dồn | % Diện Tích (AoE) | % Tỉ Lệ Bạo Kích | Màu Hào Quang (Aura) |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Rank F** | $0$ | *Novice Practitioner (Rank F)* | $+0\%$ | $+0\%$ | $+0\%$ | `#b0bec5` |
