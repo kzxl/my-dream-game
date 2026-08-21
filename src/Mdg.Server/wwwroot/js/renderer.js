@@ -6,6 +6,7 @@ import { companion } from './companion.js';
 import { renderMapIncursions } from './systems/map-incursions.js';
 import { renderShadowCorpses, renderShadowArmy } from './systems/shadow-extraction.js';
 import { renderGatheringNodes } from './systems/gathering-system.js';
+import { getGameSetting } from './ui/settings-ui.js';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.fillStyle = '#0c0e14';
@@ -14,7 +15,9 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.scale(camera.zoom, camera.zoom);
-  ctx.translate(-player.x, -player.y);
+  const shakeX = camera.shakeX || 0;
+  const shakeY = camera.shakeY || 0;
+  ctx.translate(-player.x + shakeX, -player.y + shakeY);
 
   drawSeamlessTerrain(canvas, ctx, currentZone, zoneData);
 
@@ -132,15 +135,17 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
     }
   });
 
-  // Floating Damage Numbers
-  floatingTexts.forEach(ft => {
-    ctx.font = ft.isCrit ? 'bold 15px "Outfit", sans-serif' : 'bold 12px "Outfit", sans-serif';
-    ctx.fillStyle = ft.color;
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
-    ctx.strokeText(ft.text, ft.x, ft.y);
-    ctx.fillText(ft.text, ft.x, ft.y);
-  });
+  // Floating Damage Numbers & Notifications
+  if (getGameSetting('showDamageNumbers')) {
+    floatingTexts.forEach(ft => {
+      ctx.font = ft.isCrit ? 'bold 15px "Outfit", sans-serif' : 'bold 12px "Outfit", sans-serif';
+      ctx.fillStyle = ft.color;
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      ctx.strokeText(ft.text, ft.x, ft.y);
+      ctx.fillText(ft.text, ft.x, ft.y);
+    });
+  }
 
   ctx.restore();
 
@@ -153,7 +158,7 @@ export function drawGroundLoot(ctx, loot, idx) {
 
   const rarityColor = RARITY_COLORS[loot.item.rarity] || '#ffffff';
 
-  if (loot.beamHeight > 0) {
+  if (loot.beamHeight > 0 && getGameSetting('showLootBeams')) {
     const pulse = (Math.sin(performance.now() / 200) + 1) * 0.5;
     const beamGrad = ctx.createLinearGradient(0, 0, 0, -loot.beamHeight);
     beamGrad.addColorStop(0, rarityColor);
@@ -782,15 +787,17 @@ export function drawMonsterClean(ctx, m) {
   }
 
   // Draw monster health bar
-  const hpPct = Math.max(0, Math.min(1, m.life / m.maxLife));
-  const barW = (m.type === 'boss' ? 54 : (m.rarityTier === 'mutant' ? 44 : (m.rarityTier === 'elite' ? 38 : 34))) * scale;
-  const barH = m.type === 'boss' ? 5 : (m.rarityTier === 'mutant' ? 4 : 3);
-  const barY = -34 * scale;
+  if (getGameSetting('showEnemyHealthBars') || m.type === 'boss') {
+    const hpPct = Math.max(0, Math.min(1, m.life / m.maxLife));
+    const barW = (m.type === 'boss' ? 54 : (m.rarityTier === 'mutant' ? 44 : (m.rarityTier === 'elite' ? 38 : 34))) * scale;
+    const barH = m.type === 'boss' ? 5 : (m.rarityTier === 'mutant' ? 4 : 3);
+    const barY = -34 * scale;
 
-  ctx.fillStyle = '#1e222b';
-  ctx.fillRect(-barW / 2, barY, barW, barH);
-  ctx.fillStyle = m.rarityTier === 'mutant' ? '#c678dd' : (m.rarityTier === 'elite' ? '#f39c12' : (hpPct > 0.5 ? '#98c379' : '#e06c75'));
-  ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * hpPct, barH - 1);
+    ctx.fillStyle = '#1e222b';
+    ctx.fillRect(-barW / 2, barY, barW, barH);
+    ctx.fillStyle = m.rarityTier === 'mutant' ? '#c678dd' : (m.rarityTier === 'elite' ? '#f39c12' : (hpPct > 0.5 ? '#98c379' : '#e06c75'));
+    ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * hpPct, barH - 1);
+  }
 
   // Ailment Badges Rendering (Ignite, Freeze, Bleed)
   let ailmentIcons = '';

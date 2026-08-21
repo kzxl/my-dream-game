@@ -33,6 +33,8 @@ import { useFlask, updateFlasks, renderFlaskHUD, initFlasks } from './systems/fl
 import { renderSpireModal } from './ui/spire-ui.js';
 import { extractShadow, updateShadowArmy } from './systems/shadow-extraction.js';
 import { initPlayerProfessions, spawnResourceNodesForZone, updateGatheringSystem, tryInteractGatheringNode } from './systems/gathering-system.js';
+import { loadGameSettings, getGameSetting, toggleSettingsModal, renderSettingsModal } from './ui/settings-ui.js';
+import { t, applyLocalization } from './i18n.js';
 
 window.keys = keys;
 window.player = player;
@@ -42,6 +44,7 @@ window.loadZone = loadZone;
 window.toggleModal = toggleModal;
 window.showZoneBanner = showZoneBanner;
 window.renderSkillUpgradeModal = renderSkillUpgradeModal;
+window.toggleSettingsModal = toggleSettingsModal;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -908,6 +911,43 @@ function update(dt) {
     }
   });
 
+  // Auto-Loot Currencies & Materials (If enabled in Game Settings)
+  if (getGameSetting('autoLootCurrencies') && !player.isDead) {
+    for (let i = groundLoot.length - 1; i >= 0; i--) {
+      const loot = groundLoot[i];
+      if (loot && loot.item) {
+        const cat = (loot.item.category || '').toLowerCase();
+        const rarity = (loot.item.rarity || '').toLowerCase();
+        if (cat === 'currency' || cat === 'material' || cat === 'recipe' || rarity === 'currency') {
+          const dist = Math.hypot(player.x - loot.x, player.y - loot.y);
+          if (dist < 65) {
+            pickUpLoot(i);
+          }
+        }
+      }
+    }
+  }
+
+  // Camera Shake Decay (If enabled)
+  if (camera.shakeTimer > 0) {
+    camera.shakeTimer -= dt;
+    if (getGameSetting('screenShake')) {
+      const mag = camera.shakeMagnitude || 5;
+      camera.shakeX = (Math.random() - 0.5) * mag * 2;
+      camera.shakeY = (Math.random() - 0.5) * mag * 2;
+    } else {
+      camera.shakeX = 0;
+      camera.shakeY = 0;
+    }
+    if (camera.shakeTimer <= 0) {
+      camera.shakeX = 0;
+      camera.shakeY = 0;
+    }
+  } else {
+    camera.shakeX = 0;
+    camera.shakeY = 0;
+  }
+
   for (let k in player.cooldowns) {
     if (player.cooldowns[k] > 0) player.cooldowns[k] = Math.max(0, player.cooldowns[k] - dt);
   }
@@ -1374,16 +1414,21 @@ window.addEventListener('keydown', e => {
       'ascension-modal', 'skills-modal', 'inventory-modal', 'worldmap-modal',
       'stats-modal', 'character-roster-modal', 'defeat-modal', 'sharedStashModal',
       'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal',
-      'bestiaryModal', 'rosterModal', 'googleAuthModal', 'channelModal', 'spireModal'
+      'bestiaryModal', 'rosterModal', 'googleAuthModal', 'channelModal', 'spireModal', 'settingsModal'
     ];
+    let closedAny = false;
     allModalIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) {
+      if (el && el.style.display !== 'none' && !el.classList.contains('hidden')) {
         el.classList.remove('active');
         el.classList.add('hidden');
         el.style.display = 'none';
+        closedAny = true;
       }
     });
+    if (!closedAny) {
+      toggleSettingsModal();
+    }
   }
 
   if (e.code === 'KeyF') {
@@ -1621,9 +1666,12 @@ initDefeatUI();
 setupBestiaryUI();
 setupRosterUI();
 MPClient.init();
+document.getElementById('btn-toggle-settings')?.addEventListener('click', toggleSettingsModal);
 
 // Load previous savegame from SQLite DB and begin auto-save loop
 (async function initSave() {
+  loadGameSettings();
+  applyLocalization();
   await checkGoogleOAuthRedirectResult();
   await Promise.all([
     fetchMasterItemsFromServer(),
@@ -1652,6 +1700,7 @@ MPClient.init();
   updateExpBar();
   initFlasks();
   renderFlaskHUD();
+  applyLocalization();
   startAutoSave(10000);
 })();
 

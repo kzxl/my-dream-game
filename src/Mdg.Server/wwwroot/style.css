@@ -7182,6 +7182,378 @@ canvas#gameCanvas {
   border-color: rgba(239, 68, 68, 0.35);
 }
 
+/* ==========================================
+   GAME SETTINGS MODAL (ARPG DARK FANTASY)
+   ========================================== */
+.settings-modal-box {
+  width: 780px !important;
+  max-width: 95vw !important;
+  max-height: 88vh !important;
+  background: linear-gradient(160deg, #161922 0%, #0d0f14 100%) !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.25) !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.settings-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.12), rgba(0, 242, 254, 0.05));
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.settings-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-icon {
+  font-size: 26px;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+}
+
+.settings-main-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.8px;
+}
+
+.settings-sub-title {
+  font-size: 11px;
+  color: #a0aec0;
+  display: block;
+}
+
+.settings-modal-body {
+  display: flex;
+  flex: 1;
+  min-height: 480px;
+  max-height: calc(88vh - 70px);
+  overflow: hidden;
+}
+
+.settings-tabs-sidebar {
+  width: 220px;
+  background: rgba(10, 12, 16, 0.6);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.settings-tab-btn span {
+  font-size: 16px;
+}
+
+.settings-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.settings-tab-btn.active {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+  border-color: #ffd700;
+  color: #ffd700;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 #ffd700;
+}
+
+.settings-content-panel {
+  flex: 1;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-section-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #00f2fe;
+  border-bottom: 1px solid rgba(0, 242, 254, 0.2);
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
+
+.settings-row-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(22, 27, 34, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+  gap: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.settings-row-card:hover {
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.settings-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.settings-row-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.settings-row-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.settings-row-control {
+  display: flex;
+  align-items: center;
+}
+
+.settings-select-input {
+  background: #0f141c;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.settings-select-input:focus {
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #334155;
+  transition: 0.3s;
+  border-radius: 24px;
+  border: 1px solid #475569;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #fff;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #00e676;
+  border-color: #00e676;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(22px);
+}
+
+/* Slider Controls */
+.slider-control-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 170px;
+}
+
+.settings-slider {
+  -webkit-appearance: none;
+  width: 110px;
+  height: 6px;
+  border-radius: 4px;
+  background: #334155;
+  outline: none;
+}
+
+.settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffd700;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+}
+
+.slider-val-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd700;
+  min-width: 38px;
+  text-align: right;
+}
+
+/* Action Buttons in Settings */
+.settings-action-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.settings-action-btn:hover {
+  background: #334155;
+  border-color: #ffd700;
+  color: #ffd700;
+}
+
+.settings-action-btn.primary-action {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.settings-action-btn.primary-action:hover {
+  background: linear-gradient(135deg, #0369a1, #075985);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.settings-action-btn.warning-action {
+  background: linear-gradient(135deg, #b45309, #92400e);
+  border-color: #fbbf24;
+  color: #fff;
+}
+
+.settings-notify-msg {
+  display: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.settings-notify-msg.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #34d399;
+}
+
+.settings-notify-msg.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+/* Keybindings Reference Grid */
+.settings-keybindings-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.settings-kb-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-bottom: 12px;
+}
+
+.settings-kb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+}
+
+.kb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+}
+
+.kb-key {
+  display: inline-block;
+  background: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-weight: 700;
+  color: #38bdf8;
+  min-width: 48px;
+  text-align: center;
+  box-shadow: 0 2px 0 #1e293b;
+}
+
+.kb-desc {
+  color: #cbd5e1;
+}
+
+
 
 
 

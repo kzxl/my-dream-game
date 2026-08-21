@@ -11,8 +11,15 @@ import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
 import { companion } from '../companion.js';
+import { t, applyLocalization } from '../i18n.js';
 
 export const MAX_BACKPACK_SLOTS = 32;
+
+window.addEventListener('mdg:languageChanged', () => {
+  updatePaperdollUI();
+  updateBackpackUI();
+  applyLocalization(document.getElementById('inventory-modal') || document);
+});
 
 // Active Drag & Drop State
 let draggedItemInfo = null;
@@ -733,17 +740,17 @@ export function openContextMenu(e, item, source, indexOrSlot) {
   const btnEquip = document.getElementById('ctx-btn-equip');
   if (btnEquip) {
     if (source === 'paperdoll') {
-      btnEquip.querySelector('span').innerText = 'Unequip to Bag';
+      btnEquip.querySelector('span').innerText = t('ctx.equip');
     } else if (item.slot && item.slot !== 'Currency' && item.slot !== 'Gem') {
-      btnEquip.querySelector('span').innerText = 'Equip Gear';
+      btnEquip.querySelector('span').innerText = t('ctx.equip');
     } else {
-      btnEquip.querySelector('span').innerText = 'Use Item';
+      btnEquip.querySelector('span').innerText = t('ctx.equip');
     }
   }
 
   const btnLock = document.getElementById('ctx-btn-lock');
   if (btnLock) {
-    btnLock.querySelector('span').innerText = item.locked ? 'Unlock Item' : 'Lock Item (Protect)';
+    btnLock.querySelector('span').innerText = item.locked ? (t('ctx.lock') + ' (🔓)') : (t('ctx.lock') + ' (🔒)');
   }
 
   menu.classList.remove('hidden');

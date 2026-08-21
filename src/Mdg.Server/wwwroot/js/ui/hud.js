@@ -18,6 +18,12 @@ import { sendPetToTown, companion } from '../companion.js';
 import { openGoogleAuthModal } from '../auth.js';
 import { MPClient } from '../services/multiplayer-client.js';
 import { CHANNELS } from '../data/channels.js';
+import { t, applyLocalization } from '../i18n.js';
+
+window.addEventListener('mdg:languageChanged', () => {
+  updateAttributesModal();
+  applyLocalization(document.body);
+});
 
 export function showZoneBanner(title, sub) {
   const banner = document.getElementById('zone-banner');

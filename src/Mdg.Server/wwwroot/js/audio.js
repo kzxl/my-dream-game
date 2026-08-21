@@ -4,20 +4,45 @@
 
 export const AudioEngine = {
   ctx: null,
+  masterVolume: 1.0,
+  sfxVolume: 1.0,
+  isMuted: false,
+
   init() {
     if (!this.ctx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       this.ctx = new AudioContext();
     }
   },
+
+  setMasterVolume(vol) {
+    this.masterVolume = Math.max(0, Math.min(1, vol));
+  },
+
+  setSfxVolume(vol) {
+    this.sfxVolume = Math.max(0, Math.min(1, vol));
+  },
+
+  setMuted(muted) {
+    this.isMuted = !!muted;
+  },
+
   playTone(freq, type, duration, gain = 0.1) {
+    if (this.isMuted) return;
+    const effectiveGain = gain * this.masterVolume * this.sfxVolume;
+    if (effectiveGain <= 0.0001) return;
+
+    this.init();
     if (!this.ctx) return;
     try {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
       const osc = this.ctx.createOscillator();
       const gNode = this.ctx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-      gNode.gain.setValueAtTime(gain, this.ctx.currentTime);
+      gNode.gain.setValueAtTime(effectiveGain, this.ctx.currentTime);
       gNode.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
       osc.connect(gNode);
       gNode.connect(this.ctx.destination);
