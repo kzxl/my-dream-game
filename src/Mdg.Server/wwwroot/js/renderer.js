@@ -1,8 +1,9 @@
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration } from './state.js';
-import { assets } from './assets.js';
-import { RARITY_COLORS } from './data/items.js';
-import { getMonsterLoreBonus } from './combat.js';
-import { companion } from './companion.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, mapIncursions } from './state.js?v=12';
+import { assets } from './assets.js?v=12';
+import { RARITY_COLORS } from './data/items.js?v=12';
+import { getMonsterLoreBonus } from './combat.js?v=12';
+import { companion } from './companion.js?v=12';
+import { renderMapIncursions } from './systems/map-incursions.js?v=12';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.fillStyle = '#0c0e14';
@@ -14,6 +15,9 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   ctx.translate(-player.x, -player.y);
 
   drawSeamlessTerrain(canvas, ctx, currentZone, zoneData);
+
+  // Render Dynamic Map Incursions (Void Breach)
+  renderMapIncursions(ctx);
 
   const renderList = [];
 

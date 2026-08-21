@@ -97,7 +97,17 @@ export const player = {
   highestClearedSpireFloor: 0,
   statPoints: { str: 15, dex: 15, int: 15, vit: 15, unallocated: 5 },
   unlockedTitles: ['The Unbound', 'Pioneer of Aethelis'],
-  activeTitle: 'The Unbound'
+  activeTitle: 'The Unbound',
+  materials: {
+    mat_iron_ore: 18,
+    mat_beast_leather: 10,
+    mat_mithril_chunk: 12,
+    mat_aether_crystal: 8,
+    mat_adamantite_ingot: 6,
+    mat_shard_genesis: 2,
+    mat_blood_herb: 5,
+    mat_mana_bloom: 5
+  }
 };
 
 export const monsters = [];
@@ -110,6 +120,7 @@ export const projectiles = [];
 export const particles = [];
 export const floatingTexts = [];
 export const groundLoot = [];
+export const mapIncursions = [];
 export const otherPlayers = new Map();
 export const zoneChatMessages = [];
 export const zoneExploration = {};

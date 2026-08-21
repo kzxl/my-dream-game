@@ -3,31 +3,32 @@
  * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js?v=11';
-import { ZONES, fetchMasterZonesFromServer } from './data/zones.js?v=11';
-import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js?v=11';
-import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js?v=11';
-import { AudioEngine } from './audio.js?v=11';
-import { renderGame } from './renderer.js?v=11';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js?v=11';
-import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js?v=11';
-import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js?v=11';
-import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js?v=11';
-import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js?v=11';
-import { MapGenerator } from './map-generator.js?v=11';
-import { updateCompanion } from './companion.js?v=11';
-import { renderSharedStashModal } from './ui/stash-ui.js?v=11';
-import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js?v=11';
-import { renderMapDeviceModal } from './ui/map-device-ui.js?v=11';
-import { initDefeatUI } from './ui/defeat-ui.js?v=11';
-import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js?v=11';
-import { setupRosterUI, openRosterUI } from './ui/roster-ui.js?v=11';
-import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js?v=11';
-import { MPClient } from './services/multiplayer-client.js?v=11';
-import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js?v=11';
-import { checkGoogleOAuthRedirectResult } from './auth.js?v=11';
-import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js?v=11';
-import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js?v=11';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js?v=12';
+import { ZONES, fetchMasterZonesFromServer } from './data/zones.js?v=12';
+import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js?v=12';
+import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js?v=12';
+import { AudioEngine } from './audio.js?v=12';
+import { renderGame } from './renderer.js?v=12';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js?v=12';
+import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js?v=12';
+import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js?v=12';
+import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js?v=12';
+import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js?v=12';
+import { MapGenerator } from './map-generator.js?v=12';
+import { updateCompanion } from './companion.js?v=12';
+import { renderSharedStashModal } from './ui/stash-ui.js?v=12';
+import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js?v=12';
+import { renderMapDeviceModal } from './ui/map-device-ui.js?v=12';
+import { initDefeatUI } from './ui/defeat-ui.js?v=12';
+import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js?v=12';
+import { setupRosterUI, openRosterUI } from './ui/roster-ui.js?v=12';
+import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js?v=12';
+import { MPClient } from './services/multiplayer-client.js?v=12';
+import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js?v=12';
+import { checkGoogleOAuthRedirectResult } from './auth.js?v=12';
+import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js?v=12';
+import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js?v=12';
+import { spawnMapIncursions, updateMapIncursions } from './systems/map-incursions.js?v=12';
 
 window.keys = keys;
 window.player = player;
@@ -237,6 +238,9 @@ export async function loadZone(zoneId, spawnX, spawnY) {
       }
     });
   }
+
+  // 3.5. Spawn Dynamic Map Incursions (Void Breach & Treasure Goblin)
+  spawnMapIncursions(currentZoneId, mapW, mapH, canWalk);
 
   // 4. Environmental Hazard Alert & Banner
   const subText = currentZoneMap.hazard ? `⚠️ ${currentZoneMap.hazard.hazardName}: ${currentZoneMap.hazard.description}` : currentZoneMap.subtitle;
@@ -1181,6 +1185,7 @@ function update(dt) {
     if (ft.life <= 0) floatingTexts.splice(i, 1);
   }
 
+  updateMapIncursions(dt);
   updateHUD();
 }
 

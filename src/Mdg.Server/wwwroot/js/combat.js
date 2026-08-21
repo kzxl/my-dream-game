@@ -442,7 +442,20 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
 
   let itemsToDrop = [];
 
-  if (serverResult && Array.isArray(serverResult.items)) {
+  if (monsterType === 'treasure_goblin') {
+    spawnDamageNumber(x, y - 90, '💰 HOARDER GOBLIN SLAIN! (+1500 GOLD FOUNTAIN)', true, '#ffd700');
+    AudioEngine.playLevelUp?.();
+    const goblinDrops = [
+      { name: 'Fracture Core', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🔮' },
+      { name: 'Genesis Prism', slot: 'Currency', rarity: 'Rare', color: '#f59e0b', icon: '💎' },
+      { name: 'Adamantite Ingot', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🪨' },
+      { name: 'Mithril Chunk', slot: 'Currency', rarity: 'Uncommon', color: '#00f2fe', icon: '💎' },
+      POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)],
+      POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)],
+      POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)]
+    ];
+    itemsToDrop.push(...goblinDrops);
+  } else if (serverResult && Array.isArray(serverResult.items)) {
     itemsToDrop = serverResult.items;
   } else {
     // Local fallback if server unreachable
