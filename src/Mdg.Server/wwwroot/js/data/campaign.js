@@ -308,6 +308,159 @@ export const CAMPAIGN_ACTS = [
       { id: 'q5_2', title: 'The Event Horizon', desc: 'Survive the chaos storms inside the Void Abyss.', reward: '25000 EXP + Unique Void Amulet' },
       { id: 'q5_3', title: 'End of Eternity', desc: 'Defeat The Void Sovereign Prime to unlock the Endgame Atlas Device.', reward: '5000 EXP + Sovereign Crown' }
     ]
+  },
+  // =========================================================================
+  // ACT VI: STORMPEAK RIDGE
+  // =========================================================================
+  {
+    id: 'act6',
+    actNumber: 'ACT VI',
+    name: 'Stormpeak Ridge',
+    subtitle: 'Ascend the stormy precipice and confront the Tempests of the Void.',
+    levelRange: 'Lv. 60 - 70',
+    boss: '⚡ Raiden Storm Sovereign',
+    townZoneId: 'StormpeakOutpost',
+    bgImage: '/assets/acts/act6_stormpeak.jpg',
+    zones: [
+      {
+        id: 'StormpeakRidge',
+        name: 'Stormpeak Ridge',
+        type: 'Electric Highlands',
+        level: 'Lv. 60-70',
+        isTown: false,
+        coords: { x: 35, y: 50 },
+        desc: 'Jagged mountain crags constantly electrified by violet storms.'
+      }
+    ],
+    quests: [
+      { id: 'q6_1', title: 'Lightning Rod of the Ancients', desc: 'Overload the storm conductors atop Stormpeak Ridge.', reward: '35000 EXP + Tempest Ring' }
+    ]
+  },
+  // =========================================================================
+  // ACT VII: VOID ABYSS
+  // =========================================================================
+  {
+    id: 'act7',
+    actNumber: 'ACT VII',
+    name: 'Void Abyss',
+    subtitle: 'Venture into the cosmic black hole accretion disk of fractured realities.',
+    levelRange: 'Lv. 70 - 80',
+    boss: '🌌 Singularity Devourer',
+    townZoneId: 'VoidRiftSanctuary',
+    bgImage: '/assets/acts/act7_void_abyss.jpg',
+    zones: [
+      {
+        id: 'VoidAbyss',
+        name: 'Void Abyss',
+        type: 'Cosmic Singularity',
+        level: 'Lv. 70-80',
+        isTown: false,
+        coords: { x: 50, y: 45 },
+        desc: 'Shattered obsidian islands floating around an inescapable supermassive singularity.'
+      }
+    ],
+    quests: [
+      { id: 'q7_1', title: 'Beyond the Event Horizon', desc: 'Seal the expanding black hole rift.', reward: '50000 EXP + Void Fragment' }
+    ]
+  },
+  // =========================================================================
+  // ACT VIII: MOLTEN CALDERA
+  // =========================================================================
+  {
+    id: 'act8',
+    actNumber: 'ACT VIII',
+    name: 'Molten Caldera',
+    subtitle: 'Infiltrate the subterranean titan forge surrounded by oceans of magma.',
+    levelRange: 'Lv. 80 - 90',
+    boss: '🔥 Ignis Primordial Behemoth',
+    townZoneId: 'ObsidianGarrison',
+    bgImage: '/assets/acts/act8_molten_caldera.jpg',
+    zones: [
+      {
+        id: 'MoltenCaldera',
+        name: 'Molten Caldera',
+        type: 'Subterranean Magma Lake',
+        level: 'Lv. 80-90',
+        isTown: false,
+        coords: { x: 60, y: 55 },
+        desc: 'Colossal lava rivers and smoking titan bastions deep within the mantle.'
+      }
+    ],
+    quests: [
+      { id: 'q8_1', title: 'Heart of the Volcano', desc: 'Quench the magma reactor of the infernal fortress.', reward: '65000 EXP + Titan Core' }
+    ]
+  },
+  // =========================================================================
+  // ACT IX: GENESIS CORE
+  // =========================================================================
+  {
+    id: 'act9',
+    actNumber: 'ACT IX',
+    name: 'Genesis Core',
+    subtitle: 'The primordial origin of Aethelis where the Genesis Crystal pulses with infinite creation.',
+    levelRange: 'Lv. 90 - 100',
+    boss: '👑 The Apex Celestial Sovereign',
+    townZoneId: 'AethelisCitadel',
+    bgImage: '/assets/acts/act9_genesis_core.jpg',
+    zones: [
+      {
+        id: 'GenesisCore',
+        name: 'Genesis Core',
+        type: 'Divine Sanctum of Origin',
+        level: 'Lv. 90-100',
+        isTown: false,
+        coords: { x: 50, y: 50 },
+        desc: 'Floating golden colonnades surrounding the pulsing white-gold genesis sun.'
+      }
+    ],
+    quests: [
+      { id: 'q9_1', title: 'The Final Genesis', desc: 'Ascend to the throne of creation and claim the Unbound Crown.', reward: '100000 EXP + Crown of Aethelis' }
+    ]
+  },
+  // =========================================================================
+  // ENDLESS SPIRE OF AETHELIS (SAO AINCRAD 100 FLOORS)
+  // =========================================================================
+  {
+    id: 'act_spire',
+    actNumber: 'ENDLESS SPIRE',
+    name: 'Endless Spire of Aethelis',
+    subtitle: '100 Floors of procedural labyrinth ascension. Floor 100: Apex Celestial Sovereign.',
+    levelRange: 'Lv. 10 - 100+',
+    boss: '👑 Floor 100 Apex Celestial Sovereign',
+    townZoneId: 'SanctuaryHaven',
+    bgImage: '/assets/acts/endless_spire_cover.jpg',
+    zones: [
+      {
+        id: 'EndlessSpire_F1',
+        name: 'Endless Spire: Lower Labyrinth (Floors 1-20)',
+        type: 'Tower Ascension',
+        level: 'Lv. 10-30',
+        isTown: false,
+        coords: { x: 25, y: 70 },
+        desc: 'Entry levels of the colossal floating crystal spire.'
+      },
+      {
+        id: 'EndlessSpire_F50',
+        name: 'Endless Spire: Celestial Spires (Floors 50-75)',
+        type: 'Tower Ascension',
+        level: 'Lv. 55-80',
+        isTown: false,
+        coords: { x: 50, y: 45 },
+        desc: 'High-altitude arcane rings of the Endless Spire.'
+      },
+      {
+        id: 'EndlessSpire_F100',
+        name: 'Endless Spire: Apex Zenith (Floor 100)',
+        type: 'Pinnacle Boss Chamber',
+        level: 'Lv. 100',
+        isTown: false,
+        coords: { x: 75, y: 20 },
+        desc: 'The pinnacle summit where the Apex Celestial Sovereign reigns.'
+      }
+    ],
+    quests: [
+      { id: 'q_spire_1', title: 'Conquer the 100th Floor', desc: 'Clear all 100 floors of the Endless Spire.', reward: '1000000 EXP + Apex Sovereign Wings' }
+    ]
   }
 ];
 
