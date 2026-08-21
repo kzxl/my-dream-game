@@ -5,13 +5,15 @@
 
 import { player } from '../state.js';
 import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from '../data/monsters.js';
+import { LORE_BRANCHES } from '../data/lore.js';
 import { AudioEngine } from '../audio.js';
 import { saveToDatabase } from '../save-system.js';
 
-let activeMainTab = 'codex'; // 'codex' | 'family_trees'
+let activeMainTab = 'codex'; // 'codex' | 'family_trees' | 'lore'
 let activeFilter = 'all'; // 'all', 'act1', 'act2', 'act3', 'act4', 'boss', 'Beast', 'Undead', 'Fiend', 'Elemental', 'Construct'
 let selectedMonsterKey = 'goblin_scout';
 let selectedFamilyKey = 'Beast';
+let selectedLoreBranchId = 'branch_genesis';
 
 export function setupBestiaryUI() {
   const modal = document.getElementById('bestiaryModal');
@@ -94,13 +96,16 @@ export function renderBestiaryContent() {
         <button class="bnt-tab ${activeMainTab === 'family_trees' ? 'active-tab' : ''}" id="tab-nav-family">
           🌳 FAMILY MASTERY TREES
         </button>
+        <button class="bnt-tab ${activeMainTab === 'lore' ? 'active-tab' : ''}" id="tab-nav-lore">
+          📜 WORLD LORE & CHRONICLES
+        </button>
       </div>
       <div class="total-mastery-badge">
         <span>👑 Apex Nemesis Mastered: <strong>${countApexMonsters()} / ${monsterEntries.length}</strong></span>
       </div>
     </div>
 
-    ${activeMainTab === 'codex' ? renderCodexView(filtered, activeMonster, kills, profile) : renderFamilyTreesView()}
+    ${activeMainTab === 'codex' ? renderCodexView(filtered, activeMonster, kills, profile) : (activeMainTab === 'family_trees' ? renderFamilyTreesView() : renderWorldLoreView())}
   `;
 
   attachBestiaryEvents(container);
@@ -410,6 +415,60 @@ function renderFamilyTreesView() {
   `;
 }
 
+function renderWorldLoreView() {
+  const activeBranch = LORE_BRANCHES.find(b => b.id === selectedLoreBranchId) || LORE_BRANCHES[0];
+
+  return `
+    <div class="lore-body-grid">
+      <!-- Left: 5 Lore Branches Selector -->
+      <div class="lore-branches-list">
+        <h3 class="lore-col-title">📜 FIVE ANCIENT CHRONICLES</h3>
+        <div class="lore-branch-cards">
+          ${LORE_BRANCHES.map(b => {
+            const isSelected = (selectedLoreBranchId === b.id);
+            return `
+              <div class="lore-branch-card ${isSelected ? 'is-active-branch' : ''}" data-branch-id="${b.id}">
+                <div class="lbc-icon" style="color:${b.color};">${b.icon}</div>
+                <div class="lbc-info">
+                  <div class="lbc-title" style="color:${isSelected ? '#ffd700' : '#f1f5f9'};">${b.name}</div>
+                  <div class="lbc-sub">${b.vietnameseName}</div>
+                  <div class="lbc-chap-count">${b.chapters.length} Ancient Chapters</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Right: Detailed Chapter Lore Dossier -->
+      <div class="lore-reading-pane">
+        <div class="lore-branch-header">
+          <div class="lbh-icon" style="color:${activeBranch.color}; font-size:32px;">${activeBranch.icon}</div>
+          <div style="flex: 1;">
+            <h2 class="lbh-title" style="color:${activeBranch.color}; margin:0; font-size:18px;">${activeBranch.name.toUpperCase()}</h2>
+            <div class="lbh-vn" style="color:#ffd700; font-size:12px; margin-top:2px; font-weight:700;">${activeBranch.vietnameseName}</div>
+            <p class="lbh-summary" style="color:#94a3b8; font-size:11px; margin-top:6px; line-height:1.4;">${activeBranch.summary}</p>
+          </div>
+        </div>
+
+        <div class="lore-chapters-stack">
+          ${activeBranch.chapters.map((chap, idx) => `
+            <div class="lore-chapter-card">
+              <div class="lcc-header">
+                <div class="lcc-num">CHAPTER 0${idx + 1}</div>
+                <div class="lcc-era">⏳ ${chap.era}</div>
+              </div>
+              <h3 class="lcc-title">${chap.title}</h3>
+              <blockquote class="lcc-excerpt">"${chap.excerpt}"</blockquote>
+              <div class="lcc-content">${chap.content.replace(/\n/g, '<br/>')}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function countApexMonsters() {
   let count = 0;
   if (!player.monsterKills) return 0;
@@ -433,6 +492,21 @@ function attachBestiaryEvents(container) {
     activeMainTab = 'family_trees';
     AudioEngine.playPickup();
     renderBestiaryContent();
+  });
+
+  container.querySelector('#tab-nav-lore')?.addEventListener('click', () => {
+    activeMainTab = 'lore';
+    AudioEngine.playPickup();
+    renderBestiaryContent();
+  });
+
+  // Lore Branch Card selection
+  container.querySelectorAll('.lore-branch-card').forEach(card => {
+    card.onclick = () => {
+      selectedLoreBranchId = card.getAttribute('data-branch-id');
+      AudioEngine.playPickup();
+      renderBestiaryContent();
+    };
   });
 
   // Filter buttons in Codex

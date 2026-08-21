@@ -5969,6 +5969,178 @@ canvas#gameCanvas {
   font-weight: 800;
 }
 
+/* ==========================================================================
+   WORLD LORE & CHRONICLES CODEX (BRANCHING NARRATIVE PANE)
+   ========================================================================== */
+.lore-body-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  margin-top: 15px;
+  height: calc(100% - 60px);
+  min-height: 520px;
+}
+
+.lore-branches-list {
+  background: rgba(15, 20, 30, 0.85);
+  border: 1px solid rgba(198, 162, 88, 0.25);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lore-col-title {
+  margin: 0;
+  font-size: 13px;
+  font-family: 'Outfit', sans-serif;
+  color: #ffd700;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(198, 162, 88, 0.2);
+  padding-bottom: 8px;
+}
+
+.lore-branch-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.lore-branch-card {
+  background: rgba(22, 28, 42, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lore-branch-card:hover {
+  background: rgba(30, 38, 56, 0.95);
+  border-color: rgba(198, 162, 88, 0.6);
+  transform: translateX(4px);
+}
+
+.lore-branch-card.is-active-branch {
+  border-color: #ffd700;
+  background: rgba(198, 162, 88, 0.12);
+  box-shadow: 0 0 14px rgba(198, 162, 88, 0.25);
+}
+
+.lbc-icon {
+  font-size: 24px;
+}
+
+.lbc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lbc-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lbc-sub {
+  font-size: 11px;
+  color: #a0aec0;
+}
+
+.lbc-chap-count {
+  font-size: 10px;
+  color: #c6a258;
+  font-weight: 700;
+}
+
+.lore-reading-pane {
+  background: rgba(12, 16, 26, 0.95);
+  border: 1.5px solid rgba(198, 162, 88, 0.3);
+  border-radius: 10px;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7);
+}
+
+.lore-branch-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1.5px solid rgba(198, 162, 88, 0.25);
+  padding-bottom: 16px;
+}
+
+.lore-chapters-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.lore-chapter-card {
+  background: rgba(18, 24, 36, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.lcc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lcc-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd700;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 1px;
+}
+
+.lcc-era {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.lcc-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #f1f5f9;
+  font-family: 'Outfit', sans-serif;
+}
+
+.lcc-excerpt {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid #c6a258;
+  font-style: italic;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.lcc-content {
+  font-size: 13px;
+  line-height: 1.65;
+  color: #cbd5e1;
+  white-space: pre-line;
+}
+
+
 
 
 
