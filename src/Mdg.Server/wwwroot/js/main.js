@@ -3,7 +3,7 @@
  * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js';
 import { ZONES, fetchMasterZonesFromServer } from './data/zones.js';
 import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
 import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
@@ -195,6 +195,20 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   // Notify Multiplayer Server of Zone Transition
   MPClient.changeZone(currentZoneId, safe.x, safe.y);
 
+  // 1.5. Initialize Fog of War Exploration Grid
+  const gridH = currentZoneMap.heightInTiles || 28;
+  const gridW = currentZoneMap.widthInTiles || 28;
+  if (!zoneExploration[currentZoneId]) {
+    zoneExploration[currentZoneId] = [];
+    for (let y = 0; y < gridH; y++) {
+      zoneExploration[currentZoneId][y] = new Uint8Array(gridW);
+      if (currentZoneId === 'SanctuaryHaven') {
+        zoneExploration[currentZoneId][y].fill(1); // Town is pre-revealed
+      }
+    }
+  }
+  revealPlayerVision(player.x, player.y, currentZoneId, 7);
+
   // 2. Load Elements from ZoneMap
   if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
   if (currentZoneMap.npcs) currentZoneMap.npcs.forEach(n => npcs.push({ ...n }));
@@ -300,6 +314,36 @@ export function spawnRandomMapShrines() {
         isActivated: false
       });
       spawned++;
+    }
+  }
+}
+
+/**
+ * Reveal tiles around player position on Fog of War exploration grid
+ */
+export function revealPlayerVision(px, py, zoneId, radiusTiles = 7) {
+  if (!currentZoneMap) return;
+  const grid = zoneExploration[zoneId];
+  if (!grid || grid.length === 0) return;
+
+  const pTileX = Math.floor(px / 48);
+  const pTileY = Math.floor(py / 48);
+  const h = grid.length;
+  const w = grid[0].length;
+
+  const rSq = radiusTiles * radiusTiles;
+  const minY = Math.max(0, pTileY - radiusTiles);
+  const maxY = Math.min(h - 1, pTileY + radiusTiles);
+  const minX = Math.max(0, pTileX - radiusTiles);
+  const maxX = Math.min(w - 1, pTileX + radiusTiles);
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const dx = x - pTileX;
+      const dy = y - pTileY;
+      if (dx * dx + dy * dy <= rSq) {
+        grid[y][x] = 1;
+      }
     }
   }
 }
@@ -674,6 +718,9 @@ function update(dt) {
     player.animTimer += dt * 2;
     player.animFrame = 0;
   }
+
+  // Dynamic Fog of War Line-of-Sight Reveal
+  revealPlayerVision(player.x, player.y, currentZoneId, 7);
 
   // 2. Environmental Hazards & Tile-Based Ground Hazards
   hazardTickTimer += dt;

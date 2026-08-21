@@ -112,6 +112,7 @@ export const floatingTexts = [];
 export const groundLoot = [];
 export const otherPlayers = new Map();
 export const zoneChatMessages = [];
+export const zoneExploration = {};
 
 export const keys = {};
 export const mouse = { x: 0, y: 0, worldX: 0, worldY: 0, down: false };

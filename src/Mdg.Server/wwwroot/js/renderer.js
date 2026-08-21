@@ -1,4 +1,4 @@
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot } from './state.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration } from './state.js';
 import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
 import { getMonsterLoreBonus } from './combat.js';
@@ -1280,80 +1280,147 @@ export function drawPoiClean(ctx, poi) {
 
 export function renderMinimap(minimapCanvas, mmCtx, zoneData) {
   mmCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-  const worldW = zoneData?.worldWidth || 1920;
-  const worldH = zoneData?.worldHeight || 1920;
+  const worldW = zoneData?.worldWidth || (zoneData?.widthInTiles * 48) || 1920;
+  const worldH = zoneData?.worldHeight || (zoneData?.heightInTiles * 48) || 1920;
   const scaleX = minimapCanvas.width / worldW;
   const scaleY = minimapCanvas.height / worldH;
 
-  // Draw Wall obstacles on minimap
-  if (zoneData && zoneData.grid) {
-    mmCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  const zoneId = window.currentZoneId || 'SanctuaryHaven';
+  const explored = zoneExploration[zoneId];
+
+  // 1. Unexplored Pitch Black Fog Background
+  mmCtx.fillStyle = '#06080e';
+  mmCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+  if (zoneData && zoneData.grid && explored) {
+    const tileW = 48 * scaleX;
+    const tileH = 48 * scaleY;
+
+    // 2. Render Explored Terrain & Obstacles
     for (let y = 0; y < zoneData.heightInTiles; y++) {
+      if (!explored[y]) continue;
       for (let x = 0; x < zoneData.widthInTiles; x++) {
-        if (zoneData.grid[y][x] === 1) {
-          mmCtx.fillRect(x * 48 * scaleX, y * 48 * scaleY, 48 * scaleX, 48 * scaleY);
+        if (explored[y][x] === 1) {
+          const tile = zoneData.grid[y][x];
+          const px = x * tileW;
+          const py = y * tileH;
+
+          if (tile === 1 || tile === 10) {
+            // Explored Solid Obstacle / Wall
+            mmCtx.fillStyle = '#1e293b';
+            mmCtx.fillRect(px, py, tileW + 0.5, tileH + 0.5);
+          } else if (tile === 2 || tile === 9) {
+            // Explored Water / River
+            mmCtx.fillStyle = '#172554';
+            mmCtx.fillRect(px, py, tileW + 0.5, tileH + 0.5);
+          } else if (tile === 5 || tile === 13) {
+            // Explored Lava Ground
+            mmCtx.fillStyle = '#450a0a';
+            mmCtx.fillRect(px, py, tileW + 0.5, tileH + 0.5);
+          } else {
+            // Explored Walkable Ground
+            mmCtx.fillStyle = '#0f172a';
+            mmCtx.fillRect(px, py, tileW + 0.5, tileH + 0.5);
+          }
         }
       }
     }
   }
 
-  // Draw POIs on Minimap Radar
+  // 3. Render Explored POIs (Shrines, Monoliths, Sub-caves)
   pois.forEach(poi => {
-    mmCtx.save();
-    const px = poi.x * scaleX;
-    const py = poi.y * scaleY;
-    mmCtx.fillStyle = poi.color || '#f1c40f';
-    mmCtx.strokeStyle = '#ffffff';
-    mmCtx.lineWidth = 1;
+    const tx = Math.floor(poi.x / 48);
+    const ty = Math.floor(poi.y / 48);
+    // ONLY show if this POI tile has been explored!
+    if (explored && explored[ty] && explored[ty][tx] === 1) {
+      mmCtx.save();
+      const px = poi.x * scaleX;
+      const py = poi.y * scaleY;
+      mmCtx.fillStyle = poi.color || '#f1c40f';
+      mmCtx.strokeStyle = '#ffffff';
+      mmCtx.lineWidth = 1;
 
-    if (poi.type === 'shrine') {
-      // Star / Diamond
-      mmCtx.beginPath();
-      mmCtx.moveTo(px, py - 4);
-      mmCtx.lineTo(px + 4, py);
-      mmCtx.lineTo(px, py + 4);
-      mmCtx.lineTo(px - 4, py);
-      mmCtx.closePath();
-      mmCtx.fill();
-      mmCtx.stroke();
-    } else if (poi.type === 'monolith') {
-      // Hexagon / Square
-      mmCtx.fillRect(px - 3, py - 3, 6, 6);
-      mmCtx.strokeRect(px - 3, py - 3, 6, 6);
-    } else {
-      // Circle
-      mmCtx.beginPath();
-      mmCtx.arc(px, py, 3.5, 0, Math.PI * 2);
-      mmCtx.fill();
-      mmCtx.stroke();
+      if (poi.type === 'shrine') {
+        mmCtx.beginPath();
+        mmCtx.moveTo(px, py - 4);
+        mmCtx.lineTo(px + 4, py);
+        mmCtx.lineTo(px, py + 4);
+        mmCtx.lineTo(px - 4, py);
+        mmCtx.closePath();
+        mmCtx.fill();
+        mmCtx.stroke();
+      } else if (poi.type === 'monolith') {
+        mmCtx.fillRect(px - 3, py - 3, 6, 6);
+        mmCtx.strokeRect(px - 3, py - 3, 6, 6);
+      } else {
+        mmCtx.beginPath();
+        mmCtx.arc(px, py, 3.5, 0, Math.PI * 2);
+        mmCtx.fill();
+        mmCtx.stroke();
+      }
+      mmCtx.restore();
     }
-    mmCtx.restore();
   });
 
+  // 4. Render Explored Portals
   portals.forEach(p => {
-    mmCtx.fillStyle = '#c678dd';
-    mmCtx.beginPath();
-    mmCtx.arc(p.x * scaleX, p.y * scaleY, 4, 0, Math.PI * 2);
-    mmCtx.fill();
+    const tx = Math.floor(p.x / 48);
+    const ty = Math.floor(p.y / 48);
+    if (explored && explored[ty] && explored[ty][tx] === 1) {
+      mmCtx.fillStyle = '#c678dd';
+      mmCtx.beginPath();
+      mmCtx.arc(p.x * scaleX, p.y * scaleY, 4, 0, Math.PI * 2);
+      mmCtx.fill();
+    }
   });
 
+  // 5. Render Explored Ground Loot
   groundLoot.forEach(loot => {
-    mmCtx.fillStyle = RARITY_COLORS[loot.item.rarity] || '#ffffff';
-    mmCtx.fillRect(loot.x * scaleX - 1, loot.y * scaleY - 1, 3, 3);
+    const tx = Math.floor(loot.x / 48);
+    const ty = Math.floor(loot.y / 48);
+    if (explored && explored[ty] && explored[ty][tx] === 1) {
+      mmCtx.fillStyle = RARITY_COLORS[loot.item?.rarity] || '#ffffff';
+      mmCtx.fillRect(loot.x * scaleX - 1, loot.y * scaleY - 1, 3, 3);
+    }
   });
 
+  // 6. Active Vision Radar for Monsters (DO NOT show monsters hidden in fog!)
+  // Monsters ONLY show on radar if within direct player vision radius (320px ~ 6.5 tiles)
+  const activeVisionDist = 320;
   monsters.forEach(m => {
     if (m.isAlive) {
-      mmCtx.fillStyle = m.type === 'boss' ? '#ffd700' : '#e06c75';
-      const sz = m.type === 'boss' ? 5 : 3;
-      mmCtx.fillRect(m.x * scaleX - 1, m.y * scaleY - 1, sz, sz);
+      const distToPlayer = Math.hypot(m.x - player.x, m.y - player.y);
+      if (distToPlayer <= activeVisionDist) {
+        mmCtx.fillStyle = m.type === 'boss' ? '#ffd700' : '#e06c75';
+        const sz = m.type === 'boss' ? 5 : 3;
+        mmCtx.fillRect(m.x * scaleX - 1, m.y * scaleY - 1, sz, sz);
+      }
     }
   });
 
-  mmCtx.fillStyle = '#61afef';
+  // 7. Active Vision Glow Cone & Player Icon
+  const pPx = player.x * scaleX;
+  const pPy = player.y * scaleY;
+  const pVisRadius = activeVisionDist * scaleX;
+
+  // Active perception ring around player on minimap
+  const grad = mmCtx.createRadialGradient(pPx, pPy, 0, pPx, pPy, pVisRadius);
+  grad.addColorStop(0, 'rgba(97, 175, 239, 0.18)');
+  grad.addColorStop(0.7, 'rgba(97, 175, 239, 0.06)');
+  grad.addColorStop(1, 'rgba(97, 175, 239, 0)');
+  mmCtx.fillStyle = grad;
   mmCtx.beginPath();
-  mmCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
+  mmCtx.arc(pPx, pPy, pVisRadius, 0, Math.PI * 2);
   mmCtx.fill();
+
+  // Player position dot
+  mmCtx.fillStyle = '#61afef';
+  mmCtx.strokeStyle = '#ffffff';
+  mmCtx.lineWidth = 1;
+  mmCtx.beginPath();
+  mmCtx.arc(pPx, pPy, 3.5, 0, Math.PI * 2);
+  mmCtx.fill();
+  mmCtx.stroke();
 }
 
 export function drawCompanion(ctx) {
