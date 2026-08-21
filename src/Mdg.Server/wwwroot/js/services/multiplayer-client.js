@@ -6,13 +6,9 @@
 import { otherPlayers, player, zoneChatMessages } from '../state.js';
 import { spawnDamageNumber } from '../combat.js';
 import { AudioEngine } from '../audio.js';
+import { CHANNELS } from '../data/channels.js';
 
-export const CHANNELS = [
-  { id: 'CH-1', name: 'Global Nexus (CH 1)', region: 'Global', icon: '🌐' },
-  { id: 'CH-2', name: 'Asia Pacific (CH 2)', region: 'Asia', icon: '⚡' },
-  { id: 'CH-3', name: 'Hardcore Sanctuary (CH 3)', region: 'Challenge', icon: '💀' },
-  { id: 'CH-4', name: 'Trade & Social Hub (CH 4)', region: 'Economy', icon: '💎' }
-];
+export { CHANNELS };
 
 class MultiplayerClient {
   constructor() {
@@ -24,6 +20,7 @@ class MultiplayerClient {
     this.posSendInterval = null;
     this.processedChatIds = new Set();
     this.currentChannel = localStorage.getItem('mdg_current_channel') || 'CH-1';
+    this.pingInterval = null;
   }
 
   init() {
@@ -42,6 +39,15 @@ class MultiplayerClient {
         this.lastSentPos = { x: player.x, y: player.y };
       }
     }, 50);
+
+    // SignalR Keep-Alive Ping Loop (every 10s)
+    if (!this.pingInterval) {
+      this.pingInterval = setInterval(() => {
+        if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
+          try { this.ws.send('{"type":6}\x1e'); } catch (e) {}
+        }
+      }, 10000);
+    }
   }
 
   connect() {
@@ -81,7 +87,7 @@ class MultiplayerClient {
             const data = JSON.parse(msgStr);
             this.handleHubMessage(data);
           } catch (e) {
-            // Handshake response or ping
+            // Non-JSON packet or empty handshake
           }
         }
       };
@@ -93,7 +99,7 @@ class MultiplayerClient {
           this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null;
             this.connect();
-          }, 3000);
+          }, 2500);
         }
       };
 
@@ -108,11 +114,19 @@ class MultiplayerClient {
   }
 
   handleHubMessage(data) {
-    // Handshake ACK
+    // Ping message from server (type 6) -> Acknowledge ping
+    if (data.type === 6) {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        try { this.ws.send('{"type":6}\x1e'); } catch (e) {}
+      }
+      return;
+    }
+
+    // Handshake ACK (empty object)
     if (Object.keys(data).length === 0) {
       this.isConnected = true;
       this.updateConnectionStatus(true);
-      // Join current zone
+      // Join current zone & channel
       this.joinCurrentZone();
       return;
     }
@@ -223,6 +237,7 @@ class MultiplayerClient {
       this.sendInvocation('ChangeChannel', [newChannelId]);
     }
     this.updateChannelUI();
+    this.updateConnectionStatus(this.isConnected);
   }
 
   broadcastSkill(skillKey, originX, originY, targetX, targetY) {

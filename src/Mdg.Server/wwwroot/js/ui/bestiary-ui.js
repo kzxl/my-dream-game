@@ -3,11 +3,11 @@
  * 100% English UI, Absolute Fog of Discovery (No Spoilers), 3-Branch Talent Specialization & Respec
  */
 
-import { player } from '../state.js';
-import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from '../data/monsters.js';
-import { LORE_BRANCHES } from '../data/lore.js';
-import { AudioEngine } from '../audio.js';
-import { saveToDatabase } from '../save-system.js';
+import { player } from '../state.js?v=7';
+import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from '../data/monsters.js?v=7';
+import { LORE_BRANCHES } from '../data/lore.js?v=7';
+import { AudioEngine } from '../audio.js?v=7';
+import { saveToDatabase } from '../save-system.js?v=7';
 
 let activeMainTab = 'codex'; // 'codex' | 'family_trees' | 'lore'
 let activeFilter = 'all'; // 'all', 'act1', 'act2', 'act3', 'act4', 'boss', 'Beast', 'Undead', 'Fiend', 'Elemental', 'Construct'

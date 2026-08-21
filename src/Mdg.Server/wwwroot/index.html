@@ -621,73 +621,6 @@
       </div>
     </div>
 
-    <!-- MULTI-CHARACTER ROSTER & SELECT MODAL -->
-    <div id="character-roster-modal" class="worldmap-modal-wrap hidden">
-      <div class="roster-modal-box">
-        <div class="roster-header">
-          <div class="roster-title-row">
-            <h2>👥 CHARACTER ROSTER & HERO SELECTION</h2>
-            <button id="btn-close-roster" class="close-btn">✖</button>
-          </div>
-          <p>Select an existing hero to venture forth or forge a new legend.</p>
-        </div>
-
-        <div class="roster-content-layout">
-          <!-- Left: Existing Characters List -->
-          <div class="roster-list-panel">
-            <div class="panel-section-title">YOUR HEROES</div>
-            <div id="roster-characters-list" class="roster-cards-grid">
-              <!-- Dynamically populated character cards -->
-            </div>
-          </div>
-
-          <!-- Right: Create New Hero Panel -->
-          <div class="create-hero-panel">
-            <div class="panel-section-title">✨ FORGE NEW HERO</div>
-            
-            <div class="create-form-group">
-              <label>Hero Name:</label>
-              <input type="text" id="new-hero-name" placeholder="Enter hero name..." maxlength="18" value="Aria" />
-            </div>
-
-            <div class="create-form-group">
-              <label>Gender:</label>
-              <div class="gender-radio-row">
-                <label class="radio-label"><input type="radio" name="new-hero-gender" value="Male" checked /> ♂ Male</label>
-                <label class="radio-label"><input type="radio" name="new-hero-gender" value="Female" /> ♀ Female</label>
-              </div>
-            </div>
-
-            <div class="create-form-group">
-              <label>Starting Archetype:</label>
-              <select id="new-hero-class" class="hero-select-box">
-                <option value="Novice">Novice (Balanced Adventurer)</option>
-                <option value="Vanguard">Vanguard (Knight of Iron)</option>
-                <option value="Arcanist">Arcanist (Master of Elements)</option>
-                <option value="ShadowRogue">Shadow Rogue (Assassin of Night)</option>
-              </select>
-            </div>
-
-            <button id="btn-submit-create-hero" class="create-hero-submit-btn">⚔️ Create Hero</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- BESTIARY CODEX & MONSTER MASTERY MODAL (Hotkey Y) -->
-    <div id="bestiaryModal" class="game-modal-backdrop">
-      <div class="bestiary-modal-box">
-        <div class="bestiary-modal-header">
-          <div class="bmh-title-wrap">
-            <span class="bmh-icon">📖</span>
-            <h2>BESTIARY CODEX & MONSTER FAMILY MASTERY</h2>
-          </div>
-          <button id="closeBestiaryBtn" class="close-btn">✖</button>
-        </div>
-        <div id="bestiaryContent" class="bestiary-modal-body"></div>
-      </div>
-    </div>
-
     <!-- DEFEAT & RESURRECTION POPUP MODAL -->
     <div id="defeat-modal" class="worldmap-modal-wrap hidden">
       <div class="defeat-modal-box">
@@ -773,7 +706,7 @@
   </div>
 
   <!-- Bestiary Codex Modal -->
-  <div id="bestiaryModal" class="modal-overlay">
+  <div id="bestiaryModal" class="game-modal-backdrop modal-overlay hidden" style="display: none;">
     <div class="modal-content bestiary-modal-box">
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:8px;">
@@ -790,7 +723,7 @@
   </div>
 
   <!-- Character Roster Modal -->
-  <div id="rosterModal" class="modal-overlay">
+  <div id="rosterModal" class="game-modal-backdrop modal-overlay hidden" style="display: none;">
     <div class="modal-content roster-modal-box">
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:8px;">
@@ -807,7 +740,7 @@
   </div>
 
   <!-- World Channel Switcher Modal -->
-  <div id="channelModal" class="modal-overlay">
+  <div id="channelModal" class="game-modal-backdrop modal-overlay hidden" style="display: none;">
     <div class="modal-content channel-modal-box">
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:8px;">
@@ -819,11 +752,54 @@
         </div>
         <button id="closeChannelBtn" class="close-btn">&times;</button>
       </div>
-      <div id="channelContent" class="channel-inner-scroll"></div>
+      <div id="channelContent" class="channel-inner-scroll">
+        <div class="channel-card-stack">
+          <div class="channel-card is-active-channel" data-channel="CH-1">
+            <div class="cc-left">
+              <span class="cc-icon">🌐</span>
+              <div class="cc-text-wrap">
+                <div class="cc-title">Global Nexus (CH 1) <span class="cc-badge active">CONNECTED</span></div>
+                <div class="cc-desc">Global Shard • Real-time Multi-Character Instance</div>
+              </div>
+            </div>
+            <button class="cc-btn active" data-channel="CH-1">Active Shard</button>
+          </div>
+          <div class="channel-card" data-channel="CH-2">
+            <div class="cc-left">
+              <span class="cc-icon">⚡</span>
+              <div class="cc-text-wrap">
+                <div class="cc-title">Asia Pacific (CH 2)</div>
+                <div class="cc-desc">Asia Shard • Real-time Multi-Character Instance</div>
+              </div>
+            </div>
+            <button class="cc-btn" data-channel="CH-2">Switch Shard</button>
+          </div>
+          <div class="channel-card" data-channel="CH-3">
+            <div class="cc-left">
+              <span class="cc-icon">💀</span>
+              <div class="cc-text-wrap">
+                <div class="cc-title">Hardcore Sanctuary (CH 3)</div>
+                <div class="cc-desc">Challenge Shard • Real-time Multi-Character Instance</div>
+              </div>
+            </div>
+            <button class="cc-btn" data-channel="CH-3">Switch Shard</button>
+          </div>
+          <div class="channel-card" data-channel="CH-4">
+            <div class="cc-left">
+              <span class="cc-icon">💎</span>
+              <div class="cc-text-wrap">
+                <div class="cc-title">Trade & Social Hub (CH 4)</div>
+                <div class="cc-desc">Economy Shard • Real-time Multi-Character Instance</div>
+              </div>
+            </div>
+            <button class="cc-btn" data-channel="CH-4">Switch Shard</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Load Main ES Module -->
-  <script type="module" src="js/main.js?v=4"></script>
+  <script type="module" src="js/main.js?v=11"></script>
 </body>
 </html>

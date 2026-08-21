@@ -3,31 +3,31 @@
  * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js';
-import { ZONES, fetchMasterZonesFromServer } from './data/zones.js';
-import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
-import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
-import { AudioEngine } from './audio.js';
-import { renderGame } from './renderer.js';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js';
-import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
-import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
-import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD } from './ui/hud.js';
-import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
-import { MapGenerator } from './map-generator.js';
-import { updateCompanion } from './companion.js';
-import { renderSharedStashModal } from './ui/stash-ui.js';
-import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js';
-import { renderMapDeviceModal } from './ui/map-device-ui.js';
-import { initDefeatUI } from './ui/defeat-ui.js';
-import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
-import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
-import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js';
-import { MPClient } from './services/multiplayer-client.js';
-import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js';
-import { checkGoogleOAuthRedirectResult } from './auth.js';
-import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js';
-import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js?v=11';
+import { ZONES, fetchMasterZonesFromServer } from './data/zones.js?v=11';
+import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js?v=11';
+import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js?v=11';
+import { AudioEngine } from './audio.js?v=11';
+import { renderGame } from './renderer.js?v=11';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js?v=11';
+import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js?v=11';
+import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js?v=11';
+import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js?v=11';
+import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js?v=11';
+import { MapGenerator } from './map-generator.js?v=11';
+import { updateCompanion } from './companion.js?v=11';
+import { renderSharedStashModal } from './ui/stash-ui.js?v=11';
+import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js?v=11';
+import { renderMapDeviceModal } from './ui/map-device-ui.js?v=11';
+import { initDefeatUI } from './ui/defeat-ui.js?v=11';
+import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js?v=11';
+import { setupRosterUI, openRosterUI } from './ui/roster-ui.js?v=11';
+import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js?v=11';
+import { MPClient } from './services/multiplayer-client.js?v=11';
+import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js?v=11';
+import { checkGoogleOAuthRedirectResult } from './auth.js?v=11';
+import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js?v=11';
+import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js?v=11';
 
 window.keys = keys;
 window.player = player;
@@ -1246,17 +1246,19 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyC') toggleModal('stats-modal');
   if (e.code === 'KeyI') toggleModal('inventory-modal');
   if (e.code === 'Escape') {
-    document.getElementById('ascension-modal')?.classList.add('hidden');
-    document.getElementById('skills-modal')?.classList.add('hidden');
-    document.getElementById('inventory-modal')?.classList.add('hidden');
-    document.getElementById('worldmap-modal')?.classList.add('hidden');
-    document.getElementById('stats-modal')?.classList.add('hidden');
-    document.getElementById('character-roster-modal')?.classList.add('hidden');
-    document.getElementById('defeat-modal')?.classList.add('hidden');
-    const dynamicModals = ['sharedStashModal', 'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal', 'bestiaryModal', 'rosterModal', 'googleAuthModal'];
-    dynamicModals.forEach(id => {
+    const allModalIds = [
+      'ascension-modal', 'skills-modal', 'inventory-modal', 'worldmap-modal',
+      'stats-modal', 'character-roster-modal', 'defeat-modal', 'sharedStashModal',
+      'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal',
+      'bestiaryModal', 'rosterModal', 'googleAuthModal', 'channelModal'
+    ];
+    allModalIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
+      if (el) {
+        el.classList.remove('active');
+        el.classList.add('hidden');
+        el.style.display = 'none';
+      }
     });
   }
 

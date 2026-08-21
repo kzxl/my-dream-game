@@ -2,21 +2,22 @@
  * HUD, Modals & User Interface Controller (With Detailed Attributes & Multi-Character Roster)
  */
 
-import { player, camera } from '../state.js';
-import { AudioEngine } from '../audio.js';
-import { spawnDamageNumber } from '../combat.js';
-import { updateBackpackUI, updatePaperdollUI, sortAndConsolidateBackpack, setupContextMenuListeners } from './inventory.js';
-import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js';
-import { saveToDatabase, renderCharacterRosterUI, createNewCharacter } from '../save-system.js';
-import { renderWorldMapUI } from './worldmap-ui.js';
-import { renderForgeBenchModal } from './forge-ui.js';
-import { renderMapDeviceModal } from './map-device-ui.js';
-import { renderDevotionModal } from './devotion-ui.js';
-import { renderSharedStashModal } from './stash-ui.js';
-import { renderRosterModal } from './roster-ui.js';
-import { sendPetToTown, companion } from '../companion.js';
-import { openGoogleAuthModal } from '../auth.js';
-import { MPClient, CHANNELS } from '../services/multiplayer-client.js';
+import { player, camera } from '../state.js?v=11';
+import { AudioEngine } from '../audio.js?v=11';
+import { spawnDamageNumber } from '../combat.js?v=11';
+import { updateBackpackUI, updatePaperdollUI, sortAndConsolidateBackpack, setupContextMenuListeners } from './inventory.js?v=11';
+import { updateSkillBadges, renderSkillUpgradeModal } from './skills-ui.js?v=11';
+import { saveToDatabase, renderCharacterRosterUI, createNewCharacter } from '../save-system.js?v=11';
+import { renderWorldMapUI } from './worldmap-ui.js?v=11';
+import { renderForgeBenchModal } from './forge-ui.js?v=11';
+import { renderMapDeviceModal } from './map-device-ui.js?v=11';
+import { renderDevotionModal } from './devotion-ui.js?v=11';
+import { renderSharedStashModal } from './stash-ui.js?v=11';
+import { renderRosterModal } from './roster-ui.js?v=11';
+import { sendPetToTown, companion } from '../companion.js?v=11';
+import { openGoogleAuthModal } from '../auth.js?v=11';
+import { MPClient } from '../services/multiplayer-client.js?v=11';
+import { CHANNELS } from '../data/channels.js?v=11';
 
 export function showZoneBanner(title, sub) {
   const banner = document.getElementById('zone-banner');
@@ -334,12 +335,24 @@ export function setupUIListeners() {
   // World Channel Switcher Trigger & Modal Listeners
   document.getElementById('channelSelectBtn')?.addEventListener('click', openChannelModal);
   document.getElementById('closeChannelBtn')?.addEventListener('click', closeChannelModal);
+  
+  const chModal = document.getElementById('channelModal');
+  if (chModal) {
+    chModal.addEventListener('click', (e) => {
+      if (e.target === chModal) closeChannelModal();
+    });
+  }
+
+  // Pre-render channel list
+  renderChannelList();
 }
 
 export function openChannelModal() {
   const modal = document.getElementById('channelModal');
   if (!modal) return;
+  modal.classList.remove('hidden');
   modal.classList.add('active');
+  modal.style.display = 'flex';
   renderChannelList();
   AudioEngine.playTone(520, 'sine', 0.1, 0.08);
 }
@@ -348,6 +361,9 @@ export function closeChannelModal() {
   const modal = document.getElementById('channelModal');
   if (!modal) return;
   modal.classList.remove('active');
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
+  AudioEngine.playTone(330, 'triangle', 0.1, 0.08);
 }
 
 export function renderChannelList() {
