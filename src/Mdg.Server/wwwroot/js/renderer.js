@@ -418,6 +418,34 @@ export function drawPlayerClean(ctx) {
     ctx.restore();
   }
 
+  // Channeling Blessing Progress Bar (Aether Shrines)
+  if (player.channeling) {
+    const ch = player.channeling;
+    const progressPct = Math.max(0, Math.min(1, 1 - (ch.timer / ch.duration)));
+    const barW = 64;
+    const barH = 7;
+    const barY = -58;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.9)';
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(-barW / 2, barY, barW, barH);
+    ctx.strokeRect(-barW / 2, barY, barW, barH);
+
+    const fillGrad = ctx.createLinearGradient(-barW / 2, barY, barW / 2, barY);
+    fillGrad.addColorStop(0, '#f39c12');
+    fillGrad.addColorStop(1, '#ffd700');
+    ctx.fillStyle = fillGrad;
+    ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * progressPct, barH - 2);
+
+    ctx.font = 'bold 8px "Outfit", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(`✨ Channeling... ${Math.round(progressPct * 100)}%`, 0, barY - 4);
+    ctx.restore();
+  }
+
   ctx.restore();
 }
 
@@ -495,10 +523,35 @@ export function drawMonsterClean(ctx, m) {
 
   const scale = m.scale || 1.2;
 
+  // Base Shadow
   ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.beginPath();
   ctx.ellipse(0, 16 * scale, 14 * scale, 6 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Mutant & Elite Ground Aura Rings
+  const now = performance.now();
+  if (m.rarityTier === 'mutant') {
+    ctx.save();
+    ctx.strokeStyle = '#c678dd';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#c678dd';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.ellipse(0, 16 * scale, 22 * scale, 10 * scale, (now / 400), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  } else if (m.rarityTier === 'elite') {
+    ctx.save();
+    ctx.strokeStyle = '#f39c12';
+    ctx.lineWidth = 2.0;
+    ctx.shadowColor = '#f39c12';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(0, 16 * scale, 18 * scale, 8 * scale, -(now / 500), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Render Boss from assets.bosses (4x4 Animated Spritesheet)
   if (m.type === 'boss' && assets.bosses.complete && assets.bosses.naturalWidth > 0) {
@@ -596,13 +649,13 @@ export function drawMonsterClean(ctx, m) {
 
   // Draw monster health bar
   const hpPct = Math.max(0, Math.min(1, m.life / m.maxLife));
-  const barW = (m.type === 'boss' ? 54 : 34) * scale;
-  const barH = m.type === 'boss' ? 5 : 3;
+  const barW = (m.type === 'boss' ? 54 : (m.rarityTier === 'mutant' ? 44 : (m.rarityTier === 'elite' ? 38 : 34))) * scale;
+  const barH = m.type === 'boss' ? 5 : (m.rarityTier === 'mutant' ? 4 : 3);
   const barY = -34 * scale;
 
   ctx.fillStyle = '#1e222b';
   ctx.fillRect(-barW / 2, barY, barW, barH);
-  ctx.fillStyle = hpPct > 0.5 ? '#98c379' : '#e06c75';
+  ctx.fillStyle = m.rarityTier === 'mutant' ? '#c678dd' : (m.rarityTier === 'elite' ? '#f39c12' : (hpPct > 0.5 ? '#98c379' : '#e06c75'));
   ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * hpPct, barH - 1);
 
   // Ailment Badges Rendering (Ignite, Freeze, Bleed)
@@ -611,7 +664,7 @@ export function drawMonsterClean(ctx, m) {
   if (m.freezeTimer > 0) ailmentIcons += ' ❄️';
   if (m.bleedTimer > 0) ailmentIcons += ' 🩸';
 
-  // Lore Mastery Tier Badge
+  // Lore Mastery Tier Badge & Nameplate
   const lore = getMonsterLoreBonus(m.type || 'monster', m.type === 'boss');
   let loreBadge = '';
   if (lore.tier === 4) loreBadge = ' 👑';
@@ -619,8 +672,9 @@ export function drawMonsterClean(ctx, m) {
   else if (lore.tier === 2) loreBadge = ' 🥈';
   else if (lore.tier === 1) loreBadge = ' 🎖️';
 
-  ctx.font = m.type === 'boss' ? 'bold 11px "Outfit", sans-serif' : '9px "Outfit", sans-serif';
-  ctx.fillStyle = m.type === 'boss' ? '#e5c07b' : '#abb2bf';
+  const nameColor = m.type === 'boss' ? '#ffd700' : (m.rarityTier === 'mutant' ? '#c678dd' : (m.rarityTier === 'elite' ? '#f39c12' : '#abb2bf'));
+  ctx.font = (m.type === 'boss' || m.rarityTier === 'mutant') ? 'bold 11px "Outfit", sans-serif' : '9px "Outfit", sans-serif';
+  ctx.fillStyle = nameColor;
   ctx.textAlign = 'center';
   ctx.fillText(`${m.name}${loreBadge}${ailmentIcons}`, 0, -38 * scale);
 

@@ -156,3 +156,27 @@ graph TD
    * Quản lý AI State Machine trên Backend (`Mdg.Core`): Quái vật lưu trữ danh sách `MonsterAffixes` và tính toán Aura định kỳ theo Tick Loop.
    * Boss chuyển Phase thông qua sự kiện `BossPhaseChangedEvent`, gửi thông báo về Client để đổi nhạc nền (BGM) và hiệu ứng môi trường.
    * Hiển Thị Trực Quan Trên Client (`Mdg.Server/wwwroot`): Thanh máu Boss hiển thị các vạch khấc phân tách Phase (65% và 25%). Quái Rare có vòng hào quang sáng dưới chân (Aura Ring) màu vàng kim và liệt kê các Icon Affix bên dưới tên quái.
+
+---
+
+## 6. Đột Biến Quái Theo Cụm, Hồi Sinh & Niệm Đền Thần (Expansion v2.5)
+
+### 6.1. Xác Suất Đột Biến Quái Theo Cụm (Mutated / Elite / Rare Monsters)
+Mỗi cụm quái (*Monster Pack*) khi sinh ra có $25\%$ tỉ lệ được dẫn đầu bởi một **Quái Thủ Lĩnh Biến Dị** với các phẩm cấp và thuộc tính sau:
+
+| Phẩm Cấp Quái | Tỷ Lệ Xuất Hiện | Hệ Số Chỉ Số | Hào Quang (Aura) | Phần Thưởng Rơi Đồ (Loot Multiplier) |
+| :--- | :---: | :--- | :--- | :--- |
+| **Normal Monster** | $80\%$ | Base Stats | Không | $\times 1.0$ Loot tiêu chuẩn |
+| **Elite Champion** | $14\%$ | $\text{HP } \times 2.4$, $\text{Giáp } \times 1.5$, $\text{Dmg } \times 1.25$, $\text{EXP } \times 2.8$ | Vòng hào quang Vàng Cam xoay tròn (`#f39c12`) | $\times 3.0$ Drop rate, $0.8\%$ rớt Tinh Hoa Thức Tỉnh |
+| **Corrupted Mutant** | $6\%$ | $\text{HP } \times 4.5$, $\text{Giáp } \times 2.0$, $\text{Dmg } \times 1.5$, $\text{EXP } \times 5.0$ | Vòng ma pháp Tím Cực Quang Hư Vô (`#c678dd`) | $\times 5.0$ Drop rate, $2.5\%$ rớt Tinh Hoa Thức Tỉnh & Cổ Ngữ |
+
+### 6.2. Cơ Chế Hồi Sinh Quái Định Kỳ (Periodic Monster Respawn Engine)
+* **Giám Sát Mật Độ:** Hệ thống kiểm tra số lượng quái còn sống trong khu vực (`aliveCount < 45`).
+* **Chu Kỳ Kích Hoạt:** Mỗi $14\text{s}$, nếu mật độ quái thấp, hệ thống tìm các Spawner nằm ở khoảng cách an toàn ($350\text{px} \le \text{Distance} \le 1200\text{px}$) so với người chơi.
+* **Cổng Triệu Hồi Hư Vô:** Xuất hiện hiệu ứng tia sáng tím ma thuật trên mặt đất trước khi cụm quái $3 - 5$ con trồi lên, tránh spawn giật cục đè lên người chơi.
+
+### 6.3. Hệ Thống Niệm Nhận Buff Đền Thần (Aether Shrine Channeling System)
+* **Thời Gian Chờ Niệm (Channeling Time):** Người chơi bấm phím `F` tại Đền Thần sẽ bắt đầu quá trình niệm nhận phúc lành trong $2.5\text{s}$.
+* **Không Cần Nhấn Giữ:** Người chơi không cần giữ đè phím `F`, chỉ cần đứng trong phạm vi thanh tẩy của Đền ($\text{Bán kính } \le 140\text{px}$).
+* **Thanh Tiến Trình Trực Quan:** Thanh *Channeling Progress Bar* màu vàng kim hiển thị trực quan ngay trên đầu nhân vật (`✨ Channeling... XX%`) kèm luồng hạt ánh sáng hội tụ từ đền vào cơ thể.
+* **Kích Hoạt Hoàn Tất:** Khi thanh tiến trình đạt $100\%$, Đền Thần bùng nổ hiệu ứng pháo hoa ánh sáng và chính thức kích hoạt Buff thần thánh kéo dài $60\text{s}$.

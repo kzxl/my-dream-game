@@ -52,6 +52,8 @@ resize();
 let currentZoneId = 'SanctuaryHaven';
 let currentZone = ZONES[currentZoneId];
 let currentZoneMap = null;
+let zoneMonsterSpawners = [];
+let zoneRespawnTimer = 0;
 window.currentZoneId = currentZoneId;
 
 export function canWalk(x, y) {
@@ -199,7 +201,10 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   }
   if (currentZoneMap.props) currentZoneMap.props.forEach(pr => props.push({ ...pr }));
 
-  // 3. Spawn Monster Clusters
+  // 3. Spawn Monster Clusters & Track Zone Spawners
+  zoneMonsterSpawners = currentZoneMap.monsterSpawns || [];
+  zoneRespawnTimer = 0;
+
   if (currentZoneMap.monsterSpawns && currentZoneMap.monsterSpawns.length > 0) {
     currentZoneMap.monsterSpawns.forEach(sp => {
       if (sp.type === 'boss') {
@@ -226,8 +231,8 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   renderSkillUpgradeModal();
 }
 
-export function spawnMonster(x, y, type = 'slime') {
-  const isBoss = type === 'boss';
+export function spawnMonster(x, y, type = 'slime', forcedTier = null) {
+  const isBoss = type === 'boss' || type === 'ignis_boss' || type === 'vael_boss' || type === 'malakor_boss';
 
   let mName = 'Toxic Slime';
   let maxHp = 120;
@@ -311,6 +316,37 @@ export function spawnMonster(x, y, type = 'slime') {
     attackDmg = 85; attackRange = 72; attackCooldown = 1.1; dmgType = 'fire';
   }
 
+  // Determine Rarity Variant Tier: Normal (80%), Elite (14%), Mutant (6%)
+  let rarityTier = 'normal';
+  let scale = isBoss ? 1.8 : 1.2;
+  let affixes = [];
+
+  if (!isBoss) {
+    const roll = forcedTier || (Math.random());
+    if (roll === 'mutant' || (typeof roll === 'number' && roll < 0.06)) {
+      rarityTier = 'mutant';
+      scale = 1.5;
+      maxHp = Math.round(maxHp * 4.5);
+      armor = Math.round(armor * 2.0);
+      attackDmg = Math.round(attackDmg * 1.5);
+      baseSpd = Math.round(baseSpd * 1.15);
+      expVal = Math.round(expVal * 5.0);
+      const mutantPrefixes = ['👑 Void-Touched', '💀 Abyssal Mutated', '🌟 Cosmic Anomaly', '🔮 Chaos-Corrupted'];
+      mName = `${mutantPrefixes[Math.floor(Math.random() * mutantPrefixes.length)]} ${mName}`;
+      affixes = ['Void Aura', 'Molten Core', 'Vampiric'];
+    } else if (roll === 'elite' || (typeof roll === 'number' && roll < 0.20)) {
+      rarityTier = 'elite';
+      scale = 1.35;
+      maxHp = Math.round(maxHp * 2.4);
+      armor = Math.round(armor * 1.5);
+      attackDmg = Math.round(attackDmg * 1.25);
+      expVal = Math.round(expVal * 2.8);
+      const elitePrefixes = ['⚡ Elite', '🔥 Champion', '❄️ Hardened', '⚔️ Berserk'];
+      mName = `${elitePrefixes[Math.floor(Math.random() * elitePrefixes.length)]} ${mName}`;
+      affixes = ['Haste', 'Damage Reflection'];
+    }
+  }
+
   monsters.push({
     id: Math.random().toString(36).substring(2, 9),
     x: x,
@@ -319,6 +355,8 @@ export function spawnMonster(x, y, type = 'slime') {
     vy: 0,
     type: type,
     name: mName,
+    rarityTier: rarityTier,
+    affixes: affixes,
     maxLife: maxHp,
     life: maxHp,
     armor: armor,
@@ -328,7 +366,7 @@ export function spawnMonster(x, y, type = 'slime') {
     chaosRes: chaosRes,
     evasionChance: evasionChance,
     blockChance: blockChance,
-    speed: baseSpd + Math.random() * 20,
+    speed: baseSpd + Math.random() * 15,
     attackDmg: attackDmg,
     attackRange: attackRange,
     attackCooldown: attackCooldown,
@@ -339,17 +377,28 @@ export function spawnMonster(x, y, type = 'slime') {
     animTimer: Math.random() * 10,
     isAlive: true,
     hurtTimer: 0,
-    scale: isBoss ? 1.8 : 1.2
+    scale: scale
   });
 }
 
 export function spawnMonsterCluster(cx, cy, count, typeOverride) {
-  const types = typeOverride ? [typeOverride] : ['slime', 'goblin'];
+  const types = typeOverride ? [typeOverride] : ['slime', 'goblin', 'wolf', 'skeleton'];
+  const packRoll = Math.random();
+  let hasLeader = false;
+
   for (let i = 0; i < count; i++) {
     const type = types[Math.floor(Math.random() * types.length)];
     const mx = cx + (Math.random() - 0.5) * 260;
     const my = cy + (Math.random() - 0.5) * 260;
-    if (canWalk(mx, my)) spawnMonster(mx, my, type);
+    if (canWalk(mx, my)) {
+      if (!hasLeader && i === 0 && packRoll < 0.25) {
+        hasLeader = true;
+        const leaderTier = packRoll < 0.08 ? 'mutant' : 'elite';
+        spawnMonster(mx, my, type, leaderTier);
+      } else {
+        spawnMonster(mx, my, type, 'normal');
+      }
+    }
   }
 }
 
@@ -585,6 +634,91 @@ function update(dt) {
   if (!player.isDead) {
     player.mana = Math.min(player.maxMana, player.mana + 10 * dt);
     player.life = Math.min(player.maxLife, player.life + 4 * dt);
+  }
+
+  // 1. Channeling Logic (Aether Shrines)
+  if (player.channeling) {
+    const ch = player.channeling;
+    const distToTarget = Math.hypot(player.x - ch.targetX, player.y - ch.targetY);
+    if (distToTarget > 140) {
+      floatingTexts.push({ x: player.x, y: player.y - 45, text: '❌ Channeling Interrupted (Moved Too Far)!', color: '#e74c3c', life: 1.5 });
+      player.channeling = null;
+    } else {
+      ch.timer -= dt;
+      // Channeling particle stream from shrine to player
+      if (Math.random() < 0.45) {
+        particles.push({
+          x: ch.targetX + (Math.random() - 0.5) * 30,
+          y: ch.targetY + (Math.random() - 0.5) * 30,
+          vx: (player.x - ch.targetX) * 1.8 + (Math.random() - 0.5) * 30,
+          vy: (player.y - ch.targetY) * 1.8 + (Math.random() - 0.5) * 30,
+          size: Math.random() * 3 + 2,
+          color: ch.poi.color || '#ffd700',
+          life: 0.55
+        });
+      }
+
+      if (ch.timer <= 0) {
+        ch.poi.isActivated = true;
+        player.activeBuffs = (player.activeBuffs || []).filter(b => b.buffType !== ch.poi.buffType);
+        player.activeBuffs.push({
+          id: ch.poi.id,
+          name: ch.poi.name,
+          buffType: ch.poi.buffType,
+          duration: ch.poi.buffDuration || 60,
+          maxDuration: ch.poi.buffDuration || 60,
+          icon: ch.poi.icon,
+          color: ch.poi.color
+        });
+        AudioEngine.playSpellCast?.('meteor');
+        floatingTexts.push({ x: player.x, y: player.y - 45, text: `✨ ${ch.poi.name} ACTIVATED!`, color: ch.poi.color || '#ffd700', isCrit: true, life: 2.2 });
+        for (let i = 0; i < 24; i++) {
+          particles.push({
+            x: player.x,
+            y: player.y,
+            vx: (Math.random() - 0.5) * 160,
+            vy: (Math.random() - 0.5) * 160,
+            size: Math.random() * 5 + 3,
+            color: ch.poi.color || '#ffd700',
+            life: 1.2
+          });
+        }
+        player.channeling = null;
+      }
+    }
+  }
+
+  // 2. Dynamic Periodic Monster Respawn Engine
+  if (currentZoneId !== 'SanctuaryHaven' && zoneMonsterSpawners && zoneMonsterSpawners.length > 0) {
+    zoneRespawnTimer += dt;
+    if (zoneRespawnTimer >= 14.0) {
+      zoneRespawnTimer = 0;
+      const aliveCount = monsters.filter(m => m.isAlive).length;
+      if (aliveCount < 45) {
+        const validSpawners = zoneMonsterSpawners.filter(sp => {
+          if (sp.type === 'boss') return false;
+          const dist = Math.hypot(player.x - sp.x, player.y - sp.y);
+          return dist >= 350 && dist <= 1200;
+        });
+
+        if (validSpawners.length > 0) {
+          const targetSp = validSpawners[Math.floor(Math.random() * validSpawners.length)];
+          for (let k = 0; k < 16; k++) {
+            particles.push({
+              x: targetSp.x + (Math.random() - 0.5) * 60,
+              y: targetSp.y + (Math.random() - 0.5) * 60,
+              vx: (Math.random() - 0.5) * 60,
+              vy: -Math.random() * 80,
+              color: '#9b59b6',
+              life: 1.2,
+              size: 4
+            });
+          }
+          floatingTexts.push({ x: targetSp.x, y: targetSp.y - 40, text: '🌀 Monsters Emerging...', color: '#9b59b6', life: 1.8 });
+          spawnMonsterCluster(targetSp.x, targetSp.y, targetSp.count || 5, targetSp.type);
+        }
+      }
+    }
   }
 
   if (!player.isDead && mouse.isDown && (player.cooldowns.slash || 0) <= 0 && (player.freezeTimer || 0) <= 0) {
@@ -860,30 +994,19 @@ window.addEventListener('keydown', e => {
         return;
       }
       if (nearPoi.type === 'shrine') {
-        nearPoi.isActivated = true;
-        player.activeBuffs = (player.activeBuffs || []).filter(b => b.buffType !== nearPoi.buffType);
-        player.activeBuffs.push({
-          id: nearPoi.id,
-          name: nearPoi.name,
-          buffType: nearPoi.buffType,
-          duration: nearPoi.buffDuration || 60,
-          maxDuration: nearPoi.buffDuration || 60,
-          icon: nearPoi.icon,
-          color: nearPoi.color
-        });
-        AudioEngine.playSpellCast?.('meteor');
-        floatingTexts.push({ x: player.x, y: player.y - 30, text: `✨ ${nearPoi.name} ACTIVATED!`, color: nearPoi.color || '#ffd700', isCrit: true, life: 2.0 });
-        for (let i = 0; i < 20; i++) {
-          particles.push({
-            x: player.x,
-            y: player.y,
-            vx: (Math.random() - 0.5) * 140,
-            vy: (Math.random() - 0.5) * 140,
-            size: Math.random() * 5 + 3,
-            color: nearPoi.color || '#ffd700',
-            life: 1.2
-          });
+        if (player.channeling && player.channeling.poi?.id === nearPoi.id) {
+          return; // already channeling this shrine
         }
+        player.channeling = {
+          type: 'shrine',
+          poi: nearPoi,
+          duration: 2.5,
+          timer: 2.5,
+          targetX: nearPoi.x,
+          targetY: nearPoi.y
+        };
+        AudioEngine.playTone?.(440, 'sine', 0.15, 0.08);
+        floatingTexts.push({ x: player.x, y: player.y - 45, text: '⏳ Channeling Blessing (2.5s)...', color: '#ffd700', life: 1.5 });
         return;
       } else if (nearPoi.type === 'monolith') {
         nearPoi.isActivated = true;

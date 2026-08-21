@@ -359,7 +359,8 @@ export function handleMonsterDefeated(target) {
   }
 
   if (window.gainExp) window.gainExp(target.expValue || 35);
-  dropMonsterLoot(target.x, target.y, target.type === 'boss' || target.isBoss, target.rarity || (target.type === 'boss' ? 'boss' : 'normal'), mType);
+  const rTier = target.rarityTier || target.rarity || (target.type === 'boss' ? 'boss' : 'normal');
+  dropMonsterLoot(target.x, target.y, target.type === 'boss' || target.isBoss, rTier, mType);
 
   if (target.type === 'boss' && player.classSpec === 'Novice') {
     document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
@@ -373,8 +374,10 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
   else if (zoneId === 'ForgottenCrypt') monsterLevel = 22;
   else if (zoneId === 'FrostpeakTundra') monsterLevel = 28;
   else if (zoneId === 'StormpeakRidge') monsterLevel = 36;
-  else if (zoneId === 'MoltenCaldera') monsterLevel = 42;
-  else if (zoneId === 'VoidAbyss') monsterLevel = 60;
+  else if (zoneId === 'InfernalCaldera') monsterLevel = 45;
+  else if (zoneId === 'AethelisCitadel') monsterLevel = 60;
+  else if (zoneId === 'VoidAbyss') monsterLevel = 70;
+  else if (zoneId === 'GenesisCore') monsterLevel = 90;
   else if (zoneId === 'ArenaCaldera') monsterLevel = 78;
   else if (zoneId === 'ArenaGlacial') monsterLevel = 80;
   else if (zoneId === 'ArenaVoid') monsterLevel = 84;
@@ -405,17 +408,19 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
     itemsToDrop = serverResult.items;
   } else {
     // Local fallback if server unreachable
-    const isChampion = monsterRarity === 'champion' || monsterRarity === 'magic';
+    const isMutant = monsterRarity === 'mutant';
+    const isChampion = monsterRarity === 'champion' || monsterRarity === 'magic' || monsterRarity === 'elite';
     const isRare = monsterRarity === 'rare';
-    let dropCount = isBoss ? (Math.floor(Math.random() * 4) + 3) : isRare ? (Math.floor(Math.random() * 2) + 1) : isChampion ? 1 : (Math.random() < 0.18 ? 1 : 0);
+    let dropCount = isBoss ? (Math.floor(Math.random() * 4) + 4) : isMutant ? (Math.floor(Math.random() * 3) + 2) : isRare ? (Math.floor(Math.random() * 2) + 1) : isChampion ? 1 : (Math.random() < 0.22 ? 1 : 0);
     for (let i = 0; i < dropCount; i++) {
       itemsToDrop.push(generateLootItem(monsterLevel, isBoss, monsterRarity));
     }
   }
 
-  // Ultra-Rare Awakening Essence Drop Check (Boss: 5.0%, Elite/Rare: 0.8%)
-  const isEliteOrRare = isBoss || monsterRarity === 'rare' || monsterRarity === 'champion';
-  const essenceDropChance = isBoss ? 0.05 : (isEliteOrRare ? 0.008 : 0.0);
+  // Ultra-Rare Awakening Essence Drop Check (Boss: 5.0%, Mutant: 2.5%, Elite/Rare: 0.8%)
+  const isMutant = monsterRarity === 'mutant';
+  const isEliteOrRare = isBoss || monsterRarity === 'rare' || monsterRarity === 'champion' || monsterRarity === 'elite' || isMutant;
+  const essenceDropChance = isBoss ? 0.05 : (isMutant ? 0.025 : (isEliteOrRare ? 0.008 : 0.0));
   if (Math.random() < essenceDropChance && Array.isArray(AWAKENING_ESSENCES) && AWAKENING_ESSENCES.length > 0) {
     const randomEssence = AWAKENING_ESSENCES[Math.floor(Math.random() * AWAKENING_ESSENCES.length)];
     itemsToDrop.push({
