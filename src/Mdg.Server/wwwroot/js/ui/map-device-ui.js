@@ -61,6 +61,10 @@ const DEFAULT_MAP_KEYS = [
 
 export function renderMapDeviceModal() {
   let modal = document.getElementById('mapDeviceModal');
+  if (modal && modal.style.display !== 'none') {
+    modal.style.display = 'none';
+    return;
+  }
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'mapDeviceModal';

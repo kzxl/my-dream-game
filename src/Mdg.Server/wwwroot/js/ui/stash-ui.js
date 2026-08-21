@@ -39,6 +39,10 @@ export async function renderSharedStashModal() {
   }
 
   let modal = document.getElementById('sharedStashModal');
+  if (modal && modal.style.display !== 'none') {
+    modal.style.display = 'none';
+    return;
+  }
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'sharedStashModal';

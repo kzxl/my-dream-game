@@ -1070,15 +1070,19 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleModal('worldmap-modal');
   if (e.code === 'KeyC') toggleModal('stats-modal');
   if (e.code === 'KeyI') toggleModal('inventory-modal');
-    if (e.code === 'Escape') {
+  if (e.code === 'Escape') {
     document.getElementById('ascension-modal')?.classList.add('hidden');
     document.getElementById('skills-modal')?.classList.add('hidden');
     document.getElementById('inventory-modal')?.classList.add('hidden');
     document.getElementById('worldmap-modal')?.classList.add('hidden');
     document.getElementById('stats-modal')?.classList.add('hidden');
     document.getElementById('character-roster-modal')?.classList.add('hidden');
-    const npcModal = document.getElementById('npcDialogueModal');
-    if (npcModal) npcModal.style.display = 'none';
+    document.getElementById('defeat-modal')?.classList.add('hidden');
+    const dynamicModals = ['sharedStashModal', 'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal', 'bestiaryModal', 'rosterModal', 'googleAuthModal'];
+    dynamicModals.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
   }
 
   if (e.code === 'KeyF') {

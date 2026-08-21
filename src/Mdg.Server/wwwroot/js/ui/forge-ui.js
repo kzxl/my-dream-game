@@ -12,6 +12,10 @@ let selectedItemIndex = -1;
 
 export function renderForgeBenchModal() {
   let modal = document.getElementById('forgeBenchModal');
+  if (modal && modal.style.display !== 'none') {
+    modal.style.display = 'none';
+    return;
+  }
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'forgeBenchModal';

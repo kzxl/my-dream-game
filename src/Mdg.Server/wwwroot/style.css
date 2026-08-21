@@ -5104,5 +5104,625 @@ canvas#gameCanvas {
   box-shadow: 0 0 8px rgba(190, 46, 221, 0.5);
 }
 
+/* ==========================================================================
+   UNIFIED HIGH-FANTASY DARK RPG MODAL DESIGN SYSTEM
+   ========================================================================== */
+
+/* Universal Modal Backdrop / Overlay */
+.game-modal-backdrop,
+.modal-overlay,
+.worldmap-modal-wrap {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 14, 0.82) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Base High-Fantasy Dark Obsidian Card */
+.stash-modal-card,
+.forge-modal-card,
+.devotion-tree-modal-card,
+.map-device-card,
+.npc-dialog-card,
+.bestiary-modal-box,
+.roster-modal-box,
+.ascension-card-box,
+.defeat-modal-box,
+.skills-modal-wide,
+.stats-modal-overhaul,
+.worldmap-overhaul-box,
+.auth-modal-card {
+  background: linear-gradient(160deg, rgba(20, 24, 34, 0.98) 0%, rgba(12, 15, 22, 0.99) 100%) !important;
+  border: 2px solid #c6a258 !important;
+  border-radius: 12px;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 35px rgba(198, 162, 88, 0.2), inset 0 1px 0 rgba(255, 223, 128, 0.25) !important;
+  color: #e2e8f0;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Runic Filigree Modal Header */
+.modal-header,
+.stash-nav-tabs,
+.worldmap-header,
+.npc-dialog-header,
+.bestiary-modal-header {
+  border-bottom: 1px solid rgba(198, 162, 88, 0.35);
+  background: linear-gradient(90deg, rgba(30, 36, 50, 0.9) 0%, rgba(18, 22, 32, 0.95) 100%);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #ffd700, #ffb347, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ornate Close Button */
+.close-btn {
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 14px;
+  font-weight: 700;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.85);
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: scale(1.08) rotate(90deg);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+}
+
+/* ==========================================================================
+   1. SHARED STASH MODAL (Hotkey X)
+   ========================================================================== */
+.stash-modal-card {
+  width: 980px;
+  max-width: 96vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.stash-nav-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(14, 18, 26, 0.95);
+  border-bottom: 1px solid rgba(198, 162, 88, 0.25);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stash-tab-btn {
+  background: rgba(26, 32, 46, 0.9);
+  border: 1px solid rgba(198, 162, 88, 0.3);
+  color: #cbd5e0;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stash-tab-btn:hover {
+  background: rgba(198, 162, 88, 0.2);
+  border-color: #ffd700;
+  color: #ffffff;
+}
+
+.stash-tab-btn.active {
+  background: linear-gradient(135deg, rgba(198, 162, 88, 0.35) 0%, rgba(140, 105, 35, 0.45) 100%);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+}
+
+.stash-quick-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.stash-body-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.stash-vault-panel,
+.stash-backpack-panel {
+  background: rgba(10, 14, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.stash-vault-panel h3,
+.stash-backpack-panel h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffd700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stash-grid-32,
+.stash-player-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+.stash-slot-item {
+  aspect-ratio: 1;
+  background: rgba(20, 26, 38, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-size: 20px;
+}
+
+.stash-slot-item:hover {
+  border-color: #ffd700;
+  background: rgba(40, 50, 75, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.stash-currency-table {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stash-curr-card {
+  background: rgba(18, 24, 34, 0.9);
+  border: 1px solid rgba(198, 162, 88, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ==========================================================================
+   2. GENESIS CRAFTING FORGE (Hotkey B)
+   ========================================================================== */
+.forge-modal-card {
+  width: 940px;
+  max-width: 96vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.forge-content-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.forge-anvil-panel,
+.forge-actions-panel {
+  background: rgba(10, 14, 20, 0.85);
+  border: 1px solid rgba(198, 162, 88, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.anvil-slot {
+  width: 100%;
+  height: 100px;
+  border: 2px dashed rgba(255, 215, 0, 0.4);
+  border-radius: 8px;
+  background: rgba(22, 28, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.anvil-slot:hover {
+  border-color: #ffd700;
+  background: rgba(30, 40, 60, 0.8);
+}
+
+.empty-anvil-text {
+  font-size: 12px;
+  color: #a0aec0;
+  text-align: center;
+  padding: 0 16px;
+}
+
+.forge-action-group {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.forge-action-group h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #ffd700;
+  font-weight: 700;
+}
+
+.forge-btn {
+  background: linear-gradient(135deg, rgba(35, 45, 65, 0.9) 0%, rgba(20, 26, 38, 0.95) 100%);
+  border: 1px solid rgba(198, 162, 88, 0.35);
+  color: #e2e8f0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.forge-btn:hover {
+  border-color: #ffd700;
+  color: #ffffff;
+  background: rgba(198, 162, 88, 0.25);
+  transform: translateX(3px);
+}
+
+.forge-select {
+  width: 100%;
+  background: #0f131a;
+  border: 1px solid rgba(198, 162, 88, 0.4);
+  color: #ffd700;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  margin-bottom: 8px;
+  outline: none;
+}
+
+/* ==========================================================================
+   3. CELESTIAL DEVOTION TREE (Hotkey V)
+   ========================================================================== */
+.devotion-tree-modal-card {
+  width: 1050px;
+  max-width: 96vw;
+  height: 740px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.devotion-tree-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 14px;
+  padding: 14px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.devotion-canvas-viewport {
+  position: relative;
+  background: #05070d;
+  border: 1px solid rgba(198, 162, 88, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.devotion-top-bar {
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10, 14, 22, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 10;
+}
+
+.dev-points-pill {
+  background: rgba(198, 162, 88, 0.2);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.devotion-cosmos-board {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.devotion-nebula-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(98, 0, 238, 0.25) 0%, rgba(3, 218, 198, 0.15) 50%, rgba(5, 7, 13, 0.95) 100%);
+  pointer-events: none;
+}
+
+.devotion-lines-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.devotion-nodes-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.dev-star-node-item {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #10141f;
+  border: 2px solid #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.dev-star-node-item.is-allocated {
+  border-color: #ffd700;
+  background: radial-gradient(circle, #ffeaa7 0%, #d63031 100%);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.8);
+}
+
+.dev-star-node-item.is-available {
+  border-color: #00f2fe;
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.6);
+  animation: starPulse 1.8s infinite;
+}
+
+@keyframes starPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 20px rgba(0, 242, 254, 0.9); }
+}
+
+.devotion-node-details-panel {
+  background: rgba(10, 14, 20, 0.85);
+  border: 1px solid rgba(198, 162, 88, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   4. DIMENSIONAL MAP DEVICE (Hotkey O)
+   ========================================================================== */
+.map-device-card {
+  width: 880px;
+  max-width: 96vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-device-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.device-desc {
+  font-size: 13px;
+  color: #a0aec0;
+  margin: 0 0 14px 0;
+}
+
+.map-device-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.map-inventory-section,
+.map-active-conduit-section {
+  background: rgba(10, 14, 20, 0.85);
+  border: 1px solid rgba(198, 162, 88, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.conduit-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(18, 24, 36, 0.9);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.conduit-rune-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid #00f2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.4);
+}
+
+.btn-open-portal {
+  background: linear-gradient(90deg, #00c6ff, #0072ff);
+  border: none;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 0 16px rgba(0, 198, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.btn-open-portal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(0, 198, 255, 0.8);
+}
+
+/* ==========================================================================
+   5. NPC DIALOGUE & LORE MODAL
+   ========================================================================== */
+.npc-dialog-card {
+  width: 720px;
+  max-width: 95vw;
+}
+
+.npc-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+}
+
+.npc-portrait-circle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid #ffd700;
+  background: #0f131d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.npc-info-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.npc-title-tag {
+  font-size: 12px;
+  color: #a0aec0;
+}
+
+.npc-dialog-body {
+  padding: 20px;
+}
+
+.npc-speech-bubble {
+  background: rgba(14, 19, 28, 0.95);
+  border-left: 3px solid #ffd700;
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e2e8f0;
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+.npc-choices-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.npc-choice-btn {
+  background: rgba(22, 28, 42, 0.9);
+  border: 1px solid rgba(198, 162, 88, 0.25);
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #e2e8f0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.npc-choice-btn:hover {
+  background: rgba(198, 162, 88, 0.2);
+  border-color: #ffd700;
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+
 
 

@@ -248,6 +248,10 @@ let hoveredNodeId = null;
 
 export function renderDevotionModal() {
   let modal = document.getElementById('devotionModal');
+  if (modal && modal.style.display !== 'none') {
+    modal.style.display = 'none';
+    return;
+  }
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'devotionModal';
