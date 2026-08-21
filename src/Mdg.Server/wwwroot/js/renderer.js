@@ -4,6 +4,7 @@ import { RARITY_COLORS } from './data/items.js?v=12';
 import { getMonsterLoreBonus } from './combat.js?v=12';
 import { companion } from './companion.js?v=12';
 import { renderMapIncursions } from './systems/map-incursions.js?v=12';
+import { renderShadowCorpses, renderShadowArmy } from './systems/shadow-extraction.js?v=12';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.fillStyle = '#0c0e14';
@@ -18,6 +19,10 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
 
   // Render Dynamic Map Incursions (Void Breach)
   renderMapIncursions(ctx);
+
+  // Render Shadow Corpses (Extractable souls) & Active Shadow Army
+  renderShadowCorpses(ctx);
+  renderShadowArmy(ctx);
 
   const renderList = [];
 

@@ -9,6 +9,8 @@ import { AudioEngine } from './audio.js';
 import { showDefeatModal } from './ui/defeat-ui.js';
 import { ApiClient } from './services/api-client.js';
 import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from './data/monsters.js';
+import { addFlaskCharges } from './systems/flask-system.js?v=12';
+import { spawnExtractableCorpse } from './systems/shadow-extraction.js?v=12';
 
 export const PROFICIENCY_THRESHOLDS = [
   { rank: 'F', exp: 0, title: 'Novice Practitioner (F)', bonusDmg: 0 },
@@ -155,6 +157,16 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     multiplier *= 1.30;
   }
 
+  // Boss & Elite Stagger Resonance Window (+50% Damage)
+  const isBossOrElite = target.type === 'boss' || target.isBoss || target.rarity === 'rare';
+  if (isBossOrElite) {
+    target.stagger = target.stagger || 0;
+    target.maxStagger = target.maxStagger || 100;
+    if (target.isStaggered) {
+      multiplier *= 1.50; // +50% Resonance Burst Damage
+    }
+  }
+
   const physDmg = (rawPhysical || 0) * multiplier;
   let physMitigation = 0;
   if (target.armor > 0 && physDmg > 0) {
@@ -166,6 +178,18 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   const finalLight = ((rawLightning || 0) * multiplier) * (1 - (target.lightningRes || target.lightRes || 0) / 100);
   const finalChaos = ((rawChaos || 0) * multiplier) * (1 - (target.chaosRes || 0) / 100);
   const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
+
+  // Accumulate Stagger Points on Bosses
+  if (isBossOrElite && !target.isStaggered) {
+    target.stagger = Math.min(target.maxStagger, target.stagger + Math.min(25, Math.max(3, Math.round(totalDamage * 0.08))));
+    if (target.stagger >= target.maxStagger) {
+      target.isStaggered = true;
+      target.staggerTimer = 6.0;
+      target.stagger = 0;
+      spawnDamageNumber(target.x, target.y - 70, '⚡ STAGGERED! (+50% RESONANCE BURST)', true, '#ffd700');
+      AudioEngine.playTone(620, 'sawtooth', 0.4, 0.2);
+    }
+  }
 
   if (target.life < 90000) target.life -= totalDamage;
   target.hurtTimer = 0.25;
@@ -367,6 +391,12 @@ export function handleMonsterDefeated(target) {
       spawnDamageNumber(target.x, target.y - 100, `🌟 +1 ${fam} Mastery Point Earned!`, true, '#00f2fe');
     }
   }
+
+  // Refill potion flasks charges on kill
+  addFlaskCharges(target.type === 'boss' ? 10 : (target.rarity === 'rare' ? 4 : 1));
+
+  // Spawn Extractable Shadow Corpse (Solo Leveling Shadow Monarch)
+  spawnExtractableCorpse(target);
 
   if (window.gainExp) {
     const hasFortune = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'CelestialFortune');

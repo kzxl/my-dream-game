@@ -67,6 +67,22 @@
       </div>
     </div>
 
+    <!-- Top Center: Boss Health & Stagger Bar HUD -->
+    <div id="boss-hud" class="boss-hud-container boss-hud-hide">
+      <div class="boss-hud-header">
+        <span id="boss-name" class="boss-name-label">👑 Boss Sovereign</span>
+        <span id="boss-hp-text" class="boss-hp-label">100%</span>
+      </div>
+      <div class="boss-bar-wrap">
+        <div id="boss-hp-fill" class="boss-bar-fill" style="width: 100%;"></div>
+      </div>
+      <!-- Stagger Bar (Co-op Resonance Burst) -->
+      <div class="boss-stagger-wrap" title="Stagger Bar: Deal heavy damage to stagger boss for +50% Resonance Burst!">
+        <div id="boss-stagger-fill" class="boss-stagger-fill" style="width: 0%;"></div>
+        <span id="boss-stagger-text" class="boss-stagger-text">⚡ STAGGER: 0%</span>
+      </div>
+    </div>
+
     <!-- Top Right: Minimap, Zoom Controls & Quick Hub -->
     <div id="minimap-panel" class="pixel-panel minimap-overhaul-panel">
       <div class="minimap-header">
@@ -95,6 +111,7 @@
         <button id="btn-devotion" class="hud-btn highlight-btn" title="Celestial Devotion Grid [V]" style="color:#c678dd;">✨ Devotion (V)</button>
         <button id="btn-stash" class="hud-btn highlight-btn" title="Account Shared Stash [X]" style="color:#98c379;">📦 Stash (X)</button>
         <button id="btn-pet-sell" class="hud-btn highlight-btn" title="Send Pet to Town Market" style="color:#61afef;">🐾 Pet Sell</button>
+        <button id="btn-toggle-spire" class="hud-btn highlight-btn" title="Endless Spire 100 Floors [U]" style="color:#00f2fe;">🗼 Spire (U)</button>
         <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" title="World Map & Campaign Atlas (M)">🗺️ Map (M)</button>
         <button id="btn-toggle-skills" class="hud-btn highlight-btn" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
         <button id="btn-toggle-inventory" class="hud-btn highlight-btn" title="Inventory & Equipment (I)">🎒 Bag (I)</button>
@@ -104,21 +121,8 @@
 
     <!-- Bottom Center: Hotbar, Flasks & Skills -->
     <div id="bottom-hotbar" class="bottom-hotbar-overhaul">
-      <!-- Left Wing: Quick Potions / Flasks -->
-      <div class="flask-slots-group">
-        <div class="flask-slot" id="slot-flask-1" data-key="1" title="Life Flask (Restores HP)">
-          <div class="flask-icon">🍷</div>
-          <span class="flask-key">1</span>
-        </div>
-        <div class="flask-slot" id="slot-flask-2" data-key="2" title="Mana Flask (Restores MP)">
-          <div class="flask-icon">🧪</div>
-          <span class="flask-key">2</span>
-        </div>
-        <div class="flask-slot" id="slot-flask-3" data-key="3" title="Quicksilver Flask (+40% Movement Speed)">
-          <div class="flask-icon">⚡</div>
-          <span class="flask-key">3</span>
-        </div>
-      </div>
+      <!-- Left Wing: Quick Potions / Flasks (PoE-Style Charge Flasks 1-4) -->
+      <div class="flask-slots-group" id="flask-hud-tray"></div>
 
       <div class="hotbar-divider"></div>
 

@@ -573,6 +573,31 @@ export const ZONES = {
     portals: [{ x: 500, y: 2000, targetZone: 'AethelisCitadel', targetX: 2150, targetY: 1950, name: '🌀 Return to Map Device' }],
     props: [],
     dummies: []
+  },
+
+  // =========================================================================
+  // ENDLESS SPIRE ARENA (100 FLOORS)
+  // =========================================================================
+  SpireArena: {
+    id: 'SpireArena',
+    name: 'Endless Spire Chamber',
+    subtitle: '🗼 100-Floor Tower Trial Arena',
+    act: 5,
+    isTown: false,
+    levelRange: 'Dynamic Spire Scaling',
+    minLevel: 1,
+    biome: 'Dungeon',
+    themeColor: '#00f2fe',
+    icon: '🗼',
+    recommendedRes: 'Scales with Floor Level',
+    hazards: ['Spire Void Exposure'],
+    boss: 'Floor Sovereign',
+    coords: { x: 50, y: 50 },
+    portals: [
+      { x: 300, y: 1000, targetZone: 'SanctuaryHaven', targetX: 2000, targetY: 2000, name: '🌀 Safe Exit to Haven' }
+    ],
+    props: [],
+    dummies: []
   }
 };
 

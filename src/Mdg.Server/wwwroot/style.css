@@ -496,28 +496,81 @@ canvas#gameCanvas {
 .flask-slots-group { display: flex; gap: 8px; }
 .flask-slot {
   position: relative;
-  width: 48px;
-  height: 60px;
-  background: radial-gradient(circle, #2a3142 0%, #161922 100%);
-  border: 2px solid #444c61;
+  width: 44px;
+  height: 64px;
+  background: rgba(15, 20, 30, 0.95);
+  border: 1.5px solid rgba(198, 162, 88, 0.4);
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+.flask-slot:hover {
+  border-color: #ffd700;
+  transform: translateY(-3px);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+.flask-slot.flask-active {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.6) !important;
+  animation: flaskPulse 1.2s infinite ease-in-out;
+}
+@keyframes flaskPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+  50% { box-shadow: 0 0 22px rgba(255, 215, 0, 0.9); }
+}
+
+.flask-glass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
-.flask-slot:hover { border-color: #ffd700; transform: translateY(-4px); box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
-.flask-used { transform: scale(0.92) !important; border-color: #ff416c !important; }
-.flask-icon { font-size: 24px; }
+
+.flask-liquid {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0.75;
+  transition: height 0.25s ease;
+}
+
+.flask-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+}
+
 .flask-key {
   position: absolute;
-  bottom: 2px;
-  right: 4px;
+  top: 2px;
+  left: 4px;
+  z-index: 3;
   font-family: 'Outfit', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   color: #ffd700;
+}
+
+.flask-charge-text {
+  position: relative;
+  z-index: 3;
+  font-family: 'Outfit', sans-serif;
+  font-size: 8px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 3px #000;
+  margin-bottom: 2px;
 }
 
 .hotbar-divider { width: 2px; height: 50px; background: #333947; }
@@ -6402,6 +6455,343 @@ canvas#gameCanvas {
   color: #64748b;
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   ENDLESS SPIRE 100 FLOORS UI (AINCRAD / GREATER RIFT STYLE)
+   ========================================================================== */
+.spire-modal-card {
+  width: 860px;
+  max-width: 95vw;
+  max-height: 90vh;
+  background: rgba(10, 14, 23, 0.97);
+  border: 1.5px solid #00f2fe;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 242, 254, 0.25);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(14px);
+  color: #f1f5f9;
+}
+
+.spire-content-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.spire-floors-panel {
+  background: rgba(16, 22, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.spire-progress-header {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+}
+
+.spire-floor-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.spire-floor-node {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.spire-floor-node:hover {
+  background: rgba(0, 242, 254, 0.15);
+  border-color: #00f2fe;
+}
+
+.spire-floor-node.selected {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.3), rgba(12, 16, 25, 0.9));
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+}
+
+.spire-floor-node.boss-floor {
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.spire-floor-node.boss-floor .sfn-num {
+  color: #ffd700;
+  font-weight: 800;
+}
+
+.sfn-icon {
+  font-size: 16px;
+}
+
+.sfn-num {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+}
+
+.sfn-tag {
+  background: #e11d48;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.spire-details-panel {
+  background: rgba(16, 22, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.spire-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.spire-stat-badge {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+
+.spire-mods-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spire-mods-list li {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #00f2fe;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.spire-enter-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  border: 1px solid #38bdf8;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+  transition: all 0.2s ease;
+}
+
+.spire-enter-btn:hover {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.7);
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   SHADOW ARMY HUD WIDGET (SOLO LEVELING / SHADOW MONARCH)
+   ========================================================================== */
+.shadow-army-tray-container {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shadow-army-badge-header {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
+  letter-spacing: 0.5px;
+}
+
+.shadow-army-units-row {
+  display: flex;
+  gap: 6px;
+}
+
+.shadow-unit-card {
+  background: rgba(18, 14, 28, 0.85);
+  border: 1px solid #c084fc;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 10px rgba(192, 132, 252, 0.25);
+  min-width: 100px;
+}
+
+.suc-icon {
+  font-size: 14px;
+}
+
+.suc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.suc-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: #f3e8ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.suc-hp-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.suc-hp-fill {
+  height: 100%;
+  background: #c084fc;
+  transition: width 0.2s ease;
+}
+
+/* ==========================================================================
+   BOSS HEALTH & CO-OP STAGGER BAR HUD
+   ========================================================================== */
+.boss-hud-container {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 520px;
+  max-width: 90vw;
+  background: rgba(12, 16, 26, 0.95);
+  border: 1.5px solid #e11d48;
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(225, 29, 72, 0.35);
+  backdrop-filter: blur(12px);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.boss-hud-hide {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.boss-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.boss-name-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fb7185;
+  text-shadow: 0 0 8px rgba(251, 113, 133, 0.6);
+}
+
+.boss-hp-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.boss-bar-wrap {
+  width: 100%;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.boss-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e11d48, #f43f5e, #fb7185);
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.8);
+  transition: width 0.15s ease;
+}
+
+.boss-stagger-wrap {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.boss-stagger-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+  transition: width 0.15s ease;
+}
+
+.boss-stagger-text {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 8px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px #000;
+}
+
+
+
 
 
 

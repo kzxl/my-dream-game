@@ -53,6 +53,8 @@ export class MapGenerator {
       return this.generateShiftingDunes(60, 60);
     } else if (zoneId === 'VoidAbyss' || zoneId === 'CitadelOfTheVoid') {
       return this.generateVoidAbyss(60, 60);
+    } else if (zoneId === 'SpireArena') {
+      return this.generateSpireArena(50, 50);
     }
 
     return this.generateHaven(40, 40);
@@ -675,6 +677,57 @@ export class MapGenerator {
         { x: 900, y: 900, count: 8, type: 'undead_knight' },
         { x: 2000, y: 2000, count: 8, type: 'skeleton' }
       ]
+    };
+  }
+
+  // 12. ENDLESS SPIRE ARENA (50x50)
+  static generateSpireArena(w, h) {
+    const floor = window.selectedSpireFloor || 1;
+    const isBoss = (floor % 10 === 0);
+
+    const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
+    for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
+    for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
+
+    const cx = Math.floor(w / 2);
+    const cy = Math.floor(h / 2);
+
+    // Ancient circular pillars
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+      const px = Math.round(cx + Math.cos(angle) * 12);
+      const py = Math.round(cy + Math.sin(angle) * 12);
+      if (py > 0 && py < h - 1 && px > 0 && px < w - 1) {
+        grid[py][px] = TILE_TYPES.ANCIENT_PILLAR;
+      }
+    }
+
+    const spawns = [];
+    if (isBoss) {
+      spawns.push({ x: cx * TILE_SIZE, y: cy * TILE_SIZE, count: 1, type: 'boss' });
+      spawns.push({ x: (cx - 6) * TILE_SIZE, y: (cy - 6) * TILE_SIZE, count: 4, type: 'void_fiend' });
+      spawns.push({ x: (cx + 6) * TILE_SIZE, y: (cy + 6) * TILE_SIZE, count: 4, type: 'undead_knight' });
+    } else {
+      spawns.push({ x: cx * TILE_SIZE, y: cy * TILE_SIZE, count: 8, type: 'void_fiend' });
+      spawns.push({ x: (cx - 8) * TILE_SIZE, y: (cy - 8) * TILE_SIZE, count: 6, type: 'skeleton' });
+      spawns.push({ x: (cx + 8) * TILE_SIZE, y: (cy + 8) * TILE_SIZE, count: 6, type: 'fire_imp' });
+    }
+
+    return {
+      id: 'SpireArena',
+      name: isBoss ? `Spire Floor ${floor}: Sovereign Chamber` : `Spire Floor ${floor}: Ascendant Trial`,
+      subtitle: `🗼 Endless Spire of Aethelis (Floor ${floor}/100)`,
+      levelRange: `Spire Lv. ${floor}`,
+      hazard: { hazardName: 'Spire Trial Aura', description: `Ascendance Floor ${floor} trial in progress!` },
+      widthInTiles: w,
+      heightInTiles: h,
+      worldWidth: w * TILE_SIZE,
+      worldHeight: h * TILE_SIZE,
+      grid: grid,
+      spawn: { x: 4 * TILE_SIZE, y: cy * TILE_SIZE },
+      portals: [
+        { x: 3 * TILE_SIZE, y: cy * TILE_SIZE, targetZone: 'SanctuaryHaven', targetX: 2000, targetY: 2000, name: '🌀 Exit Spire to Haven' }
+      ],
+      monsterSpawns: spawns
     };
   }
 }

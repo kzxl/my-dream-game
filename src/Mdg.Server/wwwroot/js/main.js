@@ -29,6 +29,9 @@ import { checkGoogleOAuthRedirectResult } from './auth.js?v=12';
 import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js?v=12';
 import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js?v=12';
 import { spawnMapIncursions, updateMapIncursions } from './systems/map-incursions.js?v=12';
+import { useFlask, updateFlasks, renderFlaskHUD, initFlasks } from './systems/flask-system.js?v=12';
+import { renderSpireModal } from './ui/spire-ui.js?v=12';
+import { extractShadow, updateShadowArmy } from './systems/shadow-extraction.js?v=12';
 
 window.keys = keys;
 window.player = player;
@@ -150,6 +153,7 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   currentZoneId = zoneId || 'SanctuaryHaven';
   currentZone = ZONES[currentZoneId] || { id: currentZoneId, name: currentZoneId, subtitle: '' };
   window.currentZoneId = currentZoneId;
+  window.spireFloorCleared = false;
   player.zoneResurrectionsUsed = 0; // Reset map resurrection counter per map session
   player.portalCooldown = 2.0; // 2s portal cooldown to prevent bounce loops
 
@@ -835,6 +839,9 @@ function update(dt) {
     portals.forEach(p => {
       if (Math.hypot(player.x - p.x, player.y - p.y) < 45) {
         player.portalCooldown = 2.0;
+        if (p.isSpireNext) {
+          window.selectedSpireFloor = p.nextFloor;
+        }
         loadZone(p.targetZone, p.targetX, p.targetY);
       }
     });
@@ -1155,19 +1162,43 @@ function update(dt) {
   // Companion Pet Engine Update (Auto-loot, Aura & Delivery)
   updateCompanion(dt);
 
-  const bossHud = document.getElementById('boss-hud-bar');
-  if (activeBoss && activeBoss.isAlive && Math.hypot(player.x - activeBoss.x, player.y - activeBoss.y) < 950) {
-    bossHud.classList.remove('boss-hud-hide');
-    const hpPct = Math.max(0, (activeBoss.life / activeBoss.maxLife) * 100);
-    document.getElementById('boss-hp-fill').style.width = `${hpPct}%`;
-    const bossDisplayName = activeBoss.type === 'ignis_boss' ? '🌋 Ignis, The Molten Archon' :
-                           (activeBoss.type === 'vael_boss' ? '❄️ Vael, The Frost Sovereign' :
-                           (activeBoss.type === 'malakor_boss' ? '🌌 Malakor, The Shadow Devourer' : 'Cổ Thần Malakor'));
-    const titleEl = document.getElementById('boss-name-title');
-    if (titleEl) titleEl.innerText = bossDisplayName;
-    document.getElementById('boss-hp-text').innerText = `${Math.round(activeBoss.life)} / ${activeBoss.maxLife} (${Math.round(hpPct)}%)`;
-  } else {
-    bossHud.classList.add('boss-hud-hide');
+  const bossHud = document.getElementById('boss-hud') || document.getElementById('boss-hud-bar');
+  if (bossHud) {
+    if (activeBoss && activeBoss.isAlive && Math.hypot(player.x - activeBoss.x, player.y - activeBoss.y) < 1100) {
+      bossHud.classList.remove('boss-hud-hide');
+      const hpPct = Math.max(0, (activeBoss.life / activeBoss.maxLife) * 100);
+      const hpFill = document.getElementById('boss-hp-fill');
+      if (hpFill) hpFill.style.width = `${hpPct}%`;
+
+      const bossDisplayName = activeBoss.type === 'ignis_boss' ? '🌋 Ignis, The Molten Archon' :
+                             (activeBoss.type === 'vael_boss' ? '❄️ Vael, The Frost Sovereign' :
+                             (activeBoss.type === 'malakor_boss' ? '🌌 Malakor, The Shadow Devourer' : (activeBoss.name || '👑 Guardian Sovereign')));
+      const nameEl = document.getElementById('boss-name') || document.getElementById('boss-name-title');
+      if (nameEl) nameEl.innerText = bossDisplayName;
+      const hpTextEl = document.getElementById('boss-hp-text');
+      if (hpTextEl) hpTextEl.innerText = `${Math.round(activeBoss.life)} / ${activeBoss.maxLife} (${Math.round(hpPct)}%)`;
+
+      // Update Stagger Bar
+      const stFill = document.getElementById('boss-stagger-fill');
+      const stText = document.getElementById('boss-stagger-text');
+      if (activeBoss.isStaggered) {
+        activeBoss.staggerTimer = Math.max(0, (activeBoss.staggerTimer || 6.0) - dt);
+        if (activeBoss.staggerTimer <= 0) {
+          activeBoss.isStaggered = false;
+          activeBoss.stagger = 0;
+        }
+        if (stFill) stFill.style.width = `${(activeBoss.staggerTimer / 6.0) * 100}%`;
+        if (stText) stText.innerText = `⚡ STAGGERED! (+50% BURST: ${activeBoss.staggerTimer.toFixed(1)}s)`;
+      } else {
+        const curSt = activeBoss.stagger || 0;
+        const maxSt = activeBoss.maxStagger || 100;
+        const stPct = (curSt / maxSt) * 100;
+        if (stFill) stFill.style.width = `${stPct}%`;
+        if (stText) stText.innerText = `⚡ STAGGER: ${Math.round(stPct)}%`;
+      }
+    } else {
+      bossHud.classList.add('boss-hud-hide');
+    }
   }
 
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -1185,7 +1216,33 @@ function update(dt) {
     if (ft.life <= 0) floatingTexts.splice(i, 1);
   }
 
+  // Spire Arena Victory & Next Floor Check
+  if (currentZoneId === 'SpireArena' && monsters.length === 0 && !window.spireFloorCleared) {
+    window.spireFloorCleared = true;
+    const curF = window.selectedSpireFloor || 1;
+    if (curF > (player.highestClearedSpireFloor || 0)) {
+      player.highestClearedSpireFloor = curF;
+      saveToDatabase();
+    }
+    AudioEngine.playLevelUp?.();
+    spawnDamageNumber(player.x, player.y - 70, `🎉 SPIRE FLOOR ${curF} CLEARED!`, true, '#ffd700');
+    
+    // Spawn portal to next floor in arena center
+    portals.push({
+      id: `spire_next_${curF}`,
+      name: `🌀 Advance to Spire Floor ${curF + 1}`,
+      x: (currentZoneMap.worldWidth / 2),
+      y: (currentZoneMap.worldHeight / 2),
+      targetZone: 'SpireArena',
+      radius: 65,
+      isSpireNext: true,
+      nextFloor: curF + 1
+    });
+  }
+
   updateMapIncursions(dt);
+  updateFlasks(dt);
+  updateShadowArmy(dt);
   updateHUD();
 }
 
@@ -1242,6 +1299,10 @@ window.addEventListener('wheel', e => {
 
 window.addEventListener('keydown', e => {
   keys[e.code] = true;
+  if (e.code === 'Digit1') useFlask(0);
+  if (e.code === 'Digit2') useFlask(1);
+  if (e.code === 'Digit3') useFlask(2);
+  if (e.code === 'Digit4') useFlask(3);
   if (e.code === 'KeyQ') castFireball();
   if (e.code === 'KeyW') castFrostNova();
   if (e.code === 'KeyE') castMeteor();
@@ -1250,12 +1311,14 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleModal('worldmap-modal');
   if (e.code === 'KeyC') toggleModal('stats-modal');
   if (e.code === 'KeyI') toggleModal('inventory-modal');
+  if (e.code === 'KeyU') renderSpireModal();
+  if (e.code === 'KeyT') extractShadow();
   if (e.code === 'Escape') {
     const allModalIds = [
       'ascension-modal', 'skills-modal', 'inventory-modal', 'worldmap-modal',
       'stats-modal', 'character-roster-modal', 'defeat-modal', 'sharedStashModal',
       'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal',
-      'bestiaryModal', 'rosterModal', 'googleAuthModal', 'channelModal'
+      'bestiaryModal', 'rosterModal', 'googleAuthModal', 'channelModal', 'spireModal'
     ];
     allModalIds.forEach(id => {
       const el = document.getElementById(id);
@@ -1413,6 +1476,7 @@ document.getElementById('slot-dash')?.addEventListener('click', castDash);
 // Setup World Map Fast Travel & HUD Buttons
 document.getElementById('btn-toggle-bestiary')?.addEventListener('click', toggleBestiaryUI);
 document.getElementById('btn-toggle-roster')?.addEventListener('click', openRosterUI);
+document.getElementById('btn-toggle-spire')?.addEventListener('click', renderSpireModal);
 
 // Zone Chat input listener
 const chatInput = document.getElementById('zoneChatInput');
@@ -1525,6 +1589,8 @@ MPClient.init();
 
   updateHudAvatar();
   updateExpBar();
+  initFlasks();
+  renderFlaskHUD();
   startAutoSave(10000);
 })();
 

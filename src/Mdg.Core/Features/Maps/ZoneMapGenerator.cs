@@ -61,6 +61,7 @@ public static class ZoneMapGenerator
             "ArenaCaldera" => GenerateArenaCaldera(),
             "ArenaGlacial" => GenerateArenaGlacial(),
             "ArenaVoid" => GenerateArenaVoid(),
+            "SpireArena" => EndlessSpireManager.GenerateSpireFloor(1),
 
             _ => GenerateHaven()
         };
