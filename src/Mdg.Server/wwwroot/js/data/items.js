@@ -928,6 +928,22 @@ export const AWAKENING_ESSENCES = [
   }
 ];
 
+export const RESURRECTION_SCROLL = {
+  id: 'scroll_resurrection',
+  name: 'Scroll of Aethelis Resurrection',
+  nameVi: 'Cuộn Hồi Sinh Aethelis',
+  baseType: 'Resurrection Scroll',
+  category: 'currency',
+  slot: 'Currency',
+  rarity: 'Magic',
+  color: '#00f2fe',
+  icon: '📜',
+  stack: 1,
+  maxStack: 20,
+  lore: 'Ancient celestial parchment capable of mending a fallen soul back to life without experience loss.',
+  description: 'Revives fallen character instantly at death location with 100% HP & Mana.'
+};
+
 export const POSSIBLE_LOOT = [
   ...BASE_EQUIPMENT,
   ...UNIQUE_LOOT,

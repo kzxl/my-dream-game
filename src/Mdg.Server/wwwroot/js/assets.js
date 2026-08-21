@@ -126,10 +126,12 @@ export function drawItemSpriteToCanvas(targetCanvas, spriteInfo) {
     targetImg = (assets.awakeningEssences.complete && assets.awakeningEssences.naturalWidth > 0) ? assets.awakeningEssences : null;
   } else if (spriteInfo?.sheet === 'runes' || spriteInfo?.isRune) {
     targetImg = (assets.aethelRunes.complete && assets.aethelRunes.naturalWidth > 0) ? assets.aethelRunes : null;
+  } else if (spriteInfo?.sheet === 'grid') {
+    targetImg = (assets.equipmentGrid.complete && assets.equipmentGrid.naturalWidth > 0) ? assets.equipmentGrid : assets.equipment;
   } else {
-    targetImg = (assets.equipmentGrid.complete && assets.equipmentGrid.naturalWidth > 0)
-      ? assets.equipmentGrid
-      : (assets.equipment.complete && assets.equipment.naturalWidth > 0 ? assets.equipment : null);
+    targetImg = (assets.equipment.complete && assets.equipment.naturalWidth > 0)
+      ? assets.equipment
+      : (assets.equipmentGrid.complete && assets.equipmentGrid.naturalWidth > 0 ? assets.equipmentGrid : null);
   }
 
   if (targetImg && spriteInfo) {

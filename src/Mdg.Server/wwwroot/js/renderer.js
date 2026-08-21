@@ -71,7 +71,11 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
       ctx.rotate(angle);
       const dw = (p.radius || 16) * 2.8;
       const dh = (p.radius || 16) * 2.8;
+      
+      // Use additive blending for black-background FX to create perfect glowing transparent magic
+      ctx.globalCompositeOperation = 'lighter';
       ctx.drawImage(assets.awakenedFx, sx, sy, colW, rowH, -dw / 2, -dh / 2, dw, dh);
+      ctx.globalCompositeOperation = 'source-over';
     } else if (assets.spells.complete && assets.spells.naturalWidth > 0) {
       const sW = assets.spells.naturalWidth / 3;
       const sH = assets.spells.naturalHeight / 3;
@@ -588,19 +592,18 @@ export function drawMonsterClean(ctx, m) {
     const dh = 52 * scale;
 
     ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
-  } else {
-    ctx.fillStyle = m.type === 'slime' ? '#98c379' : '#dcdfe4';
-    ctx.beginPath();
-    ctx.arc(0, 0, 14 * scale, 0, Math.PI * 2);
-    ctx.fill();
   }
 
-  const hpPct = Math.max(0, m.life / m.maxLife);
-  const barW = 34 * scale;
+  // Draw monster health bar
+  const hpPct = Math.max(0, Math.min(1, m.life / m.maxLife));
+  const barW = (m.type === 'boss' ? 54 : 34) * scale;
+  const barH = m.type === 'boss' ? 5 : 3;
+  const barY = -34 * scale;
+
   ctx.fillStyle = '#1e222b';
-  ctx.fillRect(-barW / 2, -34 * scale, barW, 5);
+  ctx.fillRect(-barW / 2, barY, barW, barH);
   ctx.fillStyle = hpPct > 0.5 ? '#98c379' : '#e06c75';
-  ctx.fillRect(-barW / 2 + 1, -34 * scale + 1, (barW - 2) * hpPct, 3);
+  ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * hpPct, barH - 1);
 
   // Ailment Badges Rendering (Ignite, Freeze, Bleed)
   let ailmentIcons = '';
@@ -635,49 +638,7 @@ export function drawPropClean(ctx, p) {
   ctx.save();
   ctx.translate(p.x, p.y);
 
-  // 1. Check Modular Props Grid (4x4 Grid)
-  const pGrid = assets.propsGrid;
-  if (pGrid && pGrid.complete && pGrid.naturalWidth > 0) {
-    const colW = pGrid.naturalWidth / 4;
-    const rowH = pGrid.naturalHeight / 4;
-
-    let col = -1, row = -1;
-    let dw = 52, dh = 52, offX = -26, offY = -40;
-
-    if (p.type === 'chest' || p.type === 'chest_wood') {
-      col = 0; row = 0; dw = 48; dh = 48; offX = -24; offY = -36;
-    } else if (p.type === 'chest_gold') {
-      col = 1; row = 0; dw = 48; dh = 48; offX = -24; offY = -36;
-    } else if (p.type === 'chest_crystal') {
-      col = 2; row = 0; dw = 52; dh = 52; offX = -26; offY = -38;
-    } else if (p.type === 'waypoint_pad') {
-      col = 3; row = 0; dw = 64; dh = 64; offX = -32; offY = -42;
-    } else if (p.type === 'barrel') {
-      col = 0; row = 1; dw = 46; dh = 48; offX = -23; offY = -38;
-    } else if (p.type === 'vase' || p.type === 'pots') {
-      col = 1; row = 1; dw = 46; dh = 48; offX = -23; offY = -38;
-    } else if (p.type === 'lever') {
-      col = 2; row = 1; dw = 42; dh = 46; offX = -21; offY = -36;
-    } else if (p.type === 'campfire') {
-      col = 3; row = 1; dw = 54; dh = 54; offX = -27; offY = -40;
-    } else if (p.type === 'torch') {
-      col = 0; row = 2; dw = 40; dh = 52; offX = -20; offY = -44;
-    } else if (p.type === 'gold_pile') {
-      col = 1; row = 2; dw = 48; dh = 44; offX = -24; offY = -32;
-    } else if (p.type === 'gargoyle') {
-      col = 2; row = 2; dw = 54; dh = 60; offX = -27; offY = -50;
-    } else if (p.type === 'iron_gate') {
-      col = 3; row = 2; dw = 56; dh = 64; offX = -28; offY = -52;
-    }
-
-    if (col !== -1 && row !== -1) {
-      ctx.drawImage(pGrid, col * colW, row * rowH, colW, rowH, offX, offY, dw, dh);
-      ctx.restore();
-      return;
-    }
-  }
-
-  // 2. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
+  // 1. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
   const natImg = assets.nature;
   if (natImg.complete && natImg.naturalWidth > 0) {
     const cellSize = 128;
