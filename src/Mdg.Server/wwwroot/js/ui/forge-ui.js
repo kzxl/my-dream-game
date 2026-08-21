@@ -22,6 +22,117 @@ let selectedSalvageIndex = -1;
 let selectedRecipeId = 'forge_iron_sword';
 let onlyCraftableFilter = false;
 
+export function getCraftingMasteryPerks() {
+  if (!player.craftingMastery) {
+    player.craftingMastery = { level: 1, exp: 0, rank: 'Apprentice', rankTitle: '🛠️ Novice Apprentice' };
+  }
+  const level = Math.max(1, Math.min(50, player.craftingMastery.level || 1));
+  const exp = player.craftingMastery.exp || 0;
+  const expToNext = level >= 50 ? 0 : Math.round(150 * Math.pow(1.12, level - 1));
+
+  let rank = 'Apprentice';
+  let rankTitle = '🛠️ Novice Apprentice';
+  if (level >= 50) {
+    rank = 'PrimordialGodSmith';
+    rankTitle = '👑 Primordial God-Smith';
+  } else if (level >= 40) {
+    rank = 'Grandmaster';
+    rankTitle = '🌟 Grandmaster Artificer';
+  } else if (level >= 30) {
+    rank = 'MasterSmith';
+    rankTitle = '🔨 Master Forger';
+  } else if (level >= 20) {
+    rank = 'Artisan';
+    rankTitle = '💎 Skilled Artisan';
+  } else if (level >= 10) {
+    rank = 'Journeyman';
+    rankTitle = '⚒️ Adept Journeyman';
+  }
+
+  const saveChance = Math.min(30.0, +(5.0 + (level - 1) * 0.52).toFixed(1));
+  const critChance = Math.min(25.0, +(5.0 + (level - 1) * 0.41).toFixed(1));
+  const extraSocketChance = Math.min(35.0, +(5.0 + (level - 1) * 0.62).toFixed(1));
+  const qualityBonus = Math.min(25.0, +((level - 1) * 0.51).toFixed(1));
+
+  player.craftingMastery.rank = rank;
+  player.craftingMastery.rankTitle = rankTitle;
+
+  return {
+    level,
+    exp,
+    expToNext,
+    rank,
+    rankTitle,
+    resourceSaveChance: saveChance,
+    masterworkCritChance: critChance,
+    extraSocketChance,
+    qualityBonus
+  };
+}
+
+export function addCraftingExp(amount, sourceLabel = 'Crafting') {
+  if (!player.craftingMastery) {
+    player.craftingMastery = { level: 1, exp: 0, rank: 'Apprentice', rankTitle: '🛠️ Novice Apprentice' };
+  }
+  if (player.craftingMastery.level >= 50) return;
+
+  player.craftingMastery.exp += amount;
+  let leveledUp = false;
+
+  while (player.craftingMastery.level < 50) {
+    const req = Math.round(150 * Math.pow(1.12, player.craftingMastery.level - 1));
+    if (player.craftingMastery.exp >= req) {
+      player.craftingMastery.exp -= req;
+      player.craftingMastery.level++;
+      leveledUp = true;
+    } else {
+      break;
+    }
+  }
+
+  if (player.craftingMastery.level >= 50) {
+    player.craftingMastery.exp = 0;
+  }
+
+  const perks = getCraftingMasteryPerks();
+
+  if (leveledUp) {
+    AudioEngine.playLevelUp?.() || AudioEngine.playTone(980, 'sine', 0.4, 0.25);
+    spawnDamageNumber(player.x, player.y - 70, `🌟 CRAFTING MASTERY UP! Lv.${perks.level} ${perks.rankTitle}`, true, '#ffd700');
+  } else {
+    spawnDamageNumber(player.x, player.y - 40, `+${amount} Crafting EXP`, false, '#c084fc');
+  }
+
+  updateCraftingMasteryHeader();
+  saveToDatabase();
+}
+
+export function updateCraftingMasteryHeader() {
+  const headerEl = document.getElementById('forgeMasteryHeaderBar');
+  if (!headerEl) return;
+
+  const perks = getCraftingMasteryPerks();
+  const pct = perks.level >= 50 ? 100 : Math.min(100, Math.round((perks.exp / perks.expToNext) * 100));
+
+  headerEl.innerHTML = `
+    <div class="mastery-title-row">
+      <div class="mastery-rank-badge">
+        <span class="mastery-rank-name">${perks.rankTitle}</span>
+        <span class="mastery-lvl-tag">Lv. ${perks.level}/50</span>
+      </div>
+      <div class="mastery-perks-row">
+        <span class="mastery-perk-chip" title="Chance to preserve raw materials upon forging">🍀 Tiết Kiệm NL: <b>${perks.resourceSaveChance}%</b></span>
+        <span class="mastery-perk-chip" title="Chance to forge Masterwork item with +25% bonus stats">⭐ Đại Thành Công: <b>${perks.masterworkCritChance}%</b></span>
+        <span class="mastery-perk-chip" title="Chance to forge extra sockets">💎 Thêm Socket: <b>${perks.extraSocketChance}%</b></span>
+      </div>
+    </div>
+    <div class="mastery-progress-track">
+      <div class="mastery-progress-fill" style="width: ${pct}%;"></div>
+      <span class="mastery-progress-text">${perks.level >= 50 ? 'MAX PROFICIENCY (Primordial God-Smith)' : `${perks.exp} / ${perks.expToNext} EXP (${pct}%)`}</span>
+    </div>
+  `;
+}
+
 export function renderForgeBenchModal() {
   let modal = document.getElementById('forgeBenchModal');
   if (modal && modal.style.display !== 'none') {
@@ -48,6 +159,9 @@ export function renderForgeBenchModal() {
           </div>
           <button class="close-btn" id="closeForgeBtn">✕</button>
         </div>
+
+        <!-- Crafting Mastery & Proficiency Header Widget -->
+        <div id="forgeMasteryHeaderBar" class="forge-mastery-header-bar"></div>
 
         <!-- 5-Tab Navigation Bar -->
         <div class="forge-tabs-nav">
@@ -98,6 +212,7 @@ export function renderForgeBenchModal() {
   modal.classList.remove('hidden');
   modal.classList.add('active');
   modal.style.display = 'flex';
+  updateCraftingMasteryHeader();
   renderActiveForgeTab();
 }
 
@@ -296,6 +411,7 @@ function setupAnvilListeners() {
       item.prefixesLocked = true;
       AudioEngine.playTone(650, 'sawtooth', 0.25, 0.15);
       spawnDamageNumber(player.x, player.y - 45, '🔒 PREFIXES LOCKED!', true, '#ffd700');
+      addCraftingExp(20, 'Prefix Lock');
       updateAnvilUI();
       saveToDatabase();
     };
@@ -312,6 +428,7 @@ function setupAnvilListeners() {
       item.suffixesLocked = true;
       AudioEngine.playTone(650, 'sawtooth', 0.25, 0.15);
       spawnDamageNumber(player.x, player.y - 45, '🔒 SUFFIXES LOCKED!', true, '#ffd700');
+      addCraftingExp(20, 'Suffix Lock');
       updateAnvilUI();
       saveToDatabase();
     };
@@ -329,6 +446,7 @@ function setupAnvilListeners() {
       if (item.links > item.sockets) item.links = item.sockets;
       AudioEngine.playTone(520, 'sine', 0.2, 0.1);
       spawnDamageNumber(player.x, player.y - 45, `⚪ REFORGED: ${newSockets} SOCKETS!`, true, '#00f2fe');
+      addCraftingExp(15, 'Socket Reforge');
       updateAnvilUI();
       saveToDatabase();
     };
@@ -346,6 +464,7 @@ function setupAnvilListeners() {
       item.links = newLinks;
       AudioEngine.playTone(580, 'sine', 0.2, 0.1);
       spawnDamageNumber(player.x, player.y - 45, `🔗 REFORGED: ${newLinks}-LINK!`, true, '#c678dd');
+      addCraftingExp(15, 'Link Reforge');
       updateAnvilUI();
       saveToDatabase();
     };
@@ -367,6 +486,7 @@ function setupAnvilListeners() {
 
       AudioEngine.playTone(720, 'triangle', 0.3, 0.2);
       spawnDamageNumber(player.x, player.y - 45, `✨ BENCH CRAFTED: ${modText}!`, true, '#4ade80');
+      addCraftingExp(25, 'Bench Affix Craft');
       updateAnvilUI();
       saveToDatabase();
     };
@@ -384,6 +504,7 @@ function setupAnvilListeners() {
 
       AudioEngine.playTone(380, 'sawtooth', 0.35, 0.2);
       spawnDamageNumber(player.x, player.y - 45, '🌀 CHAOS SLAM REROLLED!', true, '#ffd700');
+      addCraftingExp(30, 'Chaos Slam');
       updateAnvilUI();
       saveToDatabase();
     };
@@ -539,6 +660,7 @@ function updateSalvageUI() {
 
       AudioEngine.playTone(300, 'sawtooth', 0.25, 0.2);
       spawnDamageNumber(player.x, player.y - 45, `♻️ SALVAGED ${itemName}!`, true, '#4ade80');
+      addCraftingExp(15, 'Salvage Reclamation');
 
       updateSalvageUI();
       updateBackpackUI();
@@ -700,37 +822,81 @@ function updateBaseForgingUI() {
         return alert('Inventory backpack is full! (Max 16 slots)');
       }
 
-      // Deduct materials
-      for (const [matId, reqCount] of Object.entries(recipe.costs)) {
-        player.materials[matId] -= reqCount;
+      // 1. Evaluate Crafting Mastery Perks
+      const perks = getCraftingMasteryPerks();
+
+      // Check Resource Conservation / Refund
+      const isSaved = Math.random() * 100 < perks.resourceSaveChance;
+      if (!isSaved) {
+        for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+          player.materials[matId] -= reqCount;
+        }
+      } else {
+        AudioEngine.playTone(660, 'sine', 0.25, 0.15);
+        spawnDamageNumber(player.x, player.y - 65, '🍀 RESOURCE REFUND: Materials Preserved!', true, '#4ade80');
       }
 
-      // Generate forged Normal equipment item with sockets
-      const sockets = (recipe.slot === 'MainHand' || recipe.slot === 'BodyArmor') ? 2 : (recipe.slot === 'Ring' || recipe.slot === 'Amulet' ? 0 : 1);
+      // Check Extra Socket Blessing
+      let sockets = (recipe.slot === 'MainHand' || recipe.slot === 'BodyArmor') ? 2 : (recipe.slot === 'Ring' || recipe.slot === 'Amulet' ? 0 : 1);
+      const isExtraSocket = Math.random() * 100 < perks.extraSocketChance;
+      if (isExtraSocket && sockets < 6 && recipe.slot !== 'Ring' && recipe.slot !== 'Amulet') {
+        sockets = Math.min(6, sockets + 1);
+      }
       const links = sockets > 1 ? 1 : 0;
 
+      // Base Stats
+      let baseDmg = recipe.slot === 'MainHand' ? (recipe.level * 2 + 15) : 0;
+      let baseArmor = recipe.slot === 'BodyArmor' ? (recipe.level * 4 + 40) : 0;
+      let baseLife = recipe.slot === 'BodyArmor' ? (recipe.level * 2 + 20) : 0;
+
+      // Check Masterwork Critical (+25% Stats & Superior Quality)
+      const isMasterwork = Math.random() * 100 < perks.masterworkCritChance;
+      let itemName = recipe.name;
+      let itemRarity = 'Normal';
+      let itemColor = '#ffffff';
+      const craftedMods = [];
+
+      if (isMasterwork) {
+        itemName = '⭐ Masterwork ' + recipe.name;
+        itemRarity = 'Rare';
+        itemColor = '#ffd700';
+        baseDmg = Math.round(baseDmg * 1.25);
+        baseArmor = Math.round(baseArmor * 1.25);
+        baseLife = Math.round(baseLife * 1.25);
+        craftedMods.push('✨ Masterwork: +25% Superior Base Stats');
+      }
+
       const newItem = {
-        name: recipe.name,
+        name: itemName,
         baseType: recipe.baseType,
         slot: recipe.slot,
-        rarity: 'Normal',
+        rarity: itemRarity,
         level: recipe.level,
-        color: '#ffffff',
+        color: itemColor,
         icon: recipe.icon,
         sockets: sockets,
         links: links,
+        isMasterwork: isMasterwork,
+        quality: isMasterwork ? 20 : 0,
         stats: {
-          damage: recipe.slot === 'MainHand' ? (recipe.level * 2 + 15) : 0,
-          armor: recipe.slot === 'BodyArmor' ? (recipe.level * 4 + 40) : 0,
-          life: recipe.slot === 'BodyArmor' ? (recipe.level * 2 + 20) : 0
+          damage: baseDmg,
+          armor: baseArmor,
+          life: baseLife
         },
-        craftedMods: []
+        craftedMods: craftedMods
       };
 
       player.bag.push(newItem);
 
-      AudioEngine.playLevelUp?.() || AudioEngine.playTone(880, 'sine', 0.3, 0.2);
-      spawnDamageNumber(player.x, player.y - 50, `✨ FORGED ${recipe.name}!`, true, '#ffd700');
+      if (isMasterwork) {
+        AudioEngine.playLevelUp?.() || AudioEngine.playTone(1100, 'sine', 0.4, 0.3);
+        spawnDamageNumber(player.x, player.y - 45, `⭐ MASTERWORK CRIT: ${itemName}!`, true, '#ffd700');
+      } else {
+        AudioEngine.playTone(880, 'sine', 0.3, 0.2);
+        spawnDamageNumber(player.x, player.y - 45, `✨ FORGED ${newItem.name}!`, true, '#ffd700');
+      }
+
+      addCraftingExp(35, 'Base Forging');
 
       updateBaseForgingUI();
       updateBackpackUI();

@@ -107,6 +107,12 @@ export const player = {
     mat_shard_genesis: 2,
     mat_blood_herb: 5,
     mat_mana_bloom: 5
+  },
+  craftingMastery: {
+    level: 1,
+    exp: 0,
+    rank: 'Apprentice',
+    rankTitle: '🛠️ Novice Apprentice'
   }
 };
 

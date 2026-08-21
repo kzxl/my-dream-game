@@ -160,7 +160,10 @@ export async function saveToDatabase(silent = false) {
     completedQuests: player.completedQuests || [],
     activeQuests: player.activeQuests || {},
     unlockedWaypoints: player.unlockedWaypoints || [],
-    currencies: player.currencies || {}
+    currencies: player.currencies || {},
+    materials: player.materials || {},
+    professions: player.professions || {},
+    craftingMastery: player.craftingMastery || { level: 1, exp: 0, rank: 'Apprentice', rankTitle: '🛠️ Novice Apprentice' }
   };
 
   try {
@@ -240,6 +243,9 @@ export async function loadFromDatabase(charId) {
     if (data.activeQuests) player.activeQuests = data.activeQuests;
     if (data.unlockedWaypoints) player.unlockedWaypoints = data.unlockedWaypoints;
     if (data.currencies) player.currencies = data.currencies;
+    if (data.materials) player.materials = data.materials;
+    if (data.professions) player.professions = data.professions;
+    if (data.craftingMastery) player.craftingMastery = data.craftingMastery;
 
     updateBackpackUI();
     updatePaperdollUI();
