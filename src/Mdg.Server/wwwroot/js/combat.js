@@ -9,8 +9,10 @@ import { AudioEngine } from './audio.js';
 import { showDefeatModal } from './ui/defeat-ui.js';
 import { ApiClient } from './services/api-client.js';
 import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from './data/monsters.js';
-import { addFlaskCharges } from './systems/flask-system.js?v=12';
-import { spawnExtractableCorpse } from './systems/shadow-extraction.js?v=12';
+import { addSkillExp } from './ui/skills-ui.js';
+import { addFlaskCharges } from './systems/flask-system.js';
+import { spawnExtractableCorpse } from './systems/shadow-extraction.js';
+import { handleMonsterSkinningDrop } from './systems/gathering-system.js';
 
 export const PROFICIENCY_THRESHOLDS = [
   { rank: 'F', exp: 0, title: 'Novice Practitioner (F)', bonusDmg: 0 },
@@ -66,8 +68,16 @@ export function getMonsterLoreBonus(monsterType, isBoss = false) {
   };
 }
 
-export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true, sourcePos = null, isSlash = false, isProc = false) {
+export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, rawChaos, canCrit = true, sourcePos = null, isSlash = false, isProc = false, skillSource = null) {
   if (!target || !target.isAlive || target.defeatedHandled) return;
+
+  // Award Skill EXP & Proficiency ONLY when landing a successful hit on a target!
+  if (skillSource && !isProc) {
+    const expMap = { slash: 12, fireball: 15, frost: 15, meteor: 25, dash: 10 };
+    const expGain = expMap[skillSource] || 10;
+    addSkillExp(skillSource, expGain);
+    recordSkillProficiency(skillSource, expGain);
+  }
 
   // 1. Monster Evasion / Dodge Check (Skip damage & knockback if dodged)
   if (target.evasionChance && Math.random() * 100 < target.evasionChance) {
@@ -398,6 +408,9 @@ export function handleMonsterDefeated(target) {
   // Spawn Extractable Shadow Corpse (Solo Leveling Shadow Monarch)
   spawnExtractableCorpse(target);
 
+  // Harvesting & Skinning Crafting Materials Drop from Monsters
+  handleMonsterSkinningDrop(target);
+
   if (window.gainExp) {
     const hasFortune = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'CelestialFortune');
     const baseExp = target.expValue || 35;
@@ -617,7 +630,6 @@ export function castSlash() {
   const s = SKILLS.slash;
   if (player.cooldowns.slash > 0) return;
   player.cooldowns.slash = Math.max(0.32, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
-  recordSkillProficiency('slash', 10);
 
   const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
   if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
@@ -647,7 +659,7 @@ export function castSlash() {
 
   monsters.forEach(m => {
     if (m.isAlive && Math.hypot(m.x - slashX, m.y - slashY) < reach) {
-      dealDamage(m, dmg, 20, 0, 0, isAwakened ? 80 : 0, true, { x: player.x, y: player.y }, true);
+      dealDamage(m, dmg, 20, 0, 0, isAwakened ? 80 : 0, true, { x: player.x, y: player.y }, true, false, 'slash');
       if (isTitanCleave) {
         applyFreeze(m, 1.0); // 1.0s Stun
         spawnDamageNumber(m.x, m.y - 45, '⚡ STUNNED!', true, '#ffd700');
@@ -656,7 +668,7 @@ export function castSlash() {
   });
 
   trainingDummies.forEach(d => {
-    if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, isAwakened ? 80 : 0, true, { x: player.x, y: player.y }, true);
+    if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, isAwakened ? 80 : 0, true, { x: player.x, y: player.y }, true, false, 'slash');
   });
 
   // Awakened Form Special: Void Dimension Vacuum Rift
@@ -744,7 +756,6 @@ export function castFireball() {
   if (player.cooldowns.fireball > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
   player.cooldowns.fireball = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
-  recordSkillProficiency('fireball', 12);
 
   const baseAngle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
   const isAwakened = !!player.awakenedSkills?.fireball;
@@ -853,7 +864,6 @@ export function castFrostNova() {
   if (player.cooldowns.frost > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
   player.cooldowns.frost = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
-  recordSkillProficiency('frost', 14);
 
   const isAwakened = !!player.awakenedSkills?.frost;
   let novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
@@ -866,7 +876,7 @@ export function castFrostNova() {
   let hitsCount = 0;
   monsters.forEach(m => {
     if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) <= novaRadius) {
-      dealDamage(m, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y });
+      dealDamage(m, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y }, false, false, 'frost');
       hitsCount++;
 
       if (isAwakened) {
@@ -884,7 +894,7 @@ export function castFrostNova() {
   });
 
   trainingDummies.forEach(d => {
-    if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y });
+    if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y }, false, false, 'frost');
   });
 
   if (isAwakened) {
@@ -925,7 +935,6 @@ export function castMeteor() {
   player.mana -= s.manaCost;
   const cdReduction = isNodeAllocated('meteor', 'met_cd') ? 1.0 : 0;
   player.cooldowns.meteor = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl - cdReduction);
-  recordSkillProficiency('meteor', 20);
 
   const targetX = mouse.worldX;
   const targetY = mouse.worldY;
@@ -951,7 +960,7 @@ export function castMeteor() {
       if (isNodeAllocated('meteor', 'met_dmg')) dmg = Math.round(dmg * 1.30);
 
       monsters.forEach(m => {
-        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, isAwakened ? 120 : 30, true, { x, y });
+        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, isAwakened ? 120 : 30, true, { x, y }, false, false, 'meteor');
       });
 
       // Set Synergy: Malakor Cosmic Singularity Void Rift
@@ -968,7 +977,7 @@ export function castMeteor() {
       }
 
       trainingDummies.forEach(d => {
-        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, isAwakened ? 120 : 30, true, { x, y });
+        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, isAwakened ? 120 : 30, true, { x, y }, false, false, 'meteor');
       });
 
       for (let i = 0; i < 40; i++) {
@@ -1010,7 +1019,6 @@ export function castDash() {
   const s = SKILLS.dash;
   if (player.cooldowns.dash > 0) return;
   player.cooldowns.dash = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
-  recordSkillProficiency('dash', 8);
 
   const startX = player.x;
   const startY = player.y;

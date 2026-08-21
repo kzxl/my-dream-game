@@ -54,5 +54,32 @@ namespace Mdg.Core.Tests
             Assert.Contains("Not enough mana", failureReason);
             Assert.Equal(30f, mana);
         }
+
+        [Fact]
+        public void SkillProficiency_CalculatesRankAndBonusesCorrectly_WhenHittingTargets()
+        {
+            // Initial state: Rank F
+            var initial = SkillProficiencyEngine.CalculateState("slash", "Heavy Slash", 0);
+            Assert.Equal(SkillProficiencyRank.RankF, initial.CurrentRank);
+            Assert.Equal(0, initial.DamageBonusPercent);
+
+            // Simulating hitting monsters: Gaining 2,500 exp (Rank D threshold is 2,000)
+            var hardened = SkillProficiencyEngine.CalculateState("slash", "Heavy Slash", 2500);
+            Assert.Equal(SkillProficiencyRank.RankD, hardened.CurrentRank);
+            Assert.Equal(14.0, hardened.DamageBonusPercent);
+
+            // Gaining 80,000 exp (Rank A threshold is 75,000 -> Awakening Eligible)
+            var grandmaster = SkillProficiencyEngine.CalculateState("slash", "Heavy Slash", 80000);
+            Assert.Equal(SkillProficiencyRank.RankA, grandmaster.CurrentRank);
+            Assert.Equal(65.0, grandmaster.DamageBonusPercent);
+            Assert.Equal(20.0, grandmaster.AreaBonusPercent);
+
+            // Check Awakening eligibility
+            bool canAwakenWithoutEssence = SkillProficiencyEngine.CanAwaken("slash", grandmaster.CurrentRank, hasEssence: false);
+            Assert.False(canAwakenWithoutEssence);
+
+            bool canAwakenWithEssence = SkillProficiencyEngine.CanAwaken("slash", grandmaster.CurrentRank, hasEssence: true);
+            Assert.True(canAwakenWithEssence);
+        }
     }
 }

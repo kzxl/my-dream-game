@@ -3,9 +3,9 @@
  * Allows extracting slain monster souls into active Shadow Soldiers that follow, fight and defend
  */
 
-import { player, monsters, particles, floatingTexts } from '../state.js?v=12';
-import { AudioEngine } from '../audio.js?v=12';
-import { dealDamage, spawnDamageNumber } from '../combat.js?v=12';
+import { player, monsters, particles, floatingTexts } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { dealDamage, spawnDamageNumber } from '../combat.js';
 
 export const shadowCorpses = [];
 export const shadowArmy = [];

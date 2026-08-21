@@ -3,35 +3,36 @@
  * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js?v=12';
-import { ZONES, fetchMasterZonesFromServer } from './data/zones.js?v=12';
-import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js?v=12';
-import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js?v=12';
-import { AudioEngine } from './audio.js?v=12';
-import { renderGame } from './renderer.js?v=12';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js?v=12';
-import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js?v=12';
-import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js?v=12';
-import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js?v=12';
-import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js?v=12';
-import { MapGenerator } from './map-generator.js?v=12';
-import { updateCompanion } from './companion.js?v=12';
-import { renderSharedStashModal } from './ui/stash-ui.js?v=12';
-import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js?v=12';
-import { renderMapDeviceModal } from './ui/map-device-ui.js?v=12';
-import { initDefeatUI } from './ui/defeat-ui.js?v=12';
-import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js?v=12';
-import { setupRosterUI, openRosterUI } from './ui/roster-ui.js?v=12';
-import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js?v=12';
-import { MPClient } from './services/multiplayer-client.js?v=12';
-import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js?v=12';
-import { checkGoogleOAuthRedirectResult } from './auth.js?v=12';
-import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js?v=12';
-import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js?v=12';
-import { spawnMapIncursions, updateMapIncursions } from './systems/map-incursions.js?v=12';
-import { useFlask, updateFlasks, renderFlaskHUD, initFlasks } from './systems/flask-system.js?v=12';
-import { renderSpireModal } from './ui/spire-ui.js?v=12';
-import { extractShadow, updateShadowArmy } from './systems/shadow-extraction.js?v=12';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, keys, mouse } from './state.js';
+import { ZONES, fetchMasterZonesFromServer } from './data/zones.js';
+import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
+import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
+import { AudioEngine } from './audio.js';
+import { renderGame } from './renderer.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js';
+import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
+import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
+import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js';
+import { saveToDatabase, loadFromDatabase, startAutoSave } from './save-system.js';
+import { MapGenerator } from './map-generator.js';
+import { updateCompanion } from './companion.js';
+import { renderSharedStashModal } from './ui/stash-ui.js';
+import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.js';
+import { renderMapDeviceModal } from './ui/map-device-ui.js';
+import { initDefeatUI } from './ui/defeat-ui.js';
+import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
+import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
+import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js';
+import { MPClient } from './services/multiplayer-client.js';
+import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js';
+import { checkGoogleOAuthRedirectResult } from './auth.js';
+import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js';
+import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js';
+import { spawnMapIncursions, updateMapIncursions } from './systems/map-incursions.js';
+import { useFlask, updateFlasks, renderFlaskHUD, initFlasks } from './systems/flask-system.js';
+import { renderSpireModal } from './ui/spire-ui.js';
+import { extractShadow, updateShadowArmy } from './systems/shadow-extraction.js';
+import { initPlayerProfessions, spawnResourceNodesForZone, updateGatheringSystem, tryInteractGatheringNode } from './systems/gathering-system.js';
 
 window.keys = keys;
 window.player = player;
@@ -245,6 +246,9 @@ export async function loadZone(zoneId, spawnX, spawnY) {
 
   // 3.5. Spawn Dynamic Map Incursions (Void Breach & Treasure Goblin)
   spawnMapIncursions(currentZoneId, mapW, mapH, canWalk);
+
+  // 3.6. Spawn World Mineral Veins & Herb Patches for Gathering Professions
+  spawnResourceNodesForZone(currentZoneId, mapW, mapH, canWalk);
 
   // 4. Environmental Hazard Alert & Banner
   const subText = currentZoneMap.hazard ? `⚠️ ${currentZoneMap.hazard.hazardName}: ${currentZoneMap.hazard.description}` : currentZoneMap.subtitle;
@@ -627,8 +631,6 @@ window.gainExp = function(amount) {
   if (!amount || amount <= 0) return;
   player.currentExp = (player.currentExp || 0) + amount;
   if (!player.expToNext || player.expToNext <= 0) player.expToNext = 100;
-
-  for (let k in SKILLS) addSkillExp(k, Math.round(amount * 0.8));
 
   let leveledUp = false;
   let loops = 0;
@@ -1043,12 +1045,12 @@ function update(dt) {
         monsters.forEach(m => {
           if (m.isAlive && !hit && Math.hypot(m.x - p.x, m.y - p.y) < 28 * (m.scale || 1)) {
             if (p.type === 'windblade') {
-              dealDamage(m, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
+              dealDamage(m, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y }, true, false, 'slash');
             } else if (p.type === 'frost') {
-              dealDamage(m, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
+              dealDamage(m, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y }, false, false, 'frost');
             } else {
               // Fireball (supports partial Chaos from Hellfire Chaos)
-              dealDamage(m, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+              dealDamage(m, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y }, false, false, 'fireball');
             }
             hit = true;
           }
@@ -1057,11 +1059,11 @@ function update(dt) {
         trainingDummies.forEach(d => {
           if (!hit && Math.hypot(d.x - p.x, d.y - p.y) < 28) {
             if (p.type === 'windblade') {
-              dealDamage(d, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y });
+              dealDamage(d, p.damage || 85, 0, 0, 0, 0, true, { x: p.x, y: p.y }, true, false, 'slash');
             } else if (p.type === 'frost') {
-              dealDamage(d, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y });
+              dealDamage(d, 10, 0, p.damage || 85, 0, 0, true, { x: p.x, y: p.y }, false, false, 'frost');
             } else {
-              dealDamage(d, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y });
+              dealDamage(d, 10, p.fireDmg !== undefined ? p.fireDmg : (p.damage || 85), 0, 0, p.chaosDmg || 0, true, { x: p.x, y: p.y }, false, false, 'fireball');
             }
             hit = true;
           }
@@ -1161,6 +1163,9 @@ function update(dt) {
 
   // Companion Pet Engine Update (Auto-loot, Aura & Delivery)
   updateCompanion(dt);
+
+  // Gathering & Profession System Update (Channeling & Node Sparkles)
+  updateGatheringSystem(dt);
 
   const bossHud = document.getElementById('boss-hud') || document.getElementById('boss-hud-bar');
   if (bossHud) {
@@ -1331,6 +1336,11 @@ window.addEventListener('keydown', e => {
   }
 
   if (e.code === 'KeyF') {
+    // -1. Check Gathering Resource Nodes (Mining / Herbalism)
+    if (tryInteractGatheringNode()) {
+      return;
+    }
+
     // 0. Check near POI (Aether Shrine, Corrupted Monolith, Sub-Cave)
     const nearPoi = pois.find(p => Math.hypot(player.x - p.x, player.y - p.y) < (p.radius || 75));
     if (nearPoi) {

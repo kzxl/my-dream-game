@@ -8,13 +8,13 @@
  *  - Craftable-Only Filter for Base Forging
  */
 
-import { player } from '../state.js?v=12';
-import { AudioEngine } from '../audio.js?v=12';
-import { updateBackpackUI, updatePaperdollUI, showItemTooltip, positionItemTooltip, hideItemTooltip } from './inventory.js?v=12';
-import { MATERIALS_CATALOG, FORGING_RECIPES, getMaterialInfo, previewSalvageItem } from '../data/materials.js?v=12';
-import { spawnDamageNumber } from '../combat.js?v=12';
-import { saveToDatabase } from '../save-system.js?v=12';
-import { assets, drawItemSpriteToCanvas } from '../assets.js?v=12';
+import { player } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { updateBackpackUI, updatePaperdollUI, showItemTooltip, positionItemTooltip, hideItemTooltip } from './inventory.js';
+import { MATERIALS_CATALOG, FORGING_RECIPES, getMaterialInfo, previewSalvageItem } from '../data/materials.js';
+import { spawnDamageNumber } from '../combat.js';
+import { saveToDatabase } from '../save-system.js';
+import { assets, drawItemSpriteToCanvas } from '../assets.js';
 
 let activeForgeTab = 'anvil'; // 'anvil' | 'salvage' | 'base_forge' | 'vault'
 let selectedItemIndex = -1;
@@ -49,12 +49,13 @@ export function renderForgeBenchModal() {
           <button class="close-btn" id="closeForgeBtn">✕</button>
         </div>
 
-        <!-- 4-Tab Navigation Bar -->
+        <!-- 5-Tab Navigation Bar -->
         <div class="forge-tabs-nav">
           <button class="forge-nav-tab active" data-tab="anvil">🔨 Relic Anvil</button>
           <button class="forge-nav-tab" data-tab="salvage">♻️ Salvage Anvil</button>
           <button class="forge-nav-tab" data-tab="base_forge">🗡️ Base Forging</button>
           <button class="forge-nav-tab" data-tab="vault">🎒 Materials Vault</button>
+          <button class="forge-nav-tab" data-tab="professions">🛠️ Professions</button>
         </div>
 
         <!-- Main Body Container -->
@@ -112,6 +113,8 @@ function renderActiveForgeTab() {
     renderBaseForgingTab(container);
   } else if (activeForgeTab === 'vault') {
     renderMaterialsVaultTab(container);
+  } else if (activeForgeTab === 'professions') {
+    renderProfessionsTab(container);
   }
 }
 
@@ -873,3 +876,115 @@ function consumeCurrency(name, count) {
   }
   return false;
 }
+
+// =========================================================================
+// TAB 5: GATHERING PROFESSIONS
+// =========================================================================
+function renderProfessionsTab(container) {
+  if (!player.professions) {
+    player.professions = {
+      mining: { level: 1, exp: 0 },
+      herbalism: { level: 1, exp: 0 },
+      skinning: { level: 1, exp: 0 }
+    };
+  }
+
+  const profs = [
+    {
+      id: 'mining',
+      name: 'Mining (Khai Khoáng)',
+      icon: '⛏️',
+      color: '#00f2fe',
+      data: player.professions.mining || { level: 1, exp: 0 },
+      tiers: [
+        { name: 'Iron Ore (Quặng Sắt)', levelReq: 1, icon: '⛏️', color: '#a0a8b7' },
+        { name: 'Mithril Chunk (Mithril Băng)', levelReq: 10, icon: '💎', color: '#00f2fe' },
+        { name: 'Aether Crystal (Tinh Thể Bí Thuật)', levelReq: 25, icon: '🔮', color: '#c678dd' },
+        { name: 'Adamantite Ingot (Lõi Kim Cương Hỏa)', levelReq: 40, icon: '🪨', color: '#ffd700' }
+      ]
+    },
+    {
+      id: 'herbalism',
+      name: 'Herbalism (Thảo Dược Học)',
+      icon: '🌿',
+      color: '#4ade80',
+      data: player.professions.herbalism || { level: 1, exp: 0 },
+      tiers: [
+        { name: 'Bloodroot Herb (Cỏ Rễ Máu)', levelReq: 1, icon: '🌿', color: '#ff4d4f' },
+        { name: 'Mana Bloom (Hoa Mana Tinh Tú)', levelReq: 10, icon: '🌸', color: '#1890ff' },
+        { name: 'Windstrider Leaf (Lá Gió Phiêu Phong)', levelReq: 25, icon: '🍃', color: '#52c41a' }
+      ]
+    },
+    {
+      id: 'skinning',
+      name: 'Skinning & Hunting (Lột Da / Săn Thú)',
+      icon: '🐺',
+      color: '#ffd700',
+      data: player.professions.skinning || { level: 1, exp: 0 },
+      tiers: [
+        { name: 'Beast Leather (Da Thú Rừng)', levelReq: 1, icon: '🐺', color: '#d48806' },
+        { name: 'Fiend Demon Horn (Sừng Quỷ Dị Giới)', levelReq: 15, icon: '👹', color: '#eb2f96' },
+        { name: 'Dragon Scale (Vảy Rồng Lửa Cổ)', levelReq: 35, icon: '🐉', color: '#fa541c' }
+      ]
+    }
+  ];
+
+  container.innerHTML = `
+    <div class="materials-vault-wrap">
+      <div class="mv-header">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="color:#ffd700; margin:0; font-size:16px;">🛠️ Gathering Professions & Mastery Tiers</h3>
+            <span style="font-size:11px; color:#a0a8b7;">Harvest world nodes and slain monsters to level up your gathering mastery</span>
+          </div>
+          <span class="vault-count-badge">Max Level 50</span>
+        </div>
+      </div>
+
+      <div class="professions-grid">
+        ${profs.map(p => {
+          const maxExp = p.data.level * 100;
+          const pct = Math.min(100, (p.data.exp / maxExp) * 100);
+          return `
+            <div class="profession-card" style="border-color:${p.color}40;">
+              <div class="prof-card-header">
+                <span style="font-size:28px;">${p.icon}</span>
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:800; font-size:14px; color:${p.color}">${p.name}</span>
+                    <span style="font-weight:800; font-size:13px; color:#ffd700;">Lv. ${p.data.level} / 50</span>
+                  </div>
+                  <div class="prof-exp-bar-wrap">
+                    <div class="prof-exp-fill" style="width:${pct}%; background:${p.color};"></div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; margin-top:2px;">
+                    <span>Proficiency EXP</span>
+                    <span>${p.data.exp} / ${maxExp} (${Math.round(pct)}%)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prof-tiers-list">
+                <div style="font-size:11px; font-weight:700; color:#ffd700; margin-bottom:4px;">🔓 Unlocked Gathering Tiers:</div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  ${p.tiers.map(t => {
+                    const isUnlocked = p.data.level >= t.levelReq;
+                    return `
+                      <div class="prof-tier-row ${isUnlocked ? 'unlocked' : 'locked'}">
+                        <span>${t.icon} ${t.name}</span>
+                        <span style="font-weight:700; color:${isUnlocked ? '#4ade80' : '#ef4444'};">
+                          ${isUnlocked ? '✓ UNLOCKED' : `Req Lv.${t.levelReq}`}
+                        </span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+

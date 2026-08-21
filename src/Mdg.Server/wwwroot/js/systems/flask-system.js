@@ -3,10 +3,10 @@
  * Handles consumption, refill charges on kill, continuous regen, stat buffs & HUD visualization
  */
 
-import { player, particles } from '../state.js?v=12';
-import { AudioEngine } from '../audio.js?v=12';
-import { spawnDamageNumber } from '../combat.js?v=12';
-import { STARTER_FLASKS } from '../data/flasks.js?v=12';
+import { player, particles } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { spawnDamageNumber } from '../combat.js';
+import { STARTER_FLASKS } from '../data/flasks.js';
 
 export function initFlasks() {
   if (!player.flasks || !Array.isArray(player.flasks) || player.flasks.length < 4) {

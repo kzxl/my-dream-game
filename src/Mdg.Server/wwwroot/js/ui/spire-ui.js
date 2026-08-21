@@ -2,9 +2,9 @@
  * MDG: Aethelis - Endless Spire 100 Floors UI Modal (Aincrad / Greater Rift Style)
  */
 
-import { player } from '../state.js?v=12';
-import { AudioEngine } from '../audio.js?v=12';
-import { getSpireFloorData, MAX_SPIRE_FLOOR } from '../data/spire.js?v=12';
+import { player } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { getSpireFloorData, MAX_SPIRE_FLOOR } from '../data/spire.js';
 
 let selectedFloor = 1;
 

@@ -5,10 +5,10 @@
  * 3. Corrupted Shrines (Cursed shrines guarded by elite waves for double duration blessings)
  */
 
-import { player, mapIncursions, monsters, particles, groundLoot } from '../state.js?v=12';
-import { AudioEngine } from '../audio.js?v=12';
-import { spawnDamageNumber, dropMonsterLoot } from '../combat.js?v=12';
-import { POSSIBLE_LOOT } from '../data/items.js?v=12';
+import { player, mapIncursions, monsters, particles, groundLoot } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { spawnDamageNumber, dropMonsterLoot } from '../combat.js';
+import { POSSIBLE_LOOT } from '../data/items.js';
 
 export function spawnMapIncursions(zoneId, zoneWidth, zoneHeight, canWalkFn) {
   mapIncursions.length = 0;

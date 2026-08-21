@@ -1,10 +1,11 @@
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, mapIncursions } from './state.js?v=12';
-import { assets } from './assets.js?v=12';
-import { RARITY_COLORS } from './data/items.js?v=12';
-import { getMonsterLoreBonus } from './combat.js?v=12';
-import { companion } from './companion.js?v=12';
-import { renderMapIncursions } from './systems/map-incursions.js?v=12';
-import { renderShadowCorpses, renderShadowArmy } from './systems/shadow-extraction.js?v=12';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, zoneExploration, mapIncursions } from './state.js';
+import { assets } from './assets.js';
+import { RARITY_COLORS } from './data/items.js';
+import { getMonsterLoreBonus } from './combat.js';
+import { companion } from './companion.js';
+import { renderMapIncursions } from './systems/map-incursions.js';
+import { renderShadowCorpses, renderShadowArmy } from './systems/shadow-extraction.js';
+import { renderGatheringNodes } from './systems/gathering-system.js';
 
 export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneData) {
   ctx.fillStyle = '#0c0e14';
@@ -23,6 +24,9 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   // Render Shadow Corpses (Extractable souls) & Active Shadow Army
   renderShadowCorpses(ctx);
   renderShadowArmy(ctx);
+
+  // Render World Mineral Veins & Herb Patches
+  renderGatheringNodes(ctx);
 
   const renderList = [];
 

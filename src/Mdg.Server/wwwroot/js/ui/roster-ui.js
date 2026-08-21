@@ -3,13 +3,13 @@
  * Allows managing multiple characters per account with independent progression.
  */
 
-import { ApiClient } from '../services/api-client.js?v=11';
-import { player } from '../state.js?v=11';
-import { AudioEngine } from '../audio.js?v=11';
-import { getTownForAct } from '../data/campaign.js?v=11';
-import { getCurrentUser } from '../auth.js?v=11';
-import { setActiveCharacterId } from '../save-system.js?v=11';
-import { MPClient } from '../services/multiplayer-client.js?v=11';
+import { ApiClient } from '../services/api-client.js';
+import { player } from '../state.js';
+import { AudioEngine } from '../audio.js';
+import { getTownForAct } from '../data/campaign.js';
+import { getCurrentUser } from '../auth.js';
+import { setActiveCharacterId } from '../save-system.js';
+import { MPClient } from '../services/multiplayer-client.js';
 
 let rosterList = [];
 let selectedClass = 'Vanguard';
