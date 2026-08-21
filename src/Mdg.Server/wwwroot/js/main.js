@@ -225,6 +225,9 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   }
   if (currentZoneMap.props) currentZoneMap.props.forEach(pr => props.push({ ...pr }));
 
+  // Procedural Flora & Foliage Spawning (Flowers, Bushes, Mushrooms, Water Lilies)
+  spawnZoneFoliageAndProps(currentZoneId, mapW, mapH);
+
   // Procedural High-Fantasy Shrines (Only in Wild / Combat Zones, NEVER in Town)
   if (currentZoneId !== 'SanctuaryHaven') {
     spawnRandomMapShrines();
@@ -264,6 +267,54 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   updatePaperdollUI();
   updateSkillBadges();
   renderSkillUpgradeModal();
+}
+
+/**
+ * Procedural Flora & Foliage Spawning (Wildflowers, Sylvan Bushes, Ferns, Glowing Fungi)
+ */
+export function spawnZoneFoliageAndProps(zoneId, mapW, mapH) {
+  if (!currentZoneMap || !currentZoneMap.grid) return;
+  const grid = currentZoneMap.grid;
+  const h = grid.length;
+  const w = grid[0].length;
+  const tileSize = 48;
+
+  const isTown = zoneId === 'SanctuaryHaven';
+  const isPlains = zoneId === 'WhisperingPlains';
+  const isCrypt = zoneId === 'ForgottenCrypt';
+
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const tile = grid[y][x];
+      const wx = x * tileSize + 24;
+      const wy = y * tileSize + 24;
+      const rand = Math.random();
+
+      if (tile === 0) {
+        // Natural Grass Floor
+        if (isTown || isPlains) {
+          if (rand < 0.08) {
+            const types = ['flowers_red', 'flowers_blue', 'flowers_gold', 'flowers_purple', 'four_leaf_clover', 'wildflowers'];
+            props.push({ x: wx + (Math.random() - 0.5) * 16, y: wy + (Math.random() - 0.5) * 16, type: types[Math.floor(Math.random() * types.length)] });
+          } else if (rand < 0.14) {
+            const shrubs = ['bush', 'flowered_bush', 'tall_grass', 'fern'];
+            props.push({ x: wx + (Math.random() - 0.5) * 12, y: wy + (Math.random() - 0.5) * 12, type: shrubs[Math.floor(Math.random() * shrubs.length)] });
+          } else if (rand < 0.16) {
+            props.push({ x: wx, y: wy, type: Math.random() < 0.5 ? 'mushroom_glow' : 'mushroom_cyan' });
+          }
+        } else if (isCrypt) {
+          if (rand < 0.06) {
+            props.push({ x: wx, y: wy, type: Math.random() < 0.6 ? 'mushroom_glow' : 'mushroom_cyan' });
+          }
+        }
+      } else if (tile === 2) {
+        // Water tiles (Spawn water lilies!)
+        if (rand < 0.09) {
+          props.push({ x: wx, y: wy, type: 'water_lily' });
+        }
+      }
+    }
+  }
 }
 
 /**

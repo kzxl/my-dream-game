@@ -26,6 +26,9 @@ export const assets = {
   masterNature: new Image(),
   natureFoliage: new Image(),
   terrainRocks: new Image(),
+  aethelisTerrain: new Image(),
+  aethelisFoliage: null,
+  aethelisWater: new Image(),
   shrinesMonoliths: new Image(),
   aethelRunes: new Image(),
   awakeningEssences: new Image(),
@@ -167,6 +170,16 @@ assets.natureFoliage.src = '/assets/nature_foliage_pack.jpg' + cacheBust;
 
 assets.terrainRocks.onload = () => assets.loaded++;
 assets.terrainRocks.src = '/assets/terrain_rocks_pack.jpg' + cacheBust;
+
+// Aethelis High Fantasy Tilesets & Keyed Flora
+assets.aethelisTerrain.onload = () => assets.loaded++;
+assets.aethelisTerrain.src = '/assets/aethelis_terrain_tileset.jpg' + cacheBust;
+
+assets.aethelisWater.onload = () => assets.loaded++;
+assets.aethelisWater.src = '/assets/aethelis_water_liquid_tileset.jpg' + cacheBust;
+
+// Alpha-masked Transparent Flora (Black background keyed out)
+assets.aethelisFoliage = loadTransparentSheet('/assets/aethelis_foliage_flora_pack.jpg' + cacheBust, 'black');
 
 assets.shrinesMonoliths = loadTransparentSheet('/assets/shrines_monoliths_pack.jpg' + cacheBust, 'black');
 assets.aethelRunes = loadTransparentSheet('/assets/aethel_runes_pack.jpg' + cacheBust, 'black');
