@@ -44,9 +44,11 @@ $$\text{Final Drop Count} = \text{Base Drops} \times \big( 1 + \sum \text{IIQ}_{
 
 $$\text{Rarity Threshold} = \frac{\text{Base Weight}}{\max\left(1.0, 1 + \text{IIR}_{\text{Player}} + \text{IIR}_{\text{Map}}\right)}$$
 
-| Phẩm Cấp (Rarity) | Màu Nhận Diện | Cột Sáng (Beam) | Tỷ Lệ Cơ Bản (Base Weight) | Âm Thanh Rơi (Sound Tier) |
-| :--- | :---: | :---: | :---: | :--- |
-| **Unique (Độc Bản)** | `#AF6025` (Cam nâu) | Cột sáng Vàng Cam rực rỡ | $0.8\%$ | Tiếng chuông thánh ngân vang (Tier 1 Divine SFX) |
+| **Phẩm Cấp (Rarity)** | **Màu Sắc Đại Diện** | **Cột Sáng (Beam)** | **Tỷ Lệ Cơ Bản (Base Drop Rate)** | **Âm Thanh (Sound Filter)** |
+| :--- | :--- | :---: | :---: | :--- |
+| **Primordial Awakening Essence** | `#FFD700` / `#BE2EDD` | Cột sáng Cực Quang 450px | **$0.8\%$** (Elite) / **$5.0\%$** (Boss) | Tiếng chuông Thần Khí vang vọng ngân dài (Divine Chime) |
+| **Unique (Độc Bản)** | `#AF6025` (Cam đậm) | Cột sáng Cam 350px | $0.8\%$ | Tiếng chuông cổ vang vọng ngân dài (Tier 1 Chime) |
+| **Set Item (Theo Bộ)** | `#00E676` (Xanh lục bích)| Cột sáng Lục 350px | $1.0\%$ | Tiếng vang hào quang ngọc bích |
 | **Genesis High Currency** | `#FFD700` (Vàng kim) | Cột sáng Trắng Kim | $1.2\%$ | Tiếng pha lê ngân dài vang vọng (Tier 1 Chime) |
 | **Rare (Hiếm)** | `#FFFF77` (Vàng tươi)| Cột sáng Vàng nhạt | $15.0\%$ | Tiếng gõ kim loại sắc bén (Tier 2 SFX) |
 | **Magic (Ma Thuật)** | `#8888FF` (Xanh dương)| Không | $35.0\%$ | Tiếng rơi nhẹ (Tier 3 SFX) |
