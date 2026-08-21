@@ -43,6 +43,24 @@ public sealed class MonsterClusterSpawnDto
     public string Type { get; set; } = "slime";
 }
 
+public sealed class ZonePoiDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Type { get; set; } = "shrine"; // "shrine", "monolith", "sub_cave", "red_gate", "puzzle_chest"
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Radius { get; set; } = 64.0;
+    public string BuffType { get; set; } = "None"; // "TempestAura", "SolarFlare", "GreedCatalyst", "GlacialWard"
+    public double BuffDuration { get; set; } = 60.0;
+    public string Color { get; set; } = "#f1c40f";
+    public string Icon { get; set; } = "⚡";
+    public bool IsActivated { get; set; }
+    public int WaveCount { get; set; } = 3;
+    public string TargetSubZone { get; set; } = string.Empty;
+}
+
 public sealed class ZoneMapDto
 {
     public string Id { get; set; } = string.Empty;
@@ -67,4 +85,5 @@ public sealed class ZoneMapDto
     public List<ZoneDummyDto> Dummies { get; set; } = new();
     public List<ZonePropDto> Props { get; set; } = new();
     public List<MonsterClusterSpawnDto> MonsterSpawns { get; set; } = new();
+    public List<ZonePoiDto> Pois { get; set; } = new();
 }

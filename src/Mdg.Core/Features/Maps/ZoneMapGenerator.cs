@@ -23,6 +23,11 @@ public static class ZoneMapGenerator
 
     public static ZoneMapDto GenerateZone(string zoneId)
     {
+        if (zoneId.StartsWith("EndlessSpire_F") && int.TryParse(zoneId["EndlessSpire_F".Length..], out int floor))
+        {
+            return EndlessSpireManager.GenerateSpireFloor(floor);
+        }
+
         return zoneId switch
         {
             // Act 1
@@ -172,26 +177,42 @@ public static class ZoneMapGenerator
                 new() { X = (cx + 5) * TILE_SIZE, Y = (cy + 2) * TILE_SIZE, Type = "lush_bush" },
                 new() { X = (cx - 2) * TILE_SIZE, Y = (cy + 4) * TILE_SIZE, Type = "mossy_rock" },
                 new() { X = (cx + 2) * TILE_SIZE, Y = (cy + 4) * TILE_SIZE, Type = "mossy_rock" }
+            },
+            Pois = new List<ZonePoiDto>
+            {
+                new()
+                {
+                    Id = "Haven_Sanctuary_Shrine",
+                    Type = "shrine",
+                    Name = "🌿 Ancient Shrine of Serenity",
+                    Description = "Blessing of Aethelis: +15% Life and Mana recovery for 120s.",
+                    X = (cx - 4) * TILE_SIZE,
+                    Y = (cy + 3) * TILE_SIZE,
+                    BuffType = "SerenityWard",
+                    BuffDuration = 120,
+                    Color = "#2ecc71",
+                    Icon = "🌿"
+                }
             }
         };
     }
 
-    // 2. WHISPERING PLAINS (64x64 - 3072x3072 px: Expansive Wilderness, Winding Rivers, Outposts)
+    // 2. WHISPERING PLAINS (96x96 - 4608x4608 px: Expansive Wilderness, Winding Rivers, Outposts, Shrines & Sub-Caves)
     private static ZoneMapDto GeneratePlains()
     {
-        const int w = 64, h = 64;
+        const int w = 96, h = 96;
         var grid = InitializeGrid(w, h, TILE_FLOOR);
 
         for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
         for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
 
         int riverBaseX = w / 2;
-        var bridgeYPositions = new List<int> { 16, 32, 48 };
+        var bridgeYPositions = new List<int> { 24, 48, 72 };
 
         for (int y = 1; y < h - 1; y++)
         {
             // Organic multi-sine wave river curve
-            double wave = Math.Sin(y / 5.5) * 6.5 + Math.Cos(y / 2.8) * 2.2;
+            double wave = Math.Sin(y / 7.5) * 9.5 + Math.Cos(y / 3.8) * 3.5;
             int rx = (int)Math.Round(riverBaseX + wave);
 
             // Shallow Sand Borders
@@ -210,7 +231,7 @@ public static class ZoneMapGenerator
             for (int dy = -1; dy <= 1; dy++)
             {
                 int y = by + dy;
-                for (int x = riverBaseX - 8; x <= riverBaseX + 8; x++)
+                for (int x = riverBaseX - 12; x <= riverBaseX + 12; x++)
                 {
                     if (grid[y][x] == TILE_WATER_DEEP || grid[y][x] == TILE_SHALLOW_WATER_SAND)
                     {
@@ -235,7 +256,7 @@ public static class ZoneMapGenerator
         {
             Id = "WhisperingPlains",
             Name = "Whispering Plains",
-            Subtitle = "🌾 Vast Wilderness with Winding River, Beast Outposts & Ancient Ruins",
+            Subtitle = "🌾 Vast Wilderness with Winding River, Beast Outposts, Shrines & Sub-Caves",
             Biome = ZoneBiomeType.WhisperingPlains,
             LevelRange = "Lv. 5-12",
             Hazard = new EnvironmentalHazardConfig
@@ -261,28 +282,84 @@ public static class ZoneMapGenerator
             },
             Npcs = new List<ZoneNpcDto>
             {
-                new() { X = 280, Y = midY * TILE_SIZE + 60, Name = "Valen (Scout)", Title = "Trinh Sát Tiền Đồn", Color = "#e06c75" }
+                new() { X = 320, Y = midY * TILE_SIZE + 80, Name = "Valen (Scout)", Title = "Trinh Sát Tiền Đồn", Color = "#e06c75" }
             },
             Props = new List<ZonePropDto>
             {
-                new() { X = 600, Y = 1950, Type = "pine_tree" },
-                new() { X = 750, Y = 2000, Type = "autumn_tree" },
-                new() { X = 1200, Y = 1800, Type = "tall_grass" },
-                new() { X = 1400, Y = 1900, Type = "flowers_red" },
-                new() { X = 1600, Y = 2100, Type = "mossy_rock" },
-                new() { X = 2000, Y = 1900, Type = "pine_tree" },
-                new() { X = 2200, Y = 2200, Type = "autumn_tree" },
-                new() { X = 2500, Y = 1800, Type = "mushroom_glow" },
-                new() { X = 2800, Y = 2000, Type = "tall_grass" },
-                new() { X = 3100, Y = 1950, Type = "flowers_red" }
+                new() { X = 800, Y = 1950, Type = "pine_tree" },
+                new() { X = 1200, Y = 2400, Type = "autumn_tree" },
+                new() { X = 1600, Y = 1800, Type = "tall_grass" },
+                new() { X = 2000, Y = 2600, Type = "flowers_red" },
+                new() { X = 2600, Y = 2100, Type = "mossy_rock" },
+                new() { X = 3200, Y = 1900, Type = "pine_tree" },
+                new() { X = 3600, Y = 2800, Type = "autumn_tree" },
+                new() { X = 4000, Y = 1800, Type = "mushroom_glow" }
+            },
+            Pois = new List<ZonePoiDto>
+            {
+                new()
+                {
+                    Id = "Plains_Tempest_Shrine",
+                    Type = "shrine",
+                    Name = "⚡ Tempest Aether Shrine",
+                    Description = "Calls down thunderbolts on every attack and grants +35% Movement Speed for 60s.",
+                    X = 1200,
+                    Y = 1200,
+                    BuffType = "TempestAura",
+                    BuffDuration = 60,
+                    Color = "#00f2fe",
+                    Icon = "⚡"
+                },
+                new()
+                {
+                    Id = "Plains_Solar_Shrine",
+                    Type = "shrine",
+                    Name = "🔥 Solar Flare Shrine",
+                    Description = "Blazes with a solar aura dealing 120 Fire Damage per second for 60s.",
+                    X = 3400,
+                    Y = 1400,
+                    BuffType = "SolarFlare",
+                    BuffDuration = 60,
+                    Color = "#ff7675",
+                    Icon = "🔥"
+                },
+                new()
+                {
+                    Id = "Plains_Void_Monolith",
+                    Type = "monolith",
+                    Name = "🔮 Corrupted Void Monolith",
+                    Description = "Awaken the monolith to survive 3 monster waves for guaranteed Genesis Catalysts!",
+                    X = 2400,
+                    Y = 3200,
+                    BuffType = "None",
+                    Color = "#9b59b6",
+                    Icon = "🔮",
+                    WaveCount = 3
+                },
+                new()
+                {
+                    Id = "Plains_SubCave_Goblin",
+                    Type = "sub_cave",
+                    Name = "🚪 Sub-Cave: Goblin Warren",
+                    Description = "Enter the subterranean goblin warren to hunt the Alpha Chieftain.",
+                    X = 1600,
+                    Y = 3400,
+                    BuffType = "None",
+                    Color = "#e67e22",
+                    Icon = "🚪",
+                    TargetSubZone = "ForgottenCrypt"
+                }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = 600, Y = 600, Count = 6, Type = "slime" },
-                new() { X = 750, Y = 1800, Count = 7, Type = "wolf" },
-                new() { X = 2100, Y = 700, Count = 8, Type = "goblin" },
-                new() { X = 2300, Y = 2200, Count = 7, Type = "wolf" },
-                new() { X = 1500, Y = 1500, Count = 5, Type = "slime" }
+                new() { X = 800, Y = 800, Count = 7, Type = "slime" },
+                new() { X = 1200, Y = 2200, Count = 8, Type = "wolf" },
+                new() { X = 2800, Y = 1000, Count = 9, Type = "goblin" },
+                new() { X = 3200, Y = 2800, Count = 8, Type = "wolf" },
+                new() { X = 2200, Y = 2200, Count = 6, Type = "slime" },
+                new() { X = 3800, Y = 1200, Count = 8, Type = "goblin" },
+                new() { X = 1600, Y = 3600, Count = 7, Type = "undead_knight" },
+                new() { X = 3600, Y = 3600, Count = 8, Type = "wolf" }
             }
         };
     }
@@ -374,6 +451,35 @@ public static class ZoneMapGenerator
                 new() { X = 6 * TILE_SIZE, Y = 6 * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 1800, Name = "🌿 Back to Haven" },
                 new() { X = 48 * TILE_SIZE, Y = 48 * TILE_SIZE, TargetZone = "VoidAbyss", TargetX = 240, TargetY = 1440, Name = "🌌 To Void Abyss" }
             },
+            Pois = new List<ZonePoiDto>
+            {
+                new()
+                {
+                    Id = "Crypt_Chaos_Shrine",
+                    Type = "shrine",
+                    Name = "☠️ Abyssal Soul Shrine",
+                    Description = "Infuses weapons with 50 Chaos Damage and +20% Life Leech for 60s.",
+                    X = 24 * TILE_SIZE,
+                    Y = 24 * TILE_SIZE,
+                    BuffType = "AbyssalLeech",
+                    BuffDuration = 60,
+                    Color = "#8e44ad",
+                    Icon = "☠️"
+                },
+                new()
+                {
+                    Id = "Crypt_Corrupted_Monolith",
+                    Type = "monolith",
+                    Name = "🔮 Necrotic Void Monolith",
+                    Description = "Awaken the dark monolith for guaranteed Rare drops and Socketing Cores!",
+                    X = 10 * TILE_SIZE,
+                    Y = 40 * TILE_SIZE,
+                    BuffType = "None",
+                    Color = "#9b59b6",
+                    Icon = "🔮",
+                    WaveCount = 3
+                }
+            },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
                 new() { X = 600, Y = 600, Count = 6, Type = "skeleton" },
@@ -443,6 +549,22 @@ public static class ZoneMapGenerator
             {
                 new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 2950, TargetY = 1536, Name = "🌾 To Plains" },
                 new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 220, TargetY = 1440, Name = "🔥 To Molten Caldera" }
+            },
+            Pois = new List<ZonePoiDto>
+            {
+                new()
+                {
+                    Id = "Tundra_Glacial_Shrine",
+                    Type = "shrine",
+                    Name = "❄️ Glacial Ward Shrine",
+                    Description = "Grants 300 Ice Shield Ward and freezeproof immunity for 60s.",
+                    X = 1400,
+                    Y = 1000,
+                    BuffType = "GlacialWard",
+                    BuffDuration = 60,
+                    Color = "#74b9ff",
+                    Icon = "❄️"
+                }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
@@ -522,6 +644,22 @@ public static class ZoneMapGenerator
             {
                 new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 2750, TargetY = 1440, Name = "❄️ To Frostpeak" },
                 new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 220, TargetY = 1536, Name = "⚡ To Stormpeak Ridge" }
+            },
+            Pois = new List<ZonePoiDto>
+            {
+                new()
+                {
+                    Id = "Caldera_Greed_Shrine",
+                    Type = "shrine",
+                    Name = "💎 Greed Catalyst Shrine",
+                    Description = "Triples all Genesis Currency drop rates for 60s!",
+                    X = cx * TILE_SIZE,
+                    Y = (cy - 6) * TILE_SIZE,
+                    BuffType = "GreedCatalyst",
+                    BuffDuration = 60,
+                    Color = "#f1c40f",
+                    Icon = "💎"
+                }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {

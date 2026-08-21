@@ -85,7 +85,19 @@ export const player = {
     { ...RESURRECTION_SCROLL, stack: 3 }
   ],
   bagFilter: 'all',
-  monsterKills: {}
+  monsterKills: {},
+  activeBuffs: [],
+  skillProficiencies: {
+    slash: { exp: 450, rank: 'D', rankName: 'Hardened Combatant (D)' },
+    fireball: { exp: 1200, rank: 'C', rankName: 'Skilled Specialist (C)' },
+    frost: { exp: 150, rank: 'E', rankName: 'Adept Adept (E)' },
+    meteor: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)' },
+    dash: { exp: 600, rank: 'D', rankName: 'Hardened Combatant (D)' }
+  },
+  highestClearedSpireFloor: 0,
+  statPoints: { str: 15, dex: 15, int: 15, vit: 15, unallocated: 5 },
+  unlockedTitles: ['The Unbound', 'Pioneer of Aethelis'],
+  activeTitle: 'The Unbound'
 };
 
 export const monsters = [];
@@ -93,6 +105,7 @@ export const trainingDummies = [];
 export const npcs = [];
 export const portals = [];
 export const props = [];
+export const pois = [];
 export const projectiles = [];
 export const particles = [];
 export const floatingTexts = [];

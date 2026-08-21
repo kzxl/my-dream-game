@@ -96,10 +96,13 @@ graph TD
 | **Genesis Crafting & Currency** | Crafting / Forge | `[ĐÃ HOÀN THÀNH]` | Bàn rèn Genesis Forge Bench, 8 loại Catalysts & Cores |
 | **Celestial Devotion Tree** | Passive System | `[ĐÃ HOÀN THÀNH]` | Cây chòm sao thiên văn, SVG leylines, 4 combat procs |
 | **World Map Atlas & 9 Acts** | Map & Exploration | `[ĐÃ HOÀN THÀNH]` | Fullscreen Atlas (Phím M), 9 Acts, Fast Travel |
+| **Map Expansion 96x96 & POIs** | Map Engine | `[ĐÃ HOÀN THÀNH]` | Aether Shrines, Corrupted Monoliths, Sub-Caves, Minimap Radar |
+| **Endless Spire 100 Tầng (SAO)** | Endgame Mode | `[ĐÃ HOÀN THÀNH]` | Labyrinth 1-100 floors, Boss Chambers, Floor Rewards (`EndlessSpireManager`) |
+| **Skill Proficiency Evolution (Manhua)** | Skill Progression | `[ĐÃ HOÀN THÀNH]` | Rank F -> Mythic (+120% DMG, +50% AoE, +20% Crit, Visual Hues) |
+| **Aethel Runewords System (Diablo)** | Crafting / Runes | `[ĐÃ HOÀN THÀNH]` | Ghép chữ Cổ Ngữ (STEEL, STEALTH, ANCIENT_OATH, RADIANCE, CALAMITY) |
 | **Multi-Character Roster & Google Auth** | Cloud & Account | `[ĐÃ HOÀN THÀNH]` | Google OAuth 2.0 Direct Auth, Roster nhiều nhân vật |
 | **SignalR Multiplayer Co-op & Chat** | Multiplayer | `[ĐÃ HOÀN THÀNH]` | Thấy nhau trong cùng map, chat khu vực, sync combat |
 | **Defeat & Resurrection Engine** | Death Penalty | `[ĐÃ HOÀN THÀNH]` | Scroll of Resurrection, Server-Authoritative Check |
 | **Bestiary Lore & Codex** | Lore System | `[ĐÃ HOÀN THÀNH]` | Tra cứu quái vật, lore, chỉ số điểm yếu nguyên tố |
-| **Endless Spire 100 Tầng (SAO)** | Endgame Mode | `[CẦN MỞ RỘNG]` | Tích hợp vào Map Device (Phím O) |
-| **Co-op Stagger & Switch (SAO)** | Combat Sync | `[CẦN MỞ RỘNG]` | Tận dụng SignalR GameHub broadcast Stagger window |
-| **Genesis Boss Core Synthesizer (SAO)** | Forge Expansion | `[CẦN MỞ RỘNG]` | Ghép Lõi Boss chế tạo vũ khí Unique |
+| **Co-op Stagger & Switch (SAO)** | Combat Sync | `[PLANNED]` | Tận dụng SignalR GameHub broadcast Stagger window |
+| **Shadow / Soul Extraction (Manhua)** | Summoner | `[PLANNED]` | Trích xuất linh hồn quái/boss làm quân đoàn trợ chiến |

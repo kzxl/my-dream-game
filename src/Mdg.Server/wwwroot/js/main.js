@@ -3,7 +3,7 @@
  * Main Orchestrator, Server-Authoritative Map Loader, Collision & Environmental Biome Hazards
  */
 
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot, keys, mouse } from './state.js';
 import { ZONES, fetchMasterZonesFromServer } from './data/zones.js';
 import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './data/items.js';
 import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
@@ -162,6 +162,7 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   npcs.length = 0;
   portals.length = 0;
   props.length = 0;
+  pois.length = 0;
   projectiles.length = 0;
   particles.length = 0;
   floatingTexts.length = 0;
@@ -190,6 +191,7 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   // 2. Load Elements from ZoneMap
   if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
   if (currentZoneMap.npcs) currentZoneMap.npcs.forEach(n => npcs.push({ ...n }));
+  if (currentZoneMap.pois) currentZoneMap.pois.forEach(p => pois.push({ ...p }));
   if (currentZoneMap.dummies) {
     currentZoneMap.dummies.forEach(d => {
       trainingDummies.push({ x: d.x, y: d.y, name: d.name, life: 99999, maxLife: 99999, armor: 200, isAlive: true, hurtTimer: 0 });
@@ -850,6 +852,52 @@ window.addEventListener('keydown', e => {
   }
 
   if (e.code === 'KeyF') {
+    // 0. Check near POI (Aether Shrine, Corrupted Monolith, Sub-Cave)
+    const nearPoi = pois.find(p => Math.hypot(player.x - p.x, player.y - p.y) < (p.radius || 75));
+    if (nearPoi) {
+      if (nearPoi.isActivated) {
+        floatingTexts.push({ x: nearPoi.x, y: nearPoi.y - 40, text: '(Already Activated)', color: '#7f8c8d', life: 1.2 });
+        return;
+      }
+      if (nearPoi.type === 'shrine') {
+        nearPoi.isActivated = true;
+        player.activeBuffs = (player.activeBuffs || []).filter(b => b.buffType !== nearPoi.buffType);
+        player.activeBuffs.push({
+          id: nearPoi.id,
+          name: nearPoi.name,
+          buffType: nearPoi.buffType,
+          duration: nearPoi.buffDuration || 60,
+          maxDuration: nearPoi.buffDuration || 60,
+          icon: nearPoi.icon,
+          color: nearPoi.color
+        });
+        AudioEngine.playSpellCast?.('meteor');
+        floatingTexts.push({ x: player.x, y: player.y - 30, text: `✨ ${nearPoi.name} ACTIVATED!`, color: nearPoi.color || '#ffd700', isCrit: true, life: 2.0 });
+        for (let i = 0; i < 20; i++) {
+          particles.push({
+            x: player.x,
+            y: player.y,
+            vx: (Math.random() - 0.5) * 140,
+            vy: (Math.random() - 0.5) * 140,
+            size: Math.random() * 5 + 3,
+            color: nearPoi.color || '#ffd700',
+            life: 1.2
+          });
+        }
+        return;
+      } else if (nearPoi.type === 'monolith') {
+        nearPoi.isActivated = true;
+        floatingTexts.push({ x: nearPoi.x, y: nearPoi.y - 40, text: '⚠️ CORRUPTED MONOLITH AWAKENED!', color: '#e74c3c', isCrit: true, life: 2.5 });
+        spawnMonsterCluster(nearPoi.x - 60, nearPoi.y - 60, 4, 'undead_knight');
+        spawnMonsterCluster(nearPoi.x + 60, nearPoi.y + 60, 4, 'goblin');
+        spawnMonster(nearPoi.x, nearPoi.y, 'boss');
+        return;
+      } else if (nearPoi.type === 'sub_cave') {
+        loadZone(nearPoi.targetSubZone || 'ForgottenCrypt', 300, 300);
+        return;
+      }
+    }
+
     // 1. Check near NPC to talk
     const nearNpc = npcs.find(n => Math.hypot(player.x - n.x, player.y - n.y) < 110);
     if (nearNpc) {

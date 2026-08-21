@@ -10,6 +10,45 @@ import { showDefeatModal } from './ui/defeat-ui.js';
 import { ApiClient } from './services/api-client.js';
 import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from './data/monsters.js';
 
+export const PROFICIENCY_THRESHOLDS = [
+  { rank: 'F', exp: 0, title: 'Novice Practitioner (F)', bonusDmg: 0 },
+  { rank: 'E', exp: 100, title: 'Adept Adept (E)', bonusDmg: 5 },
+  { rank: 'D', exp: 350, title: 'Hardened Combatant (D)', bonusDmg: 10 },
+  { rank: 'C', exp: 900, title: 'Skilled Specialist (C)', bonusDmg: 18 },
+  { rank: 'B', exp: 2200, title: 'Master Virtuoso (B)', bonusDmg: 28 },
+  { rank: 'A', exp: 5000, title: 'Grandmaster Ascendant (A)', bonusDmg: 40 },
+  { rank: 'S', exp: 12000, title: '👑 S-Rank Calamity (S)', bonusDmg: 60 },
+  { rank: 'SSS', exp: 30000, title: '🌟 SSS-Rank Monarch (SSS)', bonusDmg: 85 },
+  { rank: 'Mythic', exp: 80000, title: '✨ Primordial Mythic Awakening', bonusDmg: 120 }
+];
+
+export function recordSkillProficiency(skillKey, gain = 10) {
+  if (!player.skillProficiencies) player.skillProficiencies = {};
+  if (!player.skillProficiencies[skillKey]) {
+    player.skillProficiencies[skillKey] = { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)' };
+  }
+  const prof = player.skillProficiencies[skillKey];
+  const oldRank = prof.rank;
+  prof.exp += gain;
+
+  let currentTier = PROFICIENCY_THRESHOLDS[0];
+  for (let i = PROFICIENCY_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (prof.exp >= PROFICIENCY_THRESHOLDS[i].exp) {
+      currentTier = PROFICIENCY_THRESHOLDS[i];
+      break;
+    }
+  }
+
+  prof.rank = currentTier.rank;
+  prof.rankName = currentTier.title;
+  prof.bonusDmg = currentTier.bonusDmg;
+
+  if (prof.rank !== oldRank) {
+    AudioEngine.playLevelUp?.();
+    spawnDamageNumber(player.x, player.y - 75, `🌟 PROFICIENCY RANK UP: ${skillKey.toUpperCase()} -> [${prof.rank}]!`, true, '#ffd700');
+  }
+}
+
 export function getMonsterLoreBonus(monsterType, isBoss = false) {
   const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
   const profile = getMonsterDiscoveryProfile(monsterType, kills, isBoss);
@@ -53,6 +92,33 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
         maxLife: 0.25,
         size: 3
       });
+    }
+  }
+
+  // Active Shrine Buff: Tempest Aura Chain Lightning Proc
+  if (!isProc && player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'TempestAura')) {
+    monsters.forEach(otherM => {
+      if (otherM !== target && otherM.isAlive && Math.hypot(otherM.x - target.x, otherM.y - target.y) < 140) {
+        dealDamage(otherM, 0, 0, 0, 85, 0, false, { x: target.x, y: target.y }, false, true);
+        particles.push({
+          x: (target.x + otherM.x) / 2,
+          y: (target.y + otherM.y) / 2,
+          vx: 0,
+          vy: 0,
+          color: '#00f2fe',
+          life: 0.2,
+          maxLife: 0.2,
+          size: 6
+        });
+      }
+    });
+  }
+
+  // Active Shrine Buff: Abyssal Leech
+  if (!isProc && player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'AbyssalLeech')) {
+    const healAmount = Math.min(25, Math.round((rawPhysical + rawChaos) * 0.15));
+    if (healAmount > 0) {
+      player.life = Math.min(player.maxLife, player.life + healAmount);
     }
   }
 
@@ -452,6 +518,7 @@ export function castSlash() {
   const s = SKILLS.slash;
   if (player.cooldowns.slash > 0) return;
   player.cooldowns.slash = Math.max(0.32, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
+  recordSkillProficiency('slash', 10);
 
   const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
   if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
@@ -547,6 +614,7 @@ export function castFireball() {
   if (player.cooldowns.fireball > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
   player.cooldowns.fireball = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
+  recordSkillProficiency('fireball', 12);
 
   const baseAngle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
   let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
@@ -623,6 +691,7 @@ export function castFrostNova() {
   if (player.cooldowns.frost > 0 || player.mana < s.manaCost) return;
   player.mana -= s.manaCost;
   player.cooldowns.frost = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
+  recordSkillProficiency('frost', 14);
 
   let novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
   if (isNodeAllocated('frost', 'fr_aoe')) novaRadius = Math.round(novaRadius * 1.30);
@@ -682,6 +751,7 @@ export function castMeteor() {
   player.mana -= s.manaCost;
   const cdReduction = isNodeAllocated('meteor', 'met_cd') ? 1.0 : 0;
   player.cooldowns.meteor = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl - cdReduction);
+  recordSkillProficiency('meteor', 20);
 
   const targetX = mouse.worldX;
   const targetY = mouse.worldY;
@@ -756,6 +826,7 @@ export function castDash() {
   const s = SKILLS.dash;
   if (player.cooldowns.dash > 0) return;
   player.cooldowns.dash = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
+  recordSkillProficiency('dash', 8);
 
   let dx = 0, dy = 0;
   if (window.keys && (window.keys['KeyW'] || window.keys['ArrowUp'])) dy -= 1;

@@ -1,4 +1,4 @@
-import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, projectiles, particles, floatingTexts, groundLoot } from './state.js';
+import { TILE_SIZE, camera, player, otherPlayers, monsters, trainingDummies, npcs, portals, props, pois, projectiles, particles, floatingTexts, groundLoot } from './state.js';
 import { assets } from './assets.js';
 import { RARITY_COLORS } from './data/items.js';
 import { getMonsterLoreBonus } from './combat.js';
@@ -20,6 +20,7 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   portals.forEach(p => renderList.push({ y: p.y, render: () => drawPortal(ctx, p) }));
   props.forEach(p => renderList.push({ y: p.y, render: () => drawPropClean(ctx, p) }));
   npcs.forEach(n => renderList.push({ y: n.y, render: () => drawNpc(ctx, n) }));
+  pois.forEach(poi => renderList.push({ y: poi.y, render: () => drawPoiClean(ctx, poi) }));
   trainingDummies.forEach(d => renderList.push({ y: d.y, render: () => drawDummy(ctx, d) }));
   groundLoot.forEach((loot, idx) => renderList.push({ y: loot.y, render: () => drawGroundLoot(ctx, loot, idx) }));
 
@@ -906,6 +907,110 @@ export function drawDummy(ctx, d) {
   ctx.restore();
 }
 
+export function drawPoiClean(ctx, poi) {
+  ctx.save();
+  ctx.translate(poi.x, poi.y);
+
+  const time = performance.now() / 1000;
+  const pulse = (Math.sin(time * 3) + 1) * 0.5;
+  const color = poi.color || '#f1c40f';
+
+  // 1. Base Runic Circle
+  ctx.fillStyle = poi.isActivated ? 'rgba(100, 100, 100, 0.2)' : 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 12, 28, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = poi.isActivated ? '#7f8c8d' : color;
+  ctx.lineWidth = poi.isActivated ? 1.5 : (2 + pulse * 1.5);
+  ctx.beginPath();
+  ctx.ellipse(0, 12, 24, 10, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 2. Pillar / Crystal Core
+  if (poi.type === 'shrine') {
+    // Floating Runic Crystal
+    const floatY = -24 + Math.sin(time * 2.5) * 5;
+    const grad = ctx.createLinearGradient(0, floatY - 18, 0, floatY + 18);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, color);
+    grad.addColorStop(1, '#111111');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, floatY - 20);
+    ctx.lineTo(14, floatY);
+    ctx.lineTo(0, floatY + 20);
+    ctx.lineTo(-14, floatY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Floating Sparks
+    ctx.fillStyle = color;
+    for (let i = 0; i < 3; i++) {
+      const spAngle = time * 2 + (i * Math.PI * 2) / 3;
+      const sx = Math.cos(spAngle) * 20;
+      const sy = floatY + Math.sin(spAngle) * 8;
+      ctx.fillRect(sx - 2, sy - 2, 4, 4);
+    }
+  } else if (poi.type === 'monolith') {
+    // Ancient Corrupted Monolith Slab
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(-14, -40, 28, 50);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-14, -40, 28, 50);
+
+    // Glowing Rune Lines on Slab
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, -32);
+    ctx.lineTo(0, -10);
+    ctx.moveTo(-8, -20);
+    ctx.lineTo(8, -20);
+    ctx.stroke();
+  } else if (poi.type === 'sub_cave') {
+    // Cave Entrance Arch
+    ctx.fillStyle = '#1e272e';
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, Math.PI, 0);
+    ctx.lineTo(22, 14);
+    ctx.lineTo(-22, 14);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#d2dae2';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // 3. Nameplate & Interaction Prompt
+  const distToPlayer = Math.hypot(player.x - poi.x, player.y - poi.y);
+  const isNear = distToPlayer < (poi.radius || 64);
+
+  ctx.font = 'bold 10px "Outfit", sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.fillText(poi.name, 0, -56);
+
+  if (!poi.isActivated) {
+    ctx.font = isNear ? 'bold 10px "Outfit", sans-serif' : '8px "Outfit", sans-serif';
+    ctx.fillStyle = isNear ? '#ffd700' : '#bdc3c7';
+    const actionLabel = poi.type === 'shrine' ? '[F] Receive Blessing' : (poi.type === 'monolith' ? '[F] Awaken Monolith' : '[F] Enter Cave');
+    ctx.fillText(actionLabel, 0, -70);
+  } else {
+    ctx.font = '8px "Outfit", sans-serif';
+    ctx.fillStyle = '#7f8c8d';
+    ctx.fillText('(Depleted)', 0, -70);
+  }
+
+  ctx.restore();
+}
+
 export function renderMinimap(minimapCanvas, mmCtx, zoneData) {
   mmCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
   const worldW = zoneData?.worldWidth || 1920;
@@ -924,6 +1029,39 @@ export function renderMinimap(minimapCanvas, mmCtx, zoneData) {
       }
     }
   }
+
+  // Draw POIs on Minimap Radar
+  pois.forEach(poi => {
+    mmCtx.save();
+    const px = poi.x * scaleX;
+    const py = poi.y * scaleY;
+    mmCtx.fillStyle = poi.color || '#f1c40f';
+    mmCtx.strokeStyle = '#ffffff';
+    mmCtx.lineWidth = 1;
+
+    if (poi.type === 'shrine') {
+      // Star / Diamond
+      mmCtx.beginPath();
+      mmCtx.moveTo(px, py - 4);
+      mmCtx.lineTo(px + 4, py);
+      mmCtx.lineTo(px, py + 4);
+      mmCtx.lineTo(px - 4, py);
+      mmCtx.closePath();
+      mmCtx.fill();
+      mmCtx.stroke();
+    } else if (poi.type === 'monolith') {
+      // Hexagon / Square
+      mmCtx.fillRect(px - 3, py - 3, 6, 6);
+      mmCtx.strokeRect(px - 3, py - 3, 6, 6);
+    } else {
+      // Circle
+      mmCtx.beginPath();
+      mmCtx.arc(px, py, 3.5, 0, Math.PI * 2);
+      mmCtx.fill();
+      mmCtx.stroke();
+    }
+    mmCtx.restore();
+  });
 
   portals.forEach(p => {
     mmCtx.fillStyle = '#c678dd';
