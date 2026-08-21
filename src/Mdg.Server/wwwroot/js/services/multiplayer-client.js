@@ -1,11 +1,18 @@
 /**
  * Real-Time Multiplayer Client via ASP.NET Core SignalR GameHub
- * Synchronizes player movements, visual skill casts, and Zone Chat across players in the same zone.
+ * Synchronizes player movements, visual skill casts, and Multi-Channel Chat across players in the same zone and channel.
  */
 
 import { otherPlayers, player, zoneChatMessages } from '../state.js';
 import { spawnDamageNumber } from '../combat.js';
 import { AudioEngine } from '../audio.js';
+
+export const CHANNELS = [
+  { id: 'CH-1', name: 'Global Nexus (CH 1)', region: 'Global', icon: '🌐' },
+  { id: 'CH-2', name: 'Asia Pacific (CH 2)', region: 'Asia', icon: '⚡' },
+  { id: 'CH-3', name: 'Hardcore Sanctuary (CH 3)', region: 'Challenge', icon: '💀' },
+  { id: 'CH-4', name: 'Trade & Social Hub (CH 4)', region: 'Economy', icon: '💎' }
+];
 
 class MultiplayerClient {
   constructor() {
@@ -16,12 +23,14 @@ class MultiplayerClient {
     this.lastSentPos = { x: 0, y: 0 };
     this.posSendInterval = null;
     this.processedChatIds = new Set();
+    this.currentChannel = localStorage.getItem('mdg_current_channel') || 'CH-1';
   }
 
   init() {
     if (this.isInitialized) return;
     this.isInitialized = true;
     this.connect();
+    this.setupChannelUI();
     
     // Position broadcast loop (20 TPS)
     setInterval(() => {
@@ -121,9 +130,11 @@ class MultiplayerClient {
             targetX: p.x,
             targetY: p.y
           });
-          spawnDamageNumber(p.x, p.y - 40, `👋 ${p.characterName} entered zone`, false, '#4ade80');
+          spawnDamageNumber(p.x, p.y - 40, `👋 ${p.characterName} entered zone [${this.currentChannel}]`, false, '#4ade80');
+          this.updateConnectionStatus(true);
         }
       } else if (target === 'ZonePeersSnapshot' && Array.isArray(args[0])) {
+        otherPlayers.clear();
         for (const p of args[0]) {
           if (p.characterId !== player.id) {
             otherPlayers.set(p.characterId, {
@@ -133,6 +144,12 @@ class MultiplayerClient {
             });
           }
         }
+        this.updateConnectionStatus(true);
+      } else if (target === 'ChannelChanged' && args[0]) {
+        const info = args[0];
+        spawnDamageNumber(player.x, player.y - 60, `🌐 Switched to ${info.channelId} (${info.peersCount} peers nearby)`, true, '#ffd700');
+        this.updateChannelUI();
+        this.updateConnectionStatus(true);
       } else if (target === 'PlayerMoved' && args[0]) {
         const m = args[0];
         const peer = otherPlayers.get(m.characterId);
@@ -167,6 +184,7 @@ class MultiplayerClient {
         if (peer) {
           spawnDamageNumber(peer.x, peer.y - 40, `${peer.characterName} left zone`, false, '#a0a8b7');
           otherPlayers.delete(id);
+          this.updateConnectionStatus(true);
         }
       }
     }
@@ -179,7 +197,9 @@ class MultiplayerClient {
       player.id || 'hero_default',
       player.name || 'The Unbound',
       player.classSpec || 'Novice',
+      player.gender || 'Male',
       zoneId,
+      this.currentChannel,
       player.x,
       player.y,
       player.level || 1,
@@ -194,14 +214,25 @@ class MultiplayerClient {
     this.sendInvocation('ChangeZone', [newZoneId, newX, newY]);
   }
 
+  changeChannel(newChannelId) {
+    if (newChannelId === this.currentChannel && this.isConnected) return;
+    this.currentChannel = newChannelId;
+    localStorage.setItem('mdg_current_channel', newChannelId);
+    otherPlayers.clear();
+    if (this.isConnected) {
+      this.sendInvocation('ChangeChannel', [newChannelId]);
+    }
+    this.updateChannelUI();
+  }
+
   broadcastSkill(skillKey, originX, originY, targetX, targetY) {
     if (!this.isConnected) return;
     this.sendInvocation('CastSkill', [skillKey, originX, originY, targetX, targetY]);
   }
 
-  sendChat(message) {
+  sendChat(message, scope = 'zone') {
     if (!this.isConnected || !message.trim()) return;
-    this.sendInvocation('SendZoneChat', [message]);
+    this.sendInvocation('SendZoneChat', [message, scope]);
   }
 
   sendInvocation(target, args) {
@@ -225,12 +256,25 @@ class MultiplayerClient {
     }
   }
 
+  setupChannelUI() {
+    this.updateChannelUI();
+  }
+
+  updateChannelUI() {
+    const chEl = document.getElementById('channelSelectBtn');
+    if (chEl) {
+      const chObj = CHANNELS.find(c => c.id === this.currentChannel) || CHANNELS[0];
+      chEl.innerHTML = `${chObj.icon} ${chObj.id} ▾`;
+      chEl.title = `Current World Channel: ${chObj.name}. Click to switch channel!`;
+    }
+  }
+
   updateConnectionStatus(connected) {
     const el = document.getElementById('multiplayerStatusPill');
     if (el) {
       if (connected) {
         el.className = 'mp-pill mp-online';
-        el.innerHTML = `🟢 Online (${otherPlayers.size + 1})`;
+        el.innerHTML = `🟢 ${this.currentChannel} (${otherPlayers.size + 1} heroes)`;
       } else {
         el.className = 'mp-pill mp-offline';
         el.innerHTML = `🔴 Offline`;
@@ -244,10 +288,12 @@ class MultiplayerClient {
 
     const div = document.createElement('div');
     div.className = 'chat-entry';
-    div.innerHTML = `<span class="ce-time">[${chat.timestamp}]</span> <b class="ce-name ${chat.classSpec.toLowerCase()}">${chat.characterName}:</b> <span class="ce-msg">${chat.message}</span>`;
+    const scopeTag = chat.scope === 'world' ? '<span class="ce-scope world">[World]</span>' : `<span class="ce-scope channel">[${chat.channelId || 'CH-1'}]</span>`;
+    div.innerHTML = `${scopeTag} <span class="ce-time">[${chat.timestamp}]</span> <b class="ce-name ${(chat.classSpec || 'novice').toLowerCase()}">${chat.characterName}:</b> <span class="ce-msg">${chat.message}</span>`;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
   }
 }
 
 export const MPClient = new MultiplayerClient();
+

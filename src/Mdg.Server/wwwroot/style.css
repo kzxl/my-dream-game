@@ -5821,6 +5821,155 @@ canvas#gameCanvas {
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9);
 }
 
+/* ==========================================================================
+   WORLD CHANNEL SYSTEM (SHARDING & MULTI-CHARACTER SWITCHER)
+   ========================================================================== */
+.channel-pill-btn {
+  background: rgba(26, 35, 50, 0.85);
+  border: 1px solid rgba(198, 162, 88, 0.5);
+  color: #ffd700;
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.channel-pill-btn:hover {
+  background: rgba(198, 162, 88, 0.2);
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.channel-modal-box {
+  width: 580px;
+  max-width: 90vw;
+  background: rgba(12, 16, 24, 0.96);
+  border: 1.5px solid #c6a258;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.9), 0 0 25px rgba(198, 162, 88, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+}
+
+.channel-inner-scroll {
+  margin-top: 15px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.channel-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.channel-card {
+  background: rgba(20, 26, 38, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.channel-card:hover {
+  border-color: rgba(198, 162, 88, 0.6);
+  background: rgba(28, 36, 52, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+.channel-card.is-active-channel {
+  border-color: #00e676;
+  background: rgba(0, 230, 118, 0.08);
+  box-shadow: 0 0 15px rgba(0, 230, 118, 0.2);
+}
+
+.cc-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cc-icon {
+  font-size: 26px;
+}
+
+.cc-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cc-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cc-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+.cc-badge.active {
+  background: #00e676;
+  color: #000;
+}
+
+.cc-desc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.cc-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cc-btn:hover {
+  background: #ffd700;
+  color: #000;
+  border-color: #ffd700;
+}
+
+.cc-btn.active {
+  background: #00e676;
+  color: #000;
+  border-color: #00e676;
+}
+
+.ce-scope.world {
+  color: #ff9800;
+  font-weight: 800;
+}
+
+.ce-scope.channel {
+  color: #00e676;
+  font-weight: 800;
+}
+
+
 
 
 

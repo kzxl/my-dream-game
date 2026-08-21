@@ -1410,24 +1410,36 @@ document.getElementById('btn-toggle-roster')?.addEventListener('click', openRost
 // Zone Chat input listener
 const chatInput = document.getElementById('zoneChatInput');
 const btnSendChat = document.getElementById('btnSendChat');
+
+const sendCurrentChat = () => {
+  if (!chatInput) return;
+  const raw = chatInput.value.trim();
+  if (!raw) return;
+  let scope = 'channel';
+  let msg = raw;
+  if (raw.startsWith('/w ') || raw.startsWith('/world ')) {
+    scope = 'world';
+    msg = raw.replace(/^\/(w|world)\s+/, '');
+  } else if (raw.startsWith('/z ') || raw.startsWith('/zone ')) {
+    scope = 'zone';
+    msg = raw.replace(/^\/(z|zone)\s+/, '');
+  }
+  if (msg) {
+    MPClient.sendChat(msg, scope);
+    chatInput.value = '';
+  }
+};
+
 if (chatInput) {
   chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      const msg = chatInput.value.trim();
-      if (msg) {
-        MPClient.sendChat(msg);
-        chatInput.value = '';
-      }
+      sendCurrentChat();
     }
   });
 }
-if (btnSendChat && chatInput) {
+if (btnSendChat) {
   btnSendChat.onclick = () => {
-    const msg = chatInput.value.trim();
-    if (msg) {
-      MPClient.sendChat(msg);
-      chatInput.value = '';
-    }
+    sendCurrentChat();
   };
 }
 

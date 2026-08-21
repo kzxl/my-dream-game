@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
@@ -11,7 +13,9 @@ public sealed class PlayerStateDto
     public string CharacterId { get; set; } = string.Empty;
     public string CharacterName { get; set; } = string.Empty;
     public string ClassSpec { get; set; } = "Novice";
+    public string Gender { get; set; } = "Male";
     public string ZoneId { get; set; } = "SanctuaryHaven";
+    public string ChannelId { get; set; } = "CH-1";
     public double X { get; set; }
     public double Y { get; set; }
     public double Vx { get; set; }
@@ -29,7 +33,9 @@ public sealed class GameHub : Hub
     // Active players keyed by ConnectionId
     private static readonly ConcurrentDictionary<string, PlayerStateDto> ActivePlayers = new();
 
-    public async Task JoinZone(string characterId, string characterName, string classSpec, string zoneId, double x, double y, int level, double life, double maxLife)
+    private static string GetGroupKey(string channelId, string zoneId) => $"{channelId ?? "CH-1"}_{zoneId ?? "SanctuaryHaven"}";
+
+    public async Task JoinZone(string characterId, string characterName, string classSpec, string gender, string zoneId, string channelId, double x, double y, int level, double life, double maxLife)
     {
         var player = new PlayerStateDto
         {
@@ -37,7 +43,9 @@ public sealed class GameHub : Hub
             CharacterId = string.IsNullOrWhiteSpace(characterId) ? Context.ConnectionId : characterId,
             CharacterName = string.IsNullOrWhiteSpace(characterName) ? "Hero" : characterName,
             ClassSpec = classSpec ?? "Novice",
+            Gender = gender ?? "Male",
             ZoneId = zoneId ?? "SanctuaryHaven",
+            ChannelId = string.IsNullOrWhiteSpace(channelId) ? "CH-1" : channelId,
             X = x,
             Y = y,
             Level = level > 0 ? level : 1,
@@ -46,21 +54,48 @@ public sealed class GameHub : Hub
         };
 
         ActivePlayers[Context.ConnectionId] = player;
-        await Groups.AddToGroupAsync(Context.ConnectionId, player.ZoneId);
+        var groupKey = GetGroupKey(player.ChannelId, player.ZoneId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, groupKey);
 
-        // Notify existing players in zone about the new player
-        await Clients.Group(player.ZoneId).SendAsync("PlayerJoined", player);
+        // Notify existing peers in the same channel + zone
+        await Clients.OthersInGroup(groupKey).SendAsync("PlayerJoined", player);
 
-        // Send all existing peers in this zone back to the caller
-        var peersInZone = new System.Collections.Generic.List<PlayerStateDto>();
+        // Send all existing peers in this channel + zone back to the caller
+        var peersInZone = new List<PlayerStateDto>();
         foreach (var kvp in ActivePlayers)
         {
-            if (kvp.Key != Context.ConnectionId && kvp.Value.ZoneId == player.ZoneId)
+            if (kvp.Key != Context.ConnectionId && kvp.Value.ChannelId == player.ChannelId && kvp.Value.ZoneId == player.ZoneId)
             {
                 peersInZone.Add(kvp.Value);
             }
         }
         await Clients.Caller.SendAsync("ZonePeersSnapshot", peersInZone);
+    }
+
+    public async Task ChangeChannel(string newChannelId)
+    {
+        if (ActivePlayers.TryGetValue(Context.ConnectionId, out var player))
+        {
+            var oldGroup = GetGroupKey(player.ChannelId, player.ZoneId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, oldGroup);
+            await Clients.OthersInGroup(oldGroup).SendAsync("PlayerLeft", new { characterId = player.CharacterId });
+
+            player.ChannelId = string.IsNullOrWhiteSpace(newChannelId) ? "CH-1" : newChannelId;
+            var newGroup = GetGroupKey(player.ChannelId, player.ZoneId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, newGroup);
+            await Clients.OthersInGroup(newGroup).SendAsync("PlayerJoined", player);
+
+            var peersInZone = new List<PlayerStateDto>();
+            foreach (var kvp in ActivePlayers)
+            {
+                if (kvp.Key != Context.ConnectionId && kvp.Value.ChannelId == player.ChannelId && kvp.Value.ZoneId == player.ZoneId)
+                {
+                    peersInZone.Add(kvp.Value);
+                }
+            }
+            await Clients.Caller.SendAsync("ZonePeersSnapshot", peersInZone);
+            await Clients.Caller.SendAsync("ChannelChanged", new { channelId = player.ChannelId, peersCount = peersInZone.Count });
+        }
     }
 
     public async Task UpdatePosition(double x, double y, double vx, double vy, string facing)
@@ -73,7 +108,8 @@ public sealed class GameHub : Hub
             player.Vy = vy;
             player.Facing = facing ?? "down";
 
-            await Clients.OthersInGroup(player.ZoneId).SendAsync("PlayerMoved", new
+            var groupKey = GetGroupKey(player.ChannelId, player.ZoneId);
+            await Clients.OthersInGroup(groupKey).SendAsync("PlayerMoved", new
             {
                 characterId = player.CharacterId,
                 x = player.X,
@@ -89,7 +125,8 @@ public sealed class GameHub : Hub
     {
         if (ActivePlayers.TryGetValue(Context.ConnectionId, out var player))
         {
-            await Clients.OthersInGroup(player.ZoneId).SendAsync("PlayerSkillCast", new
+            var groupKey = GetGroupKey(player.ChannelId, player.ZoneId);
+            await Clients.OthersInGroup(groupKey).SendAsync("PlayerSkillCast", new
             {
                 characterId = player.CharacterId,
                 characterName = player.CharacterName,
@@ -102,22 +139,35 @@ public sealed class GameHub : Hub
         }
     }
 
-    public async Task SendZoneChat(string message)
+    public async Task SendZoneChat(string message, string scope = "zone")
     {
         if (ActivePlayers.TryGetValue(Context.ConnectionId, out var player))
         {
             var cleanMsg = (message ?? "").Trim();
             if (cleanMsg.Length > 200) cleanMsg = cleanMsg[..200];
 
-            await Clients.Group(player.ZoneId).SendAsync("ZoneChatMessage", new
+            var chatPayload = new
             {
                 id = Guid.NewGuid().ToString("N"),
                 characterId = player.CharacterId,
                 characterName = player.CharacterName,
                 classSpec = player.ClassSpec,
+                channelId = player.ChannelId,
+                zoneId = player.ZoneId,
+                scope,
                 message = cleanMsg,
                 timestamp = DateTime.UtcNow.ToString("HH:mm")
-            });
+            };
+
+            if (scope == "world")
+            {
+                await Clients.All.SendAsync("ZoneChatMessage", chatPayload);
+            }
+            else
+            {
+                var groupKey = GetGroupKey(player.ChannelId, player.ZoneId);
+                await Clients.Group(groupKey).SendAsync("ZoneChatMessage", chatPayload);
+            }
         }
     }
 
@@ -125,16 +175,27 @@ public sealed class GameHub : Hub
     {
         if (ActivePlayers.TryGetValue(Context.ConnectionId, out var player))
         {
-            var oldZone = player.ZoneId;
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, oldZone);
-            await Clients.Group(oldZone).SendAsync("PlayerLeft", new { characterId = player.CharacterId });
+            var oldGroup = GetGroupKey(player.ChannelId, player.ZoneId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, oldGroup);
+            await Clients.OthersInGroup(oldGroup).SendAsync("PlayerLeft", new { characterId = player.CharacterId });
 
             player.ZoneId = newZoneId;
             player.X = newX;
             player.Y = newY;
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, newZoneId);
-            await Clients.Group(newZoneId).SendAsync("PlayerJoined", player);
+            var newGroup = GetGroupKey(player.ChannelId, newZoneId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, newGroup);
+            await Clients.OthersInGroup(newGroup).SendAsync("PlayerJoined", player);
+
+            var peersInZone = new List<PlayerStateDto>();
+            foreach (var kvp in ActivePlayers)
+            {
+                if (kvp.Key != Context.ConnectionId && kvp.Value.ChannelId == player.ChannelId && kvp.Value.ZoneId == player.ZoneId)
+                {
+                    peersInZone.Add(kvp.Value);
+                }
+            }
+            await Clients.Caller.SendAsync("ZonePeersSnapshot", peersInZone);
         }
     }
 
@@ -142,8 +203,10 @@ public sealed class GameHub : Hub
     {
         if (ActivePlayers.TryRemove(Context.ConnectionId, out var player))
         {
-            await Clients.Group(player.ZoneId).SendAsync("PlayerLeft", new { characterId = player.CharacterId });
+            var groupKey = GetGroupKey(player.ChannelId, player.ZoneId);
+            await Clients.OthersInGroup(groupKey).SendAsync("PlayerLeft", new { characterId = player.CharacterId });
         }
         await base.OnDisconnectedAsync(exception);
     }
 }
+

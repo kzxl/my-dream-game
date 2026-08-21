@@ -492,8 +492,10 @@ export function drawOtherPlayer(ctx, p) {
   ctx.fill();
 
   // Sprite
-  const img = assets.maleHero;
-  if (img.complete && img.naturalWidth > 0) {
+  const img = (p.gender === 'Female' && assets.femaleHero && assets.femaleHero.complete && assets.femaleHero.naturalWidth > 0)
+    ? assets.femaleHero
+    : assets.maleHero;
+  if (img && img.complete && img.naturalWidth > 0) {
     const frameW = img.naturalWidth / 4;
     const frameH = img.naturalHeight / 4;
     let row = 0;
@@ -1396,6 +1398,21 @@ export function renderMinimap(minimapCanvas, mmCtx, zoneData) {
         mmCtx.fillRect(m.x * scaleX - 1, m.y * scaleY - 1, sz, sz);
       }
     }
+  });
+
+  // 6.5. Render Allied Players in Same Map on Minimap Radar
+  otherPlayers.forEach(op => {
+    const opX = op.x * scaleX;
+    const opY = op.y * scaleY;
+    mmCtx.save();
+    mmCtx.fillStyle = '#00e676';
+    mmCtx.strokeStyle = '#ffffff';
+    mmCtx.lineWidth = 1;
+    mmCtx.beginPath();
+    mmCtx.arc(opX, opY, 3.5, 0, Math.PI * 2);
+    mmCtx.fill();
+    mmCtx.stroke();
+    mmCtx.restore();
   });
 
   // 7. Active Vision Glow Cone & Player Icon

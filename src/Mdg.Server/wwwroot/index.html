@@ -72,6 +72,7 @@
       <div class="minimap-header">
         <span id="minimap-zone-title">🌿 HAVEN</span>
         <div class="minimap-meta-tags">
+          <button id="channelSelectBtn" class="channel-pill-btn" title="Switch World Channel">🌐 CH-1 ▾</button>
           <span id="fps-counter" class="fps-tag">60 FPS</span>
         </div>
       </div>
@@ -805,7 +806,24 @@
     </div>
   </div>
 
+  <!-- World Channel Switcher Modal -->
+  <div id="channelModal" class="modal-overlay">
+    <div class="modal-content channel-modal-box">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">🌐</span>
+          <div>
+            <h2 style="margin:0; font-size:18px; color:#ffd700;">WORLD CHANNELS & REALMS</h2>
+            <span style="font-size:11px; color:#888;">Select a world channel shard to explore and meet other heroes</span>
+          </div>
+        </div>
+        <button id="closeChannelBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="channelContent" class="channel-inner-scroll"></div>
+    </div>
+  </div>
+
   <!-- Load Main ES Module -->
-  <script type="module" src="js/main.js?v=3"></script>
+  <script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>

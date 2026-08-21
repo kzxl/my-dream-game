@@ -75,7 +75,20 @@ Mỗi nhân vật là một thực thể độc lập hoàn toàn với `Charact
 * **CastSkill:** Khi người chơi tung chiêu (Fireball, Frost Nova, Slash, Meteor), `GameHub` phát sự kiện `PlayerSkillCast` tới tất cả người chơi trong khu vực.
 * **UpdatePosition:** Mỗi 50ms, người chơi gửi vị trí và vector di chuyển, client khác tự động nội suy vị trí (lerp interpolation) mượt mà.
 
-### 3.3. Kế Hoạch Mở Rộng Tiếp Theo (Future Multiplayer Features) `[CẦN MỞ RỘNG - PLANNED]`
+### 3.3. Hệ Thống Phân Kênh Thế Giới (World Channel Sharding Engine) `[ĐÃ HOÀN THÀNH - ACTIVE]`
+
+Nhằm giải quyết bài toán hiệu năng khi số lượng người chơi đông đảo và cho phép tạo phòng/kênh giao lưu riêng, máy chủ cung cấp hệ thống 4 Kênh Thế Giới (`CH-1` đến `CH-4`):
+1. **🌐 Channel 1 (Global Nexus):** Kênh thế giới chính mặc định, kết nối rộng khắp.
+2. **⚡ Channel 2 (Asia Pacific Realm):** Kênh phân vùng tối ưu độ trễ cho khu vực châu Á.
+3. **💀 Channel 3 (Hardcore Sanctuary):** Kênh thử thách cao độ dành cho cao thủ săn Boss và đi Rift.
+4. **💎 Channel 4 (Trade & Social Hub):** Kênh giao thương, tụ họp co-op và kết bạn.
+
+* **Nhóm SignalR Tối Ưu (Spatial & Channel Grouping):** `GetGroupKey(channelId, zoneId)` $\to$ `ch_1_SanctuaryHaven`, `ch_2_WhisperingPlains`. Mỗi Kênh là một phiên bản Map độc lập, giảm tải băng thông và tránh chen chúc.
+* **Chuyển Kênh Tức Thời (Hot Channel Switch):** Nhấn vào nút Kênh trên Minimap (`🌐 CH-1 ▾`), chọn kênh mới $\to$ Client tự động chuyển Group SignalR mà không cần reload trang.
+* **Minimap Ally Radar:** Hiển thị đồng đội trong cùng Map và Kênh với chấm xanh lá (`#00e676`), giúp dễ dàng tìm thấy nhau.
+* **Phân Luồng Trò Chuyện (Chat Scopes):** Hỗ trợ chat trong Kênh hiện tại (`[CH-1]`), chat toàn bản đồ (`/zone`), hoặc chat thế giới (`/world`).
+
+### 3.4. Kế Hoạch Mở Rộng Tiếp Theo (Future Multiplayer Features) `[CẦN MỞ RỘNG - PLANNED]`
 
 * **Co-op Stagger & Switch Window (Cảm hứng SAO):** Cửa sổ tấn công phối hợp bạo kích x2 khi đồng đội tạo choáng.
 * **Party Dungeon Instances:** Tạo phòng phụ bản riêng giới hạn 4 người chơi cùng chia sẻ Map Device Rift.

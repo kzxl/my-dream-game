@@ -16,6 +16,7 @@ import { renderSharedStashModal } from './stash-ui.js';
 import { renderRosterModal } from './roster-ui.js';
 import { sendPetToTown, companion } from '../companion.js';
 import { openGoogleAuthModal } from '../auth.js';
+import { MPClient, CHANNELS } from '../services/multiplayer-client.js';
 
 export function showZoneBanner(title, sub) {
   const banner = document.getElementById('zone-banner');
@@ -329,6 +330,62 @@ export function setupUIListeners() {
   document.getElementById('btn-close-stats')?.addEventListener('click', () => toggleModal('stats-modal'));
   document.getElementById('btn-toggle-inventory')?.addEventListener('click', () => toggleModal('inventory-modal'));
   document.getElementById('btn-close-inventory')?.addEventListener('click', () => toggleModal('inventory-modal'));
+
+  // World Channel Switcher Trigger & Modal Listeners
+  document.getElementById('channelSelectBtn')?.addEventListener('click', openChannelModal);
+  document.getElementById('closeChannelBtn')?.addEventListener('click', closeChannelModal);
+}
+
+export function openChannelModal() {
+  const modal = document.getElementById('channelModal');
+  if (!modal) return;
+  modal.classList.add('active');
+  renderChannelList();
+  AudioEngine.playTone(520, 'sine', 0.1, 0.08);
+}
+
+export function closeChannelModal() {
+  const modal = document.getElementById('channelModal');
+  if (!modal) return;
+  modal.classList.remove('active');
+}
+
+export function renderChannelList() {
+  const container = document.getElementById('channelContent');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="channel-card-stack">
+      ${CHANNELS.map(ch => {
+        const isCurrent = (MPClient.currentChannel === ch.id);
+        return `
+          <div class="channel-card ${isCurrent ? 'is-active-channel' : ''}" data-channel="${ch.id}">
+            <div class="cc-left">
+              <span class="cc-icon">${ch.icon}</span>
+              <div class="cc-text-wrap">
+                <div class="cc-title">${ch.name} ${isCurrent ? '<span class="cc-badge active">CONNECTED</span>' : ''}</div>
+                <div class="cc-desc">${ch.region} Shard • Real-time Multi-Character Instance</div>
+              </div>
+            </div>
+            <button class="cc-btn ${isCurrent ? 'active' : ''}" data-channel="${ch.id}">${isCurrent ? 'Active Shard' : 'Switch Shard'}</button>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  container.querySelectorAll('.cc-btn, .channel-card').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const chId = el.getAttribute('data-channel');
+      if (chId) {
+        MPClient.changeChannel(chId);
+        AudioEngine.playTone(650, 'sine', 0.15, 0.1);
+        renderChannelList();
+        setTimeout(closeChannelModal, 300);
+      }
+    };
+  });
 }
 
 /**
