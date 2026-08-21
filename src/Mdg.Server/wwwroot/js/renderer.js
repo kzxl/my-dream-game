@@ -46,7 +46,33 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
     ctx.save();
     ctx.translate(p.x, p.y);
 
-    if (assets.spells.complete && assets.spells.naturalWidth > 0) {
+    if (assets.awakenedFx.complete && assets.awakenedFx.naturalWidth > 0) {
+      const colW = assets.awakenedFx.naturalWidth / 8;
+      const rowH = assets.awakenedFx.naturalHeight / 5;
+
+      let row = 0;
+      if (p.type === 'windblade' || p.type === 'slash') {
+        row = 0; // Row 0: Void Cleave / Slash
+      } else if (p.type === 'frost') {
+        row = 2; // Row 2: Frost Nova / Ice Shards
+      } else if (p.type === 'meteor') {
+        row = 3; // Row 3: Meteor / Starfall
+      } else if (p.type === 'lightning' || p.type === 'dash') {
+        row = 4; // Row 4: Lightning / Dash
+      } else {
+        row = 1; // Row 1: Fireball / Supernova
+      }
+
+      const animCol = Math.floor(performance.now() / 90) % 8;
+      const sx = animCol * colW;
+      const sy = row * rowH;
+
+      const angle = Math.atan2(p.vy, p.vx);
+      ctx.rotate(angle);
+      const dw = (p.radius || 16) * 2.8;
+      const dh = (p.radius || 16) * 2.8;
+      ctx.drawImage(assets.awakenedFx, sx, sy, colW, rowH, -dw / 2, -dh / 2, dw, dh);
+    } else if (assets.spells.complete && assets.spells.naturalWidth > 0) {
       const sW = assets.spells.naturalWidth / 3;
       const sH = assets.spells.naturalHeight / 3;
 
@@ -513,6 +539,29 @@ export function drawMonsterClean(ctx, m) {
 
     ctx.drawImage(bImg, sx, sy, colW, rowH, -dw / 2, -dh + 24 * scale + hoverY, dw, dh);
     ctx.restore();
+  } else if (assets.monstersGrid.complete && assets.monstersGrid.naturalWidth > 0) {
+    const img = assets.monstersGrid;
+    const colW = img.naturalWidth / 4;
+    const rowH = img.naturalHeight / 4;
+
+    let row = 0;
+    if (m.type === 'skeleton' || m.name.includes('Skeleton') || m.name.includes('Undead')) {
+      row = 1; // Row 1: Skeleton Warrior
+    } else if (m.type === 'wolf' || m.name.includes('Wolf') || m.name.includes('Beast') || m.name.includes('Frost')) {
+      row = 2; // Row 2: Frost Wolf
+    } else if (m.type === 'golem' || m.name.includes('Golem') || m.name.includes('Magma') || m.name.includes('Rock')) {
+      row = 3; // Row 3: Magma Golem
+    } else {
+      row = 0; // Row 0: Void Stalker / Shadow
+    }
+
+    const animCol = Math.floor(m.animTimer * 2.0) % 4;
+    const sx = animCol * colW;
+    const sy = row * rowH;
+
+    const dw = 56 * scale;
+    const dh = 56 * scale;
+    ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
   } else if (assets.monsters.complete && assets.monsters.naturalWidth > 0) {
     const img = assets.monsters;
     const colW = img.naturalWidth / 4;
@@ -586,7 +635,49 @@ export function drawPropClean(ctx, p) {
   ctx.save();
   ctx.translate(p.x, p.y);
 
-  // 1. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
+  // 1. Check Modular Props Grid (4x4 Grid)
+  const pGrid = assets.propsGrid;
+  if (pGrid && pGrid.complete && pGrid.naturalWidth > 0) {
+    const colW = pGrid.naturalWidth / 4;
+    const rowH = pGrid.naturalHeight / 4;
+
+    let col = -1, row = -1;
+    let dw = 52, dh = 52, offX = -26, offY = -40;
+
+    if (p.type === 'chest' || p.type === 'chest_wood') {
+      col = 0; row = 0; dw = 48; dh = 48; offX = -24; offY = -36;
+    } else if (p.type === 'chest_gold') {
+      col = 1; row = 0; dw = 48; dh = 48; offX = -24; offY = -36;
+    } else if (p.type === 'chest_crystal') {
+      col = 2; row = 0; dw = 52; dh = 52; offX = -26; offY = -38;
+    } else if (p.type === 'waypoint_pad') {
+      col = 3; row = 0; dw = 64; dh = 64; offX = -32; offY = -42;
+    } else if (p.type === 'barrel') {
+      col = 0; row = 1; dw = 46; dh = 48; offX = -23; offY = -38;
+    } else if (p.type === 'vase' || p.type === 'pots') {
+      col = 1; row = 1; dw = 46; dh = 48; offX = -23; offY = -38;
+    } else if (p.type === 'lever') {
+      col = 2; row = 1; dw = 42; dh = 46; offX = -21; offY = -36;
+    } else if (p.type === 'campfire') {
+      col = 3; row = 1; dw = 54; dh = 54; offX = -27; offY = -40;
+    } else if (p.type === 'torch') {
+      col = 0; row = 2; dw = 40; dh = 52; offX = -20; offY = -44;
+    } else if (p.type === 'gold_pile') {
+      col = 1; row = 2; dw = 48; dh = 44; offX = -24; offY = -32;
+    } else if (p.type === 'gargoyle') {
+      col = 2; row = 2; dw = 54; dh = 60; offX = -27; offY = -50;
+    } else if (p.type === 'iron_gate') {
+      col = 3; row = 2; dw = 56; dh = 64; offX = -28; offY = -52;
+    }
+
+    if (col !== -1 && row !== -1) {
+      ctx.drawImage(pGrid, col * colW, row * rowH, colW, rowH, offX, offY, dw, dh);
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 2. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
   const natImg = assets.nature;
   if (natImg.complete && natImg.naturalWidth > 0) {
     const cellSize = 128;
@@ -631,7 +722,7 @@ export function drawPropClean(ctx, p) {
     }
   }
 
-  // 2. Check Master Buildings Pack
+  // 3. Check Master Buildings Pack
   const bldImg = assets.buildings;
   if (bldImg && bldImg.complete && bldImg.naturalWidth > 0) {
     const bW = bldImg.naturalWidth;
@@ -665,7 +756,7 @@ export function drawPropClean(ctx, p) {
     }
   }
 
-  // 3. Fallback to Legacy Props Sheet (barrel, chest, campfire, tent, well)
+  // 4. Fallback to Legacy Props Sheet (barrel, chest, campfire, tent, well)
   const img = assets.props;
   if (img.complete && img.naturalWidth > 0) {
     const W = img.naturalWidth;
@@ -686,7 +777,12 @@ export function drawPropClean(ctx, p) {
       ctx.strokeStyle = '#c084fc';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.ellipse(0, 10, 32 + Math.sin(now) * 3, 14, now * 0.5, 0, Math.PI * 2);
+      ctx.arc(0, 10, 28, now, now + Math.PI * 1.5);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(0, 10, 18, -now * 1.2, -now * 1.2 + Math.PI * 1.2);
       ctx.stroke();
 
       // Cosmic Glowing Core
@@ -927,8 +1023,26 @@ export function drawPoiClean(ctx, poi) {
   ctx.ellipse(0, 12, 24, 10, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // 2. Pillar / Crystal Core
-  if (poi.type === 'shrine') {
+  // 2. Pillar / Crystal Core / POI Artwork
+  if (assets.shrinesMonoliths && assets.shrinesMonoliths.complete && assets.shrinesMonoliths.naturalWidth > 0) {
+    const sW = assets.shrinesMonoliths.naturalWidth / 4;
+    const sH = assets.shrinesMonoliths.naturalHeight;
+
+    let col = 0;
+    if (poi.type === 'monolith') {
+      col = 2; // Col 2: Corrupted Void Monolith
+    } else if (poi.type === 'sub_cave') {
+      col = 3; // Col 3: Glowing Cave Portal
+    } else if (poi.buffType === 'solar' || poi.name.includes('Solar')) {
+      col = 1; // Col 1: Golden Solar Altar
+    } else {
+      col = 0; // Col 0: Ancient Stone Shrine (Tempest)
+    }
+
+    const dw = 70;
+    const dh = 78;
+    ctx.drawImage(assets.shrinesMonoliths, col * sW, 0, sW, sH, -dw / 2, -dh + 16, dw, dh);
+  } else if (poi.type === 'shrine') {
     // Floating Runic Crystal
     const floatY = -24 + Math.sin(time * 2.5) * 5;
     const grad = ctx.createLinearGradient(0, floatY - 18, 0, floatY + 18);

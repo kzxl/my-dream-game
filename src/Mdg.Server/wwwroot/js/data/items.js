@@ -863,7 +863,8 @@ export const AWAKENING_ESSENCES = [
     icon: '🌌',
     skillKey: 'slash',
     lore: 'Primordial essence harvested from ancient elite beasts and abyss lords.',
-    description: 'Requires Rank A Slash. Unlocks Awakened Form: Void Dimension Cleave!'
+    description: 'Requires Rank A Slash. Unlocks Awakened Form: Void Dimension Cleave!',
+    sprite: { sheet: 'essences', sx: 35, sy: 280, sw: 175, sh: 360 }
   },
   {
     id: 'essence_pyro',
@@ -877,7 +878,8 @@ export const AWAKENING_ESSENCES = [
     icon: '☀️',
     skillKey: 'fireball',
     lore: 'Superheated celestial core salvaged from infernal boss behemoths.',
-    description: 'Requires Rank A Fireball. Unlocks Awakened Form: Supernova Celestial Orb!'
+    description: 'Requires Rank A Fireball. Unlocks Awakened Form: Supernova Celestial Orb!',
+    sprite: { sheet: 'essences', sx: 225, sy: 280, sw: 175, sh: 360 }
   },
   {
     id: 'essence_frost',
@@ -891,7 +893,8 @@ export const AWAKENING_ESSENCES = [
     icon: '❄️',
     skillKey: 'frost',
     lore: 'Glacial heart forged at the subterranean summit of permafrost glaciers.',
-    description: 'Requires Rank A Frost Nova. Unlocks Awakened Form: Glacial Domain of Oblivion!'
+    description: 'Requires Rank A Frost Nova. Unlocks Awakened Form: Glacial Domain of Oblivion!',
+    sprite: { sheet: 'essences', sx: 415, sy: 280, sw: 175, sh: 360 }
   },
   {
     id: 'essence_meteor',
@@ -905,7 +908,8 @@ export const AWAKENING_ESSENCES = [
     icon: '☄️',
     skillKey: 'meteor',
     lore: 'Fractured astral fragment from the Void Sovereign Prime.',
-    description: 'Requires Rank A Meteor. Unlocks Awakened Form: Starfall Cataclysm!'
+    description: 'Requires Rank A Meteor. Unlocks Awakened Form: Starfall Cataclysm!',
+    sprite: { sheet: 'essences', sx: 605, sy: 280, sw: 175, sh: 360 }
   },
   {
     id: 'essence_dash',
@@ -919,7 +923,8 @@ export const AWAKENING_ESSENCES = [
     icon: '⚡',
     skillKey: 'dash',
     lore: 'Temporal phantom residue extracted from apex storm stalkers.',
-    description: 'Requires Rank A Dash. Unlocks Awakened Form: Flash Phantasm Mirage!'
+    description: 'Requires Rank A Dash. Unlocks Awakened Form: Flash Phantasm Mirage!',
+    sprite: { sheet: 'essences', sx: 785, sy: 280, sw: 175, sh: 360 }
   }
 ];
 
