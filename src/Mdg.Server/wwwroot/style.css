@@ -4938,5 +4938,176 @@ canvas#gameCanvas {
   line-height: 1.3;
 }
 
+/* ==========================================================================
+   SKILL PROFICIENCY & AWAKENING SYSTEM
+   ========================================================================== */
+.skill-prof-panel {
+  background: rgba(18, 22, 34, 0.85);
+  border: 1px solid #2d3748;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skill-prof-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skill-prof-rank-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #000;
+  background: linear-gradient(90deg, #ffd700, #ff9800);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.skill-prof-bar-wrap {
+  position: relative;
+  height: 14px;
+  background: #141824;
+  border: 1px solid #2d3748;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.skill-prof-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1abc9c, #00f2fe, #ffd700);
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
+  transition: width 0.3s ease;
+}
+
+.skill-prof-bar-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px #000;
+  white-space: nowrap;
+}
+
+.skill-prof-stats-row {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #a0aec0;
+}
+
+.skill-prof-stats-row b {
+  color: #00f2fe;
+}
+
+/* Awakening Card */
+.skill-awakening-card {
+  background: linear-gradient(135deg, rgba(26, 32, 44, 0.9) 0%, rgba(45, 55, 72, 0.6) 100%);
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-awakening-card.is-awakened {
+  border: 2px solid #ffd700;
+  background: linear-gradient(135deg, rgba(45, 30, 60, 0.9) 0%, rgba(20, 24, 38, 0.95) 100%);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.25);
+}
+
+.awakening-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.awakening-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffd700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.awakening-req-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.awakening-req-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e0;
+}
+
+.awakening-req-item.met {
+  color: #48bb78;
+  font-weight: 700;
+}
+
+.awakening-req-item.unmet {
+  color: #f56565;
+}
+
+.btn-awaken-skill {
+  background: linear-gradient(90deg, #e65c00, #f9d423);
+  border: none;
+  color: #000;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(249, 212, 35, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-awaken-skill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(249, 212, 35, 0.7);
+}
+
+.btn-awaken-disabled {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  color: #718096;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: not-allowed;
+}
+
+.awakened-active-tag {
+  background: linear-gradient(90deg, #9b59b6, #8e44ad);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #be2edd;
+  box-shadow: 0 0 8px rgba(190, 46, 221, 0.5);
+}
+
 
 

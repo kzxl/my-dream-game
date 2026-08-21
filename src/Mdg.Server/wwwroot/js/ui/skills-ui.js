@@ -207,17 +207,93 @@ export function renderSkillUpgradeModal() {
 
   container.appendChild(socketBoardSection);
 
-  // 2. BOTTOM SECTION: PER-SKILL MASTERY TREE GRAPH
+  // 2. BOTTOM SECTION: PER-SKILL MASTERY TREE GRAPH & AWAKENING CARD
   const currentTree = SKILL_MASTERY_TREES[selectedTreeSkillKey];
   const s = SKILLS[selectedTreeSkillKey];
   const totalSmp = s ? s.level : 1;
   const spentSmp = getSpentMasteryPoints(selectedTreeSkillKey);
   const remainingSmp = Math.max(0, totalSmp - spentSmp);
 
+  if (!player.skillProficiencies) player.skillProficiencies = {};
+  if (!player.skillProficiencies[selectedTreeSkillKey]) {
+    player.skillProficiencies[selectedTreeSkillKey] = { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 };
+  }
+  const prof = player.skillProficiencies[selectedTreeSkillKey];
+
+  if (!player.awakenedSkills) player.awakenedSkills = {};
+  const isAwakened = !!player.awakenedSkills[selectedTreeSkillKey];
+
+  const awkDefs = {
+    slash: { name: 'Void Dimension Cleave', icon: '🌌', essenceId: 'essence_blade', essenceName: 'Essence of the Blade Sovereign', desc: 'Rips open a dimensional vacuum rift on slash, pulling in enemies and dealing catastrophic chaos impact.' },
+    fireball: { name: 'Supernova Celestial Orb', icon: '☀️', essenceId: 'essence_pyro', essenceName: 'Essence of the Solar Archon', desc: 'Hurls a celestial supernova that continuously radiates lethal plasma bolts before exploding in a 360° solar blast.' },
+    frost: { name: 'Glacial Domain of Oblivion', icon: '❄️', essenceId: 'essence_frost', essenceName: 'Essence of Absolute Zero', desc: 'Expands a permafrost singularity freezing all monsters for 2.5s and granting +500 Energy Shield ward.' },
+    meteor: { name: 'Starfall Cataclysm', icon: '☄️', essenceId: 'essence_meteor', essenceName: 'Essence of the Cosmic Void', desc: 'Summons 5 consecutive cosmic meteors raining down across the entire battlefield with apocalyptic area coverage.' },
+    dash: { name: 'Flash Phantasm Mirage', icon: '⚡', essenceId: 'essence_dash', essenceName: 'Essence of the Phantom Mirage', desc: 'Phases forward leaving behind dual phantasm clones that execute instant critical slashes upon nearby foes.' }
+  };
+  const curAwkDef = awkDefs[selectedTreeSkillKey];
+
+  const rankOrder = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SSS', 'Mythic'];
+  const rankIndex = rankOrder.indexOf(prof.rank || 'F');
+  const isRankAOrHigher = rankIndex >= rankOrder.indexOf('A');
+  const hasEssence = (player.bag || []).some(it => it && (it.id === curAwkDef?.essenceId || it.skillKey === selectedTreeSkillKey && it.baseType === 'Awakening Catalyst'));
+
+  const expReqs = { F: 500, E: 2000, D: 8000, C: 25000, B: 75000, A: 200000, S: 600000, SSS: 1800000, Mythic: 1800000 };
+  const currentCap = expReqs[prof.rank || 'F'] || 1000;
+  const profPercent = Math.min(100, Math.round((prof.exp / currentCap) * 100));
+
   const treeSection = document.createElement('div');
   treeSection.className = 'skill-tree-interactive-section';
   treeSection.innerHTML = `
-    <div class="tree-header-bar">
+    <!-- Proficiency & Awakening Header -->
+    <div class="skill-prof-panel">
+      <div class="skill-prof-header">
+        <span style="font-weight:800; font-size:12px; color:#e5c07b;">⚡ SKILL PROFICIENCY MASTERY</span>
+        <span class="skill-prof-rank-badge">[RANK ${prof.rank || 'F'}] ${prof.rankName || 'Novice'}</span>
+      </div>
+      <div class="skill-prof-bar-wrap">
+        <div class="skill-prof-bar-fill" style="width: ${profPercent}%;"></div>
+        <div class="skill-prof-bar-text">${prof.exp || 0} / ${currentCap} EXP (${profPercent}%)</div>
+      </div>
+      <div class="skill-prof-stats-row">
+        <span>Damage: <b>+${prof.bonusDmg || 0}%</b></span>
+        <span>Area: <b>+${prof.rank === 'Mythic' ? 70 : (prof.rank === 'SSS' ? 50 : (prof.rank === 'S' ? 35 : (prof.rank === 'A' ? 20 : (prof.rank === 'B' ? 10 : 0))))}%</b></span>
+        <span>Crit: <b>+${prof.rank === 'Mythic' ? 25 : (prof.rank === 'SSS' ? 15 : (prof.rank === 'S' ? 8 : 0))}%</b></span>
+        <span style="margin-left:auto; color:#ffd700;">Status: <b>${isAwakened ? '👑 AWAKENED' : (isRankAOrHigher ? '✨ Awakening Eligible' : '🔒 Requires Rank A')}</b></span>
+      </div>
+    </div>
+
+    <!-- Skill Awakening Card -->
+    <div class="skill-awakening-card ${isAwakened ? 'is-awakened' : ''}">
+      <div class="awakening-title-row">
+        <div class="awakening-name">
+          <span>${curAwkDef.icon}</span>
+          <span>${isAwakened ? `[AWAKENED] ${curAwkDef.name}` : `Awakened Form: ${curAwkDef.name}`}</span>
+        </div>
+        ${isAwakened ? '<span class="awakened-active-tag">👑 AWAKENED FORM ACTIVE</span>' : ''}
+      </div>
+      <div style="font-size:11px; color:#abb2bf; line-height:1.4;">${curAwkDef.desc}</div>
+      ${!isAwakened ? `
+        <div class="awakening-req-list">
+          <div class="awakening-req-item ${isRankAOrHigher ? 'met' : 'unmet'}">
+            <span>${isRankAOrHigher ? '✓' : '✗'}</span>
+            <span>Reach Skill Proficiency <b>Rank A</b> (Current: Rank ${prof.rank || 'F'})</span>
+          </div>
+          <div class="awakening-req-item ${hasEssence ? 'met' : 'unmet'}">
+            <span>${hasEssence ? '✓' : '✗'}</span>
+            <span>Possess 1x <b>${curAwkDef.essenceName}</b> in inventory (Ultra-Rare drop from Elites & Bosses)</span>
+          </div>
+        </div>
+        <div style="margin-top:6px;">
+          ${(isRankAOrHigher && hasEssence) ? `
+            <button class="btn-awaken-skill" id="btn-trigger-awakening">✨ AWAKEN SKILL NOW</button>
+          ` : `
+            <button class="btn-awaken-disabled" disabled>🔒 Requirements Not Met (Farm Bosses & Monsters)</button>
+          `}
+        </div>
+      ` : ''}
+    </div>
+
+    <div class="tree-header-bar" style="margin-top:12px;">
       <div class="tree-title-group">
         <span class="tree-title-text">${currentTree.title}</span>
         <span class="tree-smp-badge">💎 Available SMP: <b class="gold-text">${remainingSmp} / ${totalSmp}</b></span>
@@ -229,6 +305,23 @@ export function renderSkillUpgradeModal() {
       <div class="tree-nodes-container" id="tree-nodes-box"></div>
     </div>
   `;
+
+  const awakenBtn = treeSection.querySelector('#btn-trigger-awakening');
+  if (awakenBtn) {
+    awakenBtn.addEventListener('click', () => {
+      // Find essence in bag and consume
+      const essenceIdx = (player.bag || []).findIndex(it => it && (it.id === curAwkDef?.essenceId || it.skillKey === selectedTreeSkillKey && it.baseType === 'Awakening Catalyst'));
+      if (essenceIdx >= 0) {
+        player.bag.splice(essenceIdx, 1);
+        player.awakenedSkills[selectedTreeSkillKey] = true;
+        updateBackpackUI();
+        AudioEngine.playLevelUp();
+        spawnDamageNumber(player.x, player.y - 70, `👑 SKILL AWAKENED: ${curAwkDef.name.toUpperCase()}!`, true, '#ffd700');
+        renderSkillUpgradeModal();
+        saveToDatabase(true);
+      }
+    });
+  }
 
   treeSection.querySelector('#btn-respec-tree').addEventListener('click', () => {
     respecSkillTree(selectedTreeSkillKey);

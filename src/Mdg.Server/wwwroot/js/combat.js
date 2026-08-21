@@ -4,7 +4,7 @@
 
 import { player, monsters, trainingDummies, projectiles, particles, floatingTexts, groundLoot, mouse } from './state.js';
 import { SKILLS, skillSocketBoard, isNodeAllocated, isSkillUnlocked } from './data/skills.js';
-import { generateLootItem } from './data/items.js';
+import { generateLootItem, AWAKENING_ESSENCES } from './data/items.js';
 import { AudioEngine } from './audio.js';
 import { showDefeatModal } from './ui/defeat-ui.js';
 import { ApiClient } from './services/api-client.js';
@@ -12,14 +12,14 @@ import { MONSTERS, MONSTER_FAMILIES, getMonsterDiscoveryProfile } from './data/m
 
 export const PROFICIENCY_THRESHOLDS = [
   { rank: 'F', exp: 0, title: 'Novice Practitioner (F)', bonusDmg: 0 },
-  { rank: 'E', exp: 100, title: 'Adept Adept (E)', bonusDmg: 5 },
-  { rank: 'D', exp: 350, title: 'Hardened Combatant (D)', bonusDmg: 10 },
-  { rank: 'C', exp: 900, title: 'Skilled Specialist (C)', bonusDmg: 18 },
-  { rank: 'B', exp: 2200, title: 'Master Virtuoso (B)', bonusDmg: 28 },
-  { rank: 'A', exp: 5000, title: 'Grandmaster Ascendant (A)', bonusDmg: 40 },
-  { rank: 'S', exp: 12000, title: '👑 S-Rank Calamity (S)', bonusDmg: 60 },
-  { rank: 'SSS', exp: 30000, title: '🌟 SSS-Rank Monarch (SSS)', bonusDmg: 85 },
-  { rank: 'Mythic', exp: 80000, title: '✨ Primordial Mythic Awakening', bonusDmg: 120 }
+  { rank: 'E', exp: 500, title: 'Adept Adept (E)', bonusDmg: 6 },
+  { rank: 'D', exp: 2000, title: 'Hardened Combatant (D)', bonusDmg: 14 },
+  { rank: 'C', exp: 8000, title: 'Skilled Specialist (C)', bonusDmg: 25 },
+  { rank: 'B', exp: 25000, title: 'Master Virtuoso (B)', bonusDmg: 40 },
+  { rank: 'A', exp: 75000, title: 'Grandmaster Ascendant (A - Awakened Eligible)', bonusDmg: 65 },
+  { rank: 'S', exp: 200000, title: '👑 S-Rank Calamity (S)', bonusDmg: 95 },
+  { rank: 'SSS', exp: 600000, title: '🌟 SSS-Rank Monarch (SSS)', bonusDmg: 135 },
+  { rank: 'Mythic', exp: 1800000, title: '✨ Primordial Mythic Awakening', bonusDmg: 180 }
 ];
 
 export function recordSkillProficiency(skillKey, gain = 10) {
@@ -413,6 +413,19 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
     }
   }
 
+  // Ultra-Rare Awakening Essence Drop Check (Boss: 5.0%, Elite/Rare: 0.8%)
+  const isEliteOrRare = isBoss || monsterRarity === 'rare' || monsterRarity === 'champion';
+  const essenceDropChance = isBoss ? 0.05 : (isEliteOrRare ? 0.008 : 0.0);
+  if (Math.random() < essenceDropChance && Array.isArray(AWAKENING_ESSENCES) && AWAKENING_ESSENCES.length > 0) {
+    const randomEssence = AWAKENING_ESSENCES[Math.floor(Math.random() * AWAKENING_ESSENCES.length)];
+    itemsToDrop.push({
+      ...randomEssence,
+      beamHeight: 450
+    });
+    spawnDamageNumber(x, y - 80, `✨ PRIMORDIAL ESSENCE: ${randomEssence.name}!`, true, '#ffd700');
+    AudioEngine.playLevelUp?.();
+  }
+
   // Animate items spawning with physics onto groundLoot
   for (const item of itemsToDrop) {
     const dropAngle = Math.random() * Math.PI * 2;
@@ -512,7 +525,7 @@ export function spawnDamageNumber(x, y, text, isCrit, color) {
   });
 }
 
-// 1. HEAVY SLASH (With Wind Blade, Rend & Titan Cleave Morphs)
+// 1. HEAVY SLASH (With Wind Blade, Rend & Titan Cleave Morphs + Void Dimension Cleave Awakening)
 export function castSlash() {
   if (player.isDead) return;
   const s = SKILLS.slash;
@@ -529,12 +542,17 @@ export function castSlash() {
   player.isAttacking = true;
   player.attackTimer = 0.24;
 
-  let reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0);
+  const isAwakened = !!player.awakenedSkills?.slash;
+  let reach = s.baseReach + (s.level - 1) * s.reachPerLvl + (player.classSpec === 'Vanguard' ? 20 : 0) + (isAwakened ? 40 : 0);
   if (isNodeAllocated('slash', 'sl_reach')) reach += 25;
 
   const slashX = player.x + Math.cos(angle) * 40;
   const slashY = player.y + Math.sin(angle) * 40;
   let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Vanguard' ? 35 : 0);
+
+  if (isAwakened) {
+    dmg = Math.round(dmg * 2.2); // 2.2x Awakened Dimension Cleave
+  }
 
   const isTitanCleave = isNodeAllocated('slash', 'sl_morph_crush');
   if (isTitanCleave) {
@@ -543,7 +561,7 @@ export function castSlash() {
 
   monsters.forEach(m => {
     if (m.isAlive && Math.hypot(m.x - slashX, m.y - slashY) < reach) {
-      dealDamage(m, dmg, 20, 0, 0, 0, true, { x: player.x, y: player.y }, true);
+      dealDamage(m, dmg, 20, 0, 0, isAwakened ? 80 : 0, true, { x: player.x, y: player.y }, true);
       if (isTitanCleave) {
         applyFreeze(m, 1.0); // 1.0s Stun
         spawnDamageNumber(m.x, m.y - 45, '⚡ STUNNED!', true, '#ffd700');
@@ -552,8 +570,34 @@ export function castSlash() {
   });
 
   trainingDummies.forEach(d => {
-    if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, 0, true, { x: player.x, y: player.y }, true);
+    if (Math.hypot(d.x - slashX, d.y - slashY) < reach) dealDamage(d, dmg, 20, 0, 0, isAwakened ? 80 : 0, true, { x: player.x, y: player.y }, true);
   });
+
+  // Awakened Form Special: Void Dimension Vacuum Rift
+  if (isAwakened) {
+    spawnDamageNumber(slashX, slashY - 50, '🌌 VOID DIMENSION CLEAVE!', true, '#9b59b6');
+    monsters.forEach(m => {
+      if (m.isAlive && Math.hypot(m.x - slashX, m.y - slashY) <= 220) {
+        const pullAngle = Math.atan2(slashY - m.y, slashX - m.x);
+        m.vx = (m.vx || 0) + Math.cos(pullAngle) * 320;
+        m.vy = (m.vy || 0) + Math.sin(pullAngle) * 320;
+        dealDamage(m, 0, 0, 0, 0, 95, false, { x: slashX, y: slashY }, false, true);
+      }
+    });
+    for (let i = 0; i < 25; i++) {
+      const a = Math.random() * Math.PI * 2;
+      particles.push({
+        x: slashX + Math.cos(a) * 30,
+        y: slashY + Math.sin(a) * 30,
+        vx: Math.cos(a) * 180,
+        vy: Math.sin(a) * 180,
+        color: '#be2edd',
+        life: 0.35,
+        maxLife: 0.35,
+        size: 5
+      });
+    }
+  }
 
   // Keystone Morph: Wind Blade Wave
   if (isNodeAllocated('slash', 'sl_morph_wave')) {
@@ -594,15 +638,15 @@ export function castSlash() {
       y: player.y + Math.sin(spread) * 30,
       vx: Math.cos(spread) * 160,
       vy: Math.sin(spread) * 160,
-      color: isTitanCleave ? '#ffd700' : (isNodeAllocated('slash', 'sl_morph_wave') ? '#00f2fe' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b')),
+      color: isAwakened ? '#9b59b6' : (isTitanCleave ? '#ffd700' : (isNodeAllocated('slash', 'sl_morph_wave') ? '#00f2fe' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#e5c07b'))),
       life: 0.22,
       maxLife: 0.22,
-      size: isTitanCleave ? 6 : 4
+      size: isAwakened ? 7 : (isTitanCleave ? 6 : 4)
     });
   }
 }
 
-// 2. PYRO FIREBALL (With GMP Support, Hellfire Chaos & Nova Cataclysm Morph)
+// 2. PYRO FIREBALL (With GMP Support, Hellfire Chaos & Supernova Celestial Orb Awakening)
 export function castFireball() {
   if (player.isDead) return;
   if (!isSkillUnlocked('fireball')) {
@@ -617,10 +661,13 @@ export function castFireball() {
   recordSkillProficiency('fireball', 12);
 
   const baseAngle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
+  const isAwakened = !!player.awakenedSkills?.fireball;
+
   let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+  if (isAwakened) dmg = Math.round(dmg * 2.5); // 2.5x Awakened Supernova
   if (isNodeAllocated('fireball', 'fb_dmg_1')) dmg = Math.round(dmg * 1.25);
 
-  let radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl;
+  let radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (isAwakened ? 25 : 0);
   if (isNodeAllocated('fireball', 'fb_aoe_1')) radius = Math.round(radius * 1.35);
 
   let speedMult = 1.0;
@@ -628,12 +675,41 @@ export function castFireball() {
 
   const isHellfireChaos = isNodeAllocated('fireball', 'fb_morph_chaos');
   const fireDmg = isHellfireChaos ? Math.round(dmg * 0.5) : dmg;
-  const chaosDmg = isHellfireChaos ? Math.round(dmg * 0.5) : 0;
+  const chaosDmg = isHellfireChaos ? Math.round(dmg * 0.5) : (isAwakened ? 120 : 0);
 
   const hasNova = isNodeAllocated('fireball', 'fb_morph_nova');
   const hasGmp = skillSocketBoard.fireball?.supports.includes('support_gmp');
 
-  if (hasNova) {
+  if (isAwakened) {
+    spawnDamageNumber(player.x, player.y - 50, '☀️ SUPERNOVA CELESTIAL ORB!', true, '#ff7675');
+    // Awakened Supernova: Fires 1 giant supernova + 4 radiating radiant sparks
+    projectiles.push({
+      x: player.x,
+      y: player.y - 10,
+      vx: Math.cos(baseAngle) * 380 * speedMult,
+      vy: Math.sin(baseAngle) * 380 * speedMult,
+      type: 'fireball',
+      damage: dmg,
+      fireDmg: fireDmg,
+      chaosDmg: chaosDmg,
+      radius: radius + 15,
+      life: 2.0
+    });
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+      projectiles.push({
+        x: player.x,
+        y: player.y - 10,
+        vx: Math.cos(baseAngle + a) * 280,
+        vy: Math.sin(baseAngle + a) * 280,
+        type: 'fireball',
+        damage: Math.round(dmg * 0.5),
+        fireDmg: Math.round(fireDmg * 0.5),
+        chaosDmg: 0,
+        radius: radius,
+        life: 1.2
+      });
+    }
+  } else if (hasNova) {
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
       projectiles.push({
         x: player.x,
@@ -679,7 +755,7 @@ export function castFireball() {
   }
 }
 
-// 3. FROST NOVA (With Frost Shield, Ice Shatter & Glacial Vortex Morph)
+// 3. FROST NOVA (With Frost Shield, Ice Shatter & Glacial Domain of Oblivion Awakening)
 export function castFrostNova() {
   if (player.isDead) return;
   if (!isSkillUnlocked('frost')) {
@@ -693,16 +769,23 @@ export function castFrostNova() {
   player.cooldowns.frost = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
   recordSkillProficiency('frost', 14);
 
+  const isAwakened = !!player.awakenedSkills?.frost;
   let novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
   if (isNodeAllocated('frost', 'fr_aoe')) novaRadius = Math.round(novaRadius * 1.30);
+  if (isAwakened) novaRadius = Math.round(novaRadius * 1.60);
 
-  const dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+  let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+  if (isAwakened) dmg = Math.round(dmg * 2.0);
 
   let hitsCount = 0;
   monsters.forEach(m => {
     if (m.isAlive && Math.hypot(m.x - player.x, m.y - player.y) <= novaRadius) {
       dealDamage(m, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y });
       hitsCount++;
+
+      if (isAwakened) {
+        applyFreeze(m, 2.5); // 2.5s Absolute Permafrost Freeze
+      }
 
       if (isNodeAllocated('frost', 'fr_morph_vortex')) {
         const pullAngle = Math.atan2(player.y - m.y, player.x - m.x);
@@ -718,6 +801,11 @@ export function castFrostNova() {
     if (Math.hypot(d.x - player.x, d.y - player.y) <= novaRadius) dealDamage(d, 15, 0, dmg, 0, 0, true, { x: player.x, y: player.y });
   });
 
+  if (isAwakened) {
+    player.es = Math.min(player.maxEs, (player.es || 0) + 500);
+    spawnDamageNumber(player.x, player.y - 65, '❄️ GLACIAL DOMAIN OF OBLIVION (+500 ES)!', true, '#00f2fe');
+  }
+
   if (isNodeAllocated('frost', 'fr_shield') && hitsCount > 0) {
     const esGained = hitsCount * 35;
     player.es = Math.min(player.maxEs, player.es + esGained);
@@ -728,17 +816,17 @@ export function castFrostNova() {
     particles.push({
       x: player.x,
       y: player.y,
-      vx: Math.cos(a) * 260,
-      vy: Math.sin(a) * 260,
-      color: isNodeAllocated('frost', 'fr_morph_vortex') ? '#c678dd' : '#00f2fe',
-      life: 0.45,
-      maxLife: 0.45,
-      size: 6
+      vx: Math.cos(a) * (isAwakened ? 340 : 260),
+      vy: Math.sin(a) * (isAwakened ? 340 : 260),
+      color: isAwakened ? '#00f2fe' : (isNodeAllocated('frost', 'fr_morph_vortex') ? '#c678dd' : '#00f2fe'),
+      life: isAwakened ? 0.65 : 0.45,
+      maxLife: isAwakened ? 0.65 : 0.45,
+      size: isAwakened ? 8 : 6
     });
   }
 }
 
-// 4. CATACLYSM METEOR (With Meteor Shower Morph)
+// 4. CATACLYSM METEOR (With Meteor Shower Morph & Starfall Cataclysm Awakening)
 export function castMeteor() {
   if (player.isDead) return;
   if (!isSkillUnlocked('meteor')) {
@@ -755,27 +843,29 @@ export function castMeteor() {
 
   const targetX = mouse.worldX;
   const targetY = mouse.worldY;
+  const isAwakened = !!player.awakenedSkills?.meteor;
 
-  const dropSingleImpact = (x, y, delayMs) => {
+  const dropSingleImpact = (x, y, delayMs, isExtra = false) => {
     particles.push({
       x: x,
       y: y,
       vx: 0,
       vy: 0,
-      color: 'rgba(255, 65, 108, 0.45)',
+      color: isAwakened ? 'rgba(255, 120, 0, 0.6)' : 'rgba(255, 65, 108, 0.45)',
       life: delayMs / 1000,
       maxLife: delayMs / 1000,
-      size: 50,
+      size: isAwakened ? 75 : 50,
       isRing: true
     });
 
     setTimeout(() => {
-      const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
+      const radius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0) + (isAwakened ? 35 : 0);
       let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl;
+      if (isAwakened) dmg = Math.round(dmg * 2.8);
       if (isNodeAllocated('meteor', 'met_dmg')) dmg = Math.round(dmg * 1.30);
 
       monsters.forEach(m => {
-        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, 30, true, { x, y });
+        if (m.isAlive && Math.hypot(m.x - x, m.y - y) <= radius) dealDamage(m, 50, dmg, 0, 0, isAwakened ? 120 : 30, true, { x, y });
       });
 
       // Set Synergy: Malakor Cosmic Singularity Void Rift
@@ -792,7 +882,7 @@ export function castMeteor() {
       }
 
       trainingDummies.forEach(d => {
-        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, 30, true, { x, y });
+        if (Math.hypot(d.x - x, d.y - y) <= radius) dealDamage(d, 50, dmg, 0, 0, isAwakened ? 120 : 30, true, { x, y });
       });
 
       for (let i = 0; i < 40; i++) {
@@ -803,7 +893,7 @@ export function castMeteor() {
           y: y,
           vx: Math.cos(a) * spd,
           vy: Math.sin(a) * spd,
-          color: Math.random() > 0.3 ? '#ff3b00' : '#ffd700',
+          color: isAwakened ? '#ffd700' : (Math.random() > 0.3 ? '#ff3b00' : '#ffd700'),
           life: 0.65,
           maxLife: 0.65,
           size: 6 + Math.random() * 6
@@ -812,21 +902,33 @@ export function castMeteor() {
     }, delayMs);
   };
 
-  dropSingleImpact(targetX, targetY, 400);
-
-  if (isNodeAllocated('meteor', 'met_morph_shower')) {
-    dropSingleImpact(targetX + 60, targetY - 40, 650);
-    dropSingleImpact(targetX - 50, targetY + 50, 900);
+  if (isAwakened) {
+    spawnDamageNumber(targetX, targetY - 70, '☄️ STARFALL CATACLYSM BARRAGE!', true, '#ffd700');
+    dropSingleImpact(targetX, targetY, 300);
+    dropSingleImpact(targetX + 100, targetY - 60, 550, true);
+    dropSingleImpact(targetX - 90, targetY + 70, 800, true);
+    dropSingleImpact(targetX + 150, targetY + 80, 1050, true);
+    dropSingleImpact(targetX - 130, targetY - 70, 1300, true);
+  } else {
+    dropSingleImpact(targetX, targetY, 400);
+    if (isNodeAllocated('meteor', 'met_morph_shower')) {
+      dropSingleImpact(targetX + 60, targetY - 40, 650);
+      dropSingleImpact(targetX - 50, targetY + 50, 900);
+    }
   }
 }
 
-// 5. SHADOW DASH
+// 5. SHADOW DASH (With Flash Phantasm Mirage Awakening)
 export function castDash() {
   if (player.isDead) return;
   const s = SKILLS.dash;
   if (player.cooldowns.dash > 0) return;
   player.cooldowns.dash = Math.max(0.4, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
   recordSkillProficiency('dash', 8);
+
+  const startX = player.x;
+  const startY = player.y;
+  const isAwakened = !!player.awakenedSkills?.dash;
 
   let dx = 0, dy = 0;
   if (window.keys && (window.keys['KeyW'] || window.keys['ArrowUp'])) dy -= 1;
@@ -844,7 +946,7 @@ export function castDash() {
     dy /= len;
   }
 
-  const dist = s.baseDistance + (s.level - 1) * s.distancePerLvl;
+  const dist = s.baseDistance + (s.level - 1) * s.distancePerLvl + (isAwakened ? 80 : 0);
   let remainingDist = dist;
   const stepSize = 14;
 
@@ -869,10 +971,34 @@ export function castDash() {
       y: player.y - dy * (i * 15),
       vx: 0,
       vy: 0,
-      color: 'rgba(255, 255, 255, 0.4)',
+      color: isAwakened ? '#ffd700' : 'rgba(255, 255, 255, 0.4)',
       life: 0.25,
       maxLife: 0.25,
-      size: 14
+      size: isAwakened ? 18 : 14
+    });
+  }
+
+  if (isAwakened) {
+    spawnDamageNumber(player.x, player.y - 45, '⚡ FLASH PHANTASM MIRAGE!', true, '#ffd700');
+    [startX, (startX + player.x) / 2].forEach((cloneX, idx) => {
+      const cloneY = idx === 0 ? startY : (startY + player.y) / 2;
+      monsters.forEach(m => {
+        if (m.isAlive && Math.hypot(m.x - cloneX, m.y - cloneY) <= 130) {
+          dealDamage(m, 180, 0, 0, 90, 0, true, { x: cloneX, y: cloneY });
+        }
+      });
+      for (let a = 0; a < Math.PI * 2; a += 0.4) {
+        particles.push({
+          x: cloneX,
+          y: cloneY,
+          vx: Math.cos(a) * 220,
+          vy: Math.sin(a) * 220,
+          color: '#ffd700',
+          life: 0.3,
+          maxLife: 0.3,
+          size: 5
+        });
+      }
     });
   }
 }

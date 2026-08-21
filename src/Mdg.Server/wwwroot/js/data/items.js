@@ -850,28 +850,85 @@ export const SKILL_GEMS_DATABASE = [
   }
 ];
 
-export const RESURRECTION_SCROLL = {
-  id: 'scroll_resurrection',
-  name: 'Scroll of Resurrection',
-  nameVi: 'Cuộn Giấy Hồi Sinh',
-  baseType: 'Consumable',
-  category: 'consumable',
-  slot: 'Consumable',
-  rarity: 'Magic',
-  color: '#ffd700',
-  icon: '📜',
-  stack: 1,
-  minIlvl: 1,
-  requiredLevel: 1,
-  lore: 'A blessed parchment infused with celestial vitality.',
-  description: 'Hồi sinh ngay tại chỗ với 100% Máu, Mana và 3.5s Bất Tử.'
-};
+export const AWAKENING_ESSENCES = [
+  {
+    id: 'essence_blade',
+    name: 'Essence of the Blade Sovereign',
+    nameVi: 'Tinh Hoa Kiếm Thần',
+    baseType: 'Awakening Catalyst',
+    category: 'currency',
+    slot: 'Currency',
+    rarity: 'Unique',
+    color: '#9b59b6',
+    icon: '🌌',
+    skillKey: 'slash',
+    lore: 'Primordial essence harvested from ancient elite beasts and abyss lords.',
+    description: 'Requires Rank A Slash. Unlocks Awakened Form: Void Dimension Cleave!'
+  },
+  {
+    id: 'essence_pyro',
+    name: 'Essence of the Solar Archon',
+    nameVi: 'Tinh Hoa Thái Dương',
+    baseType: 'Awakening Catalyst',
+    category: 'currency',
+    slot: 'Currency',
+    rarity: 'Unique',
+    color: '#ff7675',
+    icon: '☀️',
+    skillKey: 'fireball',
+    lore: 'Superheated celestial core salvaged from infernal boss behemoths.',
+    description: 'Requires Rank A Fireball. Unlocks Awakened Form: Supernova Celestial Orb!'
+  },
+  {
+    id: 'essence_frost',
+    name: 'Essence of Absolute Zero',
+    nameVi: 'Tinh Hoa Băng Tuyệt Đối',
+    baseType: 'Awakening Catalyst',
+    category: 'currency',
+    slot: 'Currency',
+    rarity: 'Unique',
+    color: '#00f2fe',
+    icon: '❄️',
+    skillKey: 'frost',
+    lore: 'Glacial heart forged at the subterranean summit of permafrost glaciers.',
+    description: 'Requires Rank A Frost Nova. Unlocks Awakened Form: Glacial Domain of Oblivion!'
+  },
+  {
+    id: 'essence_meteor',
+    name: 'Essence of the Cosmic Void',
+    nameVi: 'Tinh Hoa Tinh Cầu Hư Vô',
+    baseType: 'Awakening Catalyst',
+    category: 'currency',
+    slot: 'Currency',
+    rarity: 'Unique',
+    color: '#e17055',
+    icon: '☄️',
+    skillKey: 'meteor',
+    lore: 'Fractured astral fragment from the Void Sovereign Prime.',
+    description: 'Requires Rank A Meteor. Unlocks Awakened Form: Starfall Cataclysm!'
+  },
+  {
+    id: 'essence_dash',
+    name: 'Essence of the Phantom Mirage',
+    nameVi: 'Tinh Hoa Tàn Ảnh',
+    baseType: 'Awakening Catalyst',
+    category: 'currency',
+    slot: 'Currency',
+    rarity: 'Unique',
+    color: '#ffd700',
+    icon: '⚡',
+    skillKey: 'dash',
+    lore: 'Temporal phantom residue extracted from apex storm stalkers.',
+    description: 'Requires Rank A Dash. Unlocks Awakened Form: Flash Phantasm Mirage!'
+  }
+];
 
 export const POSSIBLE_LOOT = [
   ...BASE_EQUIPMENT,
   ...UNIQUE_LOOT,
   ...SET_ITEMS_DATABASE,
   ...SKILL_GEMS_DATABASE,
+  ...AWAKENING_ESSENCES,
   RESURRECTION_SCROLL
 ];
 

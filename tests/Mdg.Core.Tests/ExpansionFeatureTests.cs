@@ -59,14 +59,14 @@ public sealed class ExpansionFeatureTests
 
     [Theory]
     [InlineData(0, SkillProficiencyRank.RankF, 0.0)]
-    [InlineData(150, SkillProficiencyRank.RankE, 5.0)]
-    [InlineData(400, SkillProficiencyRank.RankD, 10.0)]
-    [InlineData(1000, SkillProficiencyRank.RankC, 18.0)]
-    [InlineData(2500, SkillProficiencyRank.RankB, 28.0)]
-    [InlineData(6000, SkillProficiencyRank.RankA, 40.0)]
-    [InlineData(15000, SkillProficiencyRank.RankS, 60.0)]
-    [InlineData(35000, SkillProficiencyRank.RankSSS, 85.0)]
-    [InlineData(100000, SkillProficiencyRank.Mythic, 120.0)]
+    [InlineData(600, SkillProficiencyRank.RankE, 6.0)]
+    [InlineData(3000, SkillProficiencyRank.RankD, 14.0)]
+    [InlineData(10000, SkillProficiencyRank.RankC, 25.0)]
+    [InlineData(30000, SkillProficiencyRank.RankB, 40.0)]
+    [InlineData(80000, SkillProficiencyRank.RankA, 65.0)]
+    [InlineData(250000, SkillProficiencyRank.RankS, 95.0)]
+    [InlineData(700000, SkillProficiencyRank.RankSSS, 135.0)]
+    [InlineData(2000000, SkillProficiencyRank.Mythic, 180.0)]
     public void SkillProficiency_CalculatesRankEvolutionAndBonuses(long exp, SkillProficiencyRank expectedRank, double expectedDmgBonus)
     {
         var state = SkillProficiencyEngine.CalculateState("fireball", "Pyro Fireball", exp);
@@ -77,6 +77,30 @@ public sealed class ExpansionFeatureTests
         Assert.Equal(expectedDmgBonus, state.DamageBonusPercent);
         Assert.False(string.IsNullOrEmpty(state.RankTitle));
         Assert.False(string.IsNullOrEmpty(state.VisualAuraColor));
+    }
+
+    [Fact]
+    public void SkillAwakening_ValidatesRequirementsAndState()
+    {
+        // 1. Rank < RankA cannot awaken even with essence
+        Assert.False(SkillProficiencyEngine.CanAwaken("slash", SkillProficiencyRank.RankB, hasEssence: true));
+
+        // 2. Rank >= RankA without essence cannot awaken
+        Assert.False(SkillProficiencyEngine.CanAwaken("slash", SkillProficiencyRank.RankA, hasEssence: false));
+
+        // 3. Rank >= RankA with essence can awaken
+        Assert.True(SkillProficiencyEngine.CanAwaken("slash", SkillProficiencyRank.RankA, hasEssence: true));
+        Assert.True(SkillProficiencyEngine.CanAwaken("fireball", SkillProficiencyRank.RankS, hasEssence: true));
+        Assert.True(SkillProficiencyEngine.CanAwaken("meteor", SkillProficiencyRank.Mythic, hasEssence: true));
+
+        // 4. Calculate Awakened state gets extra damage bonus
+        var unawakened = SkillProficiencyEngine.CalculateState("slash", "Heavy Slash", 80000, isAwakened: false);
+        var awakened = SkillProficiencyEngine.CalculateState("slash", "Heavy Slash", 80000, isAwakened: true);
+
+        Assert.True(awakened.IsAwakened);
+        Assert.Equal(unawakened.DamageBonusPercent + 50.0, awakened.DamageBonusPercent);
+        Assert.NotNull(awakened.AwakeningDef);
+        Assert.Equal("Void Dimension Cleave", awakened.AwakeningDef.AwakenedName);
     }
 
     [Fact]
