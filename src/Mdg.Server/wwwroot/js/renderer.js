@@ -596,21 +596,68 @@ export function drawMonsterClean(ctx, m) {
 
     ctx.drawImage(bImg, sx, sy, colW, rowH, -dw / 2, -dh + 24 * scale + hoverY, dw, dh);
     ctx.restore();
-  } else if (assets.monstersGrid.complete && assets.monstersGrid.naturalWidth > 0) {
+  } else if (assets.voidMonsters && assets.voidMonsters.complete && assets.voidMonsters.naturalWidth > 0 &&
+             (m.type === 'void_spectre' || m.type === 'chaos_eye' || m.type === 'tentacle_fiend' || m.type === 'horror_stalker')) {
+    const img = assets.voidMonsters;
+    const colW = img.naturalWidth / 4;
+    const rowH = img.naturalHeight / 4;
+    let row = 0;
+    if (m.type === 'chaos_eye') row = 1;
+    else if (m.type === 'tentacle_fiend') row = 2;
+    else if (m.type === 'horror_stalker') row = 3;
+    else row = 0;
+
+    const animCol = Math.floor(m.animTimer * 2.0) % 4;
+    const sx = animCol * colW;
+    const sy = row * rowH;
+    const dw = 58 * scale;
+    const dh = 58 * scale;
+    ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
+  } else if (assets.elementalBeasts && assets.elementalBeasts.complete && assets.elementalBeasts.naturalWidth > 0 &&
+             (m.type === 'storm_drake' || m.type === 'fire_salamander' || m.type === 'crystal_serpent' || m.type === 'thunder_roc')) {
+    const img = assets.elementalBeasts;
+    const colW = img.naturalWidth / 4;
+    const rowH = img.naturalHeight / 4;
+    let row = 0;
+    if (m.type === 'fire_salamander') row = 1;
+    else if (m.type === 'crystal_serpent') row = 2;
+    else if (m.type === 'thunder_roc') row = 3;
+    else row = 0;
+
+    const animCol = Math.floor(m.animTimer * 2.0) % 4;
+    const sx = animCol * colW;
+    const sy = row * rowH;
+    const dw = 62 * scale;
+    const dh = 62 * scale;
+    ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
+  } else if (assets.ancientConstructs && assets.ancientConstructs.complete && assets.ancientConstructs.naturalWidth > 0 &&
+             (m.type === 'stone_colossus' || m.type === 'clockwork_spider' || m.type === 'bone_archon' || m.type === 'doom_knight')) {
+    const img = assets.ancientConstructs;
+    const colW = img.naturalWidth / 4;
+    const rowH = img.naturalHeight / 4;
+    let row = 0;
+    if (m.type === 'clockwork_spider') row = 1;
+    else if (m.type === 'bone_archon') row = 2;
+    else if (m.type === 'doom_knight') row = 3;
+    else row = 0;
+
+    const animCol = Math.floor(m.animTimer * 2.0) % 4;
+    const sx = animCol * colW;
+    const sy = row * rowH;
+    const dw = 60 * scale;
+    const dh = 60 * scale;
+    ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
+  } else if (assets.monstersGrid && assets.monstersGrid.complete && assets.monstersGrid.naturalWidth > 0 &&
+             (m.type === 'skeleton_warrior' || m.type === 'undead_knight' || m.type === 'frost_wolf' || m.type === 'magma_golem' || m.type === 'frost_golem')) {
     const img = assets.monstersGrid;
     const colW = img.naturalWidth / 4;
     const rowH = img.naturalHeight / 4;
 
     let row = 0;
-    if (m.type === 'skeleton' || m.name.includes('Skeleton') || m.name.includes('Undead')) {
-      row = 1; // Row 1: Skeleton Warrior
-    } else if (m.type === 'wolf' || m.name.includes('Wolf') || m.name.includes('Beast') || m.name.includes('Frost')) {
-      row = 2; // Row 2: Frost Wolf
-    } else if (m.type === 'golem' || m.name.includes('Golem') || m.name.includes('Magma') || m.name.includes('Rock')) {
-      row = 3; // Row 3: Magma Golem
-    } else {
-      row = 0; // Row 0: Void Stalker / Shadow
-    }
+    if (m.type === 'skeleton_warrior' || m.type === 'undead_knight') row = 1;
+    else if (m.type === 'frost_wolf') row = 2;
+    else if (m.type === 'magma_golem' || m.type === 'frost_golem') row = 3;
+    else row = 0;
 
     const animCol = Math.floor(m.animTimer * 2.0) % 4;
     const sx = animCol * colW;
@@ -619,7 +666,7 @@ export function drawMonsterClean(ctx, m) {
     const dw = 56 * scale;
     const dh = 56 * scale;
     ctx.drawImage(img, sx, sy, colW, rowH, -dw / 2, -dh + 18 * scale, dw, dh);
-  } else if (assets.monsters.complete && assets.monsters.naturalWidth > 0) {
+  } else if (assets.monsters && assets.monsters.complete && assets.monsters.naturalWidth > 0) {
     const img = assets.monsters;
     const colW = img.naturalWidth / 4;
     const rowH = img.naturalHeight / 4;
@@ -692,7 +739,48 @@ export function drawPropClean(ctx, p) {
   ctx.save();
   ctx.translate(p.x, p.y);
 
-  // 1. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
+  // 1. Check Transparent Props Grid (4x4 Grid)
+  const pGrid = assets.propsGrid;
+  if (pGrid && pGrid.complete && pGrid.naturalWidth > 0) {
+    const colW = pGrid.naturalWidth / 4;
+    const rowH = pGrid.naturalHeight / 4;
+    let col = -1, row = -1;
+    let dw = 52, dh = 52, offX = -26, offY = -40;
+
+    if (p.type === 'chest' || p.type === 'chest_wood') {
+      col = 0; row = 0; dw = 48; dh = 48; offX = -24; offY = -36;
+    } else if (p.type === 'chest_gold') {
+      col = 1; row = 0; dw = 48; dh = 48; offX = -24; offY = -36;
+    } else if (p.type === 'chest_crystal') {
+      col = 2; row = 0; dw = 52; dh = 52; offX = -26; offY = -38;
+    } else if (p.type === 'waypoint_pad') {
+      col = 3; row = 0; dw = 64; dh = 64; offX = -32; offY = -42;
+    } else if (p.type === 'barrel') {
+      col = 0; row = 1; dw = 46; dh = 48; offX = -23; offY = -38;
+    } else if (p.type === 'vase' || p.type === 'pots') {
+      col = 1; row = 1; dw = 46; dh = 48; offX = -23; offY = -38;
+    } else if (p.type === 'lever') {
+      col = 2; row = 1; dw = 42; dh = 46; offX = -21; offY = -36;
+    } else if (p.type === 'campfire') {
+      col = 3; row = 1; dw = 54; dh = 54; offX = -27; offY = -40;
+    } else if (p.type === 'torch') {
+      col = 0; row = 2; dw = 40; dh = 52; offX = -20; offY = -44;
+    } else if (p.type === 'gold_pile') {
+      col = 1; row = 2; dw = 48; dh = 44; offX = -24; offY = -32;
+    } else if (p.type === 'gargoyle') {
+      col = 2; row = 2; dw = 54; dh = 60; offX = -27; offY = -50;
+    } else if (p.type === 'iron_gate') {
+      col = 3; row = 2; dw = 56; dh = 64; offX = -28; offY = -52;
+    }
+
+    if (col !== -1 && row !== -1) {
+      ctx.drawImage(pGrid, col * colW, row * rowH, colW, rowH, offX, offY, dw, dh);
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 2. Check Nature Pack Props (Vector SVG Spritesheet 4x4)
   const natImg = assets.nature;
   if (natImg.complete && natImg.naturalWidth > 0) {
     const cellSize = 128;

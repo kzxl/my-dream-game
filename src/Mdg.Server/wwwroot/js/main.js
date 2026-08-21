@@ -306,6 +306,90 @@ export function spawnMonster(x, y, type = 'slime', forcedTier = null) {
     evasionChance = 5; blockChance = 30;
     expVal = 130; baseSpd = 60;
     attackDmg = 70; attackRange = 58; attackCooldown = 1.6; dmgType = 'fire';
+  } else if (type === 'void_spectre') {
+    mName = 'Abyssal Shadow Spectre';
+    maxHp = 750; armor = 160;
+    fireRes = 20; coldRes = 35; lightRes = 20; chaosRes = 55;
+    evasionChance = 35; blockChance = 0;
+    expVal = 140; baseSpd = 100;
+    attackDmg = 55; attackRange = 50; attackCooldown = 1.2; dmgType = 'chaos';
+  } else if (type === 'chaos_eye') {
+    mName = 'Void Eye of Chaos';
+    maxHp = 680; armor = 120;
+    fireRes = 25; coldRes = 25; lightRes = 50; chaosRes = 60;
+    evasionChance = 30; blockChance = 0;
+    expVal = 150; baseSpd = 85;
+    attackDmg = 65; attackRange = 240; attackCooldown = 1.5; dmgType = 'chaos';
+  } else if (type === 'tentacle_fiend') {
+    mName = 'Dark Tentacle Fiend';
+    maxHp = 1100; armor = 350;
+    fireRes = 15; coldRes = 40; lightRes = 25; chaosRes = 45;
+    evasionChance = 10; blockChance = 20;
+    expVal = 180; baseSpd = 65;
+    attackDmg = 60; attackRange = 65; attackCooldown = 1.3; dmgType = 'chaos';
+  } else if (type === 'horror_stalker') {
+    mName = 'Cosmic Horror Stalker';
+    maxHp = 1400; armor = 400;
+    fireRes = 35; coldRes = 35; lightRes = 35; chaosRes = 50;
+    evasionChance = 25; blockChance = 15;
+    expVal = 240; baseSpd = 115;
+    attackDmg = 80; attackRange = 55; attackCooldown = 1.0; dmgType = 'chaos';
+  } else if (type === 'storm_drake') {
+    mName = 'Storm Drake Dragon';
+    maxHp = 1200; armor = 360;
+    fireRes = 30; coldRes = 20; lightRes = 65; chaosRes = 25;
+    evasionChance = 20; blockChance = 15;
+    expVal = 200; baseSpd = 110;
+    attackDmg = 75; attackRange = 60; attackCooldown = 1.1; dmgType = 'lightning';
+  } else if (type === 'fire_salamander') {
+    mName = 'Molten Fire Salamander';
+    maxHp = 950; armor = 300;
+    fireRes = 70; coldRes = 10; lightRes = 20; chaosRes = 20;
+    evasionChance = 15; blockChance = 10;
+    expVal = 160; baseSpd = 90;
+    attackDmg = 62; attackRange = 50; attackCooldown = 1.2; dmgType = 'fire';
+  } else if (type === 'crystal_serpent') {
+    mName = 'Frost Crystal Serpent';
+    maxHp = 1050; armor = 340;
+    fireRes = 10; coldRes = 75; lightRes = 20; chaosRes = 20;
+    evasionChance = 25; blockChance = 10;
+    expVal = 175; baseSpd = 85;
+    attackDmg = 65; attackRange = 55; attackCooldown = 1.25; dmgType = 'cold';
+  } else if (type === 'thunder_roc') {
+    mName = 'Thunder Roc Beast';
+    maxHp = 1150; armor = 280;
+    fireRes = 25; coldRes = 25; lightRes = 70; chaosRes = 20;
+    evasionChance = 35; blockChance = 5;
+    expVal = 190; baseSpd = 120;
+    attackDmg = 72; attackRange = 55; attackCooldown = 0.95; dmgType = 'lightning';
+  } else if (type === 'stone_colossus') {
+    mName = 'Runic Stone Colossus';
+    maxHp = 1850; armor = 600;
+    fireRes = 40; coldRes = 40; lightRes = 40; chaosRes = 30;
+    evasionChance = 0; blockChance = 40;
+    expVal = 260; baseSpd = 55;
+    attackDmg = 85; attackRange = 65; attackCooldown = 1.6; dmgType = 'physical';
+  } else if (type === 'clockwork_spider') {
+    mName = 'Clockwork Automaton Spider';
+    maxHp = 850; armor = 320;
+    fireRes = 35; coldRes = 35; lightRes = 15; chaosRes = 30;
+    evasionChance = 25; blockChance = 10;
+    expVal = 150; baseSpd = 105;
+    attackDmg = 58; attackRange = 48; attackCooldown = 1.05; dmgType = 'physical';
+  } else if (type === 'bone_archon') {
+    mName = 'Cursed Bone Archon Lich';
+    maxHp = 1300; armor = 260;
+    fireRes = 15; coldRes = 55; lightRes = 20; chaosRes = 55;
+    evasionChance = 20; blockChance = 20;
+    expVal = 220; baseSpd = 75;
+    attackDmg = 80; attackRange = 220; attackCooldown = 1.4; dmgType = 'chaos';
+  } else if (type === 'doom_knight') {
+    mName = 'Armored Doom Knight';
+    maxHp = 1650; armor = 550;
+    fireRes = 40; coldRes = 40; lightRes = 40; chaosRes = 45;
+    evasionChance = 5; blockChance = 35;
+    expVal = 250; baseSpd = 80;
+    attackDmg = 88; attackRange = 60; attackCooldown = 1.3; dmgType = 'chaos';
   } else if (isBoss) {
     mName = '🔥 Dark Shadow Lord (Lord of Ruin)';
     maxHp = 4800;
@@ -382,7 +466,19 @@ export function spawnMonster(x, y, type = 'slime', forcedTier = null) {
 }
 
 export function spawnMonsterCluster(cx, cy, count, typeOverride) {
-  const types = typeOverride ? [typeOverride] : ['slime', 'goblin', 'wolf', 'skeleton'];
+  let types = ['slime', 'goblin', 'wolf', 'skeleton'];
+  if (typeOverride) {
+    types = Array.isArray(typeOverride) ? typeOverride : [typeOverride];
+  } else if (currentZoneId === 'ForgottenCrypt') {
+    types = ['skeleton_warrior', 'undead_knight', 'bone_archon', 'clockwork_spider'];
+  } else if (currentZoneId === 'FrostpeakTundra' || currentZoneId === 'StormpeakRidge') {
+    types = ['frost_wolf', 'frost_golem', 'storm_drake', 'crystal_serpent', 'thunder_roc'];
+  } else if (currentZoneId === 'InfernalCaldera' || currentZoneId === 'MoltenCaldera') {
+    types = ['fire_imp', 'magma_golem', 'fire_salamander', 'stone_colossus', 'doom_knight'];
+  } else if (currentZoneId === 'VoidAbyss' || currentZoneId === 'GenesisCore') {
+    types = ['void_spectre', 'chaos_eye', 'tentacle_fiend', 'horror_stalker', 'doom_knight'];
+  }
+
   const packRoll = Math.random();
   let hasLeader = false;
 

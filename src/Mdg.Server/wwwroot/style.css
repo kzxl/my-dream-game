@@ -1122,11 +1122,6 @@ canvas#gameCanvas {
    INVENTORY & PAPERDOLL MODAL
    ========================================== */
 .inv-modal-overhaul {
-  width: 840px !important;
-  max-width: 95vw;
-  background: #161920 !important;
-  border: 3px solid #c6a258 !important;
-.inv-modal-overhaul {
   width: 920px;
   max-width: 95vw;
   background: rgba(18, 21, 28, 0.97) !important;
