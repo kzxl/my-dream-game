@@ -6251,6 +6251,103 @@ canvas#gameCanvas {
   min-height: 480px;
 }
 
+.forge-panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.forge-panel-title-row h3,
+.forge-panel-title-row h4 {
+  margin: 0;
+  color: #ffd700;
+}
+
+/* Backpack Inventory Grid inside Forge */
+.forge-bag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.forge-slot-card {
+  width: 52px;
+  height: 52px;
+  background: radial-gradient(circle at 50% 35%, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.forge-slot-card:hover {
+  transform: translateY(-2px) scale(1.04);
+  border-color: #ffd700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.forge-slot-card.selected {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.7) !important;
+  background: rgba(198, 162, 88, 0.25) !important;
+}
+
+.forge-slot-card.disabled {
+  opacity: 0.35;
+  filter: grayscale(80%);
+  cursor: not-allowed;
+}
+
+.forge-slot-icon {
+  font-size: 22px;
+}
+
+/* Anvil Pedestal Card */
+.anvil-pedestal-card {
+  width: 100%;
+  min-height: 80px;
+  background: rgba(10, 14, 22, 0.9);
+  border: 2px dashed rgba(198, 162, 88, 0.5);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.anvil-placed-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: rgba(25, 33, 48, 0.85);
+  border: 1.5px solid;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.anvil-meta-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .btn-salvage {
   background: linear-gradient(135deg, #16a34a, #15803d) !important;
   color: #fff !important;
@@ -6268,46 +6365,73 @@ canvas#gameCanvas {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   padding: 15px;
-  margin-top: 15px;
+  margin-top: 10px;
 }
 
-.salvage-yield-grid {
+/* ==========================================================================
+   MATERIALS INVENTORY SLOT GRID (ARPG POUCH STYLE)
+   ========================================================================== */
+.materials-slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
   gap: 10px;
 }
 
-.salvage-yield-card {
-  background: rgba(20, 26, 38, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 10px;
+.mat-inventory-slot {
+  width: 56px;
+  height: 56px;
+  background: radial-gradient(circle at 50% 35%, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.syc-icon {
-  font-size: 22px;
+.mat-inventory-slot:hover {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 0 16px var(--slot-glow-color, rgba(255, 215, 0, 0.6));
+  border-color: var(--slot-glow-color, #ffd700) !important;
+  z-index: 5;
 }
 
-.syc-name {
-  font-weight: 700;
-  font-size: 13px;
+.mat-slot-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
 }
 
-.syc-count {
-  font-size: 11px;
+.mat-slot-count {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
   color: #4ade80;
+  text-shadow: 0 1px 3px #000;
 }
 
 /* Base Forging Styles */
+.craftable-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #4ade80;
+  cursor: pointer;
+}
+
 .forge-recipe-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 420px;
+  max-height: 400px;
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .forge-recipe-card {
@@ -6316,6 +6440,9 @@ canvas#gameCanvas {
   border-radius: 8px;
   padding: 10px 14px;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   transition: all 0.2s ease;
 }
 
@@ -6328,6 +6455,10 @@ canvas#gameCanvas {
   background: rgba(198, 162, 88, 0.25);
   border-color: #ffd700;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+}
+
+.forge-recipe-card.lacking-mats {
+  opacity: 0.6;
 }
 
 .frc-left {
@@ -6351,39 +6482,21 @@ canvas#gameCanvas {
   color: #94a3b8;
 }
 
+.frc-ready-tag {
+  background: #16a34a;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
 .recipe-preview-card {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(198, 162, 88, 0.4);
   border-radius: 8px;
   padding: 16px;
-}
-
-.recipe-costs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-}
-
-.recipe-cost-badge {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.recipe-cost-badge.enough {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid #22c55e;
-  color: #4ade80;
-}
-
-.recipe-cost-badge.lacking {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #ef4444;
-  color: #f87171;
 }
 
 /* Materials Vault Styles */
@@ -6395,65 +6508,83 @@ canvas#gameCanvas {
   margin-bottom: 16px;
 }
 
-.materials-vault-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 12px;
-  max-height: 480px;
-  overflow-y: auto;
+.vault-count-badge {
+  background: rgba(198, 162, 88, 0.15);
+  border: 1px solid rgba(198, 162, 88, 0.4);
+  color: #ffd700;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
-.mat-vault-card {
-  background: rgba(20, 26, 38, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 12px 14px;
+.empty-materials-vault {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.mat-vault-card.has-stock {
-  border-color: rgba(198, 162, 88, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
-}
-
-.mat-vault-card.empty-stock {
-  opacity: 0.55;
-}
-
-.mvc-top {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
 }
 
-.mvc-icon {
+/* Floating Rich Tooltip for Forge */
+.forge-floating-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  width: 260px;
+  background: rgba(10, 14, 23, 0.98);
+  border: 1.5px solid rgba(198, 162, 88, 0.6);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 20px rgba(198, 162, 88, 0.25);
+  backdrop-filter: blur(14px);
+  color: #f1f5f9;
+  font-family: 'Outfit', sans-serif;
+  transition: opacity 0.1s ease;
+}
+
+.ft-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ft-icon {
   font-size: 24px;
 }
 
-.mvc-count {
-  font-weight: 800;
+.ft-name {
   font-size: 14px;
+  font-weight: 800;
 }
 
-.mvc-name {
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.mvc-type {
+.ft-cat {
   font-size: 10px;
-  text-transform: uppercase;
   color: #94a3b8;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.mvc-desc {
+.ft-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 8px 0;
+}
+
+.ft-desc {
   font-size: 11px;
-  color: #64748b;
+  color: #cbd5e1;
   line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.ft-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
 }
 
 /* ==========================================================================

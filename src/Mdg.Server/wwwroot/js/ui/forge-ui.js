@@ -1,20 +1,26 @@
 /**
- * MDG: Aethelis - Genesis Forge Bench & Crafting UI 2.0 (High-Fantasy Dark Glassmorphism)
- * 4 Tabs: Relic Anvil (Metamods/Sockets), Salvage Anvil, Base Forging & Materials Vault
+ * MDG: Aethelis - Genesis Forge Bench & Crafting UI 2.0 (Overhauled ARPG Grid & Materials Tooltip)
+ * 4 Tabs: Relic Anvil, Salvage Anvil, Base Forging & Materials Vault
+ * Features:
+ *  - ARPG Item/Material Slot Grids (56x56px) with Rarity Glow & Stack Badges
+ *  - Auto-hiding materials with 0 quantity in Materials Vault & Crafting
+ *  - Dynamic Floating Rich Tooltips on mouse hover
+ *  - Craftable-Only Filter for Base Forging
  */
 
-import { player } from '../state.js?v=11';
-import { AudioEngine } from '../audio.js?v=11';
-import { updateBackpackUI, updatePaperdollUI } from './inventory.js?v=11';
-import { ApiClient } from '../services/api-client.js?v=11';
-import { MATERIALS_CATALOG, FORGING_RECIPES, getMaterialInfo, previewSalvageItem } from '../data/materials.js?v=11';
-import { spawnDamageNumber } from '../combat.js?v=11';
-import { saveToDatabase } from '../save-system.js?v=11';
+import { player } from '../state.js?v=12';
+import { AudioEngine } from '../audio.js?v=12';
+import { updateBackpackUI, updatePaperdollUI, showItemTooltip, positionItemTooltip, hideItemTooltip } from './inventory.js?v=12';
+import { MATERIALS_CATALOG, FORGING_RECIPES, getMaterialInfo, previewSalvageItem } from '../data/materials.js?v=12';
+import { spawnDamageNumber } from '../combat.js?v=12';
+import { saveToDatabase } from '../save-system.js?v=12';
+import { assets, drawItemSpriteToCanvas } from '../assets.js?v=12';
 
 let activeForgeTab = 'anvil'; // 'anvil' | 'salvage' | 'base_forge' | 'vault'
 let selectedItemIndex = -1;
 let selectedSalvageIndex = -1;
 let selectedRecipeId = 'forge_iron_sword';
+let onlyCraftableFilter = false;
 
 export function renderForgeBenchModal() {
   let modal = document.getElementById('forgeBenchModal');
@@ -22,6 +28,7 @@ export function renderForgeBenchModal() {
     modal.style.display = 'none';
     modal.classList.remove('active');
     modal.classList.add('hidden');
+    hideForgeTooltip();
     return;
   }
 
@@ -60,6 +67,7 @@ export function renderForgeBenchModal() {
       modal.style.display = 'none';
       modal.classList.remove('active');
       modal.classList.add('hidden');
+      hideForgeTooltip();
       AudioEngine.playTone(330, 'triangle', 0.1, 0.08);
     };
 
@@ -68,6 +76,7 @@ export function renderForgeBenchModal() {
         modal.style.display = 'none';
         modal.classList.remove('active');
         modal.classList.add('hidden');
+        hideForgeTooltip();
       }
     });
 
@@ -77,10 +86,13 @@ export function renderForgeBenchModal() {
         btn.classList.add('active');
         activeForgeTab = btn.getAttribute('data-tab');
         AudioEngine.playTone(520, 'sine', 0.08, 0.05);
+        hideForgeTooltip();
         renderActiveForgeTab();
       };
     });
   }
+
+  ensureForgeTooltipElement();
 
   modal.classList.remove('hidden');
   modal.classList.add('active');
@@ -103,29 +115,37 @@ function renderActiveForgeTab() {
   }
 }
 
-// ----------------------------------------------------
+// =========================================================================
 // TAB 1: RELIC ANVIL & METAMODS
-// ----------------------------------------------------
+// =========================================================================
 function renderRelicAnvilTab(container) {
   container.innerHTML = `
     <div class="forge-content-grid">
-      <!-- Item Selection & Anvil -->
+      <!-- Left: Anvil Pedestal & Inventory Grid -->
       <div class="forge-anvil-panel">
-        <h3>🗡️ Relic Anvil</h3>
-        <div id="anvilSlot" class="anvil-slot">
-          <div class="empty-anvil-text">Click an item below to place it onto the Forge Anvil</div>
+        <div class="forge-panel-title-row">
+          <h3>🗡️ Relic Anvil Pedestal</h3>
+          <span style="font-size:11px; color:#888;">Select gear from bag below</span>
+        </div>
+
+        <div id="anvilSlot" class="anvil-pedestal-card">
+          <div class="empty-anvil-text">Click a gear slot below to place onto Forge Anvil</div>
         </div>
         <div class="anvil-item-details" id="anvilItemDetails"></div>
         
-        <h4>📦 Inventory Backpack Gear</h4>
-        <div class="forge-backpack-list" id="forgeBackpackList"></div>
+        <div class="forge-panel-title-row" style="margin-top:15px;">
+          <h4>📦 Backpack Equipment</h4>
+          <span style="font-size:11px; color:#ffd700;">Click to place • Hover for stats</span>
+        </div>
+        <div class="forge-bag-grid" id="forgeBackpackList"></div>
       </div>
 
-      <!-- Crafting Operations -->
+      <!-- Right: Crafting Actions & Currency Cost -->
       <div class="forge-actions-panel">
-        <h3>✨ Alchemy Rituals & Forging</h3>
+        <div class="forge-panel-title-row">
+          <h3>✨ Alchemy Rituals & Forging</h3>
+        </div>
         
-        <!-- Currency Inventory Status -->
         <div class="forge-currency-summary" id="forgeCurrencySummary"></div>
 
         <div class="forge-action-group">
@@ -175,21 +195,43 @@ function updateAnvilUI() {
   player.bag.forEach((item, idx) => {
     if (!item) return;
     const isEquipable = item.slot !== 'Currency' && item.slot !== 'Gem' && item.category !== 'map';
-    const div = document.createElement('div');
-    div.className = `forge-bag-item ${selectedItemIndex === idx ? 'selected' : ''} ${!isEquipable ? 'disabled' : ''}`;
-    div.style.borderColor = item.color || '#fff';
-    div.innerHTML = `
-      <span class="item-name" style="color:${item.color || '#fff'}">${item.name}</span>
-      <span class="item-slot">${item.slot || 'Gear'} (${item.rarity || 'Normal'})</span>
-    `;
+    const slotEl = document.createElement('div');
+    slotEl.className = `forge-slot-card rarity-${item.rarity || 'Normal'} ${selectedItemIndex === idx ? 'selected' : ''} ${!isEquipable ? 'disabled' : ''}`;
+
+    if (item.sprite && assets.equipment && assets.equipment.complete) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 40;
+      cvs.height = 40;
+      cvs.className = 'bag-slot-canvas';
+      drawItemSpriteToCanvas(cvs, item.sprite);
+      slotEl.appendChild(cvs);
+    } else {
+      const span = document.createElement('span');
+      span.className = 'forge-slot-icon';
+      span.innerText = item.icon || '⚔️';
+      slotEl.appendChild(span);
+    }
+
+    if (item.sockets && item.sockets > 0) {
+      const sockBadge = document.createElement('span');
+      sockBadge.className = 'item-socket-badge';
+      sockBadge.innerText = '⚪'.repeat(item.sockets);
+      slotEl.appendChild(sockBadge);
+    }
+
+    // Tooltips
+    slotEl.addEventListener('mouseenter', e => showItemTooltip(e, item, 'bag'));
+    slotEl.addEventListener('mousemove', e => positionItemTooltip(e));
+    slotEl.addEventListener('mouseleave', hideItemTooltip);
 
     if (isEquipable) {
-      div.onclick = () => {
+      slotEl.onclick = () => {
         selectedItemIndex = idx;
+        AudioEngine.playTone(440, 'sine', 0.06, 0.04);
         updateAnvilUI();
       };
     }
-    backpackList.appendChild(div);
+    backpackList.appendChild(slotEl);
   });
 
   const anvilSlot = document.getElementById('anvilSlot');
@@ -197,181 +239,187 @@ function updateAnvilUI() {
   const selectedItem = player.bag[selectedItemIndex];
 
   if (!selectedItem || selectedItem.slot === 'Currency' || selectedItem.slot === 'Gem' || selectedItem.category === 'map') {
-    anvilSlot.innerHTML = `<div class="empty-anvil-text">No equipment selected</div>`;
+    anvilSlot.innerHTML = `<div class="empty-anvil-text">Click an item below to place it onto the Forge Anvil</div>`;
     details.innerHTML = '';
   } else {
-    const sockets = selectedItem.sockets || 2;
-    const links = selectedItem.links || 1;
-    let socketsHtml = `<div class="item-sockets-row">Sockets: `;
-    for (let s = 0; s < sockets; s++) {
-      socketsHtml += `<span class="socket-gem-pip">${s < links ? '🔗⚪' : '⚪'}</span> `;
-    }
-    socketsHtml += `</div>`;
-
     anvilSlot.innerHTML = `
       <div class="anvil-placed-item" style="border-color:${selectedItem.color}">
-        <div style="font-weight:bold; font-size:16px; color:${selectedItem.color}">${selectedItem.name}</div>
-        <div style="font-size:12px; color:#aaa">${selectedItem.rarity} ${selectedItem.slot} (iLvl ${selectedItem.level || 65})</div>
-        ${socketsHtml}
+        <span style="font-size:28px;">${selectedItem.icon || '⚔️'}</span>
+        <div style="text-align:left;">
+          <div style="font-weight:bold; font-size:15px; color:${selectedItem.color}">${selectedItem.name}</div>
+          <div style="font-size:11px; color:#94a3b8;">${selectedItem.rarity} ${selectedItem.slot} (iLvl ${selectedItem.level || 65})</div>
+        </div>
       </div>
     `;
 
-    let modsHtml = `<ul class="forge-mods-list">`;
-    if (selectedItem.stats) {
-      for (const [k, v] of Object.entries(selectedItem.stats)) {
-        modsHtml += `<li>• +${v} ${k}</li>`;
-      }
-    }
-    if (selectedItem.craftedMods) {
-      selectedItem.craftedMods.forEach(m => {
-        modsHtml += `<li style="color:#00f2fe">• [Forge] ${m}</li>`;
-      });
-    }
-    modsHtml += `</ul>`;
-    details.innerHTML = modsHtml;
+    details.innerHTML = `
+      <div class="anvil-meta-box">
+        <div>🔒 Prefixes Locked: <b>${selectedItem.prefixesLocked ? '<span style="color:#ffd700">YES</span>' : 'NO'}</b></div>
+        <div>🔒 Suffixes Locked: <b>${selectedItem.suffixesLocked ? '<span style="color:#ffd700">YES</span>' : 'NO'}</b></div>
+        <div>⚪ Sockets: <b>${selectedItem.sockets || 0}</b> | Links: <b>${selectedItem.links || 0}</b></div>
+        ${selectedItem.craftedMods && selectedItem.craftedMods.length > 0 ? `<div style="color:#4ade80; margin-top:4px;">✨ Crafted Mod: ${selectedItem.craftedMods.join(', ')}</div>` : ''}
+      </div>
+    `;
   }
 
-  const currencySum = document.getElementById('forgeCurrencySummary');
-  if (currencySum) {
-    const fractureCores = countCurrency('Fracture Core');
-    const ascendantCatalysts = countCurrency('Ascendant Catalyst');
-    const socketingCores = countCurrency('Socketing Core') + countCurrency('Aether Spark');
-    const harmonicTethers = countCurrency('Harmonic Tether') + countCurrency('Flux Catalyst');
-
-    currencySum.innerHTML = `
-      <span>🔮 Fracture Cores: <b>${fractureCores}</b></span> |
-      <span>✨ Ascendant Catalysts: <b>${ascendantCatalysts}</b></span> |
-      <span>⚪ Sockets/Tethers: <b>${socketingCores}/${harmonicTethers}</b></span>
+  // Update Currencies Summary
+  const curSummary = document.getElementById('forgeCurrencySummary');
+  if (curSummary) {
+    curSummary.innerHTML = `
+      <span>🔮 Fracture Cores: <b style="color:#ffd700;">${countCurrency('Fracture Core')}</b></span>
+      <span>⚪ Socketing Cores: <b style="color:#00f2fe;">${countCurrency('Socketing Core')}</b></span>
+      <span>🔗 Harmonic Tethers: <b style="color:#c678dd;">${countCurrency('Harmonic Tether')}</b></span>
+      <span>✨ Ascendant Catalysts: <b style="color:#4ade80;">${countCurrency('Ascendant Catalyst')}</b></span>
     `;
   }
 }
 
 function setupAnvilListeners() {
-  document.getElementById('btnLockPrefixes')?.addEventListener('click', () => {
-    const item = player.bag[selectedItemIndex];
-    if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    if (countCurrency('Fracture Core') < 2) return alert('Requires 2x Fracture Cores!');
-    consumeCurrency('Fracture Core', 2);
-    item.prefixesLocked = true;
-    AudioEngine.playTone(587, 'sine', 0.2, 0.15);
-    spawnDamageNumber(player.x, player.y - 45, '🔒 PREFIXES LOCKED!', true, '#ffd700');
-    updateAnvilUI();
-    saveToDatabase();
-  });
+  const btnLockPre = document.getElementById('btnLockPrefixes');
+  const btnLockSuf = document.getElementById('btnLockSuffixes');
+  const btnSockets = document.getElementById('btnRerollSockets');
+  const btnLinks = document.getElementById('btnRerollLinks');
+  const btnCraft = document.getElementById('btnCraftAffix');
+  const btnChaos = document.getElementById('btnChaosReroll');
 
-  document.getElementById('btnLockSuffixes')?.addEventListener('click', () => {
-    const item = player.bag[selectedItemIndex];
-    if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    if (countCurrency('Fracture Core') < 2) return alert('Requires 2x Fracture Cores!');
-    consumeCurrency('Fracture Core', 2);
-    item.suffixesLocked = true;
-    AudioEngine.playTone(587, 'sine', 0.2, 0.15);
-    spawnDamageNumber(player.x, player.y - 45, '🔒 SUFFIXES LOCKED!', true, '#ffd700');
-    updateAnvilUI();
-    saveToDatabase();
-  });
+  if (btnLockPre) {
+    btnLockPre.onclick = () => {
+      const item = player.bag[selectedItemIndex];
+      if (!item) return alert('Select an equipment piece on the anvil first.');
+      if (item.prefixesLocked) return alert('Prefixes are already locked on this item.');
+      if (countCurrency('Fracture Core') < 2) return alert('You need 2x Fracture Core to lock prefixes.');
 
-  document.getElementById('btnRerollSockets')?.addEventListener('click', async () => {
-    const item = player.bag[selectedItemIndex];
-    if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    if (!consumeCurrency('Socketing Core', 1) && !consumeCurrency('Aether Spark', 1)) {
-      return alert('Requires 1x Socketing Core or 1x Aether Spark!');
-    }
-    item.sockets = Math.floor(Math.random() * 3) + 2;
-    item.links = Math.min(item.sockets, item.links || 1);
-    AudioEngine.playTone(440, 'triangle', 0.15, 0.15);
-    spawnDamageNumber(player.x, player.y - 45, `⚪ REFORGED: ${item.sockets} SOCKETS!`, true, '#00f2fe');
-    updateAnvilUI();
-    updatePaperdollUI();
-    saveToDatabase();
-  });
-
-  document.getElementById('btnRerollLinks')?.addEventListener('click', async () => {
-    const item = player.bag[selectedItemIndex];
-    if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    if (!consumeCurrency('Harmonic Tether', 1) && !consumeCurrency('Flux Catalyst', 1)) {
-      return alert('Requires 1x Harmonic Tether or 1x Flux Catalyst!');
-    }
-    item.links = Math.min(item.sockets || 2, Math.floor(Math.random() * (item.sockets || 2)) + 1);
-    AudioEngine.playTone(659, 'sine', 0.2, 0.15);
-    spawnDamageNumber(player.x, player.y - 45, `🔗 REFORGED: ${item.links} LINKS!`, true, '#a855f7');
-    updateAnvilUI();
-    updatePaperdollUI();
-    saveToDatabase();
-  });
-
-  document.getElementById('btnCraftAffix')?.addEventListener('click', async () => {
-    const item = player.bag[selectedItemIndex];
-    if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    if (!consumeCurrency('Ascendant Catalyst', 1) && !consumeCurrency('Genesis Prism', 1)) {
-      return alert('Requires 1x Ascendant Catalyst or 1x Genesis Prism!');
-    }
-    const select = document.getElementById('forgeAffixSelect');
-    const chosenText = select.options[select.selectedIndex].text;
-    item.craftedMods = item.craftedMods || [];
-    item.craftedMods.push(chosenText);
-    item.rarity = 'Rare';
-    item.color = '#ffff77';
-    if (chosenText.includes('Life')) item.stats.life = (item.stats.life || 0) + 65;
-    if (chosenText.includes('Physical')) item.stats.damage = (item.stats.damage || 0) + 35;
-    if (chosenText.includes('Energy Shield')) item.stats.es = (item.stats.es || 0) + 50;
-    if (chosenText.includes('Fire Resistance')) player.fireRes = Math.min(90, (player.fireRes || 0) + 10);
-    if (chosenText.includes('Attack Speed')) item.stats.attackSpeed = (item.stats.attackSpeed || 0) + 15;
-    AudioEngine.playTone(880, 'sine', 0.3, 0.2);
-    spawnDamageNumber(player.x, player.y - 45, `✨ BENCH CRAFTED: ${chosenText.split('(')[0]}!`, true, '#ffd700');
-    updateAnvilUI();
-    updateBackpackUI();
-    updatePaperdollUI();
-    saveToDatabase();
-  });
-
-  document.getElementById('btnChaosReroll')?.addEventListener('click', async () => {
-    const item = player.bag[selectedItemIndex];
-    if (!item) return alert('Please place a piece of equipment onto the anvil.');
-    if (!consumeCurrency('Fracture Core', 1) && !consumeCurrency('Chaos Orb', 1)) {
-      return alert('Requires 1x Fracture Core to chaos reroll all affixes!');
-    }
-    item.rarity = 'Rare';
-    item.color = '#ffff77';
-    item.stats = {
-      damage: Math.floor(Math.random() * 40) + 25,
-      armor: Math.floor(Math.random() * 60) + 40,
-      life: Math.floor(Math.random() * 70) + 30
+      consumeCurrency('Fracture Core', 2);
+      item.prefixesLocked = true;
+      AudioEngine.playTone(650, 'sawtooth', 0.25, 0.15);
+      spawnDamageNumber(player.x, player.y - 45, '🔒 PREFIXES LOCKED!', true, '#ffd700');
+      updateAnvilUI();
+      saveToDatabase();
     };
-    item.craftedMods = [];
-    AudioEngine.playTone(330, 'sawtooth', 0.25, 0.18);
-    spawnDamageNumber(player.x, player.y - 45, '🌀 CHAOS REFORGED ALL AFFIXES!', true, '#eab308');
-    updateAnvilUI();
-    updateBackpackUI();
-    updatePaperdollUI();
-    saveToDatabase();
-  });
+  }
+
+  if (btnLockSuf) {
+    btnLockSuf.onclick = () => {
+      const item = player.bag[selectedItemIndex];
+      if (!item) return alert('Select an equipment piece on the anvil first.');
+      if (item.suffixesLocked) return alert('Suffixes are already locked on this item.');
+      if (countCurrency('Fracture Core') < 2) return alert('You need 2x Fracture Core to lock suffixes.');
+
+      consumeCurrency('Fracture Core', 2);
+      item.suffixesLocked = true;
+      AudioEngine.playTone(650, 'sawtooth', 0.25, 0.15);
+      spawnDamageNumber(player.x, player.y - 45, '🔒 SUFFIXES LOCKED!', true, '#ffd700');
+      updateAnvilUI();
+      saveToDatabase();
+    };
+  }
+
+  if (btnSockets) {
+    btnSockets.onclick = () => {
+      const item = player.bag[selectedItemIndex];
+      if (!item) return alert('Select an equipment piece on the anvil first.');
+      if (countCurrency('Socketing Core') < 1) return alert('You need 1x Socketing Core.');
+
+      consumeCurrency('Socketing Core', 1);
+      const newSockets = Math.floor(Math.random() * 4) + 1;
+      item.sockets = newSockets;
+      if (item.links > item.sockets) item.links = item.sockets;
+      AudioEngine.playTone(520, 'sine', 0.2, 0.1);
+      spawnDamageNumber(player.x, player.y - 45, `⚪ REFORGED: ${newSockets} SOCKETS!`, true, '#00f2fe');
+      updateAnvilUI();
+      saveToDatabase();
+    };
+  }
+
+  if (btnLinks) {
+    btnLinks.onclick = () => {
+      const item = player.bag[selectedItemIndex];
+      if (!item) return alert('Select an equipment piece on the anvil first.');
+      if (!item.sockets || item.sockets < 2) return alert('Item must have at least 2 sockets to form links.');
+      if (countCurrency('Harmonic Tether') < 1) return alert('You need 1x Harmonic Tether.');
+
+      consumeCurrency('Harmonic Tether', 1);
+      const newLinks = Math.floor(Math.random() * item.sockets) + 1;
+      item.links = newLinks;
+      AudioEngine.playTone(580, 'sine', 0.2, 0.1);
+      spawnDamageNumber(player.x, player.y - 45, `🔗 REFORGED: ${newLinks}-LINK!`, true, '#c678dd');
+      updateAnvilUI();
+      saveToDatabase();
+    };
+  }
+
+  if (btnCraft) {
+    btnCraft.onclick = () => {
+      const item = player.bag[selectedItemIndex];
+      if (!item) return alert('Select an equipment piece on the anvil first.');
+      if (countCurrency('Ascendant Catalyst') < 1) return alert('You need 1x Ascendant Catalyst.');
+
+      const select = document.getElementById('forgeAffixSelect');
+      const modValue = select.value;
+      const modText = select.options[select.selectedIndex].text;
+
+      consumeCurrency('Ascendant Catalyst', 1);
+      if (!item.craftedMods) item.craftedMods = [];
+      item.craftedMods = [modText]; // Replace existing bench crafted mod
+
+      AudioEngine.playTone(720, 'triangle', 0.3, 0.2);
+      spawnDamageNumber(player.x, player.y - 45, `✨ BENCH CRAFTED: ${modText}!`, true, '#4ade80');
+      updateAnvilUI();
+      saveToDatabase();
+    };
+  }
+
+  if (btnChaos) {
+    btnChaos.onclick = () => {
+      const item = player.bag[selectedItemIndex];
+      if (!item) return alert('Select an equipment piece on the anvil first.');
+      if (countCurrency('Fracture Core') < 1) return alert('You need 1x Fracture Core.');
+
+      consumeCurrency('Fracture Core', 1);
+      item.rarity = 'Rare';
+      item.color = '#ffd700';
+
+      AudioEngine.playTone(380, 'sawtooth', 0.35, 0.2);
+      spawnDamageNumber(player.x, player.y - 45, '🌀 CHAOS SLAM REROLLED!', true, '#ffd700');
+      updateAnvilUI();
+      saveToDatabase();
+    };
+  }
 }
 
-// ----------------------------------------------------
-// TAB 2: SALVAGE ANVIL (RECLAIM MATERIALS FROM JUNK)
-// ----------------------------------------------------
+// =========================================================================
+// TAB 2: SALVAGE ANVIL (DISMANTLING & RECLAMATION)
+// =========================================================================
 function renderSalvageTab(container) {
   container.innerHTML = `
     <div class="forge-content-grid">
-      <!-- Item Selection for Salvage -->
+      <!-- Left: Dismantling Pedestal & Bag -->
       <div class="forge-anvil-panel">
-        <h3>♻️ Select Gear to Salvage</h3>
-        <p style="font-size:12px; color:#888; margin-top:-5px;">Break down redundant equipment into valuable raw ores, beast hides & Genesis Shards.</p>
-        <div class="forge-backpack-list" id="salvageBackpackList"></div>
-      </div>
-
-      <!-- Salvage Preview & Action -->
-      <div class="forge-actions-panel">
-        <h3>🔥 Salvage Reclamation Anvil</h3>
-        <div id="salvageTargetSlot" class="anvil-slot">
-          <div class="empty-anvil-text">Select an item on the left to inspect salvage yields</div>
+        <div class="forge-panel-title-row">
+          <h3>♻️ Salvage Anvil Pedestal</h3>
+          <span style="font-size:11px; color:#888;">Select gear to dismantle into raw materials</span>
         </div>
 
-        <div class="salvage-yield-box" id="salvageYieldBox"></div>
+        <div id="salvageTargetSlot" class="anvil-pedestal-card">
+          <div class="empty-anvil-text">Click a piece of equipment below to salvage</div>
+        </div>
 
+        <div class="forge-panel-title-row" style="margin-top:15px;">
+          <h4>📦 Backpack Equipment</h4>
+          <span style="font-size:11px; color:#4ade80;">Click to preview raw materials yield</span>
+        </div>
+        <div class="forge-bag-grid" id="salvageBackpackList"></div>
+      </div>
+
+      <!-- Right: Yield Preview & Execute -->
+      <div class="forge-actions-panel">
+        <div class="forge-panel-title-row">
+          <h3>📦 Reclamation Material Yields</h3>
+        </div>
+
+        <div id="salvageYieldBox" class="salvage-yield-box"></div>
         <div style="margin-top:20px;">
-          <button class="forge-btn btn-salvage" id="btnExecuteSalvage">♻️ Salvage Item Into Materials</button>
+          <button class="forge-btn btn-salvage" id="btnExecuteSalvage">♻️ Salvage & Reclaim Materials</button>
         </div>
       </div>
     </div>
@@ -387,22 +435,37 @@ function updateSalvageUI() {
   backpackList.innerHTML = '';
   player.bag.forEach((item, idx) => {
     if (!item) return;
-    const isEquipable = item.slot !== 'Currency' && item.slot !== 'Gem' && item.category !== 'map';
-    const div = document.createElement('div');
-    div.className = `forge-bag-item ${selectedSalvageIndex === idx ? 'selected' : ''} ${!isEquipable ? 'disabled' : ''}`;
-    div.style.borderColor = item.color || '#fff';
-    div.innerHTML = `
-      <span class="item-name" style="color:${item.color || '#fff'}">${item.name}</span>
-      <span class="item-slot">${item.slot || 'Gear'} (${item.rarity || 'Normal'})</span>
-    `;
+    const isSalvageable = item.slot !== 'Currency' && item.slot !== 'Gem' && item.category !== 'map';
+    const slotEl = document.createElement('div');
+    slotEl.className = `forge-slot-card rarity-${item.rarity || 'Normal'} ${selectedSalvageIndex === idx ? 'selected' : ''} ${!isSalvageable ? 'disabled' : ''}`;
 
-    if (isEquipable) {
-      div.onclick = () => {
+    if (item.sprite && assets.equipment && assets.equipment.complete) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 40;
+      cvs.height = 40;
+      cvs.className = 'bag-slot-canvas';
+      drawItemSpriteToCanvas(cvs, item.sprite);
+      slotEl.appendChild(cvs);
+    } else {
+      const span = document.createElement('span');
+      span.className = 'forge-slot-icon';
+      span.innerText = item.icon || '⚔️';
+      slotEl.appendChild(span);
+    }
+
+    // Tooltips
+    slotEl.addEventListener('mouseenter', e => showItemTooltip(e, item, 'bag'));
+    slotEl.addEventListener('mousemove', e => positionItemTooltip(e));
+    slotEl.addEventListener('mouseleave', hideItemTooltip);
+
+    if (isSalvageable) {
+      slotEl.onclick = () => {
         selectedSalvageIndex = idx;
+        AudioEngine.playTone(420, 'sine', 0.06, 0.04);
         updateSalvageUI();
       };
     }
-    backpackList.appendChild(div);
+    backpackList.appendChild(slotEl);
   });
 
   const targetSlot = document.getElementById('salvageTargetSlot');
@@ -411,33 +474,43 @@ function updateSalvageUI() {
 
   if (!selectedItem || selectedItem.slot === 'Currency' || selectedItem.slot === 'Gem') {
     targetSlot.innerHTML = `<div class="empty-anvil-text">No equipment selected for salvage</div>`;
-    yieldBox.innerHTML = '';
+    yieldBox.innerHTML = `<div style="color:#64748b; font-size:12px; text-align:center; padding:20px 0;">Select an item on the left to preview guaranteed materials yield.</div>`;
   } else {
     targetSlot.innerHTML = `
       <div class="anvil-placed-item" style="border-color:${selectedItem.color}">
-        <div style="font-weight:bold; font-size:16px; color:${selectedItem.color}">${selectedItem.name}</div>
-        <div style="font-size:12px; color:#aaa">${selectedItem.rarity} ${selectedItem.slot} (iLvl ${selectedItem.level || 65})</div>
+        <span style="font-size:28px;">${selectedItem.icon || '⚔️'}</span>
+        <div style="text-align:left;">
+          <div style="font-weight:bold; font-size:15px; color:${selectedItem.color}">${selectedItem.name}</div>
+          <div style="font-size:11px; color:#94a3b8;">${selectedItem.rarity} ${selectedItem.slot} (iLvl ${selectedItem.level || 65})</div>
+        </div>
       </div>
     `;
 
     const yields = previewSalvageItem(selectedItem);
     yieldBox.innerHTML = `
-      <h4 style="color:#ffd700; margin-bottom:10px;">📦 Guaranteed Salvage Materials:</h4>
-      <div class="salvage-yield-grid">
+      <h4 style="color:#ffd700; margin-bottom:12px;">📦 Guaranteed Materials Yield:</h4>
+      <div class="materials-slot-grid">
         ${yields.map(y => {
-          const matInfo = getMaterialInfo(y.id);
+          const matInfo = y.isCurrency ? { id: 'fracture_core', name: 'Fracture Core', category: 'Currency', rarity: 'Rare', icon: '🔮', color: '#ffd700', desc: 'Precious crafting currency.' } : getMaterialInfo(y.id);
           return `
-            <div class="salvage-yield-card">
-              <span class="syc-icon">${y.isCurrency ? '🔮' : matInfo.icon}</span>
-              <div class="syc-info">
-                <div class="syc-name" style="color:${matInfo.color || '#ffd700'}">${y.isCurrency ? 'Fracture Core' : matInfo.name}</div>
-                <div class="syc-count">Quantity: +${y.count}</div>
-              </div>
+            <div class="mat-inventory-slot" style="--slot-glow-color:${matInfo.color || '#ffd700'}; border-color:${matInfo.color || '#ffd700'};"
+                 data-mat-id="${matInfo.id}">
+              <span class="mat-slot-icon">${matInfo.icon}</span>
+              <span class="mat-slot-count">+${y.count}</span>
             </div>
           `;
         }).join('')}
       </div>
     `;
+
+    // Add tooltips to yield slots
+    yieldBox.querySelectorAll('.mat-inventory-slot').forEach(slot => {
+      const matId = slot.getAttribute('data-mat-id');
+      const matInfo = matId === 'fracture_core' ? { id: 'fracture_core', name: 'Fracture Core', category: 'Currency', rarity: 'Rare', icon: '🔮', color: '#ffd700', desc: 'Precious metamod currency for locking affixes and total chaotic rerolls.' } : getMaterialInfo(matId);
+      slot.addEventListener('mouseenter', e => showForgeMaterialTooltip(e, matInfo, 1));
+      slot.addEventListener('mousemove', e => positionForgeTooltip(e));
+      slot.addEventListener('mouseleave', hideForgeTooltip);
+    });
   }
 
   const btnSalvage = document.getElementById('btnExecuteSalvage');
@@ -471,21 +544,29 @@ function updateSalvageUI() {
   }
 }
 
-// ----------------------------------------------------
+// =========================================================================
 // TAB 3: BASE EQUIPMENT FORGING
-// ----------------------------------------------------
+// =========================================================================
 function renderBaseForgingTab(container) {
   container.innerHTML = `
     <div class="forge-content-grid">
-      <!-- Recipe List -->
+      <!-- Left: Recipe List with Craftable Toggle -->
       <div class="forge-anvil-panel">
-        <h3>🗡️ Blacksmith Relic Blueprints</h3>
+        <div class="forge-panel-title-row">
+          <h3>🗡️ Relic Blueprints</h3>
+          <label class="craftable-toggle-label">
+            <input type="checkbox" id="chkCraftableOnly" ${onlyCraftableFilter ? 'checked' : ''} />
+            <span>Craftable Only</span>
+          </label>
+        </div>
         <div class="forge-recipe-list" id="forgeRecipeList"></div>
       </div>
 
-      <!-- Recipe Details & Forging Action -->
+      <!-- Right: Recipe Preview, Material Cost Slots & Forging Action -->
       <div class="forge-actions-panel">
-        <h3>🔨 Smelting & Relic Forging</h3>
+        <div class="forge-panel-title-row">
+          <h3>🔨 Smelting & Relic Forging</h3>
+        </div>
         <div id="recipePreviewBox" class="recipe-preview-box"></div>
         <div style="margin-top:20px;">
           <button class="forge-btn btn-craft" id="btnExecuteForgeBase">✨ Forge Equipment Base</button>
@@ -494,6 +575,11 @@ function renderBaseForgingTab(container) {
     </div>
   `;
 
+  document.getElementById('chkCraftableOnly')?.addEventListener('change', e => {
+    onlyCraftableFilter = e.target.checked;
+    updateBaseForgingUI();
+  });
+
   updateBaseForgingUI();
 }
 
@@ -501,64 +587,104 @@ function updateBaseForgingUI() {
   const recipeList = document.getElementById('forgeRecipeList');
   if (!recipeList) return;
 
-  recipeList.innerHTML = '';
-  FORGING_RECIPES.forEach(recipe => {
-    const div = document.createElement('div');
-    div.className = `forge-recipe-card ${selectedRecipeId === recipe.id ? 'selected' : ''}`;
-    div.innerHTML = `
-      <div class="frc-left">
-        <span class="frc-icon">${recipe.icon}</span>
-        <div>
-          <div class="frc-title">${recipe.name} (Lv. ${recipe.level})</div>
-          <div class="frc-sub">${recipe.slot} • ${recipe.desc}</div>
-        </div>
-      </div>
-    `;
-    div.onclick = () => {
-      selectedRecipeId = recipe.id;
-      updateBaseForgingUI();
-    };
-    recipeList.appendChild(div);
-  });
-
-  const previewBox = document.getElementById('recipePreviewBox');
-  const recipe = FORGING_RECIPES.find(r => r.id === selectedRecipeId) || FORGING_RECIPES[0];
-
   if (!player.materials) player.materials = {};
 
+  recipeList.innerHTML = '';
+
+  const displayedRecipes = FORGING_RECIPES.filter(recipe => {
+    if (!onlyCraftableFilter) return true;
+    for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+      if ((player.materials[matId] || 0) < reqCount) return false;
+    }
+    return true;
+  });
+
+  if (displayedRecipes.length === 0) {
+    recipeList.innerHTML = `
+      <div style="color:#64748b; font-size:12px; text-align:center; padding:30px 10px;">
+        No craftable blueprints with current materials.<br>Uncheck "Craftable Only" to view all blueprints.
+      </div>
+    `;
+  } else {
+    displayedRecipes.forEach(recipe => {
+      let isCraftable = true;
+      for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+        if ((player.materials[matId] || 0) < reqCount) {
+          isCraftable = false;
+          break;
+        }
+      }
+
+      const div = document.createElement('div');
+      div.className = `forge-recipe-card ${selectedRecipeId === recipe.id ? 'selected' : ''} ${!isCraftable ? 'lacking-mats' : ''}`;
+      div.innerHTML = `
+        <div class="frc-left">
+          <span class="frc-icon">${recipe.icon}</span>
+          <div>
+            <div class="frc-title">${recipe.name} <span style="font-size:10px; color:#4ade80;">(Lv. ${recipe.level})</span></div>
+            <div class="frc-sub">${recipe.slot} • ${recipe.desc}</div>
+          </div>
+        </div>
+        ${isCraftable ? '<span class="frc-ready-tag">READY</span>' : ''}
+      `;
+      div.onclick = () => {
+        selectedRecipeId = recipe.id;
+        AudioEngine.playTone(460, 'sine', 0.06, 0.04);
+        updateBaseForgingUI();
+      };
+      recipeList.appendChild(div);
+    });
+  }
+
+  const previewBox = document.getElementById('recipePreviewBox');
+  const recipe = FORGING_RECIPES.find(r => r.id === selectedRecipeId) || displayedRecipes[0] || FORGING_RECIPES[0];
+
   let canAfford = true;
-  let costHtml = `<div class="recipe-costs-grid">`;
+  let costSlotsHtml = `<div class="materials-slot-grid">`;
   for (const [matId, reqCount] of Object.entries(recipe.costs)) {
     const matInfo = getMaterialInfo(matId);
     const currentCount = player.materials[matId] || 0;
     const hasEnough = currentCount >= reqCount;
     if (!hasEnough) canAfford = false;
 
-    costHtml += `
-      <div class="recipe-cost-badge ${hasEnough ? 'enough' : 'lacking'}">
-        <span>${matInfo.icon} ${matInfo.name}: <b>${currentCount} / ${reqCount}</b></span>
+    costSlotsHtml += `
+      <div class="mat-inventory-slot ${hasEnough ? 'enough' : 'lacking'}"
+           style="--slot-glow-color:${hasEnough ? '#22c55e' : '#ef4444'}; border-color:${hasEnough ? '#22c55e' : '#ef4444'};"
+           data-mat-id="${matId}">
+        <span class="mat-slot-icon">${matInfo.icon}</span>
+        <span class="mat-slot-count" style="color:${hasEnough ? '#4ade80' : '#f87171'}">${currentCount}/${reqCount}</span>
       </div>
     `;
   }
-  costHtml += `</div>`;
+  costSlotsHtml += `</div>`;
 
   previewBox.innerHTML = `
     <div class="recipe-preview-card">
       <div style="display:flex; align-items:center; gap:12px;">
-        <span style="font-size:32px;">${recipe.icon}</span>
+        <span style="font-size:36px;">${recipe.icon}</span>
         <div>
-          <h3 style="margin:0; color:#ffd700;">${recipe.name}</h3>
-          <div style="font-size:12px; color:#a0a8b7;">Requires Level ${recipe.level} • Slot: ${recipe.slot}</div>
+          <h3 style="margin:0; color:#ffd700; font-size:16px;">${recipe.name}</h3>
+          <div style="font-size:11px; color:#a0a8b7;">Requires Hero Level ${recipe.level} • Slot: ${recipe.slot}</div>
         </div>
       </div>
-      <p style="font-size:13px; color:#cbd5e1; margin:12px 0;">${recipe.desc}</p>
-      <div style="background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:6px; border-left:3px solid #00f2fe; margin-bottom:15px;">
-        <span style="color:#00f2fe; font-size:13px;">Inherent Base Modifiers: ${recipe.baseStats}</span>
+      <p style="font-size:12px; color:#cbd5e1; margin:10px 0;">${recipe.desc}</p>
+      <div style="background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:6px; border-left:3px solid #00f2fe; margin-bottom:12px;">
+        <span style="color:#00f2fe; font-size:12px;">Inherent Base Modifiers: <b>${recipe.baseStats}</b></span>
       </div>
-      <h4 style="color:#ffd700; margin-bottom:8px;">Required Raw Materials:</h4>
-      ${costHtml}
+      <h4 style="color:#ffd700; margin-bottom:8px; font-size:12px;">Required Raw Materials:</h4>
+      ${costSlotsHtml}
     </div>
   `;
+
+  // Attach tooltips to material requirement slots
+  previewBox.querySelectorAll('.mat-inventory-slot').forEach(slot => {
+    const matId = slot.getAttribute('data-mat-id');
+    const matInfo = getMaterialInfo(matId);
+    const count = player.materials[matId] || 0;
+    slot.addEventListener('mouseenter', e => showForgeMaterialTooltip(e, matInfo, count));
+    slot.addEventListener('mousemove', e => positionForgeTooltip(e));
+    slot.addEventListener('mouseleave', hideForgeTooltip);
+  });
 
   const btnForge = document.getElementById('btnExecuteForgeBase');
   if (btnForge) {
@@ -610,39 +736,125 @@ function updateBaseForgingUI() {
   }
 }
 
-// ----------------------------------------------------
-// TAB 4: MATERIALS VAULT
-// ----------------------------------------------------
+// =========================================================================
+// TAB 4: MATERIALS VAULT (AUTO-HIDE ZERO QUANTITY & INVENTORY SLOTS GRID)
+// =========================================================================
 function renderMaterialsVaultTab(container) {
   if (!player.materials) player.materials = {};
 
-  const matEntries = Object.values(MATERIALS_CATALOG);
+  // Auto-hide materials with count <= 0 as requested
+  const ownedMaterials = Object.values(MATERIALS_CATALOG).filter(mat => (player.materials[mat.id] || 0) > 0);
+
+  if (ownedMaterials.length === 0) {
+    container.innerHTML = `
+      <div class="empty-materials-vault">
+        <span style="font-size:52px; filter:drop-shadow(0 0 15px rgba(255,215,0,0.4));">🎒</span>
+        <h3 style="color:#ffd700; margin:12px 0 6px 0;">Kho Nguyên Liệu Đang Trống</h3>
+        <p style="color:#94a3b8; font-size:13px; max-width:440px; text-align:center; line-height:1.6;">
+          Hiện tại bạn chưa có nguyên liệu nào trong kho.<br>
+          Hãy phân rã (Salvage) trang bị rác tại Tab 2 hoặc khám phá dã ngoại, săn quái và mở Rương Hư Không để thu thập!
+        </p>
+      </div>
+    `;
+    return;
+  }
 
   container.innerHTML = `
     <div class="materials-vault-wrap">
       <div class="mv-header">
-        <h3 style="color:#ffd700; margin:0;">🎒 Account Crafting Materials Vault</h3>
-        <span style="font-size:12px; color:#a0a8b7;">Auto-stacking raw ores, beast trophies, herbs and elemental catalyst shards</span>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="color:#ffd700; margin:0; font-size:16px;">🎒 Kho Nguyên Liệu Chế Tác</h3>
+            <span style="font-size:11px; color:#a0a8b7;">Tự động gộp ô • Rê chuột lên ô để xem chi tiết thuộc tính</span>
+          </div>
+          <span class="vault-count-badge">💎 ${ownedMaterials.length} / 13 Loại Nguyên Liệu</span>
+        </div>
       </div>
 
-      <div class="materials-vault-grid">
-        ${matEntries.map(mat => {
-          const count = player.materials[mat.id] || 0;
-          return `
-            <div class="mat-vault-card ${count > 0 ? 'has-stock' : 'empty-stock'}">
-              <div class="mvc-top">
-                <span class="mvc-icon">${mat.icon}</span>
-                <span class="mvc-count" style="color:${count > 0 ? '#4ade80' : '#64748b'}">x${count}</span>
-              </div>
-              <div class="mvc-name" style="color:${mat.color}">${mat.name}</div>
-              <div class="mvc-type">${mat.category} • ${mat.rarity}</div>
-              <div class="mvc-desc">${mat.desc}</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
+      <div class="materials-slot-grid" id="matVaultSlotGrid"></div>
     </div>
   `;
+
+  const grid = document.getElementById('matVaultSlotGrid');
+  if (!grid) return;
+
+  ownedMaterials.forEach(mat => {
+    const count = player.materials[mat.id] || 0;
+    const slotEl = document.createElement('div');
+    slotEl.className = 'mat-inventory-slot';
+    slotEl.style.setProperty('--slot-glow-color', mat.color);
+    slotEl.style.borderColor = mat.color;
+    slotEl.innerHTML = `
+      <span class="mat-slot-icon">${mat.icon}</span>
+      <span class="mat-slot-count">x${count}</span>
+    `;
+
+    slotEl.addEventListener('mouseenter', e => showForgeMaterialTooltip(e, mat, count));
+    slotEl.addEventListener('mousemove', e => positionForgeTooltip(e));
+    slotEl.addEventListener('mouseleave', hideForgeTooltip);
+
+    grid.appendChild(slotEl);
+  });
+}
+
+// =========================================================================
+// RICH FLOATING TOOLTIP FOR FORGE MATERIALS
+// =========================================================================
+function ensureForgeTooltipElement() {
+  let tooltip = document.getElementById('forgeFloatingTooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'forgeFloatingTooltip';
+    tooltip.className = 'forge-floating-tooltip hidden';
+    document.body.appendChild(tooltip);
+  }
+  return tooltip;
+}
+
+export function showForgeMaterialTooltip(e, mat, count) {
+  const tooltip = ensureForgeTooltipElement();
+  if (!tooltip || !mat) return;
+
+  tooltip.innerHTML = `
+    <div class="ft-header">
+      <span class="ft-icon">${mat.icon}</span>
+      <div>
+        <div class="ft-name" style="color:${mat.color}">${mat.name}</div>
+        <div class="ft-cat">${mat.category} Material • ${mat.rarity}</div>
+      </div>
+    </div>
+    <div class="ft-divider"></div>
+    <div class="ft-desc">${mat.desc}</div>
+    <div class="ft-footer">
+      <span>Kho sở hữu: <b style="color:#4ade80;">x${count}</b></span>
+      <span style="color:#64748b;">Max Stack: 9999</span>
+    </div>
+  `;
+
+  tooltip.classList.remove('hidden');
+  positionForgeTooltip(e);
+}
+
+export function positionForgeTooltip(e) {
+  const tooltip = document.getElementById('forgeFloatingTooltip');
+  if (!tooltip || tooltip.classList.contains('hidden') || !e) return;
+
+  const w = 260;
+  const h = 130;
+
+  let x = e.clientX + 14;
+  let y = e.clientY + 14;
+
+  if (x + w > window.innerWidth - 10) x = e.clientX - w - 14;
+  if (y + h > window.innerHeight - 10) y = window.innerHeight - h - 10;
+
+  tooltip.style.left = `${Math.round(x)}px`;
+  tooltip.style.top = `${Math.round(y)}px`;
+}
+
+export function hideForgeTooltip() {
+  const tooltip = document.getElementById('forgeFloatingTooltip');
+  if (tooltip) tooltip.classList.add('hidden');
 }
 
 // Helper utilities
