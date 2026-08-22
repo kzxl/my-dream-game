@@ -1,6 +1,7 @@
 using Mdg.Core.Features.Companion;
 using Mdg.Core.Features.Items;
 using Mdg.Core.Features.Items.Crafting;
+using Mdg.Core.Features.Items.Market;
 using Mdg.Core.Features.Maps;
 using Mdg.Core.Features.Progression;
 using Mdg.Server.Database;
@@ -61,6 +62,26 @@ try
             ""CurrenciesJson"" TEXT DEFAULT '{}',
             ""CreatedAt"" TEXT,
             ""UpdatedAt"" TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS ""MarketListings"" (
+            ""Id"" TEXT PRIMARY KEY,
+            ""SellerAccountId"" TEXT DEFAULT 'guest',
+            ""SellerCharacterName"" TEXT DEFAULT 'Unknown',
+            ""ItemJson"" TEXT DEFAULT '{}',
+            ""ItemName"" TEXT DEFAULT 'Item',
+            ""ItemRarity"" TEXT DEFAULT 'Normal',
+            ""ItemCategory"" TEXT DEFAULT 'General',
+            ""ItemLevel"" INTEGER DEFAULT 1,
+            ""PriceAmount"" INTEGER DEFAULT 1,
+            ""PriceCurrency"" TEXT DEFAULT 'fracture_core',
+            ""TaxGold"" INTEGER DEFAULT 0,
+            ""Status"" INTEGER DEFAULT 1,
+            ""BuyerAccountId"" TEXT,
+            ""BuyerCharacterName"" TEXT,
+            ""CreatedAt"" TEXT,
+            ""ExpireAt"" TEXT,
+            ""SoldAt"" TEXT
         );
     ";
     cmd.ExecuteNonQuery();
@@ -129,6 +150,7 @@ builder.Services.AddSingleton<SkillProgressionService>();
 builder.Services.AddSingleton<EconomyService>();
 builder.Services.AddSingleton<QuestService>();
 builder.Services.AddSingleton<DevotionService>();
+builder.Services.AddSingleton<MarketService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService>());
 
 var app = builder.Build();
@@ -442,6 +464,62 @@ app.MapPost("/api/v1/devotion/validate", async (DevotionService devotionService,
     return Results.Ok(result);
 });
 
+// ASYNCHRONOUS MARKETPLACE (HAVEN TRADE BOARD) APIS
+app.MapGet("/api/v1/market/listings", async (GameDatabaseService db, string? category, string? search, string? rarity, int? page, int? pageSize) =>
+{
+    var listings = await db.GetMarketListingsAsync(category, search, rarity, page ?? 1, pageSize ?? 50);
+    return Results.Ok(listings);
+});
+
+app.MapGet("/api/v1/market/my-listings", async (GameDatabaseService db, string? accountId) =>
+{
+    var acc = string.IsNullOrWhiteSpace(accountId) ? "guest" : accountId;
+    var listings = await db.GetMyMarketListingsAsync(acc);
+    return Results.Ok(listings);
+});
+
+app.MapPost("/api/v1/market/list", async (GameDatabaseService db, MarketService marketService, MarketCreateListingDto req) =>
+{
+    if (!marketService.ValidateListing(req.ItemJson ?? "{}", req.PriceAmount, req.PriceCurrency ?? "fracture_core", out var errMsg))
+    {
+        return Results.BadRequest(new { success = false, message = errMsg });
+    }
+
+    int taxGold = marketService.CalculateListingTax(req.PriceAmount, req.PriceCurrency ?? "fracture_core");
+    var entity = new MarketListingEntity
+    {
+        Id = Guid.NewGuid().ToString("N"),
+        SellerAccountId = req.AccountId ?? "guest",
+        SellerCharacterName = req.CharacterName ?? "Adventurer",
+        ItemJson = req.ItemJson ?? "{}",
+        ItemName = req.ItemName ?? "Item",
+        ItemRarity = req.ItemRarity ?? "Normal",
+        ItemCategory = req.ItemCategory ?? "General",
+        ItemLevel = req.ItemLevel > 0 ? req.ItemLevel : 1,
+        PriceAmount = req.PriceAmount,
+        PriceCurrency = (req.PriceCurrency ?? "fracture_core").ToLower(),
+        TaxGold = taxGold,
+        Status = 1,
+        CreatedAt = DateTime.UtcNow.ToString("o"),
+        ExpireAt = DateTime.UtcNow.AddDays(7).ToString("o")
+    };
+
+    var success = await db.CreateMarketListingAsync(entity);
+    return Results.Ok(new { success, listing = entity, taxGold });
+});
+
+app.MapPost("/api/v1/market/buy", async (GameDatabaseService db, MarketBuyRequestDto req) =>
+{
+    var (success, message, listing) = await db.BuyMarketListingAsync(req.ListingId, req.BuyerAccountId ?? "guest", req.BuyerCharacterName ?? "Hero");
+    return success ? Results.Ok(new { success, message, listing }) : Results.BadRequest(new { success, message });
+});
+
+app.MapPost("/api/v1/market/cancel", async (GameDatabaseService db, MarketCancelRequestDto req) =>
+{
+    var (success, message, listing) = await db.CancelMarketListingAsync(req.ListingId, req.SellerAccountId ?? "guest");
+    return success ? Results.Ok(new { success, message, listing }) : Results.BadRequest(new { success, message });
+});
+
 // Seed Master Database on Startup if needed
 var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<MdgDbContext>>();
 await DatabaseSeeder.SeedAllAsync(dbContextFactory);
@@ -452,3 +530,7 @@ public record RiftAffixDto(string Key, string Description, float QuantityBonus, 
 public record RiftOpenRequest(string? ZoneName, int Tier, int Rarity, List<RiftAffixDto>? Affixes, List<string>? Fragments);
 public record TownResurrectRequest(string? CharacterId, float MaxLife, float MaxMana, float MaxEs);
 public record SpotResurrectRequest(string? CharacterId, string? ZoneId, int ScrollCount, float MaxLife, float MaxMana, float MaxEs);
+public record MarketCreateListingDto(string? AccountId, string? CharacterName, string? ItemJson, string? ItemName, string? ItemRarity, string? ItemCategory, int ItemLevel, int PriceAmount, string? PriceCurrency);
+public record MarketBuyRequestDto(string ListingId, string? BuyerAccountId, string? BuyerCharacterName);
+public record MarketCancelRequestDto(string ListingId, string? SellerAccountId);
+

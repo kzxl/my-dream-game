@@ -75,19 +75,19 @@ namespace Mdg.Core.Features.Combat
                         break;
 
                     case DamageType.Fire:
-                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.FireResistance), payload.GetPenetration(DamageType.Fire));
+                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.FireResistance), payload.GetExposure(DamageType.Fire), payload.GetCurseReduction(DamageType.Fire), payload.GetPenetration(DamageType.Fire));
                         break;
 
                     case DamageType.Cold:
-                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.ColdResistance), payload.GetPenetration(DamageType.Cold));
+                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.ColdResistance), payload.GetExposure(DamageType.Cold), payload.GetCurseReduction(DamageType.Cold), payload.GetPenetration(DamageType.Cold));
                         break;
 
                     case DamageType.Lightning:
-                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.LightningResistance), payload.GetPenetration(DamageType.Lightning));
+                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.LightningResistance), payload.GetExposure(DamageType.Lightning), payload.GetCurseReduction(DamageType.Lightning), payload.GetPenetration(DamageType.Lightning));
                         break;
 
                     case DamageType.Chaos:
-                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.ChaosResistance), payload.GetPenetration(DamageType.Chaos));
+                        finalPortionDamage = ApplyResistance(rawDamage, defenderStats.GetValue(StatType.ChaosResistance), payload.GetExposure(DamageType.Chaos), payload.GetCurseReduction(DamageType.Chaos), payload.GetPenetration(DamageType.Chaos));
                         break;
                 }
 
@@ -163,11 +163,32 @@ namespace Mdg.Core.Features.Combat
             return Math.Clamp(chance, 5f, 100f);
         }
 
-        private static float ApplyResistance(float damage, float resistance, float penetration)
+        /// <summary>
+        /// Chuẩn hóa thứ tự tính toán Kháng nguyên tố:
+        /// 1. Tính Base Resist - Exposure - Curse Reduction
+        /// 2. Áp dụng giới hạn Cap [-100%, 75%]
+        /// 3. Trừ đi Xuyên kháng (Penetration - có thể đẩy kháng hiệu dụng xuống dưới -100%)
+        /// </summary>
+        public static float ApplyResistance(float damage, float resistance, float exposure, float curseReduction, float penetration)
         {
-            float effectiveResist = resistance - penetration;
-            effectiveResist = Math.Clamp(effectiveResist, -200f, 75f); // Cap 75% max resist
+            // Bước 1: Trừ Exposure và Curse Reduction
+            float reducedResist = resistance - exposure - curseReduction;
+            
+            // Bước 2: Clamp trần và đáy kháng cơ bản
+            float cappedResist = Math.Clamp(reducedResist, -100f, 75f);
+            
+            // Bước 3: Áp dụng Xuyên kháng
+            float effectiveResist = cappedResist - penetration;
+            
+            // Giới hạn tuyệt đối để tránh nhân số âm vô lý
+            effectiveResist = Math.Clamp(effectiveResist, -200f, 100f);
+            
             return damage * (1f - (effectiveResist / 100f));
+        }
+
+        public static float ApplyResistance(float damage, float resistance, float penetration)
+        {
+            return ApplyResistance(damage, resistance, 0f, 0f, penetration);
         }
 
         /// <summary>

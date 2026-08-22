@@ -188,12 +188,28 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     }
   }
 
+  // Chuẩn Hóa Thứ Tự Tính Xuyên Kháng (Order of Operations):
+  // 1. Base Resist - Exposure - Curse Reduction
+  // 2. Clamp [-100%, 75%]
+  // 3. Minus Penetration
+  const calcMitigation = (baseRes, exposure = 0, curseRed = 0, pen = 0) => {
+    const reduced = (baseRes || 0) - exposure - curseRed;
+    const capped = Math.max(-100, Math.min(75, reduced));
+    const effective = Math.max(-200, Math.min(100, capped - pen));
+    return 1 - (effective / 100);
+  };
+
   // Curse Debuff Reductions (Blasphemy Aura)
   const curseVuln = target.curseDebuff && target.curseDebuff.vulnerability ? 1.35 : 1.0;
-  const curseFirePen = target.curseDebuff && target.curseDebuff.flammability ? 35 : 0;
-  const curseColdPen = target.curseDebuff && target.curseDebuff.frostbite ? 35 : 0;
-  const curseLightPen = target.curseDebuff && target.curseDebuff.conductivity ? 35 : 0;
+  const curseFireRed = target.curseDebuff && target.curseDebuff.flammability ? 35 : 0;
+  const curseColdRed = target.curseDebuff && target.curseDebuff.frostbite ? 35 : 0;
+  const curseLightRed = target.curseDebuff && target.curseDebuff.conductivity ? 35 : 0;
   const shockBonus = (target.curseDebuff && target.curseDebuff.conductivity) ? 1.5 : 1.0;
+
+  const playerFirePen = (player.firePen || 0);
+  const playerColdPen = (player.coldPen || 0);
+  const playerLightPen = (player.lightPen || 0);
+  const playerChaosPen = (player.chaosPen || 0);
 
   const physDmg = (rawPhysical || 0) * multiplier * curseVuln;
   let physMitigation = 0;
@@ -202,11 +218,19 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     physMitigation = Math.min(0.9, targetArmor / (targetArmor + 5 * physDmg));
   }
   const finalPhys = physDmg * (1 - physMitigation);
-  const finalFire = ((rawFire || 0) * multiplier) * (1 - Math.max(-100, (target.fireRes || 0) - curseFirePen) / 100);
-  const finalCold = ((rawCold || 0) * multiplier) * (1 - Math.max(-100, (target.coldRes || 0) - curseColdPen) / 100);
-  const finalLight = ((rawLightning || 0) * multiplier * shockBonus) * (1 - Math.max(-100, (target.lightningRes || target.lightRes || 0) - curseLightPen) / 100);
-  const finalChaos = ((rawChaos || 0) * multiplier) * (1 - (target.chaosRes || 0) / 100);
+  const finalFire = ((rawFire || 0) * multiplier) * calcMitigation(target.fireRes, 0, curseFireRed, playerFirePen);
+  const finalCold = ((rawCold || 0) * multiplier) * calcMitigation(target.coldRes, 0, curseColdRed, playerColdPen);
+  const finalLight = ((rawLightning || 0) * multiplier * shockBonus) * calcMitigation(target.lightningRes || target.lightRes, 0, curseLightRed, playerLightPen);
+  const finalChaos = ((rawChaos || 0) * multiplier) * calcMitigation(target.chaosRes, 0, 0, playerChaosPen);
   let totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
+
+  // Life/ES Leech System (Capped at 20% Max Life / sec, 3s duration)
+  if (!isProc && totalDamage > 0 && (player.lifeLeechPercent || player.activeBuffs?.some(b => b.buffType === 'AbyssalLeech'))) {
+    const leechPercent = (player.lifeLeechPercent || 0) + (player.activeBuffs?.some(b => b.buffType === 'AbyssalLeech') ? 15 : 0);
+    if (leechPercent > 0) {
+      addPlayerLeechInstance(totalDamage * (leechPercent / 100), 3.0);
+    }
+  }
 
   // Monster Affix: Aether Ward (absorbs 75% damage until broken, then stuns 1.5s)
   if (target.affixes && target.affixes.includes('aether_ward')) {
@@ -1438,9 +1462,46 @@ export function updateCurseAuras(dt) {
         if (m.curseSlowed) {
           m.speed = m.baseSpeed || (m.speed / 0.65);
           m.curseSlowed = false;
-        }
-      }
-    }
+const playerLeechInstances = [];
+
+export function addPlayerLeechInstance(amount, duration = 3.0, isEs = false) {
+  if (amount <= 0) return;
+  playerLeechInstances.push({
+    total: amount,
+    remaining: amount,
+    duration: duration,
+    rate: amount / duration,
+    elapsed: 0,
+    isEs: isEs
   });
 }
+
+export function updatePlayerLeech(dt) {
+  if (playerLeechInstances.length === 0 || !player || player.life <= 0) return;
+
+  const maxPool = player.maxLife || 250;
+  const maxLeechRate = maxPool * 0.20; // 20% of max life per second
+  const maxAllowedThisFrame = maxLeechRate * dt;
+
+  let requestedHeal = 0;
+  for (let i = playerLeechInstances.length - 1; i >= 0; i--) {
+    const inst = playerLeechInstances[i];
+    const tickTime = Math.min(dt, inst.duration - inst.elapsed);
+    const tickHeal = Math.min(inst.remaining, inst.rate * tickTime);
+
+    inst.elapsed += tickTime;
+    inst.remaining -= tickHeal;
+    requestedHeal += tickHeal;
+
+    if (inst.remaining <= 0 || inst.elapsed >= inst.duration) {
+      playerLeechInstances.splice(i, 1);
+    }
+  }
+
+  const actualHeal = Math.min(requestedHeal, maxAllowedThisFrame);
+  if (actualHeal > 0 && player.life < player.maxLife) {
+    player.life = Math.min(player.maxLife, player.life + actualHeal);
+  }
+}
+
 

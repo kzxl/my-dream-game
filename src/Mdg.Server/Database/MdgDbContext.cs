@@ -63,11 +63,33 @@ public class SharedStashItemEntity
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
 
+public class MarketListingEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string SellerAccountId { get; set; } = "guest";
+    public string SellerCharacterName { get; set; } = "Unknown";
+    public string ItemJson { get; set; } = "{}";
+    public string ItemName { get; set; } = "Unknown Item";
+    public string ItemRarity { get; set; } = "Normal";
+    public string ItemCategory { get; set; } = "General";
+    public int ItemLevel { get; set; } = 1;
+    public int PriceAmount { get; set; } = 1;
+    public string PriceCurrency { get; set; } = "fracture_core";
+    public int TaxGold { get; set; } = 0;
+    public int Status { get; set; } = 1; // 1: Active, 2: Sold, 3: Cancelled, 4: Expired
+    public string? BuyerAccountId { get; set; }
+    public string? BuyerCharacterName { get; set; }
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+    public string ExpireAt { get; set; } = DateTime.UtcNow.AddDays(7).ToString("o");
+    public string? SoldAt { get; set; }
+}
+
 public class MdgDbContext : DbContext
 {
     public DbSet<UserAccountEntity> UserAccounts => Set<UserAccountEntity>();
     public DbSet<CharacterEntity> Characters => Set<CharacterEntity>();
     public DbSet<SharedStashItemEntity> SharedStash => Set<SharedStashItemEntity>();
+    public DbSet<MarketListingEntity> MarketListings => Set<MarketListingEntity>();
     public DbSet<ItemTemplateEntity> ItemTemplates => Set<ItemTemplateEntity>();
     public DbSet<SkillTemplateEntity> SkillTemplates => Set<SkillTemplateEntity>();
     public DbSet<ZoneTemplateEntity> ZoneTemplates => Set<ZoneTemplateEntity>();
@@ -87,6 +109,14 @@ public class MdgDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<MarketListingEntity>(b =>
+        {
+            b.ToTable("MarketListings");
+            b.HasKey(m => m.Id);
+            b.HasIndex(m => m.SellerAccountId);
+            b.HasIndex(m => m.Status);
+        });
 
         modelBuilder.Entity<UserAccountEntity>(b =>
         {

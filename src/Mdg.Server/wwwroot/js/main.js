@@ -9,7 +9,7 @@ import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './d
 import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
 import { AudioEngine } from './audio.js';
 import { renderGame } from './renderer.js';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot, applyChill, updateCurseAuras } from './combat.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot, applyChill, updateCurseAuras, updatePlayerLeech } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js';
@@ -36,6 +36,8 @@ import { initPlayerProfessions, spawnResourceNodesForZone, updateGatheringSystem
 import { loadGameSettings, getGameSetting, toggleSettingsModal, renderSettingsModal } from './ui/settings-ui.js';
 import { setupCompendiumUI, toggleCompendiumUI, openCompendiumUI, closeCompendiumUI } from './ui/compendium-ui.js';
 import { renderHunterGuildModal } from './ui/hunter-guild-ui.js';
+import { toggleMarketModal, openMarketModal } from './ui/trade-market-ui.js';
+import { initGamepadSystem, updateGamepad, toggleRadialWheel } from './systems/gamepad-controller.js';
 import { t, applyLocalization } from './i18n.js';
 
 window.keys = keys;
@@ -43,6 +45,9 @@ window.player = player;
 window.pois = pois;
 window.monsters = monsters;
 window.loadZone = loadZone;
+window.toggleModal = toggleModal;
+window.toggleMarketModal = toggleMarketModal;
+window.toggleRadialWheel = toggleRadialWheel;
 window.toggleModal = toggleModal;
 window.showZoneBanner = showZoneBanner;
 window.renderSkillUpgradeModal = renderSkillUpgradeModal;
@@ -794,6 +799,10 @@ function update(dt) {
     if (keys['KeyS'] || keys['ArrowDown']) my += 1;
     if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
     if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+    if (player.gamepadMoving) {
+      mx += player.gamepadVx || 0;
+      my += player.gamepadVy || 0;
+    }
   }
 
   player.isMoving = (mx !== 0 || my !== 0) && !player.isDead;
@@ -1482,6 +1491,25 @@ function update(dt) {
     });
   }
 
+  // Update Other Multiplayer Peers with Smooth Exponential Reconciliation (<48px lag compensation)
+  otherPlayers.forEach(peer => {
+    if (peer.targetX !== undefined && peer.targetY !== undefined) {
+      const dx = peer.targetX - peer.x;
+      const dy = peer.targetY - peer.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 400) {
+        peer.x = peer.targetX;
+        peer.y = peer.targetY;
+      } else if (dist > 1) {
+        const lerpFactor = Math.min(1.0, dt * 12);
+        peer.x += dx * lerpFactor;
+        peer.y += dy * lerpFactor;
+      }
+    }
+  });
+
+  updatePlayerLeech(dt);
+  updateGamepad(dt);
   updateMapIncursions(dt);
   updateFlasks(dt);
   updateShadowArmy(dt);
@@ -1555,13 +1583,19 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyC') toggleModal('stats-modal');
   if (e.code === 'KeyI') toggleModal('inventory-modal');
   if (e.code === 'KeyU') renderSpireModal();
-  if (e.code === 'KeyT') extractShadow();
+  if (e.code === 'KeyT') toggleMarketModal();
+  if (e.code === 'KeyG') extractShadow();
+  if (e.code === 'KeyY') toggleCompendiumUI('bestiary');
+  if (e.code === 'Tab') {
+    e.preventDefault();
+    toggleRadialWheel();
+  }
   if (e.code === 'Escape') {
     const allModalIds = [
       'ascension-modal', 'skills-modal', 'inventory-modal', 'worldmap-modal',
       'stats-modal', 'character-roster-modal', 'defeat-modal', 'sharedStashModal',
       'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal',
-      'bestiaryModal', 'rosterModal', 'codexModal', 'googleAuthModal', 'channelModal', 'spireModal', 'settingsModal'
+      'bestiaryModal', 'rosterModal', 'codexModal', 'googleAuthModal', 'channelModal', 'spireModal', 'settingsModal', 'marketModal', 'radialMenuOverlay'
     ];
     let closedAny = false;
     allModalIds.forEach(id => {
@@ -1730,6 +1764,7 @@ document.getElementById('slot-dash')?.addEventListener('click', castDash);
 document.getElementById('btn-toggle-hero-hub')?.addEventListener('click', () => toggleModal('inventory-modal'));
 document.getElementById('btn-toggle-compendium')?.addEventListener('click', () => toggleCompendiumUI());
 document.getElementById('btn-toggle-adventure-hub')?.addEventListener('click', () => toggleModal('worldmap-modal'));
+document.getElementById('btn-toggle-market')?.addEventListener('click', toggleMarketModal);
 document.getElementById('btn-toggle-settings')?.addEventListener('click', toggleSettingsModal);
 
 // Legacy hotkey button references
@@ -1819,6 +1854,7 @@ setupUIListeners();
 initDefeatUI();
 setupCompendiumUI();
 setupRosterUI();
+initGamepadSystem();
 MPClient.init();
 document.getElementById('btn-toggle-settings')?.addEventListener('click', toggleSettingsModal);
 

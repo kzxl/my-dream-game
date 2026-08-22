@@ -609,6 +609,84 @@ public sealed class GameDatabaseService
             nodes
         };
     }
+
+    public async Task<List<MarketListingEntity>> GetMarketListingsAsync(string? category = null, string? search = null, string? rarity = null, int page = 1, int pageSize = 50)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var query = db.MarketListings.AsNoTracking().Where(m => m.Status == 1);
+
+        if (!string.IsNullOrWhiteSpace(category) && category != "all")
+        {
+            query = query.Where(m => m.ItemCategory.ToLower() == category.ToLower());
+        }
+        if (!string.IsNullOrWhiteSpace(rarity) && rarity != "all")
+        {
+            query = query.Where(m => m.ItemRarity.ToLower() == rarity.ToLower());
+        }
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(m => m.ItemName.ToLower().Contains(search.ToLower()));
+        }
+
+        return await query.OrderByDescending(m => m.CreatedAt)
+                          .Skip((Math.Max(1, page) - 1) * pageSize)
+                          .Take(pageSize)
+                          .ToListAsync();
+    }
+
+    public async Task<List<MarketListingEntity>> GetMyMarketListingsAsync(string accountId)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.MarketListings.AsNoTracking()
+            .Where(m => m.SellerAccountId == accountId)
+            .OrderByDescending(m => m.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<bool> CreateMarketListingAsync(MarketListingEntity listing)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        db.MarketListings.Add(listing);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<(bool Success, string Message, MarketListingEntity? Listing)> BuyMarketListingAsync(string listingId, string buyerAccountId, string buyerCharName)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var listing = await db.MarketListings.FirstOrDefaultAsync(m => m.Id == listingId && m.Status == 1);
+        if (listing == null)
+        {
+            return (false, "Item is no longer available or has already been bought.", null);
+        }
+
+        if (listing.SellerAccountId == buyerAccountId)
+        {
+            return (false, "You cannot buy your own listing.", null);
+        }
+
+        listing.Status = 2; // Sold
+        listing.BuyerAccountId = buyerAccountId;
+        listing.BuyerCharacterName = buyerCharName;
+        listing.SoldAt = DateTime.UtcNow.ToString("o");
+
+        await db.SaveChangesAsync();
+        return (true, "Purchase completed successfully!", listing);
+    }
+
+    public async Task<(bool Success, string Message, MarketListingEntity? Listing)> CancelMarketListingAsync(string listingId, string sellerAccountId)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var listing = await db.MarketListings.FirstOrDefaultAsync(m => m.Id == listingId && m.SellerAccountId == sellerAccountId && m.Status == 1);
+        if (listing == null)
+        {
+            return (false, "Listing not found or cannot be cancelled.", null);
+        }
+
+        listing.Status = 3; // Cancelled
+        await db.SaveChangesAsync();
+        return (true, "Listing cancelled successfully.", listing);
+    }
 }
 
 public sealed class GoogleAuthRequestDto

@@ -33,6 +33,8 @@ namespace Mdg.Core.Features.Combat
         public float CritMultiplier { get; set; } = 150f; // Mặc định 150% = 1.5x
         public float AccuracyRating { get; set; } = 1000f;
         public Dictionary<DamageType, float> Penetrations { get; } = new();
+        public Dictionary<DamageType, float> Exposures { get; } = new();
+        public Dictionary<DamageType, float> CurseReductions { get; } = new();
 
         public void AddPortion(DamageType type, float amount)
         {
@@ -50,6 +52,26 @@ namespace Mdg.Core.Features.Combat
         public float GetPenetration(DamageType type)
         {
             return Penetrations.TryGetValue(type, out float val) ? val : 0f;
+        }
+
+        public void SetExposure(DamageType type, float percentage)
+        {
+            Exposures[type] = percentage;
+        }
+
+        public float GetExposure(DamageType type)
+        {
+            return Exposures.TryGetValue(type, out float val) ? val : 0f;
+        }
+
+        public void SetCurseReduction(DamageType type, float percentage)
+        {
+            CurseReductions[type] = percentage;
+        }
+
+        public float GetCurseReduction(DamageType type)
+        {
+            return CurseReductions.TryGetValue(type, out float val) ? val : 0f;
         }
     }
 
