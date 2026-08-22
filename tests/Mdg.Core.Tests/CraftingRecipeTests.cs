@@ -48,8 +48,9 @@ public class CraftingRecipeTests
 
         var mats = new Dictionary<string, int>
         {
-            ["mat_mithril_chunk"] = 10,
-            ["mat_aether_crystal"] = 5
+            ["mat_mithril_ingot"] = 10,
+            ["mat_aether_crystal"] = 5,
+            ["mat_heartwood"] = 2
         };
 
         var canCraft = engine.CanCraft("forge_mithril_blade", 25, unlocked, mats, out var reason);

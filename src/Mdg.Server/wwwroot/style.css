@@ -7553,6 +7553,119 @@ input:checked + .toggle-slider:before {
   color: #cbd5e1;
 }
 
+/* =========================================================================
+   GENESIS FORGE 2.0: SMELTING KILN & ALCHEMY LAB STYLES
+   ========================================================================= */
+.forge-recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.forge-recipe-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.forge-recipe-card:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(255, 215, 0, 0.4);
+  transform: translateX(3px);
+}
+
+.forge-recipe-card.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.forge-recipe-card.craftable .recipe-card-status {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid #22c55e;
+}
+
+.recipe-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.recipe-card-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.recipe-card-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  white-space: nowrap;
+}
+
+.forge-costs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.forge-cost-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.forge-cost-item.enough {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.forge-cost-item.lacking {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.cost-item-icon {
+  font-size: 20px;
+}
+
+.cost-item-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cost-item-name {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cost-item-qty {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
 
 
 

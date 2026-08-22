@@ -11,15 +11,18 @@
 import { player } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { updateBackpackUI, updatePaperdollUI, showItemTooltip, positionItemTooltip, hideItemTooltip } from './inventory.js';
-import { MATERIALS_CATALOG, FORGING_RECIPES, getMaterialInfo, previewSalvageItem } from '../data/materials.js';
+import { MATERIALS_CATALOG, FORGING_RECIPES, SMELTING_RECIPES, ALCHEMY_RECIPES, getMaterialInfo, previewSalvageItem } from '../data/materials.js';
 import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
 import { assets, drawItemSpriteToCanvas } from '../assets.js';
+import { renderFlaskHUD, initFlasks } from '../systems/flask-system.js';
 
-let activeForgeTab = 'anvil'; // 'anvil' | 'salvage' | 'base_forge' | 'vault'
+let activeForgeTab = 'smelting'; // 'smelting' | 'alchemy' | 'base_forge' | 'anvil' | 'salvage' | 'vault' | 'professions'
 let selectedItemIndex = -1;
 let selectedSalvageIndex = -1;
 let selectedRecipeId = 'forge_iron_sword';
+let selectedSmeltRecipeId = 'smelt_glass_vial';
+let selectedAlchemyRecipeId = 'alch_life_lesser';
 let onlyCraftableFilter = false;
 
 export function getCraftingMasteryPerks() {
@@ -154,7 +157,7 @@ export function renderForgeBenchModal() {
             <span style="font-size:24px;">🔨</span>
             <div>
               <h2 style="margin:0; font-size:18px; color:#ffd700;">GENESIS FORGE BENCH 2.0</h2>
-              <span style="font-size:11px; color:#888;">Ancient Relic Anvil, Salvage Reclamation, Base Forging & Materials Vault [B]</span>
+              <span style="font-size:11px; color:#888;">Lò Nung Thủy Tinh, Bàn Giả Kim, Bàn Rèn Phôi & Kho Nguyên Liệu [B]</span>
             </div>
           </div>
           <button class="close-btn" id="closeForgeBtn">✕</button>
@@ -163,13 +166,15 @@ export function renderForgeBenchModal() {
         <!-- Crafting Mastery & Proficiency Header Widget -->
         <div id="forgeMasteryHeaderBar" class="forge-mastery-header-bar"></div>
 
-        <!-- 5-Tab Navigation Bar -->
+        <!-- 7-Tab Navigation Bar -->
         <div class="forge-tabs-nav">
-          <button class="forge-nav-tab active" data-tab="anvil">🔨 Relic Anvil</button>
-          <button class="forge-nav-tab" data-tab="salvage">♻️ Salvage Anvil</button>
-          <button class="forge-nav-tab" data-tab="base_forge">🗡️ Base Forging</button>
-          <button class="forge-nav-tab" data-tab="vault">🎒 Materials Vault</button>
-          <button class="forge-nav-tab" data-tab="professions">🛠️ Professions</button>
+          <button class="forge-nav-tab active" data-tab="smelting">🏭 Lò Luyện (Smelter)</button>
+          <button class="forge-nav-tab" data-tab="alchemy">⚗️ Giả Kim (Alchemy)</button>
+          <button class="forge-nav-tab" data-tab="base_forge">🗡️ Rèn Phôi (Forging)</button>
+          <button class="forge-nav-tab" data-tab="anvil">🔨 Cường Hóa (Anvil)</button>
+          <button class="forge-nav-tab" data-tab="salvage">♻️ Phân Rã (Salvage)</button>
+          <button class="forge-nav-tab" data-tab="vault">🎒 Kho Vật Liệu (Vault)</button>
+          <button class="forge-nav-tab" data-tab="professions">🛠️ Nghề Nghiệp (Professions)</button>
         </div>
 
         <!-- Main Body Container -->
@@ -220,17 +225,382 @@ function renderActiveForgeTab() {
   const container = document.getElementById('forgeTabContent');
   if (!container) return;
 
-  if (activeForgeTab === 'anvil') {
+  if (activeForgeTab === 'smelting') {
+    renderSmeltingTab(container);
+  } else if (activeForgeTab === 'alchemy') {
+    renderAlchemyTab(container);
+  } else if (activeForgeTab === 'base_forge') {
+    renderBaseForgingTab(container);
+  } else if (activeForgeTab === 'anvil') {
     renderRelicAnvilTab(container);
   } else if (activeForgeTab === 'salvage') {
     renderSalvageTab(container);
-  } else if (activeForgeTab === 'base_forge') {
-    renderBaseForgingTab(container);
   } else if (activeForgeTab === 'vault') {
     renderMaterialsVaultTab(container);
   } else if (activeForgeTab === 'professions') {
     renderProfessionsTab(container);
   }
+}
+
+// =========================================================================
+// TAB 0: SMELTING KILN & GLASS BLOWING (LÒ NUNG & LUYỆN KIM)
+// =========================================================================
+function renderSmeltingTab(container) {
+  container.innerHTML = `
+    <div class="forge-content-grid">
+      <!-- Left: Smelting Recipe List -->
+      <div class="forge-anvil-panel">
+        <div class="forge-panel-title-row">
+          <h3>🏭 Lò Nung & Luyện Kim (Smelting Kiln)</h3>
+          <span style="font-size:11px; color:#888;">Nung cát thành thủy tinh, luyện quặng & thuộc da</span>
+        </div>
+        <div class="forge-recipe-list" id="smeltingRecipeList"></div>
+      </div>
+
+      <!-- Right: Smelting Kiln Hearth Preview & Actions -->
+      <div class="forge-actions-panel">
+        <div class="forge-panel-title-row">
+          <h3>🔥 Lò Luyện Nhiệt Độ Cao</h3>
+        </div>
+        <div id="smeltingPreviewBox" class="recipe-preview-box"></div>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+          <button class="forge-btn btn-craft" id="btnExecuteSmelt1x" style="flex:1;">🔥 Nung (1x)</button>
+          <button class="forge-btn btn-chaos" id="btnExecuteSmeltMax" style="flex:1;">⚡ Nung Tối Đa (Max)</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  updateSmeltingUI();
+}
+
+function updateSmeltingUI() {
+  const recipeList = document.getElementById('smeltingRecipeList');
+  const previewBox = document.getElementById('smeltingPreviewBox');
+  if (!recipeList || !previewBox) return;
+
+  if (!player.materials) player.materials = {};
+
+  recipeList.innerHTML = '';
+  SMELTING_RECIPES.forEach(recipe => {
+    const outMat = getMaterialInfo(recipe.outputMatId);
+    let canCraft = true;
+    for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+      if ((player.materials[matId] || 0) < reqCount) canCraft = false;
+    }
+
+    const card = document.createElement('div');
+    card.className = `forge-recipe-card ${selectedSmeltRecipeId === recipe.id ? 'active' : ''} ${canCraft ? 'craftable' : ''}`;
+    card.innerHTML = `
+      <div class="recipe-card-icon" style="font-size:24px;">${recipe.icon || outMat.icon}</div>
+      <div class="recipe-card-info" style="flex:1;">
+        <div class="recipe-card-name" style="color:${outMat.color || '#ffd700'}">${recipe.nameVi || recipe.name}</div>
+        <div class="recipe-card-sub">Lv.${recipe.level} • Tạo ra: +${recipe.outputCount} ${outMat.nameVi || outMat.name}</div>
+      </div>
+      <div class="recipe-card-status">${canCraft ? '🔥 Sẵn Sàng' : 'Thiếu NL'}</div>
+    `;
+
+    card.onclick = () => {
+      selectedSmeltRecipeId = recipe.id;
+      AudioEngine.playTone(480, 'sine', 0.05, 0.04);
+      updateSmeltingUI();
+    };
+
+    recipeList.appendChild(card);
+  });
+
+  const activeRecipe = SMELTING_RECIPES.find(r => r.id === selectedSmeltRecipeId) || SMELTING_RECIPES[0];
+  if (!activeRecipe) return;
+
+  const outMat = getMaterialInfo(activeRecipe.outputMatId);
+  let maxPossible = 999;
+  let canCraft = true;
+
+  const costsHtml = Object.entries(activeRecipe.costs).map(([matId, reqCount]) => {
+    const mat = getMaterialInfo(matId);
+    const owned = player.materials[matId] || 0;
+    const isEnough = owned >= reqCount;
+    if (!isEnough) canCraft = false;
+    const possibleFromMat = Math.floor(owned / reqCount);
+    if (possibleFromMat < maxPossible) maxPossible = possibleFromMat;
+
+    return `
+      <div class="forge-cost-item ${isEnough ? 'enough' : 'lacking'}">
+        <span class="cost-item-icon">${mat.icon}</span>
+        <div class="cost-item-text">
+          <span class="cost-item-name" style="color:${mat.color}">${mat.nameVi || mat.name}</span>
+          <span class="cost-item-qty" style="color:${isEnough ? '#4ade80' : '#f87171'}">${owned} / ${reqCount}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (maxPossible === 999) maxPossible = 0;
+
+  previewBox.innerHTML = `
+    <div class="recipe-preview-header" style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+      <div class="preview-icon-frame" style="font-size:36px; border:2px solid ${outMat.color || '#ffd700'}; padding:10px; border-radius:8px; background:rgba(0,0,0,0.4);">
+        ${activeRecipe.icon || outMat.icon}
+      </div>
+      <div>
+        <h4 style="margin:0; color:${outMat.color || '#ffd700'}; font-size:16px;">${activeRecipe.nameVi || activeRecipe.name}</h4>
+        <span style="font-size:12px; color:#94a3b8;">Sản phẩm: +${activeRecipe.outputCount} ${outMat.nameVi || outMat.name} (Hiện có: ${player.materials[activeRecipe.outputMatId] || 0})</span>
+      </div>
+    </div>
+    <div style="font-size:12px; color:#cbd5e1; margin:10px 0; line-height:1.4;">${activeRecipe.desc}</div>
+    <div class="recipe-costs-section">
+      <h5 style="color:#ffd700; margin:8px 0;">📦 Nguyên Liệu Yêu Cầu (Nung 1 Lần):</h5>
+      <div class="forge-costs-grid">${costsHtml}</div>
+    </div>
+  `;
+
+  const btn1x = document.getElementById('btnExecuteSmelt1x');
+  const btnMax = document.getElementById('btnExecuteSmeltMax');
+
+  if (btn1x) {
+    btn1x.disabled = !canCraft;
+    btn1x.onclick = () => executeSmelt(activeRecipe, 1);
+  }
+
+  if (btnMax) {
+    btnMax.disabled = maxPossible <= 0;
+    btnMax.innerText = `⚡ Nung Tối Đa (${maxPossible}x)`;
+    btnMax.onclick = () => executeSmelt(activeRecipe, maxPossible);
+  }
+}
+
+function executeSmelt(recipe, times) {
+  if (times <= 0) return;
+  if (!player.materials) player.materials = {};
+
+  for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+    if ((player.materials[matId] || 0) < reqCount * times) {
+      spawnDamageNumber(player.x, player.y - 40, 'Thiếu nguyên liệu!', true, '#ef4444');
+      return;
+    }
+  }
+
+  for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+    player.materials[matId] -= reqCount * times;
+    if (player.materials[matId] <= 0) delete player.materials[matId];
+  }
+
+  const totalOut = recipe.outputCount * times;
+  player.materials[recipe.outputMatId] = (player.materials[recipe.outputMatId] || 0) + totalOut;
+
+  const outMat = getMaterialInfo(recipe.outputMatId);
+  AudioEngine.playPickup?.() || AudioEngine.playTone(560, 'sine', 0.15, 0.1);
+  spawnDamageNumber(player.x, player.y - 45, `+${totalOut} ${outMat.nameVi || outMat.name}!`, false, outMat.color || '#38bdf8');
+  addCraftingExp(15 * times, 'Smelting');
+
+  updateSmeltingUI();
+  updateBackpackUI();
+  saveToDatabase();
+}
+
+// =========================================================================
+// TAB 0.5: ALCHEMY LAB (BÀN GIẢ KIM CHẾ THUỐC)
+// =========================================================================
+function renderAlchemyTab(container) {
+  container.innerHTML = `
+    <div class="forge-content-grid">
+      <!-- Left: Flask & Potion Recipes -->
+      <div class="forge-anvil-panel">
+        <div class="forge-panel-title-row">
+          <h3>⚗️ Bàn Giả Kim (Alchemy Lab)</h3>
+          <span style="font-size:11px; color:#888;">Pha chế Bình Thuốc Hồi Máu, Năng Lượng & Thần Dược</span>
+        </div>
+        <div class="forge-recipe-list" id="alchemyRecipeList"></div>
+      </div>
+
+      <!-- Right: Alchemy Alembic Preview & Brew Action -->
+      <div class="forge-actions-panel">
+        <div class="forge-panel-title-row">
+          <h3>🧪 Bình Chưng Cất Dược Liệu</h3>
+        </div>
+        <div id="alchemyPreviewBox" class="recipe-preview-box"></div>
+        <div style="margin-top:20px;">
+          <button class="forge-btn btn-craft" id="btnExecuteBrewFlask" style="width:100%;">⚗️ Pha Chế Bình Thuốc (Brew Flask)</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  updateAlchemyUI();
+}
+
+function updateAlchemyUI() {
+  const recipeList = document.getElementById('alchemyRecipeList');
+  const previewBox = document.getElementById('alchemyPreviewBox');
+  if (!recipeList || !previewBox) return;
+
+  if (!player.materials) player.materials = {};
+
+  recipeList.innerHTML = '';
+  ALCHEMY_RECIPES.forEach(recipe => {
+    let canCraft = true;
+    let missingVial = false;
+
+    for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+      const owned = player.materials[matId] || 0;
+      if (owned < reqCount) {
+        canCraft = false;
+        if (matId === 'item_empty_vial' || matId === 'item_crystal_flask') {
+          missingVial = true;
+        }
+      }
+    }
+
+    const card = document.createElement('div');
+    card.className = `forge-recipe-card ${selectedAlchemyRecipeId === recipe.id ? 'active' : ''} ${canCraft ? 'craftable' : ''}`;
+    card.innerHTML = `
+      <div class="recipe-card-icon" style="font-size:24px;">${recipe.icon}</div>
+      <div class="recipe-card-info" style="flex:1;">
+        <div class="recipe-card-name" style="color:${recipe.color || '#ffd700'}">${recipe.nameVi || recipe.name}</div>
+        <div class="recipe-card-sub">Lv.${recipe.level} • ${recipe.flaskType} Flask</div>
+      </div>
+      <div class="recipe-card-status">${canCraft ? '🧪 Có Thể Pha' : (missingVial ? '⚠️ Thiếu Vỏ Bình' : 'Thiếu NL')}</div>
+    `;
+
+    card.onclick = () => {
+      selectedAlchemyRecipeId = recipe.id;
+      AudioEngine.playTone(480, 'sine', 0.05, 0.04);
+      updateAlchemyUI();
+    };
+
+    recipeList.appendChild(card);
+  });
+
+  const activeRecipe = ALCHEMY_RECIPES.find(r => r.id === selectedAlchemyRecipeId) || ALCHEMY_RECIPES[0];
+  if (!activeRecipe) return;
+
+  let canCraft = true;
+  let missingVialMsg = '';
+
+  const costsHtml = Object.entries(activeRecipe.costs).map(([matId, reqCount]) => {
+    const mat = getMaterialInfo(matId);
+    const owned = player.materials[matId] || 0;
+    const isEnough = owned >= reqCount;
+    if (!isEnough) {
+      canCraft = false;
+      if (matId === 'item_empty_vial') {
+        missingVialMsg = '⚠️ Cần có Bình Thủy Tinh Rỗng! Hãy nung 3 Cát Thạch Anh tại tab Lò Luyện.';
+      } else if (matId === 'item_crystal_flask') {
+        missingVialMsg = '⚠️ Cần có Bình Thạch Anh Cường Hóa! Hãy nung Vỏ Bình + Tinh Thể Aether tại tab Lò Luyện.';
+      }
+    }
+
+    return `
+      <div class="forge-cost-item ${isEnough ? 'enough' : 'lacking'}">
+        <span class="cost-item-icon">${mat.icon}</span>
+        <div class="cost-item-text">
+          <span class="cost-item-name" style="color:${mat.color}">${mat.nameVi || mat.name}</span>
+          <span class="cost-item-qty" style="color:${isEnough ? '#4ade80' : '#f87171'}">${owned} / ${reqCount}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  previewBox.innerHTML = `
+    <div class="recipe-preview-header" style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+      <div class="preview-icon-frame" style="font-size:36px; border:2px solid ${activeRecipe.color || '#ffd700'}; padding:10px; border-radius:8px; background:rgba(0,0,0,0.4);">
+        ${activeRecipe.icon}
+      </div>
+      <div>
+        <h4 style="margin:0; color:${activeRecipe.color || '#ffd700'}; font-size:16px;">${activeRecipe.nameVi || activeRecipe.name}</h4>
+        <span style="font-size:12px; color:#94a3b8;">Yêu cầu: Level ${activeRecipe.level} • Loại: ${activeRecipe.flaskType} Flask</span>
+      </div>
+    </div>
+    <div style="font-size:12px; color:#a7f3d0; margin:10px 0; font-weight:600;">✨ Hiệu Ứng: ${activeRecipe.baseStats}</div>
+    <div style="font-size:12px; color:#cbd5e1; margin-bottom:12px; line-height:1.4;">${activeRecipe.desc}</div>
+    
+    ${missingVialMsg ? `<div style="background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:6px; padding:8px; font-size:12px; color:#fca5a5; margin-bottom:12px;">${missingVialMsg}</div>` : ''}
+
+    <div class="recipe-costs-section">
+      <h5 style="color:#ffd700; margin:8px 0;">📦 Dược Liệu & Vỏ Bình Cần Dùng:</h5>
+      <div class="forge-costs-grid">${costsHtml}</div>
+    </div>
+  `;
+
+  const btnBrew = document.getElementById('btnExecuteBrewFlask');
+  if (btnBrew) {
+    btnBrew.disabled = !canCraft;
+    btnBrew.onclick = () => executeAlchemy(activeRecipe);
+  }
+}
+
+function executeAlchemy(recipe) {
+  if (!player.materials) player.materials = {};
+
+  for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+    if ((player.materials[matId] || 0) < reqCount) {
+      spawnDamageNumber(player.x, player.y - 40, 'Thiếu nguyên liệu pha chế!', true, '#ef4444');
+      return;
+    }
+  }
+
+  for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+    player.materials[matId] -= reqCount;
+    if (player.materials[matId] <= 0) delete player.materials[matId];
+  }
+
+  const newFlask = {
+    id: `${recipe.outputFlaskId}_${Date.now()}`,
+    name: recipe.name,
+    type: recipe.flaskType,
+    icon: recipe.icon,
+    color: recipe.color,
+    currentCharges: 60,
+    maxCharges: 60,
+    chargesPerUse: recipe.flaskType === 'Quicksilver' ? 25 : (recipe.flaskType === 'Granite' ? 30 : 20),
+    duration: recipe.flaskType === 'Quicksilver' || recipe.flaskType === 'Granite' ? 5.0 : 4.0,
+    rarity: recipe.level >= 40 ? 'Unique' : 'Magic',
+    healLifePerSec: recipe.flaskType === 'Life' ? (recipe.level >= 40 ? 300 : 125) : 0,
+    healManaPerSec: recipe.flaskType === 'Mana' ? (recipe.level >= 40 ? 200 : 75) : 0,
+    healEsPerSec: recipe.flaskType === 'Mana' ? (recipe.level >= 40 ? 110 : 45) : 0,
+    speedBonusPct: recipe.flaskType === 'Quicksilver' ? 45 : 0,
+    attackSpeedBonusPct: recipe.flaskType === 'Quicksilver' ? 25 : 0,
+    armorFlat: recipe.flaskType === 'Granite' ? 1200 : 0,
+    allResPct: recipe.flaskType === 'Granite' ? 25 : 0,
+    mods: [`• ${recipe.baseStats}`]
+  };
+
+  initFlasks();
+  let placedInSlot = -1;
+  for (let i = 0; i < player.flasks.length; i++) {
+    if (!player.flasks[i] || player.flasks[i].type === recipe.flaskType) {
+      player.flasks[i] = newFlask;
+      placedInSlot = i;
+      break;
+    }
+  }
+
+  if (placedInSlot === -1) {
+    if (player.flasks.length < 4) {
+      player.flasks.push(newFlask);
+      placedInSlot = player.flasks.length - 1;
+    } else {
+      player.bag.push({
+        name: newFlask.name,
+        category: 'consumable',
+        slot: 'Flask',
+        rarity: newFlask.rarity,
+        color: newFlask.color,
+        icon: newFlask.icon,
+        desc: recipe.baseStats,
+        flaskData: newFlask
+      });
+    }
+  }
+
+  AudioEngine.playTone(660, 'sine', 0.2, 0.15);
+  spawnDamageNumber(player.x, player.y - 45, `⚗️ ĐÃ PHA ${recipe.nameVi || recipe.name}!`, false, recipe.color || '#4ade80');
+  addCraftingExp(40, 'Alchemy');
+
+  renderFlaskHUD();
+  updateAlchemyUI();
+  updateBackpackUI();
+  saveToDatabase();
 }
 
 // =========================================================================

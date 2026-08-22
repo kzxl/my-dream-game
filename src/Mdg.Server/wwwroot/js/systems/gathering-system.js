@@ -36,7 +36,22 @@ export const PROFESSIONS_INFO = {
 };
 
 export const RESOURCE_NODES_CATALOG = {
-  // Mining Nodes (Quặng)
+  // Mining Nodes (Quặng & Cát Thạch Anh)
+  node_silica_sand: {
+    id: 'node_silica_sand',
+    name: 'Silica Quartz Sandbank',
+    profType: 'mining',
+    profName: 'Mining',
+    reqLevel: 1,
+    tier: 1,
+    icon: '📦',
+    color: '#e2e8f0',
+    yieldMatId: 'mat_silica_sand',
+    minYield: 3,
+    maxYield: 6,
+    expGain: 20,
+    channelTime: 0.8
+  },
   node_iron_ore: {
     id: 'node_iron_ore',
     name: 'Iron Ore Vein',
@@ -98,7 +113,22 @@ export const RESOURCE_NODES_CATALOG = {
     channelTime: 2.0
   },
 
-  // Herbalism Nodes (Thảo dược)
+  // Herbalism Nodes (Thảo dược, Nước Suối & Gỗ)
+  node_aether_water: {
+    id: 'node_aether_water',
+    name: 'Pure Aether Spring',
+    profType: 'herbalism',
+    profName: 'Herbalism',
+    reqLevel: 1,
+    tier: 1,
+    icon: '💧',
+    color: '#67e8f9',
+    yieldMatId: 'mat_aether_water',
+    minYield: 2,
+    maxYield: 5,
+    expGain: 20,
+    channelTime: 0.8
+  },
   node_blood_herb: {
     id: 'node_blood_herb',
     name: 'Crimson Bloodroot Patch',
@@ -142,6 +172,21 @@ export const RESOURCE_NODES_CATALOG = {
     minYield: 2,
     maxYield: 3,
     expGain: 80,
+    channelTime: 1.5
+  },
+  node_heartwood: {
+    id: 'node_heartwood',
+    name: 'Ancient Elder Heartwood',
+    profType: 'herbalism',
+    profName: 'Gathering',
+    reqLevel: 15,
+    tier: 2,
+    icon: '🪵',
+    color: '#a16207',
+    yieldMatId: 'mat_heartwood',
+    minYield: 1,
+    maxYield: 3,
+    expGain: 60,
     channelTime: 1.5
   }
 };

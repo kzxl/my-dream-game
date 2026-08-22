@@ -170,6 +170,15 @@ export const DICTIONARY = {
     'settings.import_success': '✅ Đã khôi phục dữ liệu thành công!',
     'settings.import_error': '❌ Tệp dữ liệu không hợp lệ hoặc bị lỗi!',
 
+    // --- Forge Tabs ---
+    'forge.tab_smelting': '🏭 Lò Luyện (Smelter)',
+    'forge.tab_alchemy': '⚗️ Giả Kim (Alchemy)',
+    'forge.tab_forging': '🗡️ Rèn Phôi (Forging)',
+    'forge.tab_anvil': '🔨 Cường Hóa (Anvil)',
+    'forge.tab_salvage': '♻️ Phân Rã (Salvage)',
+    'forge.tab_vault': '🎒 Kho Vật Liệu (Vault)',
+    'forge.tab_professions': '🛠️ Nghề Nghiệp (Professions)',
+
     // --- Chat & Zones ---
     'chat.placeholder': 'Nhập tin nhắn kênh khu vực...',
     'chat.send': 'Gửi',
@@ -347,6 +356,15 @@ export const DICTIONARY = {
     'settings.export_success': '✅ Backup file exported successfully!',
     'settings.import_success': '✅ Data imported and restored successfully!',
     'settings.import_error': '❌ Invalid backup file format!',
+
+    // --- Forge Tabs ---
+    'forge.tab_smelting': '🏭 Smelting Kiln',
+    'forge.tab_alchemy': '⚗️ Alchemy Lab',
+    'forge.tab_forging': '🗡️ Base Forging',
+    'forge.tab_anvil': '🔨 Relic Anvil',
+    'forge.tab_salvage': '♻️ Salvage Anvil',
+    'forge.tab_vault': '🎒 Materials Vault',
+    'forge.tab_professions': '🛠️ Professions',
 
     // --- Chat & Zones ---
     'chat.placeholder': 'Say something in zone...',
