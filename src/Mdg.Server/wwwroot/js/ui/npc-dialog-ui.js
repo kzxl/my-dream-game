@@ -13,10 +13,31 @@ import { renderDevotionModal } from './devotion-ui.js';
 import { sendPetToTown } from '../companion.js';
 import { SET_ITEMS_DATABASE } from '../data/items.js';
 import { updateBackpackUI, updatePaperdollUI } from './inventory.js';
+import { renderHunterGuildModal } from './hunter-guild-ui.js';
 
 let activeNpc = null;
 
 export const NPC_DIALOGUES = {
+  'Valeria (Hunter Guildmaster)': {
+    title: 'Hunter Guild Commander',
+    avatarIcon: '🦅',
+    color: '#ffd700',
+    greeting: 'Welcome to the Hunter’s Guild, slayer. Bring me monster pelts, trophies and beast cores to trade for Gold and earn Hunter Rank Promotions!',
+    options: [
+      {
+        label: '📜 Hunter Guild Bounty Board & Rank Ascension',
+        action: () => renderHunterGuildModal()
+      },
+      {
+        label: '💰 Quick Sell All Monster Trophies (Pelts, Fangs & Bones)',
+        action: () => renderHunterGuildModal()
+      },
+      {
+        label: '👑 Inquire on Hunter Ranks (F -> S Monarch)',
+        response: 'Every beast trophy you exchange earns Bounty Reputation. Advance through 7 ranks (F -> E -> D -> C -> B -> A -> S Monarch) to unlock huge gold sales bonuses, item rarity, and the golden Sovereign Aura!'
+      }
+    ]
+  },
   'Elder Aethel': {
     title: 'High Elder Sage',
     avatarIcon: '🧙‍♂️',

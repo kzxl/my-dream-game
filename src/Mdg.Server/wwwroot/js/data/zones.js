@@ -30,7 +30,8 @@ export const ZONES = {
       { x: 2000, y: 1850, name: 'Elder Aethel', title: 'High Elder Sage', color: '#61afef' },
       { x: 1860, y: 1860, name: 'Kaelen (Vault Keeper)', title: 'Keeper of the Vault', color: '#98c379' },
       { x: 2150, y: 1880, name: 'Lyra (Astromancer)', title: 'Astromancer of the Void', color: '#c678dd' },
-      { x: 2200, y: 1980, name: 'Mira (Beastmaster)', title: 'Companion Beastmaster', color: '#00f2fe' }
+      { x: 2200, y: 1980, name: 'Mira (Beastmaster)', title: 'Companion Beastmaster', color: '#00f2fe' },
+      { x: 1940, y: 1900, name: 'Valeria (Hunter Guildmaster)', title: 'Hunter Guild Commander', color: '#ffd700' }
     ],
     props: [
       { x: 2000, y: 2000, type: 'campfire' },

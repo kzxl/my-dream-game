@@ -509,6 +509,27 @@ export function handleMonsterDefeated(target) {
   // Refill potion flasks charges on kill
   addFlaskCharges(target.type === 'boss' ? 10 : (target.rarity === 'rare' ? 4 : 1));
 
+  // Update Active Hunter Guild Bounties
+  if (player.hunterBounties && player.bountyProgress) {
+    player.hunterBounties.forEach(b => {
+      if (!player.bountyProgress[`${b.id}_claimed`]) {
+        let isMatch = false;
+        if (b.targetMonster === 'wolf' && (mType.includes('wolf') || mType.includes('beast'))) isMatch = true;
+        if (b.targetMonster === 'frost_ghoul' && (mType.includes('ghoul') || mType.includes('frost'))) isMatch = true;
+        if (b.targetMonster === 'vael_boss' && (target.type === 'boss' || mType.includes('vael') || mType.includes('boss'))) isMatch = true;
+        if (b.targetMonster === 'mutant' && (target.rarity === 'rare' || target.rarityTier === 'mutant' || target.rarityTier === 'elite')) isMatch = true;
+
+        if (isMatch) {
+          player.bountyProgress[b.id] = (player.bountyProgress[b.id] || 0) + 1;
+          if (player.bountyProgress[b.id] === b.requiredCount) {
+            spawnDamageNumber(target.x, target.y - 80, `🎯 BOUNTY READY: ${b.name}!`, true, '#ffd700');
+            AudioEngine.playLevelUp?.();
+          }
+        }
+      }
+    });
+  }
+
   // Spawn Extractable Shadow Corpse (Solo Leveling Shadow Monarch)
   spawnExtractableCorpse(target);
 

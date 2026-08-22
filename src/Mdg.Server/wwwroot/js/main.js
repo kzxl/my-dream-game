@@ -35,6 +35,7 @@ import { extractShadow, updateShadowArmy } from './systems/shadow-extraction.js'
 import { initPlayerProfessions, spawnResourceNodesForZone, updateGatheringSystem, tryInteractGatheringNode } from './systems/gathering-system.js';
 import { loadGameSettings, getGameSetting, toggleSettingsModal, renderSettingsModal } from './ui/settings-ui.js';
 import { setupCompendiumUI, toggleCompendiumUI, openCompendiumUI, closeCompendiumUI } from './ui/compendium-ui.js';
+import { renderHunterGuildModal } from './ui/hunter-guild-ui.js';
 import { t, applyLocalization } from './i18n.js';
 
 window.keys = keys;
@@ -47,6 +48,7 @@ window.showZoneBanner = showZoneBanner;
 window.renderSkillUpgradeModal = renderSkillUpgradeModal;
 window.toggleSettingsModal = toggleSettingsModal;
 window.toggleCompendiumUI = toggleCompendiumUI;
+window.renderHunterGuildModal = renderHunterGuildModal;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
