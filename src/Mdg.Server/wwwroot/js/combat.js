@@ -160,6 +160,15 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     multiplier = (effectiveCritMulti / 100) * (hasMightBuff ? 1.60 : 1.0);
   }
 
+  // Camouflage Stealth Ambush Strike (100% Crit & +50% Damage)
+  if (player.isStealthed && !isProc) {
+    isCrit = true;
+    multiplier = Math.max(multiplier, (effectiveCritMulti / 100)) * 1.50;
+    player.isStealthed = false;
+    spawnDamageNumber(target.x, target.y - 65, '🌿 AMBUSH CRITICAL!', true, '#4ade80');
+    AudioEngine.playTone?.(580, 'sawtooth', 0.2, 0.15);
+  }
+
   // Lore bonus extra damage against familiar monster species
   multiplier *= (1.0 + lore.bonusDmg) * blockMultiplier;
 

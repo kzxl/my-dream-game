@@ -31,26 +31,35 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   // Render World Mineral Veins & Herb Patches
   renderGatheringNodes(ctx);
 
+  // Strict Viewport Frustum Culling Bounding Box
+  const viewW = canvas.width / camera.zoom;
+  const viewH = canvas.height / camera.zoom;
+  const vMinX = player.x - viewW / 2 - 140;
+  const vMaxX = player.x + viewW / 2 + 140;
+  const vMinY = player.y - viewH / 2 - 140;
+  const vMaxY = player.y + viewH / 2 + 140;
+  const inView = (x, y) => x >= vMinX && x <= vMaxX && y >= vMinY && y <= vMaxY;
+
   const renderList = [];
 
-  portals.forEach(p => renderList.push({ y: p.y, render: () => drawPortal(ctx, p) }));
-  props.forEach(p => renderList.push({ y: p.y, render: () => drawPropClean(ctx, p) }));
-  npcs.forEach(n => renderList.push({ y: n.y, render: () => drawNpc(ctx, n) }));
-  pois.forEach(poi => renderList.push({ y: poi.y, render: () => drawPoiClean(ctx, poi) }));
-  trainingDummies.forEach(d => renderList.push({ y: d.y, render: () => drawDummy(ctx, d) }));
-  groundLoot.forEach((loot, idx) => renderList.push({ y: loot.y, render: () => drawGroundLoot(ctx, loot, idx) }));
+  portals.forEach(p => { if (inView(p.x, p.y)) renderList.push({ y: p.y, render: () => drawPortal(ctx, p) }); });
+  props.forEach(p => { if (inView(p.x, p.y)) renderList.push({ y: p.y, render: () => drawPropClean(ctx, p) }); });
+  npcs.forEach(n => { if (inView(n.x, n.y)) renderList.push({ y: n.y, render: () => drawNpc(ctx, n) }); });
+  pois.forEach(poi => { if (inView(poi.x, poi.y)) renderList.push({ y: poi.y, render: () => drawPoiClean(ctx, poi) }); });
+  trainingDummies.forEach(d => { if (inView(d.x, d.y)) renderList.push({ y: d.y, render: () => drawDummy(ctx, d) }); });
+  groundLoot.forEach((loot, idx) => { if (inView(loot.x, loot.y)) renderList.push({ y: loot.y, render: () => drawGroundLoot(ctx, loot, idx) }); });
 
   monsters.forEach(m => {
-    if (m.isAlive) renderList.push({ y: m.y, render: () => drawMonsterClean(ctx, m) });
+    if (m.isAlive && inView(m.x, m.y)) renderList.push({ y: m.y, render: () => drawMonsterClean(ctx, m) });
   });
 
   // Render Other Multiplayer Co-op Peers
   otherPlayers.forEach(peer => {
-    renderList.push({ y: peer.y, render: () => drawOtherPlayer(ctx, peer) });
+    if (inView(peer.x, peer.y)) renderList.push({ y: peer.y, render: () => drawOtherPlayer(ctx, peer) });
   });
 
   renderList.push({ y: player.y, render: () => drawPlayerClean(ctx) });
-  if (!companion.isDeliveringToTown) {
+  if (!companion.isDeliveringToTown && inView(companion.x, companion.y)) {
     renderList.push({ y: companion.y, render: () => drawCompanion(ctx) });
   }
 
@@ -59,6 +68,7 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
 
   // Projectiles
   projectiles.forEach(p => {
+    if (!inView(p.x, p.y)) return;
     ctx.save();
     ctx.translate(p.x, p.y);
 
@@ -368,6 +378,35 @@ export function drawSeamlessTerrain(canvas, ctx, currentZone, zoneData) {
           ctx.fillStyle = '#241a18';
           ctx.fillRect(px, py, tileSize, tileSize);
         }
+      } else if (tile === 14) {
+        // CAMOUFLAGE STEALTH BUSH (80% Stealth & +50% Ambush Strike)
+        const wind = Math.sin(time * 3.5 + x * 0.8 + y * 0.8) * 3;
+        ctx.fillStyle = '#1c4a27';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        
+        // Swaying tall grass blades
+        ctx.fillStyle = '#2e8540';
+        ctx.beginPath();
+        ctx.ellipse(px + tileSize / 2 + wind, py + tileSize / 2, tileSize / 2.2, tileSize / 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.ellipse(px + tileSize / 2 + wind * 1.5, py + tileSize / 2 - 4, tileSize / 3.2, tileSize / 3.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (tile === 15) {
+        // DESTRUCTIBLE BARRICADE / CRACKED OBSIDIAN WALL (120 HP Breakable)
+        ctx.fillStyle = '#3a322d';
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 3, py + 3, tileSize - 6, tileSize - 6);
+        
+        // Crack lines
+        ctx.strokeStyle = '#1a1614';
+        ctx.beginPath();
+        ctx.moveTo(px + 8, py + 8); ctx.lineTo(px + 24, py + 26); ctx.lineTo(px + 40, py + 14);
+        ctx.moveTo(px + 24, py + 26); ctx.lineTo(px + 20, py + 42);
+        ctx.stroke();
       } else {
         // NATURAL FLOOR / LUSH SYLVAN GRASS (Tile 0)
         if (isCrypt) {
@@ -447,6 +486,10 @@ export function drawPlayerClean(ctx) {
     const destW = 56;
     const destH = 56;
 
+    if (player.isStealthed) {
+      ctx.globalAlpha = 0.55;
+    }
+
     if (flipX) {
       ctx.save();
       ctx.scale(-1, 1);
@@ -455,6 +498,7 @@ export function drawPlayerClean(ctx) {
     } else {
       ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
     }
+    ctx.globalAlpha = 1.0;
   } else {
     ctx.fillStyle = '#2b5c8f';
     ctx.fillRect(-12, -12, 24, 24);
@@ -464,7 +508,7 @@ export function drawPlayerClean(ctx) {
   ctx.font = 'bold 10px "Outfit", sans-serif';
   ctx.fillStyle = titleColor;
   ctx.textAlign = 'center';
-  const statusBadge = player.isDead ? ' ☠️ [FALLEN]' : '';
+  const statusBadge = player.isDead ? ' ☠️ [FALLEN]' : (player.isStealthed ? ' 🌿 [STEALTH AMBUSH]' : '');
   ctx.fillText(`${player.gender === 'Male' ? '♂' : '♀'} ${player.classSpec} [Lv.${player.level}]${statusBadge}`, 0, -42);
 
   // Player Frozen Ice Aura

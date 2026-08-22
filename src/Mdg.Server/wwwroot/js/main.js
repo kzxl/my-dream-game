@@ -79,7 +79,7 @@ export function canWalk(x, y) {
   const ty = Math.floor(y / 48);
   if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return false;
   const tile = currentZoneMap.grid[ty][tx];
-  return tile !== 1 && tile !== 2 && tile !== 10 && tile !== 11; // 1 = Wall, 2 = Deep Water, 10 = Pillar, 11 = Chasm
+  return tile !== 1 && tile !== 2 && tile !== 10 && tile !== 11 && tile !== 15; // 1 = Wall, 2 = Deep Water, 10 = Pillar, 11 = Chasm, 15 = Destructible Wall
 }
 
 export function isProjectileBlocked(x, y) {
@@ -88,6 +88,26 @@ export function isProjectileBlocked(x, y) {
   const ty = Math.floor(y / 48);
   if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return true;
   const tile = currentZoneMap.grid[ty][tx];
+
+  // If projectile strikes Destructible Wall (Tile 15), break it!
+  if (tile === 15) {
+    currentZoneMap.grid[ty][tx] = 0;
+    AudioEngine.playTone?.(140, 'sawtooth', 0.25, 0.15);
+    floatingTexts.push({ x: (tx + 0.5) * 48, y: (ty + 0.5) * 48 - 20, text: '💥 BARRICADE DESTROYED!', color: '#ffd700', life: 1.5 });
+    for (let k = 0; k < 12; k++) {
+      particles.push({
+        x: (tx + 0.5) * 48 + (Math.random() - 0.5) * 30,
+        y: (ty + 0.5) * 48 + (Math.random() - 0.5) * 30,
+        vx: (Math.random() - 0.5) * 160,
+        vy: (Math.random() - 0.5) * 160,
+        color: '#8e7960',
+        life: 0.6,
+        size: 5
+      });
+    }
+    return true;
+  }
+
   return tile === 1 || tile === 10; // 1 = Solid Wall, 10 = Solid Stone Pillar
 }
 
@@ -780,6 +800,9 @@ function update(dt) {
   if (player.isMoving) {
     const len = Math.hypot(mx, my);
     let currentSpeed = player.speed || 240;
+    if (player.isOnIce) {
+      currentSpeed *= 1.25; // +25% Speed on slick ice
+    }
     if (player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'Swiftness')) {
       currentSpeed *= 1.50;
     }
@@ -813,6 +836,13 @@ function update(dt) {
       player.x = Math.max(36, Math.min(mapW - 36, player.x));
       player.y = Math.max(36, Math.min(mapH - 36, player.y));
     }
+
+    // Check Player's Current Tile Status
+    const curTx = Math.floor(player.x / 48);
+    const curTy = Math.floor(player.y / 48);
+    const currentGroundTile = currentZoneMap?.grid?.[curTy]?.[curTx];
+    player.isStealthed = (currentGroundTile === 14);
+    player.isOnIce = (currentGroundTile === 7);
 
     player.animTimer += dt * 5.5;
     player.animFrame = Math.floor(player.animTimer) % 4;
@@ -1267,7 +1297,13 @@ function update(dt) {
 
     const currentSpeed = m.chillTimer > 0 ? (m.speed * 0.55) : m.speed;
     const dist = Math.hypot(player.x - m.x, player.y - m.y);
-    if (!player.isDead && dist < 450 && dist > 35) {
+
+    // Monster AI Hibernation: Skip expensive calculations if monster is far off-screen (>650px)
+    if (dist > 650 && m.type !== 'boss') return;
+
+    // Monster Aggro Distance (Reduced from 450px to 90px if player is Stealthed in Camouflage Bush!)
+    const aggroDist = player.isStealthed ? 90 : 450;
+    if (!player.isDead && dist < aggroDist && dist > 35) {
       const angle = Math.atan2(player.y - m.y, player.x - m.x);
       const nx = m.x + Math.cos(angle) * currentSpeed * dt;
       const ny = m.y + Math.sin(angle) * currentSpeed * dt;
