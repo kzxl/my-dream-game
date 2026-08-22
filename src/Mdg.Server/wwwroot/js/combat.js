@@ -221,8 +221,27 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   const finalFire = ((rawFire || 0) * multiplier) * calcMitigation(target.fireRes, 0, curseFireRed, playerFirePen);
   const finalCold = ((rawCold || 0) * multiplier) * calcMitigation(target.coldRes, 0, curseColdRed, playerColdPen);
   const finalLight = ((rawLightning || 0) * multiplier * shockBonus) * calcMitigation(target.lightningRes || target.lightRes, 0, curseLightRed, playerLightPen);
-  const finalChaos = ((rawChaos || 0) * multiplier) * calcMitigation(target.chaosRes, 0, 0, playerChaosPen);
   let totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
+
+  // Boss Stagger Accumulation & Resonance Burst (+50% Damage when staggered)
+  const isBossTarget = target.type === 'boss' || target.type === 'ignis_boss' || target.type === 'vael_boss' || target.type === 'malakor_boss' || target.isBoss;
+  if (isBossTarget) {
+    if (target.isStaggered) {
+      totalDamage = Math.round(totalDamage * 1.5);
+    } else if (!isProc) {
+      target.maxStagger = target.maxStagger || 100;
+      target.stagger = target.stagger || 0;
+      const staggerGain = isCrit ? 15 : (skillType === 'meteor' ? 20 : (skillType === 'frost' ? 12 : 8));
+      target.stagger = Math.min(target.maxStagger, target.stagger + staggerGain);
+      if (target.stagger >= target.maxStagger) {
+        target.isStaggered = true;
+        target.staggerTimer = 6.0;
+        applyFreeze(target, 2.0);
+        spawnDamageNumber(target.x, target.y - 75, '⚡ STAGGERED! (+50% RESONANCE BURST)', true, '#ffd700');
+        AudioEngine.playTone?.(520, 'sawtooth', 0.45, 0.25);
+      }
+    }
+  }
 
   // Life/ES Leech System (Capped at 20% Max Life / sec, 3s duration)
   if (!isProc && totalDamage > 0 && (player.lifeLeechPercent || player.activeBuffs?.some(b => b.buffType === 'AbyssalLeech'))) {
