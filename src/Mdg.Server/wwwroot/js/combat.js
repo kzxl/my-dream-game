@@ -629,6 +629,50 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
     AudioEngine.playLevelUp?.();
   }
 
+  // Dynamic Monster Gold Drops
+  let goldPiles = [];
+  if (monsterType === 'treasure_goblin') {
+    const totalGoblinGold = Math.floor(Math.random() * 3000) + 3000;
+    for (let i = 0; i < 6; i++) {
+      goldPiles.push(Math.round(totalGoblinGold / 6));
+    }
+  } else if (isBoss) {
+    const totalBossGold = Math.floor(Math.random() * 1500) + 800;
+    for (let i = 0; i < 4; i++) {
+      goldPiles.push(Math.round(totalBossGold / 4));
+    }
+  } else if (monsterRarity === 'rare' || monsterRarity === 'mutant') {
+    const totalRareGold = Math.floor(Math.random() * 250) + 200;
+    goldPiles.push(Math.round(totalRareGold / 2), Math.round(totalRareGold / 2));
+  } else if (monsterRarity === 'champion' || monsterRarity === 'elite' || monsterRarity === 'magic') {
+    goldPiles.push(Math.floor(Math.random() * 90) + 60);
+  } else if (Math.random() < 0.75) {
+    goldPiles.push(Math.floor(Math.random() * 30) + 15);
+  }
+
+  for (const gAmt of goldPiles) {
+    const goldAngle = Math.random() * Math.PI * 2;
+    const goldDistance = 25 + Math.random() * 55;
+    groundLoot.push({
+      id: 'gold_' + Math.random().toString(36).substring(2, 9),
+      x: x,
+      y: y,
+      targetX: x + Math.cos(goldAngle) * goldDistance,
+      targetY: y + Math.sin(goldAngle) * goldDistance,
+      item: {
+        id: 'aether_gold',
+        name: `${gAmt} Gold`,
+        isGold: true,
+        amount: gAmt,
+        rarity: 'Currency',
+        icon: '🪙',
+        color: '#ffd700'
+      },
+      bounceTimer: 0.4,
+      beamHeight: gAmt >= 200 ? 200 : 0
+    });
+  }
+
   // Animate items spawning with physics onto groundLoot
   for (const item of itemsToDrop) {
     const dropAngle = Math.random() * Math.PI * 2;

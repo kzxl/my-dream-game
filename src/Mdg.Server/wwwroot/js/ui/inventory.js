@@ -1079,6 +1079,17 @@ export function pickUpLoot(lootIndex) {
   if (lootIndex < 0 || lootIndex >= groundLoot.length) return;
   const loot = groundLoot[lootIndex];
 
+  if (loot.item?.isGold) {
+    const goldAmt = loot.item.amount || 50;
+    player.gold = (player.gold || 0) + goldAmt;
+    groundLoot.splice(lootIndex, 1);
+    AudioEngine.playPickup?.();
+    spawnDamageNumber(player.x, player.y - 45, `+${goldAmt.toLocaleString()} Gold`, false, '#ffd700');
+    updateBackpackUI();
+    saveToDatabase(true);
+    return;
+  }
+
   if (player.bag.length >= MAX_BACKPACK_SLOTS) {
     spawnDamageNumber(player.x, player.y - 40, 'BACKPACK FULL!', true, '#e06c75');
     return;

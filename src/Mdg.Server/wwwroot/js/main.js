@@ -949,15 +949,27 @@ function update(dt) {
     }
   });
 
-  // Auto-Loot Currencies & Materials (If enabled in Game Settings)
-  if (getGameSetting('autoLootCurrencies') && !player.isDead) {
+  // Auto Magnet for Gold Coins and Auto-Loot Currencies
+  if (!player.isDead) {
     for (let i = groundLoot.length - 1; i >= 0; i--) {
       const loot = groundLoot[i];
-      if (loot && loot.item) {
+      if (!loot || !loot.item) continue;
+      const dist = Math.hypot(player.x - loot.x, player.y - loot.y);
+
+      if (loot.item.isGold) {
+        if (dist < 110) {
+          // Magnetize gold towards player
+          const angle = Math.atan2(player.y - loot.y, player.x - loot.x);
+          loot.x += Math.cos(angle) * 380 * dt;
+          loot.y += Math.sin(angle) * 380 * dt;
+          if (dist < 36) {
+            pickUpLoot(i);
+          }
+        }
+      } else if (getGameSetting('autoLootCurrencies')) {
         const cat = (loot.item.category || '').toLowerCase();
         const rarity = (loot.item.rarity || '').toLowerCase();
         if (cat === 'currency' || cat === 'material' || cat === 'recipe' || rarity === 'currency') {
-          const dist = Math.hypot(player.x - loot.x, player.y - loot.y);
           if (dist < 65) {
             pickUpLoot(i);
           }

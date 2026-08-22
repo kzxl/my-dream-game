@@ -178,8 +178,13 @@ export function drawGroundLoot(ctx, loot, idx) {
   ctx.fillStyle = 'rgba(10, 12, 16, 0.94)';
   ctx.fillRect(-cardW / 2, -cardH / 2, cardW, cardH);
 
+  if (loot.item?.isGold) {
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 10;
+  }
+
   ctx.strokeStyle = rarityColor;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = loot.item?.isGold ? 2.0 : 1.5;
   ctx.strokeRect(-cardW / 2, -cardH / 2, cardW, cardH);
 
   ctx.fillStyle = rarityColor;
