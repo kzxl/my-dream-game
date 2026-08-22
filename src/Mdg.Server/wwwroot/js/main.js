@@ -9,7 +9,7 @@ import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './d
 import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
 import { AudioEngine } from './audio.js';
 import { renderGame } from './renderer.js';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot, applyChill } from './combat.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot, applyChill, updateCurseAuras } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js';
@@ -1229,6 +1229,9 @@ function update(dt) {
       projectiles.splice(i, 1);
     }
   }
+
+  // Blasphemy Curse Auras Radius Checks
+  updateCurseAuras(dt);
 
   // Boss & Monster AI + Ailments
   let activeBoss = null;

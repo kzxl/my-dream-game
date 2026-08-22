@@ -512,6 +512,44 @@ export function drawPlayerClean(ctx) {
     ctx.restore();
   }
 
+  // Blasphemy Curse Auras (220px Radius Magical Circles)
+  if (player.activeCurseAuras && player.activeCurseAuras.length > 0) {
+    const nowTime = performance.now() / 1000;
+    player.activeCurseAuras.forEach((curseId, idx) => {
+      const colors = {
+        vulnerability: '#e11d48',
+        flammability: '#ff5500',
+        frostbite: '#00f2fe',
+        conductivity: '#ffd700',
+        enfeeble: '#a855f7'
+      };
+      const aColor = colors[curseId] || '#a855f7';
+      const rad = 220;
+      ctx.save();
+      ctx.strokeStyle = aColor;
+      ctx.lineWidth = 1.6;
+      ctx.shadowColor = aColor;
+      ctx.shadowBlur = 12;
+      ctx.globalAlpha = 0.35 + Math.sin(nowTime * 2.2 + idx) * 0.15;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Rotating Runic Spikes on Border
+      const spikeCount = 6;
+      for (let s = 0; s < spikeCount; s++) {
+        const ang = nowTime * (idx % 2 === 0 ? 0.7 : -0.7) + (s * (Math.PI * 2 / spikeCount));
+        const px = Math.cos(ang) * rad;
+        const py = Math.sin(ang) * rad;
+        ctx.fillStyle = aColor;
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+  }
+
   // Channeling Blessing Progress Bar (Aether Shrines)
   if (player.channeling) {
     const ch = player.channeling;
@@ -804,11 +842,18 @@ export function drawMonsterClean(ctx, m) {
     ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * hpPct, barH - 1);
   }
 
-  // Ailment Badges Rendering (Ignite, Freeze, Bleed)
+  // Ailment & Curse Badges Rendering (Ignite, Freeze, Bleed, Vulnerability, Frostbite, etc.)
   let ailmentIcons = '';
   if (m.igniteTimer > 0) ailmentIcons += ' 🔥';
   if (m.freezeTimer > 0) ailmentIcons += ' ❄️';
   if (m.bleedTimer > 0) ailmentIcons += ' 🩸';
+  if (m.curseDebuff) {
+    if (m.curseDebuff.vulnerability) ailmentIcons += ' 💀';
+    if (m.curseDebuff.flammability) ailmentIcons += ' 🔥';
+    if (m.curseDebuff.frostbite) ailmentIcons += ' 🧊';
+    if (m.curseDebuff.conductivity) ailmentIcons += ' ⚡';
+    if (m.curseDebuff.enfeeble) ailmentIcons += ' 🌑';
+  }
 
   // Lore Mastery Tier Badge & Nameplate
   const lore = getMonsterLoreBonus(m.type || 'monster', m.type === 'boss');

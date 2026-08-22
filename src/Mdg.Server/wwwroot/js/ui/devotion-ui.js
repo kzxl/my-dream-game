@@ -960,3 +960,22 @@ function positionTooltip(e, tooltip) {
   tooltip.style.left = `${x}px`;
   tooltip.style.top = `${y}px`;
 }
+
+export async function fetchMasterDevotionFromServer() {
+  try {
+    const res = await fetch('/api/v1/data/devotion');
+    if (!res.ok) return;
+    const serverDevotion = await res.json();
+    if (Array.isArray(serverDevotion) && serverDevotion.length > 0) {
+      serverDevotion.forEach(sd => {
+        if (DEVOTION_TREE_NODES[sd.id]) {
+          DEVOTION_TREE_NODES[sd.id].name = sd.name || DEVOTION_TREE_NODES[sd.id].name;
+          DEVOTION_TREE_NODES[sd.id].desc = sd.desc || DEVOTION_TREE_NODES[sd.id].desc;
+        }
+      });
+    }
+  } catch (e) {
+    // Bundled fallback
+  }
+}
+

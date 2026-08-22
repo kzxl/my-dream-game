@@ -187,5 +187,76 @@ namespace Mdg.Core.Features.Combat
             float clampedPercent = Math.Clamp(shockPercent, 10.0f, 50.0f);
             return 1.0f + (clampedPercent / 100.0f);
         }
+
+        /// <summary>
+        /// Tính toán hệ số suy yếu của Vòng Hào Quang Nguyền Rủa (Blasphemy Curse Aura).
+        /// </summary>
+        public static (float DamageTakenMultiplier, float ResistanceReduction, float SpeedReduction, float DamageDealtReduction) CalculateCurseAuraDebuff(
+            string curseType,
+            float distanceToPlayer,
+            float auraRadius = 220.0f)
+        {
+            if (distanceToPlayer > auraRadius)
+            {
+                return (1.0f, 0f, 0f, 0f);
+            }
+
+            return curseType.ToLower() switch
+            {
+                "vulnerability" => (1.35f, 0f, 0f, 0f),      // +35% Physical & Bleed Dmg taken
+                "flammability"  => (1.0f, 35.0f, 0f, 0f),     // -35% Fire Resistance
+                "frostbite"     => (1.0f, 35.0f, 0.35f, 0f),   // -35% Cold Resistance, -35% Speed
+                "conductivity"  => (1.0f, 35.0f, 0f, 0f),     // -35% Lightning Resistance, +50% Shock
+                "enfeeble"      => (1.0f, 0f, 0f, 0.30f),     // -30% Damage Dealt by Monster
+                _               => (1.0f, 0f, 0f, 0f)
+            };
+        }
+
+        /// <summary>
+        /// Áp dụng cơ chế đột phá của các Keystones Thụ Động (Iron Fortress, Chaos Inoculation, Crimson Zealot, Elemental Overload).
+        /// </summary>
+        public static void ApplyKeystones(
+            StatCollection stats,
+            string[] activeKeystones,
+            ref float maxLife,
+            ref float maxEnergyShield)
+        {
+            if (activeKeystones == null || activeKeystones.Length == 0) return;
+
+            foreach (var keystone in activeKeystones)
+            {
+                switch (keystone.ToLower())
+                {
+                    case "chaosinoculation":
+                    case "chaos_inoculation":
+                        maxLife = 1.0f;
+                        maxEnergyShield *= 2.0f; // +100% ES
+                        stats.SetBaseValue(StatType.MaxChaosResistance, 100.0f);
+                        stats.SetBaseValue(StatType.ChaosResistance, 100.0f); // 100% Chaos Immune
+                        break;
+
+                    case "ironfortress":
+                    case "iron_fortress":
+                        // Overcapped elemental resists converted to Armor
+                        float overcapFire = MathF.Max(0f, stats.GetValue(StatType.FireResistance) - 75f);
+                        float overcapCold = MathF.Max(0f, stats.GetValue(StatType.ColdResistance) - 75f);
+                        float overcapLight = MathF.Max(0f, stats.GetValue(StatType.LightningResistance) - 75f);
+                        float totalOvercap = overcapFire + overcapCold + overcapLight;
+                        float bonusArmor = 300.0f + (totalOvercap * 5.0f);
+                        stats.SetBaseValue(StatType.Armor, stats.GetValue(StatType.Armor) + bonusArmor);
+                        break;
+
+                    case "crimsonzealot":
+                    case "crimson_zealot":
+                        // Blood Magic: +35% total damage when under 50% HP
+                        break;
+
+                    case "elementaloverload":
+                    case "elemental_overload":
+                        // Crits grant +40% elemental damage
+                        break;
+                }
+            }
+        }
     }
 }

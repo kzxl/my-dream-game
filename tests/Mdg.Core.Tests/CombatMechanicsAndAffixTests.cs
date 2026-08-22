@@ -59,4 +59,30 @@ public sealed class CombatMechanicsAndAffixTests
         Assert.True(bossSM.IsEnraged);
         Assert.Equal(1.4f, bossSM.AttackSpeedMultiplier, precision: 1);
     }
+
+    [Fact]
+    public void CurseAura_Applies_Vulnerability_Debuff_In_Radius()
+    {
+        float auraRadius = 220.0f;
+        var inRange = DamageCalculator.CalculateCurseAuraDebuff("vulnerability", distanceToPlayer: 100.0f, auraRadius);
+        var outOfRange = DamageCalculator.CalculateCurseAuraDebuff("vulnerability", distanceToPlayer: 300.0f, auraRadius);
+
+        Assert.Equal(1.35f, inRange.DamageTakenMultiplier);
+        Assert.Equal(1.0f, outOfRange.DamageTakenMultiplier);
+    }
+
+    [Fact]
+    public void ChaosInoculation_Sets_Life_To_1_And_Doubles_ES()
+    {
+        var stats = new Mdg.Core.Features.Stats.StatCollection();
+        stats.SetBaseValue(Mdg.Core.Features.Stats.StatType.ChaosResistance, 0f);
+        float life = 1200f;
+        float es = 500f;
+
+        DamageCalculator.ApplyKeystones(stats, new[] { "ChaosInoculation" }, ref life, ref es);
+
+        Assert.Equal(1.0f, life);
+        Assert.Equal(1000.0f, es); // Doubled
+        Assert.Equal(100.0f, stats.GetValue(Mdg.Core.Features.Stats.StatType.ChaosResistance));
+    }
 }

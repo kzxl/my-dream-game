@@ -179,15 +179,23 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
     }
   }
 
-  const physDmg = (rawPhysical || 0) * multiplier;
+  // Curse Debuff Reductions (Blasphemy Aura)
+  const curseVuln = target.curseDebuff && target.curseDebuff.vulnerability ? 1.35 : 1.0;
+  const curseFirePen = target.curseDebuff && target.curseDebuff.flammability ? 35 : 0;
+  const curseColdPen = target.curseDebuff && target.curseDebuff.frostbite ? 35 : 0;
+  const curseLightPen = target.curseDebuff && target.curseDebuff.conductivity ? 35 : 0;
+  const shockBonus = (target.curseDebuff && target.curseDebuff.conductivity) ? 1.5 : 1.0;
+
+  const physDmg = (rawPhysical || 0) * multiplier * curseVuln;
   let physMitigation = 0;
-  if (target.armor > 0 && physDmg > 0) {
-    physMitigation = Math.min(0.9, target.armor / (target.armor + 5 * physDmg));
+  const targetArmor = target.curseDebuff && target.curseDebuff.vulnerability ? target.armor * 0.75 : target.armor;
+  if (targetArmor > 0 && physDmg > 0) {
+    physMitigation = Math.min(0.9, targetArmor / (targetArmor + 5 * physDmg));
   }
   const finalPhys = physDmg * (1 - physMitigation);
-  const finalFire = ((rawFire || 0) * multiplier) * (1 - (target.fireRes || 0) / 100);
-  const finalCold = ((rawCold || 0) * multiplier) * (1 - (target.coldRes || 0) / 100);
-  const finalLight = ((rawLightning || 0) * multiplier) * (1 - (target.lightningRes || target.lightRes || 0) / 100);
+  const finalFire = ((rawFire || 0) * multiplier) * (1 - Math.max(-100, (target.fireRes || 0) - curseFirePen) / 100);
+  const finalCold = ((rawCold || 0) * multiplier) * (1 - Math.max(-100, (target.coldRes || 0) - curseColdPen) / 100);
+  const finalLight = ((rawLightning || 0) * multiplier * shockBonus) * (1 - Math.max(-100, (target.lightningRes || target.lightRes || 0) - curseLightPen) / 100);
   const finalChaos = ((rawChaos || 0) * multiplier) * (1 - (target.chaosRes || 0) / 100);
   let totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
 
@@ -1367,3 +1375,42 @@ export function handlePlayerDefeated() {
     showDefeatModal();
   }, 650);
 }
+
+/**
+ * Updates Blasphemy Curse Auras every frame:
+ * Applies continuous debuffs to all monsters within the 220px aura radius.
+ */
+export function updateCurseAuras(dt) {
+  if (!player.activeCurseAuras) {
+    player.activeCurseAuras = ['vulnerability', 'frostbite'];
+  }
+  if (!player.activeCurseAuras || player.activeCurseAuras.length === 0) return;
+
+  const auraRadius = 220;
+  monsters.forEach(m => {
+    if (!m.isAlive) return;
+    const dist = Math.hypot(m.x - player.x, m.y - player.y);
+    if (dist <= auraRadius) {
+      if (!m.curseDebuff) m.curseDebuff = {};
+      player.activeCurseAuras.forEach(curseId => {
+        m.curseDebuff[curseId] = true;
+      });
+      m.curseTimer = 0.4;
+      if (m.curseDebuff.frostbite && !m.curseSlowed) {
+        m.baseSpeed = m.baseSpeed || m.speed || 80;
+        m.speed = m.baseSpeed * 0.65;
+        m.curseSlowed = true;
+      }
+    } else if (m.curseTimer !== undefined && m.curseTimer > 0) {
+      m.curseTimer -= dt;
+      if (m.curseTimer <= 0) {
+        m.curseDebuff = null;
+        if (m.curseSlowed) {
+          m.speed = m.baseSpeed || (m.speed / 0.65);
+          m.curseSlowed = false;
+        }
+      }
+    }
+  });
+}
+
