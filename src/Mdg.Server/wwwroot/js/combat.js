@@ -1481,6 +1481,12 @@ export function updateCurseAuras(dt) {
         if (m.curseSlowed) {
           m.speed = m.baseSpeed || (m.speed / 0.65);
           m.curseSlowed = false;
+        }
+      }
+    }
+  });
+}
+
 const playerLeechInstances = [];
 
 export function addPlayerLeechInstance(amount, duration = 3.0, isEs = false) {
