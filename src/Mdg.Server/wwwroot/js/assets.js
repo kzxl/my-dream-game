@@ -36,6 +36,10 @@ export const assets = {
   genesisCrystals: null,
   gatheringNodes: null,
   havenMarketProps: null,
+  aethelisTrees: null,
+  aethelisNpcs: null,
+  aethelisMonsters: null,
+  aethelisHeroes: null,
   buildings: new Image(),
   uiMaster: new Image(),
   loaded: 0
@@ -192,6 +196,10 @@ assets.alchemyFlasks = loadTransparentSheet('/assets/alchemy_flasks_pack.jpg' + 
 assets.genesisCrystals = loadTransparentSheet('/assets/genesis_crystals_pack.jpg' + cacheBust, 'black');
 assets.gatheringNodes = loadTransparentSheet('/assets/gathering_nodes_pack.jpg' + cacheBust, 'black');
 assets.havenMarketProps = loadTransparentSheet('/assets/haven_market_props_pack.jpg' + cacheBust, 'black');
+assets.aethelisTrees = loadTransparentSheet('/assets/aethelis_trees_master_pack.jpg' + cacheBust, 'black');
+assets.aethelisNpcs = loadTransparentSheet('/assets/aethelis_npcs_pack.jpg' + cacheBust, 'white');
+assets.aethelisMonsters = loadTransparentSheet('/assets/aethelis_monsters_pack.jpg' + cacheBust, 'black');
+assets.aethelisHeroes = loadTransparentSheet('/assets/aethelis_heroes_classes_pack.jpg' + cacheBust, 'white');
 
 // Buildings & UI
 assets.buildings.onload = () => assets.loaded++;

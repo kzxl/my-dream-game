@@ -464,44 +464,84 @@ export function drawPlayerClean(ctx) {
   ctx.ellipse(0, 20, 18, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const img = player.gender === 'Female' ? assets.femaleHero : assets.maleHero;
-  if (img.complete && img.naturalWidth > 0) {
-    const frameW = img.naturalWidth / 4;
-    const frameH = img.naturalHeight / 4;
+  // 1. High-Fidelity Aethelis Hero Spritesheet (4x2 Keyed Transparent Sheet)
+  const aHeroImg = assets.aethelisHeroes;
+  let heroRendered = false;
+  if (aHeroImg && aHeroImg.complete && (aHeroImg.naturalWidth || aHeroImg.width) > 0) {
+    const totalW = aHeroImg.naturalWidth || aHeroImg.width;
+    const totalH = aHeroImg.naturalHeight || aHeroImg.height;
+    const cellW = totalW / 4;
+    const cellH = totalH / 2;
 
-    let row = 0;
-    let col = player.isMoving ? (player.animFrame % 3) : 0;
-    let flipX = false;
-
-    if (player.facing === 'down') row = 0;
-    else if (player.facing === 'up') row = 1;
-    else if (player.facing === 'right') row = 2;
-    else if (player.facing === 'left') {
-      row = 2;
-      flipX = true;
+    const isFemale = player.gender === 'Female';
+    let col = 0, row = 0;
+    if (player.classSpec === 'Vanguard') {
+      col = isFemale ? 3 : 2; row = 0;
+    } else if (player.classSpec === 'Arcanist') {
+      col = isFemale ? 1 : 0; row = 1;
+    } else if (player.classSpec === 'ShadowRogue') {
+      col = isFemale ? 3 : 2; row = 1;
+    } else {
+      col = isFemale ? 1 : 0; row = 0; // Novice
     }
 
-    const sx = col * frameW;
-    const sy = row * frameH;
-    const destW = 56;
-    const destH = 56;
+    const flipX = player.facing === 'left';
+    const destW = 58;
+    const destH = 68;
+    const bob = player.isMoving ? Math.sin(performance.now() / 120) * 2 : 0;
 
-    if (player.isStealthed) {
-      ctx.globalAlpha = 0.55;
-    }
+    if (player.isStealthed) ctx.globalAlpha = 0.55;
 
     if (flipX) {
       ctx.save();
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      ctx.drawImage(aHeroImg, col * cellW, row * cellH, cellW, cellH, -destW / 2, -destH + 20 + bob, destW, destH);
       ctx.restore();
     } else {
-      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      ctx.drawImage(aHeroImg, col * cellW, row * cellH, cellW, cellH, -destW / 2, -destH + 20 + bob, destW, destH);
     }
     ctx.globalAlpha = 1.0;
-  } else {
-    ctx.fillStyle = '#2b5c8f';
-    ctx.fillRect(-12, -12, 24, 24);
+    heroRendered = true;
+  }
+
+  if (!heroRendered) {
+    const img = player.gender === 'Female' ? assets.femaleHero : assets.maleHero;
+    if (img.complete && img.naturalWidth > 0) {
+      const frameW = img.naturalWidth / 4;
+      const frameH = img.naturalHeight / 4;
+
+      let row = 0;
+      let col = player.isMoving ? (player.animFrame % 3) : 0;
+      let flipX = false;
+
+      if (player.facing === 'down') row = 0;
+      else if (player.facing === 'up') row = 1;
+      else if (player.facing === 'right') row = 2;
+      else if (player.facing === 'left') {
+        row = 2;
+        flipX = true;
+      }
+
+      const sx = col * frameW;
+      const sy = row * frameH;
+      const destW = 56;
+      const destH = 56;
+
+      if (player.isStealthed) ctx.globalAlpha = 0.55;
+
+      if (flipX) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      }
+      ctx.globalAlpha = 1.0;
+    } else {
+      ctx.fillStyle = '#2b5c8f';
+      ctx.fillRect(-12, -12, 24, 24);
+    }
   }
 
   const titleColor = player.isDead ? '#e06c75' : (player.classSpec === 'Vanguard' ? '#e5c07b' : (player.classSpec === 'Arcanist' ? '#61afef' : (player.classSpec === 'ShadowRogue' ? '#c678dd' : '#ffffff')));
@@ -643,39 +683,76 @@ export function drawOtherPlayer(ctx, p) {
   ctx.fill();
 
   // Sprite
-  const img = (p.gender === 'Female' && assets.femaleHero && assets.femaleHero.complete && assets.femaleHero.naturalWidth > 0)
-    ? assets.femaleHero
-    : assets.maleHero;
-  if (img && img.complete && img.naturalWidth > 0) {
-    const frameW = img.naturalWidth / 4;
-    const frameH = img.naturalHeight / 4;
-    let row = 0;
-    let flipX = false;
+  const aHeroImg = assets.aethelisHeroes;
+  let peerRendered = false;
+  if (aHeroImg && aHeroImg.complete && (aHeroImg.naturalWidth || aHeroImg.width) > 0) {
+    const totalW = aHeroImg.naturalWidth || aHeroImg.width;
+    const totalH = aHeroImg.naturalHeight || aHeroImg.height;
+    const cellW = totalW / 4;
+    const cellH = totalH / 2;
 
-    if (p.facing === 'down') row = 0;
-    else if (p.facing === 'up') row = 1;
-    else if (p.facing === 'right') row = 2;
-    else if (p.facing === 'left') {
-      row = 2;
-      flipX = true;
+    const isFemale = p.gender === 'Female';
+    let col = 0, row = 0;
+    if (p.classSpec === 'Vanguard') {
+      col = isFemale ? 3 : 2; row = 0;
+    } else if (p.classSpec === 'Arcanist') {
+      col = isFemale ? 1 : 0; row = 1;
+    } else if (p.classSpec === 'ShadowRogue') {
+      col = isFemale ? 3 : 2; row = 1;
+    } else {
+      col = isFemale ? 1 : 0; row = 0; // Novice
     }
 
-    const sx = 0;
-    const sy = row * frameH;
-    const destW = 56;
-    const destH = 56;
+    const flipX = p.facing === 'left';
+    const destW = 58;
+    const destH = 68;
 
     if (flipX) {
       ctx.save();
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      ctx.drawImage(aHeroImg, col * cellW, row * cellH, cellW, cellH, -destW / 2, -destH + 20, destW, destH);
       ctx.restore();
     } else {
-      ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      ctx.drawImage(aHeroImg, col * cellW, row * cellH, cellW, cellH, -destW / 2, -destH + 20, destW, destH);
     }
-  } else {
-    ctx.fillStyle = '#61afef';
-    ctx.fillRect(-12, -12, 24, 24);
+    peerRendered = true;
+  }
+
+  if (!peerRendered) {
+    const img = (p.gender === 'Female' && assets.femaleHero && assets.femaleHero.complete && assets.femaleHero.naturalWidth > 0)
+      ? assets.femaleHero
+      : assets.maleHero;
+    if (img && img.complete && img.naturalWidth > 0) {
+      const frameW = img.naturalWidth / 4;
+      const frameH = img.naturalHeight / 4;
+      let row = 0;
+      let flipX = false;
+
+      if (p.facing === 'down') row = 0;
+      else if (p.facing === 'up') row = 1;
+      else if (p.facing === 'right') row = 2;
+      else if (p.facing === 'left') {
+        row = 2;
+        flipX = true;
+      }
+
+      const sx = 0;
+      const sy = row * frameH;
+      const destW = 56;
+      const destH = 56;
+
+      if (flipX) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, sx, sy, frameW, frameH, -destW / 2, -destH + 20, destW, destH);
+      }
+    } else {
+      ctx.fillStyle = '#61afef';
+      ctx.fillRect(-12, -12, 24, 24);
+    }
   }
 
   // Nameplate & Class tag
@@ -775,6 +852,29 @@ export function drawMonsterClean(ctx, m) {
 
     ctx.drawImage(bImg, sx, sy, colW, rowH, -dw / 2, -dh + 24 * scale + hoverY, dw, dh);
     ctx.restore();
+  } else if (assets.aethelisMonsters && assets.aethelisMonsters.complete && (assets.aethelisMonsters.naturalWidth || assets.aethelisMonsters.width) > 0 &&
+             (m.type === 'cinder_imp' || m.type === 'fire_imp' || m.type === 'void_wraith' || m.type === 'shadow_spectre' ||
+              m.type === 'skeleton_warrior' || m.type === 'undead_knight' || m.type === 'frost_wolf' || m.type === 'glacial_hound' ||
+              m.type === 'magma_scorpion' || m.type === 'goblin_raider' || m.type === 'venom_spider' || m.type === 'abyssal_knight' || m.type === 'dreadknight')) {
+    const aMonImg = assets.aethelisMonsters;
+    const totalW = aMonImg.naturalWidth || aMonImg.width;
+    const totalH = aMonImg.naturalHeight || aMonImg.height;
+    const cellW = totalW / 4;
+    const cellH = totalH / 2;
+
+    let col = 0, row = 0;
+    if (m.type === 'cinder_imp' || m.type === 'fire_imp') { col = 0; row = 0; }
+    else if (m.type === 'void_wraith' || m.type === 'shadow_spectre') { col = 1; row = 0; }
+    else if (m.type === 'skeleton_warrior' || m.type === 'undead_knight') { col = 2; row = 0; }
+    else if (m.type === 'frost_wolf' || m.type === 'glacial_hound') { col = 3; row = 0; }
+    else if (m.type === 'magma_scorpion') { col = 0; row = 1; }
+    else if (m.type === 'goblin_raider') { col = 1; row = 1; }
+    else if (m.type === 'venom_spider') { col = 2; row = 1; }
+    else { col = 3; row = 1; } // abyssal_knight
+
+    const dw = 62 * scale;
+    const dh = 62 * scale;
+    ctx.drawImage(aMonImg, col * cellW, row * cellH, cellW, cellH, -dw / 2, -dh + 18 * scale, dw, dh);
   } else if (assets.voidMonsters && assets.voidMonsters.complete && assets.voidMonsters.naturalWidth > 0 &&
              (m.type === 'void_spectre' || m.type === 'chaos_eye' || m.type === 'tentacle_fiend' || m.type === 'horror_stalker')) {
     const img = assets.voidMonsters;
@@ -1025,6 +1125,83 @@ export function drawPropClean(ctx, p) {
         col * cW, row * cH, cW, cH,
         offX + sway, offY, dw, dh
       );
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 0. Check Master High-Fidelity Aethelis Trees Pack (4x3 High-Res Keyed Spritesheet)
+  const treeImg = assets.aethelisTrees;
+  if (treeImg && treeImg.complete && (treeImg.naturalWidth || treeImg.width) > 0) {
+    const tW = treeImg.naturalWidth || treeImg.width;
+    const tH = treeImg.naturalHeight || treeImg.height;
+    const cellW = tW / 4;
+    const cellH = tH / 3;
+    let col = -1, row = -1;
+    let dw = 115, dh = 115, offX = -58, offY = -100;
+    let isAethelisTree = true;
+
+    if (p.type === 'oak_tree' || p.type === 'tree' || p.type === 'ancient_oak') {
+      col = 0; row = 0; dw = 125; dh = 125; offX = -62; offY = -108;
+    } else if (p.type === 'pine_tree' || p.type === 'snow_pine') {
+      col = 1; row = 0; dw = 110; dh = 125; offX = -55; offY = -108;
+    } else if (p.type === 'aether_tree' || p.type === 'mystic_tree') {
+      col = 2; row = 0; dw = 120; dh = 120; offX = -60; offY = -104;
+    } else if (p.type === 'volcanic_tree' || p.type === 'basalt_tree') {
+      col = 3; row = 0; dw = 120; dh = 125; offX = -60; offY = -108;
+    } else if (p.type === 'autumn_tree' || p.type === 'maple_tree') {
+      col = 0; row = 1; dw = 120; dh = 120; offX = -60; offY = -104;
+    } else if (p.type === 'giant_mushroom' || p.type === 'mushroom_tree') {
+      col = 1; row = 1; dw = 115; dh = 125; offX = -58; offY = -108;
+    } else if (p.type === 'willow_tree' || p.type === 'weeping_willow') {
+      col = 2; row = 1; dw = 120; dh = 125; offX = -60; offY = -108;
+    } else if (p.type === 'cherry_tree' || p.type === 'sakura_tree') {
+      col = 3; row = 2; dw = 120; dh = 120; offX = -60; offY = -104;
+    } else {
+      isAethelisTree = false;
+    }
+
+    if (isAethelisTree && col !== -1 && row !== -1) {
+      const sway = Math.sin((performance.now() / 900) + p.x * 0.05) * 1.5;
+      ctx.drawImage(treeImg, col * cellW, row * cellH, cellW, cellH, offX + sway, offY, dw, dh);
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 0.5. Check Haven Trade Market & Treasure Props (4x2 Keyed Spritesheet)
+  const mktImg = assets.havenMarketProps;
+  if (mktImg && mktImg.complete && (mktImg.naturalWidth || mktImg.width) > 0) {
+    const mW = mktImg.naturalWidth || mktImg.width;
+    const mH = mktImg.naturalHeight || mktImg.height;
+    const cellW = mW / 4;
+    const cellH = mH / 2;
+    let col = -1, row = -1;
+    let dw = 56, dh = 56, offX = -28, offY = -46;
+    let isMkt = true;
+
+    if (p.type === 'market_stall' || p.type === 'merchant_cart' || p.type === 'haven_stall') {
+      col = 0; row = 0; dw = 80; dh = 80; offX = -40; offY = -70;
+    } else if (p.type === 'chest_gold' || p.type === 'treasure_chest') {
+      col = 1; row = 0; dw = 58; dh = 58; offX = -29; offY = -48;
+    } else if (p.type === 'iron_strongbox' || p.type === 'chest_crystal') {
+      col = 2; row = 0; dw = 54; dh = 54; offX = -27; offY = -44;
+    } else if (p.type === 'gold_pile' || p.type === 'gold_stash') {
+      col = 3; row = 0; dw = 60; dh = 52; offX = -30; offY = -40;
+    } else if (p.type === 'trade_board' || p.type === 'bulletin_board') {
+      col = 0; row = 1; dw = 68; dh = 68; offX = -34; offY = -58;
+    } else if (p.type === 'merchant_scale' || p.type === 'justice_scale') {
+      col = 1; row = 1; dw = 56; dh = 56; offX = -28; offY = -48;
+    } else if (p.type === 'scroll_stack' || p.type === 'lore_scrolls') {
+      col = 2; row = 1; dw = 52; dh = 52; offX = -26; offY = -42;
+    } else if (p.type === 'sealed_crate' || p.type === 'supply_crate') {
+      col = 3; row = 1; dw = 54; dh = 54; offX = -27; offY = -46;
+    } else {
+      isMkt = false;
+    }
+
+    if (isMkt && col !== -1 && row !== -1) {
+      ctx.drawImage(mktImg, col * cellW, row * cellH, cellW, cellH, offX, offY, dw, dh);
       ctx.restore();
       return;
     }
@@ -1286,20 +1463,52 @@ export function drawNpc(ctx, n) {
   ctx.ellipse(0, 18, 22, 9, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  const img = assets.npcs;
-  if (img.complete && img.naturalWidth > 0) {
+  // 1. High-Fidelity Aethelis NPCs Spritesheet (4x2 Keyed Transparent Sheet)
+  const aNpcImg = assets.aethelisNpcs;
+  if (aNpcImg && aNpcImg.complete && (aNpcImg.naturalWidth || aNpcImg.width) > 0) {
+    const totalW = aNpcImg.naturalWidth || aNpcImg.width;
+    const totalH = aNpcImg.naturalHeight || aNpcImg.height;
+    const cellW = totalW / 4;
+    const cellH = totalH / 2;
+
+    let col = 0, row = 0;
+    const nameLower = (n.name + ' ' + (n.title || '')).toLowerCase();
+
+    if (nameLower.includes('smith') || nameLower.includes('doran') || nameLower.includes('lisbeth')) {
+      col = 0; row = 0; // Blacksmith Lisbeth
+    } else if (nameLower.includes('merchant') || nameLower.includes('trader') || nameLower.includes('shop')) {
+      col = 1; row = 0; // Wealthy Haven Merchant
+    } else if (nameLower.includes('elder') || nameLower.includes('verin') || nameLower.includes('sage')) {
+      col = 2; row = 0; // Village Elder Verin
+    } else if (nameLower.includes('alchemist') || nameLower.includes('elina') || nameLower.includes('potion')) {
+      col = 3; row = 0; // Alchemist Elina
+    } else if (nameLower.includes('hunter') || nameLower.includes('captain') || nameLower.includes('valen') || nameLower.includes('beast')) {
+      col = 0; row = 1; // Hunter Captain
+    } else if (nameLower.includes('lore') || nameLower.includes('astromancer') || nameLower.includes('lyra') || nameLower.includes('scholar')) {
+      col = 1; row = 1; // Lorekeeper
+    } else if (nameLower.includes('guard') || nameLower.includes('kaelen') || nameLower.includes('vault') || nameLower.includes('stash')) {
+      col = 2; row = 1; // Town Guard / Vault Keeper
+    } else {
+      col = 3; row = 1; // Priestess of Light / Default
+    }
+
+    const dw = 58;
+    const dh = 68;
+    ctx.drawImage(aNpcImg, col * cellW, row * cellH, cellW, cellH, -dw / 2, -dh + 18, dw, dh);
+  } else if (assets.npcs && assets.npcs.complete && assets.npcs.naturalWidth > 0) {
+    const img = assets.npcs;
     const halfW = img.naturalWidth / 2;
     const halfH = img.naturalHeight / 2;
 
     let sx = 0, sy = 0;
     if (n.name.includes('Doran') || n.name.includes('Blacksmith')) {
-      sx = halfW; sy = 0; // Top-Right (Smith)
+      sx = halfW; sy = 0;
     } else if (n.name.includes('Kaelen') || n.name.includes('Vault') || n.name.includes('Stash')) {
-      sx = 0; sy = halfH; // Bottom-Left (Vault Keeper)
+      sx = 0; sy = halfH;
     } else if (n.name.includes('Lyra') || n.name.includes('Astromancer') || n.name.includes('Valen')) {
-      sx = halfW; sy = halfH; // Bottom-Right (Astromancer/Scout)
+      sx = halfW; sy = halfH;
     } else {
-      sx = 0; sy = 0; // Top-Left (Elder Sage / Beastmaster)
+      sx = 0; sy = 0;
     }
 
     const dw = 60;
