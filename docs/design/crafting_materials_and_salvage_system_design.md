@@ -26,12 +26,14 @@ graph TD
 * **Ô Lưới ARPG Chuẩn ($56\times 56\text{px}$):** Thiết kế đồng bộ phong cách hòm đồ ARPG cao cấp với viền màu phẩm chất phát quang (Rarity Glow) và huy hiệu số lượng (Stack Badges).
 * **Tự Động Ẩn Nguyên Liệu Bằng 0 (Auto-Hide Zero Quantity):** Kho nguyên liệu (Materials Vault) và bảng chi phí chế tác tự động ẩn các loại tài nguyên chưa sở hữu ($count \le 0$), loại bỏ cảm giác rối mắt.
 * **Rich Floating Tooltips:** Rê chuột lên bất kỳ ô nguyên liệu/trang bị nào đều mở bảng thông tin động với độ hiếm, xuất xứ và công dụng chi tiết.
-* **5 Phân Hệ Tabs Chức Năng:**
-  1. 🔨 **Relic Anvil:** Khóa Affix (Metamods Prefix/Suffix Lock), Reroll Socket/Links, Bench Affix và Chaos Slam.
-  2. ♻️ **Salvage Anvil:** Phân rã trang bị rác thành nguyên liệu thô theo độ hiếm.
-  3. 🗡️ **Base Forging:** Lò luyện kim đúc phôi trang bị theo bản vẽ.
-  4. 🎒 **Materials Vault:** Kho lưu trữ 13 loại tài nguyên vô hạn stack.
-  5. 🛠️ **Professions:** Quản lý cấp độ và bậc mở khóa của 3 nghề thu thập.
+* **7 Phân Hệ Tabs Chức Năng:**
+  1. 🏭 **Lò Luyện (Smelting Kiln):** Nung Cát Thạch Anh thành Vỏ Bình Thủy Tinh Rỗng, Bình Thạch Anh Cường Hóa, Thỏi Sắt, Thỏi Mithril và Da Thuộc.
+  2. ⚗️ **Giả Kim (Alchemy Lab):** Pha chế các loại Flask hồi phục sinh lực, năng lượng và thần dược tăng tốc/hộ thể từ Dược liệu + Vỏ Bình + Nước Suối Aether.
+  3. 🗡️ **Rèn Phôi (Base Forging):** Lò rèn đúc phôi vũ khí & giáp trụ từ Thỏi Kim Loại Tinh Luyện, Da Thuộc và Gỗ Lõi Cổ Thụ.
+  4. 🔨 **Cường Hóa (Relic Anvil):** Khóa Affix (Metamods Prefix/Suffix Lock), Reroll Socket/Links, Bench Affix và Chaos Slam.
+  5. ♻️ **Phân Rã (Salvage Anvil):** Phân rã trang bị rác thành nguyên liệu thỏi tinh luyện và gỗ lõi theo cấu trúc linh kiện thực tế.
+  6. 🎒 **Kho Vật Liệu (Materials Vault):** Kho lưu trữ 18+ loại tài nguyên và vỏ bình vô hạn stack.
+  7. 🛠️ **Nghề Nghiệp (Professions):** Quản lý cấp độ và bậc mở khóa của 3 nghề thu thập.
 
 ---
 
@@ -102,4 +104,39 @@ graph LR
 * **4 Chế Độ Lọc:** `Tất Cả` | `🔓 Đã Học` | `🔒 Chưa Học` | `✨ Đủ NL`.
 * **Công thức bị khóa:** Hiển thị mờ (`recipe-locked`), icon `🔒`, dòng chữ nguồn rơi `🔒 Rơi từ: [Tên Quái/Boss]`.
 * **Khung Xem Trước (Preview):** Banner đỏ cảnh báo **BẢN VẼ BÍ TRUYỀN CHƯA MỞ KHÓA** kèm gợi ý vị trí địa lý săn quái, nút Đúc bị vô hiệu hóa `🔒 Yêu Cầu Học Bản Vẽ Từ Quái Vật`.
+
+---
+
+## 6. Lò Nung Thủy Tinh (Smelting Kiln) & Bàn Giả Kim (Alchemy Lab)
+
+### 6.1. Quy Trình Nung Thủy Tinh & Luyện Kim (Smelting Kiln)
+| Công Thức | Nguyên Liệu Nạp | Thành Phẩm | Cấp Độ | Ứng Dụng |
+| :--- | :--- | :--- | :---: | :--- |
+| **Bình Thủy Tinh Rỗng** | $3\times$ Cát Thạch Anh (`mat_silica_sand`) | $1\times$ `item_empty_vial` | Lv. 1 | Vỏ bình chứa cho thuốc hồi máu, mana, tốc độ |
+| **Bình Thạch Anh Cường Hóa** | $1\times$ `item_empty_vial` + $2\times$ Tinh Thể Aether (`mat_aether_crystal`) | $1\times$ `item_crystal_flask` | Lv. 25 | Vỏ bình chịu áp suất cao cho thần dược T3 |
+| **Thỏi Sắt Tinh Luyện** | $2\times$ Quặng Sắt Thô (`mat_iron_ore`) | $1\times$ `mat_iron_ingot` | Lv. 1 | Rèn kiếm sắt, giáp sắt và dược dịch Granite |
+| **Thỏi Mithril Băng Ngân** | $2\times$ Quặng Mithril (`mat_mithril_chunk`) | $1\times$ `mat_mithril_ingot` | Lv. 15 | Rèn ma kiếm, giáp xích và nhẫn ma pháp |
+| **Da Thuộc Bền Bỉ** | $2\times$ Da Thú Tươi (`mat_beast_leather`) | $1\times$ `mat_tanned_leather` | Lv. 1 | Gia cố giáp da, quấn chuôi kiếm và dược dịch Granite |
+
+### 6.2. Danh Mục Pha Chế Bàn Giả Kim (Alchemy Lab)
+| Bình Dược Phẩm | Vỏ Bình Yêu Cầu | Dung Môi & Dược Liệu | Hiệu Năng & Chỉ Số |
+| :--- | :--- | :--- | :--- |
+| **Lesser Life Flask (T1)** | $1\times$ `item_empty_vial` | $1\times$ Nước Suối Aether + $3\times$ Huyết Thảo | Hồi 500 Máu trong 4.0s (60 Max Charges, 20/lần) |
+| **Lesser Mana Flask (T1)** | $1\times$ `item_empty_vial` | $1\times$ Nước Suối Aether + $3\times$ Hoa Ma Lực | Hồi 300 Mana & 180 ES trong 4.0s (60 Max Charges, 20/lần) |
+| **Quicksilver Speed Flask (T2)** | $1\times$ `item_empty_vial` | $2\times$ Nước Suối Aether + $5\times$ Lá Phong Lôi | $+45\%$ Tốc độ chạy & $+25\%$ Tốc độ đánh trong 5.0s |
+| **Granite Fortitude Flask (T2)** | $1\times$ `item_empty_vial` | $2\times$ Thỏi Sắt + $2\times$ Da Thuộc | $+1200$ Giáp & $+25\%$ Kháng Toàn Phần trong 5.0s |
+| **Divine Life Flask of Staunching (T3)** | $1\times$ `item_crystal_flask` | $3\times$ Nước Suối Aether + $8\times$ Huyết Thảo + $1\times$ Lõi Băng | Hồi 1200 Máu + Miễn Nhiễm & Xóa Chảy Máu |
+| **Arcane Mana Flask of Warding (T3)** | $1\times$ `item_crystal_flask` | $3\times$ Nước Suối Aether + $8\times$ Hoa Ma Lực + $1\times$ Tinh Thể Aether | Hồi 800 Mana & 450 ES + Miễn Nhiễm Nguyền Rủa |
+
+---
+
+## 7. Hệ Thống Độ Thấu Suốt Nguyên Liệu (Material Insight Mastery)
+
+Khi thu thập hoặc tinh luyện nguyên liệu, người chơi tích lũy điểm **Thấu Suốt (Material Insight EXP)** cho từng loại vật liệu:
+* **Tier 1: Tập Sự (Novice - 0 EXP):** Mở khóa thông tin nguồn gốc và danh mục công thức.
+* **Tier 2: Tinh Thông (Adept - 15 EXP):** $+10\%$ cơ hội nhận thêm sản phẩm phụ khi thu thập.
+* **Tier 3: Chuyên Gia (Expert - 50 EXP):** $+15\%$ sản lượng khai thác từ các nốt tài nguyên tự nhiên.
+* **Tier 4: Bậc Thầy (Master - 120 EXP):** Giảm $-10\%$ hao phí nguyên liệu khi rèn đúc tại Genesis Forge.
+* **Tier 5: Thánh Truyền (Grandmaster - 300 EXP):** $+5\%$ tỷ lệ kích hoạt dòng thuộc tính cao cấp (High-Tier Affix) khi sử dụng nguyên liệu này.
+
 
