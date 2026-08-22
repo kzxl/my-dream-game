@@ -32,6 +32,10 @@ export const assets = {
   shrinesMonoliths: new Image(),
   aethelRunes: new Image(),
   awakeningEssences: new Image(),
+  alchemyFlasks: null,
+  genesisCrystals: null,
+  gatheringNodes: null,
+  havenMarketProps: null,
   buildings: new Image(),
   uiMaster: new Image(),
   loaded: 0
@@ -184,6 +188,10 @@ assets.aethelisFoliage = loadTransparentSheet('/assets/aethelis_foliage_flora_pa
 assets.shrinesMonoliths = loadTransparentSheet('/assets/shrines_monoliths_pack.jpg' + cacheBust, 'black');
 assets.aethelRunes = loadTransparentSheet('/assets/aethel_runes_pack.jpg' + cacheBust, 'black');
 assets.awakeningEssences = loadTransparentSheet('/assets/awakening_essences_pack.jpg' + cacheBust, 'black');
+assets.alchemyFlasks = loadTransparentSheet('/assets/alchemy_flasks_pack.jpg' + cacheBust, 'black');
+assets.genesisCrystals = loadTransparentSheet('/assets/genesis_crystals_pack.jpg' + cacheBust, 'black');
+assets.gatheringNodes = loadTransparentSheet('/assets/gathering_nodes_pack.jpg' + cacheBust, 'black');
+assets.havenMarketProps = loadTransparentSheet('/assets/haven_market_props_pack.jpg' + cacheBust, 'black');
 
 // Buildings & UI
 assets.buildings.onload = () => assets.loaded++;
@@ -199,7 +207,16 @@ export function drawItemSpriteToCanvas(targetCanvas, spriteInfo) {
   tCtx.imageSmoothingEnabled = false;
 
   let targetImg = null;
-  if (spriteInfo?.sheet === 'essences' || spriteInfo?.isEssence) {
+  if (spriteInfo?.sheet === 'flasks' || spriteInfo?.isFlask) {
+    const img = assets.alchemyFlasks;
+    targetImg = (img && img.complete && (img.naturalWidth || img.width) > 0) ? img : null;
+  } else if (spriteInfo?.sheet === 'crystals' || spriteInfo?.isCrystal) {
+    const img = assets.genesisCrystals;
+    targetImg = (img && img.complete && (img.naturalWidth || img.width) > 0) ? img : null;
+  } else if (spriteInfo?.sheet === 'market') {
+    const img = assets.havenMarketProps;
+    targetImg = (img && img.complete && (img.naturalWidth || img.width) > 0) ? img : null;
+  } else if (spriteInfo?.sheet === 'essences' || spriteInfo?.isEssence) {
     const img = assets.awakeningEssences;
     targetImg = (img && img.complete && (img.naturalWidth || img.width) > 0) ? img : null;
   } else if (spriteInfo?.sheet === 'runes' || spriteInfo?.isRune) {

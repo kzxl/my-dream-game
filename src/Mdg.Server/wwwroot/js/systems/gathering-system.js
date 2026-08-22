@@ -6,6 +6,7 @@
  */
 
 import { player, particles } from '../state.js';
+import { assets } from '../assets.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
@@ -457,11 +458,33 @@ export function renderGatheringNodes(ctx) {
     ctx.arc(0, 0, 26, 0, Math.PI * 2);
     ctx.fill();
 
-    // Icon & Mineral Structure
-    ctx.font = '24px "Segoe UI Emoji", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(node.icon, 0, -10);
+    // Render High-Quality Sprite from assets.gatheringNodes if available
+    let renderedSprite = false;
+    if (assets.gatheringNodes && assets.gatheringNodes.complete && (assets.gatheringNodes.naturalWidth || assets.gatheringNodes.width) > 0) {
+      const sw = (assets.gatheringNodes.naturalWidth || assets.gatheringNodes.width) / 4;
+      const sh = (assets.gatheringNodes.naturalHeight || assets.gatheringNodes.height) / 4;
+      
+      let col = 0, row = 0;
+      if (node.id === 'node_iron') { col = 2; row = 0; }
+      else if (node.id === 'node_gold') { col = 1; row = 0; }
+      else if (node.id === 'node_mithril') { col = 0; row = 0; }
+      else if (node.id === 'node_adamantite' || node.id === 'node_voidstone') { col = 3; row = 0; }
+      else if (node.id === 'node_blood_herb') { col = 2; row = 2; }
+      else if (node.id === 'node_mana_bloom' || node.id === 'node_aether_water') { col = 3; row = 2; }
+      else if (node.id === 'node_wind_leaf') { col = 1; row = 2; }
+      else { col = 0; row = 2; } // sunblossom / default
+
+      ctx.drawImage(assets.gatheringNodes, col * sw, row * sh, sw, sh, -24, -32, 48, 48);
+      renderedSprite = true;
+    }
+
+    if (!renderedSprite) {
+      // Fallback Icon
+      ctx.font = '24px "Segoe UI Emoji", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(node.icon, 0, -10);
+    }
 
     // Prompt & Nameplate
     const dist = Math.hypot(player.x - node.x, player.y - node.y);
