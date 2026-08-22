@@ -163,9 +163,10 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   // Lore bonus extra damage against familiar monster species
   multiplier *= (1.0 + lore.bonusDmg) * blockMultiplier;
 
-  // Shock Ailment (+30% damage multiplier)
+  // Shock Ailment (+10% to +50% scaled damage multiplier)
   if (target.shockTimer > 0) {
-    multiplier *= 1.30;
+    const shockScale = Math.min(1.50, Math.max(1.10, target.shockMultiplier || 1.30));
+    multiplier *= shockScale;
   }
 
   // Boss & Elite Stagger Resonance Window (+50% Damage)
@@ -188,7 +189,101 @@ export function dealDamage(target, rawPhysical, rawFire, rawCold, rawLightning, 
   const finalCold = ((rawCold || 0) * multiplier) * (1 - (target.coldRes || 0) / 100);
   const finalLight = ((rawLightning || 0) * multiplier) * (1 - (target.lightningRes || target.lightRes || 0) / 100);
   const finalChaos = ((rawChaos || 0) * multiplier) * (1 - (target.chaosRes || 0) / 100);
-  const totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
+  let totalDamage = Math.max(1, Math.round(finalPhys + finalFire + finalCold + finalLight + finalChaos));
+
+  // Monster Affix: Aether Ward (absorbs 75% damage until broken, then stuns 1.5s)
+  if (target.affixes && target.affixes.includes('aether_ward')) {
+    if (target.aetherShield === undefined) {
+      target.aetherShield = Math.round(target.maxLife * 0.45);
+      target.maxAetherShield = target.aetherShield;
+    }
+    if (target.aetherShield > 0) {
+      const absorbed = Math.min(target.aetherShield, Math.round(totalDamage * 0.75));
+      target.aetherShield -= absorbed;
+      totalDamage -= absorbed;
+      spawnDamageNumber(target.x, target.y - 45, `🛡️ WARD -${absorbed}`, false, '#00f2fe');
+      if (target.aetherShield <= 0) {
+        applyFreeze(target, 1.5);
+        spawnDamageNumber(target.x, target.y - 65, '💥 WARD BROKEN! (STUNNED 1.5s)', true, '#00f2fe');
+        AudioEngine.playTone?.(360, 'sawtooth', 0.25, 0.15);
+      }
+    }
+  }
+
+  // Reactive Monster Affixes (Magma Conduit & Static Discharge)
+  if (!isProc && target.isAlive && target.affixes) {
+    if (target.affixes.includes('magma_conduit') && Math.random() < 0.35) {
+      spawnDamageNumber(target.x, target.y - 50, '🔥 MAGMA ERUPTION!', false, '#ff5722');
+      for (let i = 0; i < 3; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        projectiles.push({
+          x: target.x,
+          y: target.y,
+          vx: Math.cos(ang) * 230,
+          vy: Math.sin(ang) * 230,
+          type: 'fire',
+          damage: 22,
+          radius: 12,
+          life: 0.7,
+          fromMonster: true
+        });
+      }
+    }
+    if (target.affixes.includes('static_discharge') && Math.random() < 0.35) {
+      spawnDamageNumber(target.x, target.y - 50, '⚡ STATIC SPARK!', false, '#ffd700');
+      for (let i = 0; i < 3; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        projectiles.push({
+          x: target.x,
+          y: target.y,
+          vx: Math.cos(ang) * 280,
+          vy: Math.sin(ang) * 280,
+          type: 'lightning',
+          damage: 20,
+          radius: 10,
+          life: 0.6,
+          fromMonster: true
+        });
+      }
+    }
+  }
+
+  // Boss 3-Phase State Machine Transitions
+  if ((target.type === 'boss' || target.isBoss) && target.maxLife > 0) {
+    const hpPercent = ((target.life - totalDamage) / target.maxLife) * 100;
+    // Phase 2: Add Waves & Arena Shift (< 65% HP)
+    if (hpPercent <= 65 && !target.phase2Triggered) {
+      target.phase2Triggered = true;
+      target.invulnerableTimer = 2.0;
+      spawnDamageNumber(target.x, target.y - 85, '⚠️ PHASE 2: MINION REINFORCEMENTS!', true, '#ffd700');
+      AudioEngine.playTone?.(480, 'square', 0.4, 0.25);
+      for (let i = 0; i < 4; i++) {
+        const spawnAngle = (i / 4) * Math.PI * 2;
+        monsters.push({
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'skeleton_warrior',
+          name: 'Void Minion',
+          x: target.x + Math.cos(spawnAngle) * 90,
+          y: target.y + Math.sin(spawnAngle) * 90,
+          maxLife: 140,
+          life: 140,
+          speed: 95,
+          attackDmg: 22,
+          isAlive: true,
+          rarity: 'normal'
+        });
+      }
+    }
+    // Phase 3: Primordial Enrage (< 25% HP)
+    if (hpPercent <= 25 && !target.phase3Triggered) {
+      target.phase3Triggered = true;
+      target.isEnraged = true;
+      target.speed = (target.speed || 80) * 1.40;
+      target.attackCooldown = Math.max(0.35, (target.attackCooldown || 1.2) * 0.55);
+      spawnDamageNumber(target.x, target.y - 95, '🔥 PHASE 3: PRIMORDIAL ENRAGE (+40% SPEED, BULLET HELL)!', true, '#ff3d00');
+      AudioEngine.playTone?.(220, 'sawtooth', 0.6, 0.4);
+    }
+  }
 
   // Accumulate Stagger Points on Bosses
   if (isBossOrElite && !target.isStaggered) {
@@ -607,11 +702,12 @@ export function updateTargetAilments(target, dt) {
   // 3. Bleed Tick (Physical DoT - 3x if target is moving)
   if (target.bleedTimer > 0) {
     target.bleedTimer -= dt;
-    const isMoving = target.speed > 0 && target.state !== 'idle';
-    const dot = Math.max(1, Math.round(target.bleedDmg * (isMoving ? 3 : 1) * dt));
+    const isMoving = (Math.abs(target.vx || 0) > 6 || Math.abs(target.vy || 0) > 6) || (target.speed > 0 && target.state !== 'idle');
+    const bleedScale = isMoving ? 3.0 : 1.0;
+    const dot = Math.max(1, Math.round(target.bleedDmg * bleedScale * dt));
     if (target.life < 90000) target.life -= dot;
-    if (Math.random() < 0.2) {
-      spawnDamageNumber(target.x, target.y - 20, `${dot} 🩸`, false, '#e06c75');
+    if (Math.random() < 0.22) {
+      spawnDamageNumber(target.x, target.y - 20, `${dot} 🩸${isMoving ? ' (x3)' : ''}`, false, '#e06c75');
     }
   }
 
@@ -1200,6 +1296,13 @@ export function dealDamageToPlayer(monster) {
       maxLife: 0.25,
       size: 3
     });
+  }
+
+  // Monster Affix: Vampiric Leech (heals 5% max HP on landing hit)
+  if (monster.affixes && monster.affixes.includes('vampiric_leech')) {
+    const healAmt = Math.max(1, Math.round((monster.maxLife || 100) * 0.05));
+    monster.life = Math.min(monster.maxLife, monster.life + healAmt);
+    spawnDamageNumber(monster.x, monster.y - 30, `+${healAmt} 🩸 (LEECH)`, false, '#4ade80');
   }
 
   // 5. Player Defeated / Death Handler

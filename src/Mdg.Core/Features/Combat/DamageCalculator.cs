@@ -169,5 +169,23 @@ namespace Mdg.Core.Features.Combat
             effectiveResist = Math.Clamp(effectiveResist, -200f, 75f); // Cap 75% max resist
             return damage * (1f - (effectiveResist / 100f));
         }
+
+        /// <summary>
+        /// Sát thương Chảy máu (Bleed DoT): Tăng gấp 3 lần (x3.0) khi mục tiêu đang di chuyển.
+        /// </summary>
+        public static float CalculateBleedDamage(float baseDotPerSecond, bool isMoving, float deltaSeconds)
+        {
+            float movementMultiplier = isMoving ? 3.0f : 1.0f;
+            return baseDotPerSecond * movementMultiplier * deltaSeconds;
+        }
+
+        /// <summary>
+        /// Hệ số khuếch đại sát thương nhận vào khi mục tiêu bị Dị Tật Sét (Shock): Từ 10% đến 50%.
+        /// </summary>
+        public static float CalculateShockMultiplier(float shockPercent)
+        {
+            float clampedPercent = Math.Clamp(shockPercent, 10.0f, 50.0f);
+            return 1.0f + (clampedPercent / 100.0f);
+        }
     }
 }

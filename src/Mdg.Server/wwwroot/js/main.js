@@ -9,7 +9,7 @@ import { POSSIBLE_LOOT, generateLootItem, fetchMasterItemsFromServer } from './d
 import { SKILLS, fetchMasterSkillsFromServer } from './data/skills.js';
 import { AudioEngine } from './audio.js';
 import { renderGame } from './renderer.js';
-import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot } from './combat.js';
+import { castSlash, castFireball, castFrostNova, castMeteor, castDash, spawnDamageNumber, updateTargetAilments, dealDamage, dealDamageToPlayer, handlePlayerDefeated, dropMonsterLoot, applyChill } from './combat.js';
 import { updateBackpackUI, updatePaperdollUI, pickUpLoot } from './ui/inventory.js';
 import { addSkillExp, updateSkillBadges, renderSkillUpgradeModal } from './ui/skills-ui.js';
 import { showZoneBanner, setupUIListeners, toggleModal, updateExpBar, updateHudAvatar, updateBuffsHUD, openChannelModal, closeChannelModal } from './ui/hud.js';
@@ -34,6 +34,7 @@ import { renderSpireModal } from './ui/spire-ui.js';
 import { extractShadow, updateShadowArmy } from './systems/shadow-extraction.js';
 import { initPlayerProfessions, spawnResourceNodesForZone, updateGatheringSystem, tryInteractGatheringNode } from './systems/gathering-system.js';
 import { loadGameSettings, getGameSetting, toggleSettingsModal, renderSettingsModal } from './ui/settings-ui.js';
+import { setupCompendiumUI, toggleCompendiumUI, openCompendiumUI, closeCompendiumUI } from './ui/compendium-ui.js';
 import { t, applyLocalization } from './i18n.js';
 
 window.keys = keys;
@@ -45,6 +46,7 @@ window.toggleModal = toggleModal;
 window.showZoneBanner = showZoneBanner;
 window.renderSkillUpgradeModal = renderSkillUpgradeModal;
 window.toggleSettingsModal = toggleSettingsModal;
+window.toggleCompendiumUI = toggleCompendiumUI;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -387,7 +389,7 @@ export function spawnRandomMapShrines() {
 /**
  * Reveal tiles around player position on Fog of War exploration grid
  */
-export function revealPlayerVision(px, py, zoneId, radiusTiles = 7) {
+export function revealPlayerVision(px, py, zoneId, radiusTiles = 8) {
   if (!currentZoneMap) return;
   const grid = zoneExploration[zoneId];
   if (!grid || grid.length === 0) return;
@@ -403,12 +405,40 @@ export function revealPlayerVision(px, py, zoneId, radiusTiles = 7) {
   const minX = Math.max(0, pTileX - radiusTiles);
   const maxX = Math.min(w - 1, pTileX + radiusTiles);
 
+  let newlyRevealed = false;
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
       const dx = x - pTileX;
       const dy = y - pTileY;
       if (dx * dx + dy * dy <= rSq) {
-        grid[y][x] = 1;
+        if (grid[y][x] === 0) {
+          grid[y][x] = 1;
+          newlyRevealed = true;
+        }
+      }
+    }
+  }
+
+  // Zone Exploration Progress & Reward Check (85%+ Map Clearance)
+  if (newlyRevealed && zoneId !== 'SanctuaryHaven') {
+    if (!player.exploredZonesRewards) player.exploredZonesRewards = {};
+    if (!player.exploredZonesRewards[zoneId]) {
+      let revealedCount = 0;
+      let totalCount = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          totalCount++;
+          if (grid[y][x] === 1) revealedCount++;
+        }
+      }
+      const pct = totalCount > 0 ? (revealedCount / totalCount) * 100 : 0;
+      if (pct >= 85) {
+        player.exploredZonesRewards[zoneId] = true;
+        spawnDamageNumber(player.x, player.y - 85, '🗺️ 85%+ ZONE EXPLORATION MASTERY! (+300 EXP & AETHER CRYSTALS)', true, '#ffd700');
+        AudioEngine.playLevelUp?.();
+        if (window.gainExp) window.gainExp(300);
+        player.materials = player.materials || {};
+        player.materials['mat_aether_crystal'] = (player.materials['mat_aether_crystal'] || 0) + 3;
       }
     }
   }
@@ -750,6 +780,14 @@ function update(dt) {
     let currentSpeed = player.speed || 240;
     if (player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'Swiftness')) {
       currentSpeed *= 1.50;
+    }
+    if (player.temporalSnareSlowTimer > 0) {
+      player.temporalSnareSlowTimer = Math.max(0, player.temporalSnareSlowTimer - dt);
+      currentSpeed *= 0.60;
+    }
+    if (player.chillTimer > 0) {
+      player.chillTimer = Math.max(0, player.chillTimer - dt);
+      currentSpeed *= 0.55;
     }
     player.vx = (mx / len) * currentSpeed;
     player.vy = (my / len) * currentSpeed;
@@ -1250,6 +1288,61 @@ function update(dt) {
       });
       AudioEngine.playTone(380, 'sawtooth', 0.1, 0.08);
     }
+
+    // Monster Affix: Frostpulse (periodic 3.5s frost pulse ring)
+    if (m.affixes && m.affixes.includes('frostpulse')) {
+      m.frostpulseTimer = (m.frostpulseTimer || 3.5) - dt;
+      if (m.frostpulseTimer <= 0) {
+        m.frostpulseTimer = 3.5;
+        if (dist <= 200 && !player.isDead) {
+          dealDamageToPlayer({ attackDmg: 18, dmgType: 'cold', isAlive: true });
+          applyChill(player, 2.0);
+          spawnDamageNumber(player.x, player.y - 45, '❄️ FROSTPULSE SLOW!', false, '#00f2fe');
+        }
+        for (let a = 0; a < Math.PI * 2; a += 0.5) {
+          particles.push({
+            x: m.x,
+            y: m.y,
+            vx: Math.cos(a) * 160,
+            vy: Math.sin(a) * 160,
+            color: '#00f2fe',
+            life: 0.4,
+            maxLife: 0.4,
+            size: 4
+          });
+        }
+      }
+    }
+
+    // Monster Affix: Temporal Snare (40% slow within 220px)
+    if (m.affixes && m.affixes.includes('temporal_snare') && dist <= 220 && !player.isDead) {
+      player.temporalSnareSlowTimer = 0.5;
+    }
+
+    // Boss Enraged Bullet-Hell Spiral Barrage
+    if (m.isEnraged && dist <= 500 && !player.isDead) {
+      m.bulletHellTimer = (m.bulletHellTimer || 1.8) - dt;
+      if (m.bulletHellTimer <= 0) {
+        m.bulletHellTimer = 1.8;
+        spawnDamageNumber(m.x, m.y - 80, '🔥 CATACLYSM BARRAGE!', true, '#ff3d00');
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+          projectiles.push({
+            x: m.x,
+            y: m.y,
+            vx: Math.cos(a) * 240,
+            vy: Math.sin(a) * 240,
+            type: 'fireball',
+            damage: 28,
+            fireDmg: 28,
+            chaosDmg: 0,
+            radius: 12,
+            life: 2.0,
+            isMonsterProjectile: true
+          });
+        }
+        AudioEngine.playTone(280, 'sawtooth', 0.2, 0.12);
+      }
+    }
   });
 
   // Companion Pet Engine Update (Auto-loot, Aura & Delivery)
@@ -1404,6 +1497,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyE') castMeteor();
   if (e.code === 'Space') castDash();
   if (e.code === 'KeyK') toggleModal('skills-modal');
+  if (e.code === 'KeyL') toggleCodexModal();
   if (e.code === 'KeyM') toggleModal('worldmap-modal');
   if (e.code === 'KeyC') toggleModal('stats-modal');
   if (e.code === 'KeyI') toggleModal('inventory-modal');
@@ -1414,7 +1508,7 @@ window.addEventListener('keydown', e => {
       'ascension-modal', 'skills-modal', 'inventory-modal', 'worldmap-modal',
       'stats-modal', 'character-roster-modal', 'defeat-modal', 'sharedStashModal',
       'forgeBenchModal', 'devotionModal', 'mapDeviceModal', 'npcDialogueModal',
-      'bestiaryModal', 'rosterModal', 'googleAuthModal', 'channelModal', 'spireModal', 'settingsModal'
+      'bestiaryModal', 'rosterModal', 'codexModal', 'googleAuthModal', 'channelModal', 'spireModal', 'settingsModal'
     ];
     let closedAny = false;
     allModalIds.forEach(id => {
@@ -1579,10 +1673,17 @@ document.getElementById('slot-frost')?.addEventListener('click', castFrostNova);
 document.getElementById('slot-meteor')?.addEventListener('click', castMeteor);
 document.getElementById('slot-dash')?.addEventListener('click', castDash);
 
-// Setup World Map Fast Travel & HUD Buttons
-document.getElementById('btn-toggle-bestiary')?.addEventListener('click', toggleBestiaryUI);
+// Setup 5 Master Hub Buttons & World Map
+document.getElementById('btn-toggle-hero-hub')?.addEventListener('click', () => toggleModal('inventory-modal'));
+document.getElementById('btn-toggle-compendium')?.addEventListener('click', () => toggleCompendiumUI());
+document.getElementById('btn-toggle-adventure-hub')?.addEventListener('click', () => toggleModal('worldmap-modal'));
+document.getElementById('btn-toggle-settings')?.addEventListener('click', toggleSettingsModal);
+
+// Legacy hotkey button references
+document.getElementById('btn-toggle-bestiary')?.addEventListener('click', () => toggleCompendiumUI('bestiary'));
 document.getElementById('btn-toggle-roster')?.addEventListener('click', openRosterUI);
 document.getElementById('btn-toggle-spire')?.addEventListener('click', renderSpireModal);
+document.getElementById('btn-toggle-codex')?.addEventListener('click', () => toggleCompendiumUI('lore'));
 
 // Zone Chat input listener
 const chatInput = document.getElementById('zoneChatInput');
@@ -1663,7 +1764,7 @@ if (chatPanel) {
 // Initialize UI and Game
 setupUIListeners();
 initDefeatUI();
-setupBestiaryUI();
+setupCompendiumUI();
 setupRosterUI();
 MPClient.init();
 document.getElementById('btn-toggle-settings')?.addEventListener('click', toggleSettingsModal);

@@ -103,20 +103,11 @@
       </div>
 
       <div class="quick-buttons">
-        <button id="btn-google-auth" class="hud-btn highlight-btn" data-i18n="hud.account_login" title="Account Portal (Login / Register / Google Sync)" style="color:#ffd700; grid-column: span 2;">🔑 Account / Login</button>
-        <button id="btn-toggle-roster" class="hud-btn highlight-btn" data-i18n="hud.roster" title="Character Roster (Select / Create Hero) [P]" style="color:#00e676;">👥 Roster (P)</button>
-        <button id="btn-toggle-bestiary" class="hud-btn highlight-btn" data-i18n="hud.bestiary" title="Bestiary Codex & Monster Lore [Y]" style="color:#ffd700;">📖 Bestiary (Y)</button>
-        <button id="btn-forge" class="hud-btn highlight-btn" data-i18n="hud.forge" title="Genesis Forge Bench (Crafting) [B]" style="color:#ffd700;">🔨 Forge (B)</button>
-        <button id="btn-map-device" class="hud-btn highlight-btn" data-i18n="hud.rifts" title="Gate of Eternity Map Device [O]" style="color:#00f2fe;">🌌 Rifts (O)</button>
-        <button id="btn-devotion" class="hud-btn highlight-btn" data-i18n="hud.devotion" title="Celestial Devotion Grid [V]" style="color:#c678dd;">✨ Devotion (V)</button>
-        <button id="btn-stash" class="hud-btn highlight-btn" data-i18n="hud.stash" title="Account Shared Stash [X]" style="color:#98c379;">📦 Stash (X)</button>
-        <button id="btn-pet-sell" class="hud-btn highlight-btn" data-i18n="hud.pet_sell" title="Send Pet to Town Market" style="color:#61afef;">🐾 Pet Sell</button>
-        <button id="btn-toggle-spire" class="hud-btn highlight-btn" data-i18n="hud.spire" title="Endless Spire 100 Floors [U]" style="color:#00f2fe;">🗼 Spire (U)</button>
-        <button id="btn-toggle-worldmap" class="hud-btn highlight-btn" data-i18n="hud.map" title="World Map & Campaign Atlas (M)">🗺️ Map (M)</button>
-        <button id="btn-toggle-skills" class="hud-btn highlight-btn" data-i18n="hud.skills" title="Skill Tree & Levels (K)">⚡ Skills (K)</button>
-        <button id="btn-toggle-inventory" class="hud-btn highlight-btn" data-i18n="hud.bag" title="Inventory & Equipment (I)">🎒 Bag (I)</button>
-        <button id="btn-toggle-stats" class="hud-btn highlight-btn" data-i18n="hud.stats" title="Character Attributes & Defenses (C)">📊 Stats (C)</button>
-        <button id="btn-toggle-settings" class="hud-btn highlight-btn" data-i18n="hud.settings" title="Game Settings & Options [ESC]" style="color:#38bdf8; grid-column: span 2;">⚙️ Cài Đặt (ESC)</button>
+        <button id="btn-toggle-hero-hub" class="hud-btn highlight-btn" data-i18n="hud.hub_hero" title="Hero & Character Progression Hub [C / I / K / V / P]" style="color:#00e676;">⚔️ Nhân Vật (C)</button>
+        <button id="btn-forge" class="hud-btn highlight-btn" data-i18n="hud.hub_forge" title="Genesis Forge & Alchemy Hub (7 Tabs) [B]" style="color:#ffd700;">🔨 Bàn Rèn (B)</button>
+        <button id="btn-toggle-compendium" class="hud-btn highlight-btn" data-i18n="hud.hub_compendium" title="Aethelis Compendium: Bestiary, Material Mastery & Mythos [Y / L]" style="color:#38bdf8;">📖 Bách Khoa (Y)</button>
+        <button id="btn-toggle-adventure-hub" class="hud-btn highlight-btn" data-i18n="hud.hub_adventure" title="Adventure & Endgame Atlas: Maps, Rifts & Spire [M / O / U]" style="color:#c084fc;">🌌 Viễn Chinh (M)</button>
+        <button id="btn-toggle-settings" class="hud-btn highlight-btn" data-i18n="hud.hub_settings" title="System Settings, Account & Shared Stash [ESC / X]" style="color:#f59e0b; grid-column: span 2;">⚙️ Cài Đặt & Hệ Thống (ESC)</button>
       </div>
     </div>
 
@@ -741,6 +732,23 @@
         <button id="closeRosterBtn" class="close-btn">&times;</button>
       </div>
       <div id="rosterContent" class="roster-inner-scroll"></div>
+    </div>
+  </div>
+
+  <!-- Aethelis World Lore & Mythos Codex Modal -->
+  <div id="codexModal" class="game-modal-backdrop modal-overlay hidden" style="display: none;">
+    <div class="modal-content codex-modal-box">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">📜</span>
+          <div>
+            <h2 style="margin:0; font-size:18px; color:#ffd700;" data-i18n="codex.title">AETHELIS WORLD LORE & STORYLINE CODEX</h2>
+            <span style="font-size:11px; color:#888;" data-i18n="codex.sub">Primordial Mythos, 9 Acts Chronicles, Great Factions & Endgame Rifts [L]</span>
+          </div>
+        </div>
+        <button id="closeCodexBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="codexContent" class="codex-inner-scroll"></div>
     </div>
   </div>
 

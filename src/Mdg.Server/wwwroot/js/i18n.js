@@ -9,7 +9,12 @@ export const DICTIONARY = {
     'hud.online': '🟢 Trực Tuyến',
     'hud.offline': '🔴 Ngoại Tuyến',
     'hud.ascend_ready': '⭐ Đột Phá Nghề Nghiệp!',
-    'hud.account_login': '🔑 Tài Khoản / Đăng Nhập',
+    'hud.hub_hero': '⚔️ Nhân Vật (C)',
+    'hud.hub_forge': '🔨 Bàn Rèn (B)',
+    'hud.hub_compendium': '📖 Bách Khoa (Y)',
+    'hud.hub_adventure': '🌌 Viễn Chinh (M)',
+    'hud.hub_settings': '⚙️ Cài Đặt & Hệ Thống (ESC)',
+
     'hud.roster': '👥 Nhân Vật (P)',
     'hud.bestiary': '📖 Quái Vật (Y)',
     'hud.forge': '🔨 Bàn Rèn (B)',
@@ -18,6 +23,7 @@ export const DICTIONARY = {
     'hud.stash': '📦 Rương Đồ (X)',
     'hud.pet_sell': '🐾 Bán Thú Cưng',
     'hud.spire': '🗼 Tháp Vô Tận (U)',
+    'hud.codex': '📜 Bí Sử (L)',
     'hud.map': '🗺️ Bản Đồ (M)',
     'hud.skills': '⚡ Kỹ Năng (K)',
     'hud.bag': '🎒 Túi Đồ (I)',
@@ -25,7 +31,10 @@ export const DICTIONARY = {
     'hud.settings': '⚙️ Cài Đặt (ESC)',
     'hud.zoom_reset': '1x',
     'hud.channel': '🌐 Kênh',
-    'hud.controls_hint': '🎮 <b>WASD</b>: Di chuyển | <b>I</b>: Túi | <b>K</b>: Kỹ năng | <b>C</b>: Chỉ số | <b>B</b>: Rèn | <b>Y</b>: Quái | <b>P</b>: Nhân vật | <b>O</b>: Hư không | <b>V</b>: Tinh tú | <b>X</b>: Rương | <b>M</b>: Bản đồ | <b>F</b>: Tương tác | <b>ESC</b>: Cài đặt / Đóng',
+    'hud.controls_hint': '🎮 <b>WASD</b>: Di chuyển | <b>C / I</b>: Nhân vật | <b>B</b>: Rèn | <b>Y / L</b>: Bách khoa | <b>M / O</b>: Viễn chinh | <b>F</b>: Tương tác | <b>ESC</b>: Cài đặt / Đóng',
+
+    'codex.title': '📜 BÍ SỬ THẾ GIỚI & BIÊN NIÊN SỬ AETHELIS',
+    'codex.sub': 'Thần Kỷ Khởi Nguyên, 9 Hồi Chiến Dịch, Tứ Đại Phe Phái & Cổng Vĩnh Hằng [L]',
 
     // --- Inventory & Equipment ---
     'inv.main_title': '🎒 TÚI ĐỒ & TRANG BỊ',
@@ -196,6 +205,12 @@ export const DICTIONARY = {
     'hud.online': '🟢 Online',
     'hud.offline': '🔴 Offline',
     'hud.ascend_ready': '⭐ Class Ascension Ready!',
+    'hud.hub_hero': '⚔️ Hero (C)',
+    'hud.hub_forge': '🔨 Forge (B)',
+    'hud.hub_compendium': '📖 Compendium (Y)',
+    'hud.hub_adventure': '🌌 Adventure (M)',
+    'hud.hub_settings': '⚙️ Settings & System (ESC)',
+
     'hud.account_login': '🔑 Account / Login',
     'hud.roster': '👥 Roster (P)',
     'hud.bestiary': '📖 Bestiary (Y)',
@@ -205,6 +220,7 @@ export const DICTIONARY = {
     'hud.stash': '📦 Stash (X)',
     'hud.pet_sell': '🐾 Pet Sell',
     'hud.spire': '🗼 Spire (U)',
+    'hud.codex': '📜 Codex (L)',
     'hud.map': '🗺️ Map (M)',
     'hud.skills': '⚡ Skills (K)',
     'hud.bag': '🎒 Bag (I)',
@@ -212,7 +228,10 @@ export const DICTIONARY = {
     'hud.settings': '⚙️ Settings (ESC)',
     'hud.zoom_reset': '1x',
     'hud.channel': '🌐 Channel',
-    'hud.controls_hint': '🎮 <b>WASD</b>: Move | <b>I</b>: Bag | <b>K</b>: Skills | <b>C</b>: Stats | <b>B</b>: Forge | <b>Y</b>: Bestiary | <b>P</b>: Roster | <b>O</b>: Rifts | <b>V</b>: Devotion | <b>X</b>: Stash | <b>M</b>: Map | <b>F</b>: Interact | <b>ESC</b>: Settings / Close',
+    'hud.controls_hint': '🎮 <b>WASD</b>: Move | <b>C / I</b>: Hero | <b>B</b>: Forge | <b>Y / L</b>: Compendium | <b>M / O</b>: Adventure | <b>F</b>: Interact | <b>ESC</b>: Settings / Close',
+
+    'codex.title': '📜 AETHELIS WORLD LORE & STORYLINE CODEX',
+    'codex.sub': 'Primordial Mythos, 9 Acts Chronicles, Great Factions & Endgame Rifts [L]',
 
     // --- Inventory & Equipment ---
     'inv.main_title': '🎒 INVENTORY & EQUIPMENT',

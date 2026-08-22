@@ -653,3 +653,53 @@ export function previewSalvageItem(item) {
 
   return results;
 }
+
+export const MATERIAL_INSIGHT_TIERS = [
+  { tier: 1, exp: 0, title: { vi: 'Tập Sự (Novice)', en: 'Novice (Tier 1)' }, bonus: { vi: 'Mở khóa nguồn gốc & công thức', en: 'Unlocked drop sources & recipes' } },
+  { tier: 2, exp: 15, title: { vi: 'Tinh Thông (Adept)', en: 'Adept (Tier 2)' }, bonus: { vi: '+10% Cơ hội nhận thêm sản phẩm phụ', en: '+10% Extra harvest bonus chance' } },
+  { tier: 3, exp: 50, title: { vi: 'Chuyên Gia (Expert)', en: 'Expert (Tier 3)' }, bonus: { vi: '+15% Sản lượng khai thác tự nhiên', en: '+15% Gathering node yield' } },
+  { tier: 4, exp: 120, title: { vi: 'Bậc Thầy (Master)', en: 'Master (Tier 4)' }, bonus: { vi: '-10% Hao phí khi rèn đúc tại Forge', en: '-10% Forge crafting costs' } },
+  { tier: 5, exp: 300, title: { vi: 'Thánh Truyền (Grandmaster)', en: 'Grandmaster (Tier 5)' }, bonus: { vi: '+5% Tỷ lệ đúc trang bị Rare/Unique', en: '+5% High-tier affix roll chance' } }
+];
+
+export function getMaterialInsightProfile(matId, exp = 0) {
+  let cur = MATERIAL_INSIGHT_TIERS[0];
+  let next = MATERIAL_INSIGHT_TIERS[1];
+
+  for (let i = MATERIAL_INSIGHT_TIERS.length - 1; i >= 0; i--) {
+    if (exp >= MATERIAL_INSIGHT_TIERS[i].exp) {
+      cur = MATERIAL_INSIGHT_TIERS[i];
+      next = MATERIAL_INSIGHT_TIERS[i + 1] || null;
+      break;
+    }
+  }
+
+  const currentTierExp = cur.exp;
+  const nextTierExp = next ? next.exp : cur.exp;
+  const progressPct = next ? Math.min(100, Math.round(((exp - currentTierExp) / (nextTierExp - currentTierExp)) * 100)) : 100;
+
+  return {
+    tier: cur.tier,
+    title: cur.title,
+    bonus: cur.bonus,
+    exp: exp,
+    nextExp: next ? next.exp : null,
+    progressPct: progressPct
+  };
+}
+
+export function recordMaterialInsight(player, matId, gain = 1) {
+  if (!player) return;
+  if (!player.materialMastery) player.materialMastery = {};
+  const oldExp = player.materialMastery[matId] || 0;
+  const oldTier = getMaterialInsightProfile(matId, oldExp).tier;
+
+  player.materialMastery[matId] = oldExp + gain;
+  const newProfile = getMaterialInsightProfile(matId, player.materialMastery[matId]);
+
+  if (newProfile.tier > oldTier && window.spawnDamageNumber) {
+    const matInfo = getMaterialInfo(matId);
+    window.spawnDamageNumber(player.x, player.y - 75, `💎 MATERIAL MASTERY UP: [${matInfo.nameVi || matInfo.name}] -> TIER ${newProfile.tier}!`, true, '#ffd700');
+  }
+}
+
