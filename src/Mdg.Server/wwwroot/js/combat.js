@@ -1345,110 +1345,116 @@ export function castDash() {
 
 // 6. DEAL DAMAGE TO PLAYER (With Armor, Block, Resistances & Energy Shield)
 export function dealDamageToPlayer(monster) {
-  if (!monster || !monster.isAlive || player.isDead || (player.invulnerableTimer && player.invulnerableTimer > 0)) return;
+  if (!monster || player.isDead || (player.invulnerableTimer && player.invulnerableTimer > 0)) return;
 
-  // 1. Player Evasion Check
-  const pEvasion = player.evasionChance || 15;
-  if (Math.random() * 100 < pEvasion) {
-    spawnDamageNumber(player.x, player.y - 45, 'DODGED!', false, '#a0a8b7');
-    AudioEngine.playTone(320, 'sine', 0.08, 0.05);
-    return;
-  }
-
-  // 2. Player Shield Block Check (75% Damage Mitigation)
-  let blockMult = 1.0;
-  const pBlock = player.blockChance || 0;
-  if (pBlock > 0 && Math.random() * 100 < pBlock) {
-    blockMult = 0.25;
-    spawnDamageNumber(player.x, player.y - 45, '🛡️ BLOCKED!', true, '#ffd700');
-    AudioEngine.playTone(160, 'square', 0.15, 0.12);
-  }
-
-  // 3. Raw Damage Calculation & Defense Mitigations (Scaled Difficulty)
-  const lore = getMonsterLoreBonus(monster.type || 'monster', monster.isBoss || monster.type === 'boss');
-  const rawAttack = (monster.attackDmg || 32) * 1.55; // +55% difficulty baseline
-  let familyMitigation = (lore.dmgReduction || 0) / 100;
-
-  // Active Shrine Blessing: Aegis Sanctuary (-35% damage taken)
-  const hasAegisSanctuary = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'AegisSanctuary');
-  if (hasAegisSanctuary) {
-    familyMitigation += 0.35;
-  }
-
-  // Family Mastery Talents Check
-  const mDef = MONSTERS[monster.type];
-  const fam = mDef?.family;
-  if (fam && player.allocatedFamilyTalents?.[fam]) {
-    const talents = player.allocatedFamilyTalents[fam];
-    if (talents.includes('beast_t3') || talents.includes('undead_t3') || talents.includes('fiend_t3')) {
-      familyMitigation += 0.20; // -20% extra damage taken from this family
+  try {
+    // 1. Player Evasion Check
+    const pEvasion = player.evasionChance || 15;
+    if (Math.random() * 100 < pEvasion) {
+      spawnDamageNumber(player.x, player.y - 45, 'DODGED!', false, '#a0a8b7');
+      AudioEngine.playTone(320, 'sine', 0.08, 0.05);
+      return;
     }
-  }
 
-  const baseDmg = rawAttack * (1 - Math.min(0.75, familyMitigation)) * blockMult;
-  let finalDmg = 0;
+    // 2. Player Shield Block Check (75% Damage Mitigation)
+    let blockMult = 1.0;
+    const pBlock = player.blockChance || 0;
+    if (pBlock > 0 && Math.random() * 100 < pBlock) {
+      blockMult = 0.25;
+      spawnDamageNumber(player.x, player.y - 45, '🛡️ BLOCKED!', true, '#ffd700');
+      AudioEngine.playTone(160, 'square', 0.15, 0.12);
+    }
 
-  const resBonus = hasAegisSanctuary ? 35 : 0;
-  if (monster.dmgType === 'fire') {
-    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.fireRes || 0) + resBonus) / 100));
-  } else if (monster.dmgType === 'cold') {
-    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.coldRes || 0) + resBonus) / 100));
-    if (Math.random() < 0.25) applyChill(player, 1.5);
-  } else if (monster.dmgType === 'lightning') {
-    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.lightningRes || player.lightRes || 0) + resBonus) / 100));
-  } else if (monster.dmgType === 'chaos') {
-    finalDmg = baseDmg * (1 - Math.min(0.85, ((player.chaosRes || 0) + resBonus) / 100));
-  } else {
-    // Physical Armor Mitigation
-    const pArmor = (player.armor || 60) * (hasAegisSanctuary ? 1.8 : 1.0);
-    const physMitigation = Math.min(0.85, pArmor / (pArmor + 5 * baseDmg));
-    finalDmg = baseDmg * (1 - physMitigation);
-  }
+    // 3. Raw Damage Calculation & Defense Mitigations (Scaled Difficulty)
+    const lore = monster.type ? getMonsterLoreBonus(monster.type, monster.isBoss || monster.type === 'boss') : null;
+    const rawAttack = (monster.attackDmg || 25) * 1.55; // +55% difficulty baseline
+    let familyMitigation = ((lore && lore.dmgReduction) || 0) / 100;
 
-  const totalDmg = Math.max(1, Math.round(finalDmg));
+    // Active Shrine Blessing: Aegis Sanctuary (-35% damage taken)
+    const hasAegisSanctuary = player.activeBuffs && player.activeBuffs.some(b => b.buffType === 'AegisSanctuary');
+    if (hasAegisSanctuary) {
+      familyMitigation += 0.35;
+    }
 
-  // 4. Energy Shield Absorption First
-  if (player.es > 0) {
-    if (player.es >= totalDmg) {
-      player.es -= totalDmg;
+    // Family Mastery Talents Check
+    const mDef = monster.type ? MONSTERS[monster.type] : null;
+    const fam = mDef?.family;
+    if (fam && player.allocatedFamilyTalents?.[fam]) {
+      const talents = player.allocatedFamilyTalents[fam];
+      if (talents.includes('beast_t3') || talents.includes('undead_t3') || talents.includes('fiend_t3')) {
+        familyMitigation += 0.20; // -20% extra damage taken from this family
+      }
+    }
+
+    const baseDmg = Math.max(1, rawAttack * (1 - Math.min(0.75, familyMitigation)) * blockMult);
+    let finalDmg = baseDmg;
+
+    const resBonus = hasAegisSanctuary ? 35 : 0;
+    if (monster.dmgType === 'fire') {
+      finalDmg = baseDmg * (1 - Math.min(0.85, ((player.fireRes || 0) + resBonus) / 100));
+    } else if (monster.dmgType === 'cold') {
+      finalDmg = baseDmg * (1 - Math.min(0.85, ((player.coldRes || 0) + resBonus) / 100));
+      if (Math.random() < 0.25) applyChill(player, 1.5);
+    } else if (monster.dmgType === 'lightning') {
+      finalDmg = baseDmg * (1 - Math.min(0.85, ((player.lightningRes || player.lightRes || 0) + resBonus) / 100));
+    } else if (monster.dmgType === 'chaos') {
+      finalDmg = baseDmg * (1 - Math.min(0.85, ((player.chaosRes || 0) + resBonus) / 100));
     } else {
-      const remainingDmg = totalDmg - player.es;
-      player.es = 0;
-      player.life = Math.max(0, player.life - remainingDmg);
+      // Physical Armor Mitigation
+      const pArmor = (player.armor || 60) * (hasAegisSanctuary ? 1.8 : 1.0);
+      const physMitigation = Math.min(0.85, pArmor / (pArmor + 5 * baseDmg));
+      finalDmg = baseDmg * (1 - physMitigation);
     }
-  } else {
-    player.life = Math.max(0, player.life - totalDmg);
-  }
 
-  // Visual Hit & Sound
-  AudioEngine.playHit(false);
-  const dmgColor = monster.dmgType === 'fire' ? '#ff7849' : (monster.dmgType === 'cold' ? '#4facfe' : (monster.dmgType === 'chaos' ? '#c678dd' : '#ff4d4f'));
-  spawnDamageNumber(player.x, player.y - 35, `-${totalDmg}`, false, dmgColor);
+    const totalDmg = Math.max(1, Math.round(finalDmg));
 
-  // Blood / Impact Particles
-  for (let i = 0; i < 6; i++) {
-    particles.push({
-      x: player.x,
-      y: player.y - 10,
-      vx: (Math.random() - 0.5) * 140,
-      vy: (Math.random() - 0.5) * 140,
-      color: '#ff4d4f',
-      life: 0.25,
-      maxLife: 0.25,
-      size: 3
-    });
-  }
+    // 4. Energy Shield Absorption First
+    if (player.es > 0) {
+      if (player.es >= totalDmg) {
+        player.es -= totalDmg;
+      } else {
+        const remainingDmg = totalDmg - player.es;
+        player.es = 0;
+        player.life = Math.max(0, player.life - remainingDmg);
+      }
+    } else {
+      player.life = Math.max(0, player.life - totalDmg);
+    }
 
-  // Monster Affix: Vampiric Leech (heals 5% max HP on landing hit)
-  if (monster.affixes && monster.affixes.includes('vampiric_leech')) {
-    const healAmt = Math.max(1, Math.round((monster.maxLife || 100) * 0.05));
-    monster.life = Math.min(monster.maxLife, monster.life + healAmt);
-    spawnDamageNumber(monster.x, monster.y - 30, `+${healAmt} 🩸 (LEECH)`, false, '#4ade80');
-  }
+    // Visual Hit & Sound
+    AudioEngine.playHit(false);
+    const dmgColor = monster.dmgType === 'fire' ? '#ff7849' : (monster.dmgType === 'cold' ? '#4facfe' : (monster.dmgType === 'chaos' ? '#c678dd' : '#ff4d4f'));
+    spawnDamageNumber(player.x, player.y - 35, `-${totalDmg}`, false, dmgColor);
 
-  // 5. Player Defeated / Death Handler
-  if (player.life <= 0) {
-    handlePlayerDefeated();
+    // Blood / Impact Particles
+    for (let i = 0; i < 6; i++) {
+      particles.push({
+        x: player.x,
+        y: player.y - 10,
+        vx: (Math.random() - 0.5) * 140,
+        vy: (Math.random() - 0.5) * 140,
+        color: '#ff4d4f',
+        life: 0.25,
+        maxLife: 0.25,
+        size: 3
+      });
+    }
+
+    // Monster Affix: Vampiric Leech (heals 5% max HP on landing hit)
+    if (monster.affixes && monster.affixes.includes('vampiric_leech')) {
+      const healAmt = Math.max(1, Math.round((monster.maxLife || 100) * 0.05));
+      monster.life = Math.min(monster.maxLife || 100, (monster.life || 0) + healAmt);
+      if (monster.x !== undefined && monster.y !== undefined) {
+        spawnDamageNumber(monster.x, monster.y - 30, `+${healAmt} 🩸 (LEECH)`, false, '#4ade80');
+      }
+    }
+
+    // 5. Player Defeated / Death Handler
+    if (player.life <= 0) {
+      handlePlayerDefeated();
+    }
+  } catch (err) {
+    console.error('Error in dealDamageToPlayer:', err);
   }
 }
 
@@ -1461,7 +1467,11 @@ export function handlePlayerDefeated() {
 
   // Show defeat popup modal with 2 resurrection options
   setTimeout(() => {
-    showDefeatModal();
+    try {
+      showDefeatModal();
+    } catch (e) {
+      console.error('Error opening defeat modal:', e);
+    }
   }, 650);
 }
 

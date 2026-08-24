@@ -39,14 +39,15 @@ export const AudioEngine = {
     if (!this.ctx) return;
     try {
       if (this.ctx.state === 'suspended') {
-        this.ctx.resume();
+        this.ctx.resume().catch(() => {});
       }
+      const curTime = this.ctx.currentTime || 0;
       const osc = this.ctx.createOscillator();
       const gNode = this.ctx.createGain();
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-      gNode.gain.setValueAtTime(effectiveGain, this.ctx.currentTime);
-      gNode.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      osc.frequency.setValueAtTime(freq, curTime);
+      gNode.gain.setValueAtTime(Math.max(0.0001, effectiveGain), curTime);
+      gNode.gain.linearRampToValueAtTime(0.0001, curTime + duration);
       osc.connect(gNode);
       gNode.connect(this.ctx.destination);
 
@@ -57,8 +58,8 @@ export const AudioEngine = {
         } catch (e) {}
       };
 
-      osc.start();
-      osc.stop(this.ctx.currentTime + duration);
+      osc.start(curTime);
+      osc.stop(curTime + duration);
     } catch (e) {}
   },
   playLootDrop(rarity) {
@@ -110,3 +111,19 @@ export const AudioEngine = {
     setTimeout(() => this.playTone(640, 'sine', 0.35, 0.2), 200);
   }
 };
+
+// Auto-unlock AudioContext on first user interaction
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    AudioEngine.init();
+    if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended') {
+      AudioEngine.ctx.resume().catch(() => {});
+    }
+    window.removeEventListener('click', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+    window.removeEventListener('pointerdown', unlockAudio);
+  };
+  window.addEventListener('click', unlockAudio, { passive: true });
+  window.addEventListener('keydown', unlockAudio, { passive: true });
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+}
