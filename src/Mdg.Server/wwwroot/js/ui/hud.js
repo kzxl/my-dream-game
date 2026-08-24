@@ -413,6 +413,8 @@ export function renderChannelList() {
 /**
  * Updates Active Shrine Blessing Buffs on HUD
  */
+let lastBuffsHtml = '';
+
 export function updateBuffsHUD() {
   let container = document.getElementById('hud-buffs-container');
   if (!container) {
@@ -428,19 +430,21 @@ export function updateBuffsHUD() {
   }
 
   if (!player.activeBuffs || player.activeBuffs.length === 0) {
-    container.innerHTML = '';
+    if (lastBuffsHtml !== '') {
+      container.innerHTML = '';
+      lastBuffsHtml = '';
+    }
     return;
   }
 
-  container.innerHTML = player.activeBuffs.map(b => {
+  const nextHtml = player.activeBuffs.map(b => {
     const durSec = Math.ceil(b.duration);
     const col = b.color || '#ffd700';
-    return `
-      <div class="hud-buff-pill" style="border-color:${col}; box-shadow: 0 0 10px ${col}66;" title="${b.name}\n${b.description || ''}">
-        <span class="buff-icon">${b.icon || '✨'}</span>
-        <span class="buff-name" style="color:${col};">${b.name.replace(/^[^\w]+/, '')}</span>
-        <span class="buff-time" style="color:${col};">(${durSec}s)</span>
-      </div>
-    `;
+    return `<div class="hud-buff-pill" style="border-color:${col}; box-shadow: 0 0 10px ${col}66;" title="${b.name}\n${b.description || ''}"><span class="buff-icon">${b.icon || '✨'}</span><span class="buff-name" style="color:${col};">${b.name.replace(/^[^\w]+/, '')}</span><span class="buff-time" style="color:${col};">(${durSec}s)</span></div>`;
   }).join('');
+
+  if (nextHtml !== lastBuffsHtml) {
+    container.innerHTML = nextHtml;
+    lastBuffsHtml = nextHtml;
+  }
 }

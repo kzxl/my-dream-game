@@ -246,6 +246,7 @@ export async function loadZone(zoneId, spawnX, spawnY) {
     }
   }
   revealPlayerVision(player.x, player.y, currentZoneId, 7);
+  window.minimapDirty = true;
 
   // 2. Load Elements from ZoneMap
   if (currentZoneMap.portals) currentZoneMap.portals.forEach(p => portals.push({ ...p }));
@@ -444,6 +445,10 @@ export function revealPlayerVision(px, py, zoneId, radiusTiles = 8) {
         }
       }
     }
+  }
+
+  if (newlyRevealed) {
+    window.minimapDirty = true;
   }
 
   // Zone Exploration Progress & Reward Check (85%+ Map Clearance)
@@ -982,13 +987,32 @@ function update(dt) {
     });
   }
 
-  groundLoot.forEach(loot => {
+  // Ground Loot Physics & Despawn Lifecycles (Prevent accumulation on long idle sessions)
+  for (let i = groundLoot.length - 1; i >= 0; i--) {
+    const loot = groundLoot[i];
     if (loot.bounceTimer > 0) {
       loot.bounceTimer -= dt;
       loot.x += (loot.targetX - loot.x) * 0.15;
       loot.y += (loot.targetY - loot.y) * 0.15;
     }
-  });
+    // Despawn common items & gold after 180s (Never despawn Unique, Set, or Rare items)
+    if (loot.item && loot.item.rarity !== 'Unique' && loot.item.rarity !== 'Set' && loot.item.rarity !== 'Rare') {
+      loot.despawnTimer = (loot.despawnTimer !== undefined ? loot.despawnTimer : 180) - dt;
+      if (loot.despawnTimer <= 0) {
+        groundLoot.splice(i, 1);
+      }
+    }
+  }
+
+  // Cap ground loot to max 120 items
+  if (groundLoot.length > 120) {
+    for (let i = 0; i < groundLoot.length && groundLoot.length > 120; i++) {
+      if (groundLoot[i].item?.rarity !== 'Unique' && groundLoot[i].item?.rarity !== 'Set') {
+        groundLoot.splice(i, 1);
+        i--;
+      }
+    }
+  }
 
   // Auto Magnet for Gold Coins and Auto-Loot Currencies
   if (!player.isDead) {
@@ -1452,6 +1476,14 @@ function update(dt) {
     }
   }
 
+  // Frame-level cleanup: Purge any dead or handled monsters to keep monsters array lean
+  for (let i = monsters.length - 1; i >= 0; i--) {
+    if (!monsters[i].isAlive || monsters[i].defeatedHandled) {
+      monsters.splice(i, 1);
+    }
+  }
+
+  // Update & Clamp Particles (Max 250)
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
     pt.x += pt.vx * dt;
@@ -1459,12 +1491,19 @@ function update(dt) {
     pt.life -= dt;
     if (pt.life <= 0) particles.splice(i, 1);
   }
+  if (particles.length > 250) {
+    particles.splice(0, particles.length - 250);
+  }
 
+  // Update & Clamp Floating Numbers / Texts (Max 40)
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const ft = floatingTexts[i];
     ft.y += ft.vy * dt;
     ft.life -= dt;
     if (ft.life <= 0) floatingTexts.splice(i, 1);
+  }
+  if (floatingTexts.length > 40) {
+    floatingTexts.splice(0, floatingTexts.length - 40);
   }
 
   // Spire Arena Victory & Next Floor Check
@@ -1516,27 +1555,81 @@ function update(dt) {
   updateHUD();
 }
 
+const hudCache = {
+  barEs: null, textEs: null,
+  barLife: null, textLife: null,
+  barMana: null, textMana: null,
+  hudLevel: null, zoomText: null,
+  cds: {},
+  lastEs: -1, lastMaxEs: -1,
+  lastLife: -1, lastMaxLife: -1,
+  lastMana: -1, lastMaxMana: -1,
+  lastLevel: -1, lastZoom: -1,
+  lastCds: {}
+};
+
 function updateHUD() {
-  document.getElementById('bar-es').style.width = `${(player.es / player.maxEs) * 100}%`;
-  document.getElementById('text-es').innerText = `ES: ${Math.round(player.es)} / ${player.maxEs}`;
+  if (!hudCache.barEs) {
+    hudCache.barEs = document.getElementById('bar-es');
+    hudCache.textEs = document.getElementById('text-es');
+    hudCache.barLife = document.getElementById('bar-life');
+    hudCache.textLife = document.getElementById('text-life');
+    hudCache.barMana = document.getElementById('bar-mana');
+    hudCache.textMana = document.getElementById('text-mana');
+    hudCache.hudLevel = document.getElementById('hud-level');
+    hudCache.zoomText = document.getElementById('zoom-level-text');
+  }
 
-  document.getElementById('bar-life').style.width = `${(player.life / player.maxLife) * 100}%`;
-  document.getElementById('text-life').innerText = `HP: ${Math.round(player.life)} / ${player.maxLife}`;
+  const curEs = Math.round(player.es || 0);
+  const curMaxEs = player.maxEs || 100;
+  if (curEs !== hudCache.lastEs || curMaxEs !== hudCache.lastMaxEs) {
+    hudCache.lastEs = curEs;
+    hudCache.lastMaxEs = curMaxEs;
+    if (hudCache.barEs) hudCache.barEs.style.width = `${(curEs / curMaxEs) * 100}%`;
+    if (hudCache.textEs) hudCache.textEs.innerText = `ES: ${curEs} / ${curMaxEs}`;
+  }
 
-  document.getElementById('bar-mana').style.width = `${(player.mana / player.maxMana) * 100}%`;
-  document.getElementById('text-mana').innerText = `MP: ${Math.round(player.mana)} / ${player.maxMana}`;
+  const curLife = Math.round(player.life || 0);
+  const curMaxLife = player.maxLife || 250;
+  if (curLife !== hudCache.lastLife || curMaxLife !== hudCache.lastMaxLife) {
+    hudCache.lastLife = curLife;
+    hudCache.lastMaxLife = curMaxLife;
+    if (hudCache.barLife) hudCache.barLife.style.width = `${(curLife / curMaxLife) * 100}%`;
+    if (hudCache.textLife) hudCache.textLife.innerText = `HP: ${curLife} / ${curMaxLife}`;
+  }
 
-  document.getElementById('hud-level').innerText = `Lv.${player.level}`;
-  document.getElementById('zoom-level-text').innerText = `${Math.round(camera.zoom * 100)}%`;
+  const curMana = Math.round(player.mana || 0);
+  const curMaxMana = player.maxMana || 120;
+  if (curMana !== hudCache.lastMana || curMaxMana !== hudCache.lastMaxMana) {
+    hudCache.lastMana = curMana;
+    hudCache.lastMaxMana = curMaxMana;
+    if (hudCache.barMana) hudCache.barMana.style.width = `${(curMana / curMaxMana) * 100}%`;
+    if (hudCache.textMana) hudCache.textMana.innerText = `MP: ${curMana} / ${curMaxMana}`;
+  }
+
+  if (player.level !== hudCache.lastLevel) {
+    hudCache.lastLevel = player.level;
+    if (hudCache.hudLevel) hudCache.hudLevel.innerText = `Lv.${player.level}`;
+  }
+
+  const curZoom = Math.round(camera.zoom * 100);
+  if (curZoom !== hudCache.lastZoom) {
+    hudCache.lastZoom = curZoom;
+    if (hudCache.zoomText) hudCache.zoomText.innerText = `${curZoom}%`;
+  }
 
   updateExpBar();
 
   for (let k in player.cooldowns) {
-    const el = document.getElementById(`cd-${k}`);
+    if (!hudCache.cds[k]) hudCache.cds[k] = document.getElementById(`cd-${k}`);
+    const el = hudCache.cds[k];
     if (el) {
       const maxCd = SKILLS[k] ? SKILLS[k].baseCooldown : 1.0;
-      const pct = (player.cooldowns[k] / maxCd) * 100;
-      el.style.height = `${pct}%`;
+      const pct = Math.round((player.cooldowns[k] / maxCd) * 100);
+      if (hudCache.lastCds[k] !== pct) {
+        hudCache.lastCds[k] = pct;
+        el.style.height = `${pct}%`;
+      }
     }
   }
 }
@@ -1553,6 +1646,11 @@ function gameLoop(now) {
     fpsTimer = 0;
   }
 
+  // Smooth camera zoom interpolation bounded to [minZoom, maxZoom]
+  if (camera.targetZoom !== undefined && Math.abs(camera.zoom - camera.targetZoom) > 0.001) {
+    camera.zoom += (camera.targetZoom - camera.zoom) * 0.15;
+  }
+
   update(dt);
   renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, currentZoneMap);
 
@@ -1563,8 +1661,8 @@ function gameLoop(now) {
 window.addEventListener('wheel', e => {
   if (document.querySelector('.worldmap-modal-wrap:not(.hidden)')) return;
   e.preventDefault();
-  const zoomFactor = -Math.sign(e.deltaY) * 0.15;
-  camera.targetZoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.targetZoom + zoomFactor));
+  const zoomFactor = -Math.sign(e.deltaY) * 0.08;
+  camera.targetZoom = Math.max(camera.minZoom || 0.85, Math.min(camera.maxZoom || 1.35, (camera.targetZoom || camera.zoom || 1.0) + zoomFactor));
 }, { passive: false });
 
 window.addEventListener('keydown', e => {

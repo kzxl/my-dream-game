@@ -12,8 +12,8 @@ export const camera = {
   y: 672,
   zoom: 1.0,
   targetZoom: 1.0,
-  minZoom: 0.5,
-  maxZoom: 2.0
+  minZoom: 0.85,
+  maxZoom: 1.35
 };
 
 export const player = {

@@ -622,6 +622,12 @@ export function handleMonsterDefeated(target) {
   if (target.type === 'boss' && player.classSpec === 'Novice') {
     document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
   }
+
+  // Immediately prune defeated monster from monsters array to eliminate memory leaks and O(N^2) loops
+  const deadIdx = monsters.indexOf(target);
+  if (deadIdx !== -1) {
+    monsters.splice(deadIdx, 1);
+  }
 }
 
 export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', monsterType = 'monster') {
@@ -644,24 +650,14 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
   const playerIir = (player.iir || 0) + (lore.iir || 0) + (hasFortune ? 150 : 0);
   const playerIiq = (player.iiq || 0) + (lore.iiq || 0) + (hasFortune ? 100 : 0);
 
-  // Server-Authoritative Drop Generation (Using monsterType, MasteryRank & Kills)
   const kills = (player.monsterKills && player.monsterKills[monsterType]) || 0;
   const profile = getMonsterDiscoveryProfile(monsterType, kills, isBoss);
 
-  const serverResult = await ApiClient.generateMonsterLoot(
-    monsterType,
-    monsterRarity,
-    isBoss,
-    monsterLevel,
-    zoneId,
-    playerIir,
-    playerIiq,
-    profile.rank,
-    kills
-  );
-
   let itemsToDrop = [];
 
+  // High-tier monsters (Boss, Rare, Mutant, Goblin) use Server-Authoritative API; Normal/Magic use instant local generation to avoid HTTP flooding
+  const isHighTier = isBoss || monsterRarity === 'rare' || monsterRarity === 'mutant' || monsterRarity === 'champion' || monsterRarity === 'elite' || monsterType === 'treasure_goblin';
+  
   if (monsterType === 'treasure_goblin') {
     spawnDamageNumber(x, y - 90, '💰 HOARDER GOBLIN SLAIN! (+1500 GOLD FOUNTAIN)', true, '#ffd700');
     AudioEngine.playLevelUp?.();
@@ -675,10 +671,27 @@ export async function dropMonsterLoot(x, y, isBoss, monsterRarity = 'normal', mo
       POSSIBLE_LOOT[Math.floor(Math.random() * POSSIBLE_LOOT.length)]
     ];
     itemsToDrop.push(...goblinDrops);
-  } else if (serverResult && Array.isArray(serverResult.items)) {
-    itemsToDrop = serverResult.items;
-  } else {
-    // Local fallback if server unreachable
+  } else if (isHighTier) {
+    try {
+      const serverResult = await ApiClient.generateMonsterLoot(
+        monsterType,
+        monsterRarity,
+        isBoss,
+        monsterLevel,
+        zoneId,
+        playerIir,
+        playerIiq,
+        profile.rank,
+        kills
+      );
+      if (serverResult && Array.isArray(serverResult.items) && serverResult.items.length > 0) {
+        itemsToDrop = serverResult.items;
+      }
+    } catch (e) {}
+  }
+
+  if (itemsToDrop.length === 0 && monsterType !== 'treasure_goblin') {
+    // Instant local fallback/standard generator (zero lag)
     const isMutant = monsterRarity === 'mutant';
     const isChampion = monsterRarity === 'champion' || monsterRarity === 'magic' || monsterRarity === 'elite';
     const isRare = monsterRarity === 'rare';
@@ -842,6 +855,9 @@ export function updateTargetAilments(target, dt) {
 }
 
 export function spawnDamageNumber(x, y, text, isCrit, color) {
+  if (floatingTexts.length >= 40) {
+    floatingTexts.shift();
+  }
   floatingTexts.push({
     x: x + (Math.random() - 0.5) * 24,
     y: y,
@@ -1491,6 +1507,9 @@ const playerLeechInstances = [];
 
 export function addPlayerLeechInstance(amount, duration = 3.0, isEs = false) {
   if (amount <= 0) return;
+  if (playerLeechInstances.length >= 20) {
+    playerLeechInstances.shift();
+  }
   playerLeechInstances.push({
     total: amount,
     remaining: amount,

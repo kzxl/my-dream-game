@@ -7,11 +7,14 @@ export const AudioEngine = {
   masterVolume: 1.0,
   sfxVolume: 1.0,
   isMuted: false,
+  lastHitSoundTime: 0,
 
   init() {
     if (!this.ctx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioContext();
+      if (AudioContext) {
+        this.ctx = new AudioContext();
+      }
     }
   },
 
@@ -46,6 +49,14 @@ export const AudioEngine = {
       gNode.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
       osc.connect(gNode);
       gNode.connect(this.ctx.destination);
+
+      osc.onended = () => {
+        try {
+          osc.disconnect();
+          gNode.disconnect();
+        } catch (e) {}
+      };
+
       osc.start();
       osc.stop(this.ctx.currentTime + duration);
     } catch (e) {}
@@ -69,6 +80,9 @@ export const AudioEngine = {
     setTimeout(() => this.playTone(880, 'sine', 0.25, 0.15), 50);
   },
   playHit(isCrit) {
+    const now = performance.now();
+    if (now - this.lastHitSoundTime < 40) return; // Throttled to prevent audio graph flooding on AoE hits
+    this.lastHitSoundTime = now;
     this.init();
     if (isCrit) {
       this.playTone(180, 'sawtooth', 0.25, 0.2);

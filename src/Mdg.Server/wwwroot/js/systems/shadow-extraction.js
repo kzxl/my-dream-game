@@ -13,6 +13,9 @@ export const MAX_SHADOW_ARMY = 3;
 
 export function spawnExtractableCorpse(monster) {
   if (!monster) return;
+  if (shadowCorpses.length >= 15) {
+    shadowCorpses.shift();
+  }
   shadowCorpses.push({
     id: 'corpse_' + Math.random().toString(36).substring(2, 9),
     name: monster.name || 'Fallen Entity',
