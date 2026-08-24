@@ -4,7 +4,7 @@
 [![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-SignalR-239120?style=flat-square&logo=csharp)](https://learn.microsoft.com/aspnet/core/signalr/introduction)
 [![SQLite](https://img.shields.io/badge/Database-SQLite_EF_Core-003B57?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
 [![JavaScript](https://img.shields.io/badge/Client-Vanilla_JS_Canvas-F7DF1E?style=flat-square&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
-[![Tests](https://img.shields.io/badge/Unit_Tests-129%2F129_Passed-brightgreen?style=flat-square)](tests/Mdg.Core.Tests/)
+[![Tests](https://img.shields.io/badge/Unit_Tests-138%2F138_Passed-brightgreen?style=flat-square)](tests/Mdg.Core.Tests/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
 > **Repository Description**:
@@ -183,3 +183,13 @@ dotnet test tests/Mdg.Core.Tests/Mdg.Core.Tests.csproj
 - **Core Game Engineering**: Conceived and designed as an open-source educational game development project.
 - **AI Co-Development**: Architecture, server-authoritative service refactoring, procedural generation, and feature integrations engineered with **Antigravity / Gemini**.
 - **Asset Processing**: Visual artwork, background covers, and pixel spritesheets processed and curated using **Banana**.
+
+---
+
+## 📄 License
+This project is open-source and licensed under the **[MIT License](LICENSE)**.
+
+```text
+Copyright (c) 2026 kzxl. All rights reserved.
+Licensed under the MIT License.
+```
