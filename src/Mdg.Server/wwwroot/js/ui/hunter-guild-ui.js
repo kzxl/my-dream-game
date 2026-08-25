@@ -249,7 +249,7 @@ function scanTrophiesInBag() {
   const rankBonusMult = 1.0 + (currentRank.bonusGold / 100);
 
   // Scan player bag for monster scraps & trophies
-  player.bag.forEach(item => {
+  (player.bag || []).forEach(item => {
     if (!item) return;
     const isTrophy = item.category === 'trophy' || item.slot === 'Trophy' || item.isTrophy || (item.name && (item.name.includes('Pelt') || item.name.includes('Fang') || item.name.includes('Claw') || item.name.includes('Bone') || item.name.includes('Essence') || item.name.includes('Scrap')));
     if (isTrophy) {

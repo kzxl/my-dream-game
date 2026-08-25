@@ -342,6 +342,57 @@ namespace Mdg.Core.Tests
             Assert.Equal(25f, loreBonus.BonusDamagePercent);
             Assert.Equal(35f, loreBonus.BonusIir);
         }
+
+        [Fact]
+        public void SkillProgressionService_Handles_NodeAllocation_Respec_And_LevelUp()
+        {
+            var service = new SkillProgressionService();
+
+            // 1. Allocate node with sufficient SMP
+            var allocReq = new SkillNodeActionRequestDto("slash", "slash_node_1", 1, 5, new List<string>());
+            var allocRes = service.AllocateNode(allocReq);
+            Assert.True(allocRes.Success);
+            Assert.Contains("slash_node_1", allocRes.AllocatedNodeIds);
+            Assert.Equal(4, allocRes.RemainingSmp);
+
+            // 2. Prevent over-allocation
+            var overReq = new SkillNodeActionRequestDto("slash", "slash_node_2", 10, 5, new List<string> { "slash_node_1" });
+            var overRes = service.AllocateNode(overReq);
+            Assert.False(overRes.Success);
+
+            // 3. Respec tree
+            var respecRes = service.RespecTree(new SkillTreeRespecRequestDto("slash", 5));
+            Assert.True(respecRes.Success);
+            Assert.Empty(respecRes.AllocatedNodeIds);
+            Assert.Equal(5, respecRes.RemainingSmp);
+
+            // 4. Level up skill with skill point
+            var lvlRes = service.LevelUpSkill(new SkillLevelUpRequestDto("slash", 1, 3));
+            Assert.True(lvlRes.Success);
+            Assert.Equal(2, lvlRes.NewLevel);
+            Assert.Equal(2, lvlRes.RemainingPlayerSkillPoints);
+            Assert.True(lvlRes.NewExpToNext > 120);
+        }
+
+        [Fact]
+        public void ForgeService_Handles_CraftingMastery_Exp_And_Perks()
+        {
+            var service = new ForgeService();
+
+            // 1. Add Crafting Exp
+            var expRes = service.AddCraftingExp(new CraftingExpRequestDto(1, 0, 500));
+            Assert.True(expRes.Success);
+            Assert.True(expRes.Level >= 2);
+            Assert.True(expRes.LeveledUp);
+            Assert.True(expRes.ResourceSaveChancePercent > 0);
+
+            // 2. Get Crafting Perks
+            var perksRes = service.GetCraftingPerks(10, 50);
+            Assert.True(perksRes.Success);
+            Assert.Equal(10, perksRes.Level);
+            Assert.Equal("Journeyman", perksRes.Rank);
+            Assert.Contains("Journeyman", perksRes.RankTitle);
+        }
     }
 }
 

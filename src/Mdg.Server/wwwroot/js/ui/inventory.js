@@ -44,6 +44,9 @@ export function getItemCategory(item) {
  * Refresh Tab Counts
  */
 export function updateCategoryTabCounts() {
+  if (!Array.isArray(player.bag)) player.bag = [];
+  if (!player.equipped) player.equipped = {};
+
   const counts = { all: player.bag.length, weapon: 0, armor: 0, accessory: 0, currency: 0, consumable: 0 };
 
   player.bag.forEach(item => {

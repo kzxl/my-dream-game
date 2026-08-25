@@ -200,13 +200,10 @@ let activeChanneling = null; // { node, timer, maxTime }
  * Initialize / ensure player profession stats
  */
 export function initPlayerProfessions() {
-  if (!player.professions) {
-    player.professions = {
-      mining: { level: 1, exp: 0 },
-      herbalism: { level: 1, exp: 0 },
-      skinning: { level: 1, exp: 0 }
-    };
-  }
+  if (!player.professions) player.professions = {};
+  if (!player.professions.mining) player.professions.mining = { level: 1, exp: 0 };
+  if (!player.professions.herbalism) player.professions.herbalism = { level: 1, exp: 0 };
+  if (!player.professions.skinning) player.professions.skinning = { level: 1, exp: 0 };
 }
 
 /**
