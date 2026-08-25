@@ -266,10 +266,39 @@ export function renderAuthHeaderWidget(containerId = 'authHeaderWidget') {
   });
 }
 
+export async function quickPlayAsGuest(guestName = 'Adventurer') {
+  const cleanName = (guestName || 'Adventurer').trim();
+  const guestId = 'guest_' + Math.random().toString(36).substring(2, 8);
+  const user = {
+    id: guestId,
+    email: `${guestId}@aethelis.realm`,
+    name: cleanName,
+    picture: ''
+  };
+  currentUser = user;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  window.dispatchEvent(new CustomEvent('auth_state_changed', { detail: { user: currentUser, characters: [] } }));
+  return { success: true, user: currentUser };
+}
+
+export function ensureAccountLogin() {
+  return new Promise((resolve) => {
+    if (isUserLoggedIn()) {
+      resolve(getCurrentUser());
+      return;
+    }
+    openGoogleAuthModal({
+      isGate: true,
+      onSuccess: (user) => resolve(user)
+    });
+  });
+}
+
 /**
  * Modal Account Login & Google Authentication Portal
  */
-export function openGoogleAuthModal() {
+export function openGoogleAuthModal(options = {}) {
+  const { isGate = false, onSuccess = null } = options;
   let modal = document.getElementById('googleAuthModal');
   if (!modal) {
     modal = document.createElement('div');
@@ -285,70 +314,47 @@ export function openGoogleAuthModal() {
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:20px;">🛡️</span>
-          <h2>Aethelis Cloud Account Portal</h2>
+          <div>
+            <h2 style="margin:0; font-size:18px; color:#ffd700;">AETHELIS REALM GATEWAY</h2>
+            <span style="font-size:11px; color:#888;">Đăng nhập hoặc chọn danh tính để kết nối thế giới Multiplayer</span>
+          </div>
         </div>
-        <button class="close-btn" id="closeGoogleAuthBtn">✕</button>
+        ${!isGate ? '<button class="close-btn" id="closeGoogleAuthBtn">✕</button>' : ''}
       </div>
 
       <!-- Auth Navigation Tabs -->
       <div class="auth-tabs-row">
-        <button class="auth-tab-btn active" data-tab="googleTab">🌐 Google Sign In (OAuth 2.0)</button>
-        <button class="auth-tab-btn" data-tab="accountTab">🎮 Custom Account / Register</button>
-        <button class="auth-tab-btn" data-tab="fastTab">⚡ 1-Click Fast Profiles</button>
+        <button class="auth-tab-btn active" data-tab="accountTab">🎮 Tài Khoản / Đăng Ký</button>
+        <button class="auth-tab-btn" data-tab="fastTab">⚡ 1-Click Fast Profile</button>
+        <button class="auth-tab-btn" data-tab="guestTab">👤 Chơi Khách (Guest)</button>
+        <button class="auth-tab-btn" data-tab="googleTab">🌐 Google OAuth</button>
       </div>
 
       <div class="auth-modal-body">
-        <!-- TAB 1: Official Google OAuth 2.0 Redirect & GSI -->
-        <div id="googleTab" class="auth-tab-content active">
-          <p class="auth-desc">Authenticate directly with your Google Account via Google's official OAuth 2.0 authorization consent page to synchronize characters and items.</p>
-
-          <!-- Primary Google Auth Action Button -->
-          <div style="margin: 10px 0;">
-            <button id="btnDirectGoogleOAuth" class="forge-btn btn-craft" style="width:100%; padding:14px; font-size:13px; font-weight:800; background:linear-gradient(90deg, #4285f4, #34a853, #fbbc05, #ea4335); color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; gap:10px;">
-              <span style="font-size:18px;">🌐</span> CHUYỂN SANG TRANG XÁC THỰC GOOGLE OAUTH
-            </button>
-          </div>
-
-          <!-- Optional Custom Google Client ID Setting -->
-          <div class="auth-form-group" style="margin-top:10px; background:#121620; padding:12px; border-radius:8px; border:1px solid #283345;">
-            <label style="font-size:10px; color:#8ab4f8;">⚙️ Google OAuth Client ID (Optional custom configuration):</label>
-            <input type="text" id="googleClientIdInput" value="${currentClientId}" placeholder="Enter your Google Client ID..." class="form-input" style="font-size:11px;" />
-            <div style="display:flex; justify-content:flex-end; margin-top:4px;">
-              <button id="btnSaveClientId" class="forge-btn btn-craft" style="padding:3px 8px; font-size:10px;">Save Client ID</button>
-            </div>
-          </div>
-
-          <!-- Real GSI Token / Paste Token Box -->
-          <div class="auth-custom-token-box" style="margin-top:8px;">
-            <input type="text" id="customGoogleTokenInput" placeholder="Or paste Google Credential JWT Token..." class="form-input" />
-            <button class="forge-btn btn-craft" id="btnSubmitCustomToken">Verify Token</button>
-          </div>
-        </div>
-
-        <!-- TAB 2: Custom Account Login / Register -->
-        <div id="accountTab" class="auth-tab-content">
-          <p class="auth-desc">Enter your account handle or username to log in or create a custom account in the realm database.</p>
+        <!-- TAB 1: Custom Account Login / Register -->
+        <div id="accountTab" class="auth-tab-content active">
+          <p class="auth-desc">Nhập tên tài khoản để đăng nhập hoặc tự động tạo mới tài khoản trên máy chủ:</p>
           
           <div class="auth-form-group">
-            <label>Username / Account Handle</label>
-            <input type="text" id="customUsernameInput" placeholder="e.g. ShadowHunter99, Valerius..." class="form-input" maxlength="30" />
+            <label>Tên Tài Khoản (Username / Account Handle)</label>
+            <input type="text" id="customUsernameInput" placeholder="Ví dụ: ShadowHunter99, HeroVietNam..." class="form-input" maxlength="30" />
           </div>
 
           <div class="auth-form-group">
-            <label>Password (Optional for quick login)</label>
-            <input type="password" id="customPasswordInput" placeholder="Enter password..." class="form-input" maxlength="30" />
+            <label>Mật Khẩu (Tùy chọn cho chơi nhanh)</label>
+            <input type="password" id="customPasswordInput" placeholder="Nhập mật khẩu..." class="form-input" maxlength="30" />
           </div>
 
           <div class="auth-form-actions">
-            <button class="forge-btn btn-craft" id="btnSubmitCustomLogin" style="width:100%; padding:10px; font-size:13px; font-weight:bold;">
-              ⚔️ ENTER SANCTUARY (LOGIN / REGISTER)
+            <button class="forge-btn btn-craft" id="btnSubmitCustomLogin" style="width:100%; padding:12px; font-size:13px; font-weight:bold; background: linear-gradient(90deg, #00f2fe, #4facfe);">
+              ⚔️ ĐĂNG NHẬP / TẠO TÀI KHOẢN
             </button>
           </div>
         </div>
 
-        <!-- TAB 3: 1-Click Fast Profiles -->
+        <!-- TAB 2: 1-Click Fast Profiles -->
         <div id="fastTab" class="auth-tab-content">
-          <p class="auth-desc">Fast 1-click test profiles for quick multiplayer co-op testing across multiple tabs:</p>
+          <p class="auth-desc">Chọn nhanh hồ sơ mẫu để test Multiplayer 2 hoặc nhiều máy:</p>
 
           <div class="auth-dev-section">
             <div class="dev-profiles-grid">
@@ -378,13 +384,46 @@ export function openGoogleAuthModal() {
             </div>
           </div>
         </div>
+
+        <!-- TAB 3: Guest Mode -->
+        <div id="guestTab" class="auth-tab-content">
+          <p class="auth-desc">Chơi nhanh không cần đăng ký mật khẩu. Máy chủ sẽ cấp ID riêng biệt:</p>
+          <div class="auth-form-group">
+            <label>Biệt Danh Của Bạn (Nickname)</label>
+            <input type="text" id="guestNicknameInput" placeholder="Ví dụ: Chiến Binh Rồng, Player1..." class="form-input" maxlength="20" />
+          </div>
+          <div class="auth-form-actions">
+            <button class="forge-btn btn-craft" id="btnSubmitGuestPlay" style="width:100%; padding:12px; font-size:13px; font-weight:bold; background: linear-gradient(90deg, #10b981, #059669);">
+              🎮 VÀO CHƠI NHANH VỚI BIỆT DANH NÀY
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 4: Official Google OAuth 2.0 Redirect & GSI -->
+        <div id="googleTab" class="auth-tab-content">
+          <p class="auth-desc">Đăng nhập trực tiếp bằng Tài khoản Google để đồng bộ nhân vật và vật phẩm lên đám mây.</p>
+
+          <div style="margin: 10px 0;">
+            <button id="btnDirectGoogleOAuth" class="forge-btn btn-craft" style="width:100%; padding:12px; font-size:13px; font-weight:800; background:linear-gradient(90deg, #4285f4, #34a853, #fbbc05, #ea4335); color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; gap:10px;">
+              <span style="font-size:18px;">🌐</span> XÁC THỰC GOOGLE OAUTH
+            </button>
+          </div>
+
+          <div class="auth-custom-token-box" style="margin-top:8px;">
+            <input type="text" id="customGoogleTokenInput" placeholder="Hoặc dán Google Credential Token..." class="form-input" />
+            <button class="forge-btn btn-craft" id="btnSubmitCustomToken">Xác Thực</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
-  document.getElementById('closeGoogleAuthBtn').onclick = () => {
-    modal.style.display = 'none';
-  };
+  const btnClose = document.getElementById('closeGoogleAuthBtn');
+  if (btnClose) {
+    btnClose.onclick = () => {
+      modal.style.display = 'none';
+    };
+  }
 
   // Tab Switching
   modal.querySelectorAll('.auth-tab-btn').forEach(tabBtn => {
@@ -398,37 +437,42 @@ export function openGoogleAuthModal() {
     };
   });
 
+  const finishLogin = (user) => {
+    modal.style.display = 'none';
+    renderAuthHeaderWidget();
+    if (onSuccess) onSuccess(user);
+  };
+
   // Direct Google OAuth Button
   document.getElementById('btnDirectGoogleOAuth').onclick = () => {
-    const customId = document.getElementById('googleClientIdInput')?.value.trim();
+    const customId = document.getElementById('googleClientIdInput')?.value?.trim();
     if (customId) setGoogleClientId(customId);
     redirectToGoogleOAuth(customId);
   };
-
-  // Save Client ID Button
-  document.getElementById('btnSaveClientId')?.addEventListener('click', () => {
-    const customId = document.getElementById('googleClientIdInput')?.value.trim();
-    if (customId) {
-      setGoogleClientId(customId);
-      alert('Google Client ID saved successfully!');
-    }
-  });
 
   // Custom Account Login Handler
   document.getElementById('btnSubmitCustomLogin').onclick = async () => {
     const username = document.getElementById('customUsernameInput').value.trim();
     const password = document.getElementById('customPasswordInput').value.trim();
     if (!username) {
-      alert('Please enter an account username.');
+      alert('Vui lòng nhập tên tài khoản.');
       return;
     }
 
     const res = await loginWithCustomAccount(username, password);
     if (res && res.success) {
-      modal.style.display = 'none';
-      renderAuthHeaderWidget();
+      finishLogin(res.user);
     } else {
-      alert('Could not authenticate account.');
+      alert('Không thể đăng nhập tài khoản.');
+    }
+  };
+
+  // Guest Play Handler
+  document.getElementById('btnSubmitGuestPlay').onclick = async () => {
+    const nick = document.getElementById('guestNicknameInput').value.trim() || 'Hero_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+    const res = await quickPlayAsGuest(nick);
+    if (res && res.success) {
+      finishLogin(res.user);
     }
   };
 
@@ -438,8 +482,7 @@ export function openGoogleAuthModal() {
       const p = btn.getAttribute('data-profile');
       const res = await loginWithDevProfile(p);
       if (res && res.success) {
-        modal.style.display = 'none';
-        renderAuthHeaderWidget();
+        finishLogin(res.user);
       }
     };
   });
@@ -447,13 +490,12 @@ export function openGoogleAuthModal() {
   // Custom JWT Token Handler
   document.getElementById('btnSubmitCustomToken').onclick = async () => {
     const cred = document.getElementById('customGoogleTokenInput').value.trim();
-    if (!cred) return alert('Please enter token string');
+    if (!cred) return alert('Vui lòng nhập mã token');
     const res = await handleGoogleCredential(cred);
     if (res && res.success) {
-      modal.style.display = 'none';
-      renderAuthHeaderWidget();
+      finishLogin(res.user);
     } else {
-      alert('Unable to authenticate Google token.');
+      alert('Mã token không hợp lệ.');
     }
   };
 

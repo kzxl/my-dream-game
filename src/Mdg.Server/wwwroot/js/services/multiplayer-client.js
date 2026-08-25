@@ -25,23 +25,48 @@ class MultiplayerClient {
     this.serverTickRate = 30;
   }
 
+  disconnect() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+    if (this.posSendInterval) {
+      clearInterval(this.posSendInterval);
+      this.posSendInterval = null;
+    }
+    if (this.ws) {
+      try {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.onmessage = null;
+        this.ws.close();
+      } catch (e) {}
+      this.ws = null;
+    }
+    this.isConnected = false;
+    this.isInitialized = false;
+    this.updateConnectionStatus(false);
+  }
+
   init() {
-    if (this.isInitialized) return;
+    if (this.isInitialized && this.isConnected) return;
     this.isInitialized = true;
     this.connect();
     this.setupChannelUI();
     this.startPingMonitor();
     
     // Position broadcast loop (20 TPS)
-    setInterval(() => {
-      if (!this.isConnected) return;
-      const dx = Math.abs(player.x - this.lastSentPos.x);
-      const dy = Math.abs(player.y - this.lastSentPos.y);
-      if (dx > 2 || dy > 2) {
-        this.sendInvocation('UpdatePosition', [player.x, player.y, player.vx || 0, player.vy || 0, player.facing || 'down']);
-        this.lastSentPos = { x: player.x, y: player.y };
-      }
-    }, 50);
+    if (!this.posSendInterval) {
+      this.posSendInterval = setInterval(() => {
+        if (!this.isConnected) return;
+        const dx = Math.abs(player.x - this.lastSentPos.x);
+        const dy = Math.abs(player.y - this.lastSentPos.y);
+        if (dx > 2 || dy > 2) {
+          this.sendInvocation('UpdatePosition', [player.x, player.y, player.vx || 0, player.vy || 0, player.facing || 'down']);
+          this.lastSentPos = { x: player.x, y: player.y };
+        }
+      }, 50);
+    }
 
     // SignalR Keep-Alive Ping Loop (every 10s)
     if (!this.pingInterval) {

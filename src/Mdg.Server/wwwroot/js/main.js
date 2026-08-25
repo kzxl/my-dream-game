@@ -21,11 +21,11 @@ import { openNpcDialogue, fetchMasterNpcsFromServer } from './ui/npc-dialog-ui.j
 import { renderMapDeviceModal } from './ui/map-device-ui.js';
 import { initDefeatUI } from './ui/defeat-ui.js';
 import { setupBestiaryUI, toggleBestiaryUI } from './ui/bestiary-ui.js';
-import { setupRosterUI, openRosterUI } from './ui/roster-ui.js';
+import { setupRosterUI, openRosterUI, ensureCharacterSelection } from './ui/roster-ui.js';
 import { renderDevotionModal, fetchMasterDevotionFromServer } from './ui/devotion-ui.js';
 import { MPClient } from './services/multiplayer-client.js';
 import { getTownForAct, fetchMasterCampaignFromServer, fetchMasterQuestsFromServer } from './data/campaign.js';
-import { checkGoogleOAuthRedirectResult } from './auth.js';
+import { checkGoogleOAuthRedirectResult, ensureAccountLogin } from './auth.js';
 import { fetchMasterMonstersFromServer, fetchMasterFamilyMasteryFromServer } from './data/monsters.js';
 import { SHRINE_TYPES, ALL_SHRINE_KEYS } from './data/shrines.js';
 import { spawnMapIncursions, updateMapIncursions } from './systems/map-incursions.js';
@@ -1953,14 +1953,15 @@ initDefeatUI();
 setupCompendiumUI();
 setupRosterUI();
 initGamepadSystem();
-MPClient.init();
 document.getElementById('btn-toggle-settings')?.addEventListener('click', toggleSettingsModal);
 
-// Load previous savegame from SQLite DB and begin auto-save loop
-(async function initSave() {
+// Master Startup Pipeline: Auth Gate -> Character Select Gate -> World Entry -> Multiplayer Sync
+(async function initRealmEntry() {
   loadGameSettings();
   applyLocalization();
   await checkGoogleOAuthRedirectResult();
+
+  // 1. Fetch Master Game Data from Server in parallel
   await Promise.all([
     fetchMasterItemsFromServer(),
     fetchMasterMonstersFromServer(),
@@ -1972,12 +1973,20 @@ document.getElementById('btn-toggle-settings')?.addEventListener('click', toggle
     fetchMasterNpcsFromServer(),
     fetchMasterDevotionFromServer()
   ]);
-  const loaded = await loadFromDatabase();
-  
-  // Always return player safely to the Safe-Haven Town of their current Act upon login / session start
+
+  // 2. Authentication Gate: If not logged in, prompt user to sign in or choose guest nickname
+  const user = await ensureAccountLogin();
+
+  // 3. Character Selection Gate: Fetch character list for this account and choose/create hero
+  await ensureCharacterSelection(user);
+
+  // 4. Return player safely to the Safe-Haven Town of their current Act upon login / session start
   const targetTown = getTownForAct(player.zoneId || 'SanctuaryHaven');
   await loadZone(targetTown);
-  
+
+  // 5. Connect to SignalR Multiplayer Hub now that verified character ID and name exist
+  MPClient.init();
+
   // Restore life and mana upon entering town
   player.life = player.maxLife || 500;
   player.mana = player.maxMana || 200;
