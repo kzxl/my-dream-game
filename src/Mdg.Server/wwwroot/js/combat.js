@@ -14,6 +14,7 @@ import { addFlaskCharges } from './systems/flask-system.js';
 import { spawnExtractableCorpse } from './systems/shadow-extraction.js';
 import { handleMonsterSkinningDrop } from './systems/gathering-system.js';
 import { getRecipeDropForMonster } from './data/materials.js';
+import { MPClient } from './services/multiplayer-client.js';
 
 export const PROFICIENCY_THRESHOLDS = [
   { rank: 'F', exp: 0, title: 'Novice Practitioner (F)', bonusDmg: 0 },
@@ -894,6 +895,8 @@ export function castSlash() {
   const slashY = player.y + Math.sin(angle) * 40;
   let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Vanguard' ? 35 : 0);
 
+  MPClient.broadcastSkill('slash', player.x, player.y, mouse.worldX, mouse.worldY);
+
   if (isAwakened) {
     dmg = Math.round(dmg * 2.2); // 2.2x Awakened Dimension Cleave
   }
@@ -1006,6 +1009,8 @@ export function castFireball() {
   const baseAngle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
   const isAwakened = !!player.awakenedSkills?.fireball;
 
+  MPClient.broadcastSkill('fireball', player.x, player.y, mouse.worldX, mouse.worldY);
+
   let dmg = s.baseDmg + (s.level - 1) * s.dmgPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
   if (isAwakened) dmg = Math.round(dmg * 2.5); // 2.5x Awakened Supernova
   if (isNodeAllocated('fireball', 'fb_dmg_1')) dmg = Math.round(dmg * 1.25);
@@ -1112,6 +1117,7 @@ export function castFrostNova() {
   player.cooldowns.frost = Math.max(1.0, s.baseCooldown - (s.level - 1) * s.cdReductionPerLvl);
 
   const isAwakened = !!player.awakenedSkills?.frost;
+  MPClient.broadcastSkill('frost', player.x, player.y, player.x, player.y);
   let novaRadius = s.baseRadius + (s.level - 1) * s.radiusPerLvl + (player.classSpec === 'Arcanist' ? 40 : 0);
   if (isNodeAllocated('frost', 'fr_aoe')) novaRadius = Math.round(novaRadius * 1.30);
   if (isAwakened) novaRadius = Math.round(novaRadius * 1.60);
@@ -1185,6 +1191,8 @@ export function castMeteor() {
   const targetX = mouse.worldX;
   const targetY = mouse.worldY;
   const isAwakened = !!player.awakenedSkills?.meteor;
+
+  MPClient.broadcastSkill('meteor', player.x, player.y, targetX, targetY);
 
   const dropSingleImpact = (x, y, delayMs, isExtra = false) => {
     particles.push({
@@ -1269,6 +1277,8 @@ export function castDash() {
   const startX = player.x;
   const startY = player.y;
   const isAwakened = !!player.awakenedSkills?.dash;
+
+  MPClient.broadcastSkill('dash', startX, startY, mouse.worldX, mouse.worldY);
 
   let dx = 0, dy = 0;
   if (window.keys && (window.keys['KeyW'] || window.keys['ArrowUp'])) dy -= 1;

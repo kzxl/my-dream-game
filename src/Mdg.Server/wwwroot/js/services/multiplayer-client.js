@@ -302,13 +302,94 @@ class MultiplayerClient {
   }
 
   triggerRemoteSkillVisual(sc) {
-    // Play remote skill sound & animation
+    if (!sc) return;
+    const originX = sc.originX || 0;
+    const originY = sc.originY || 0;
+    const targetX = sc.targetX || originX;
+    const targetY = sc.targetY || originY;
+    const angle = Math.atan2(targetY - originY, targetX - originX);
+
     if (sc.skillKey === 'fireball') {
       AudioEngine.playTone(480, 'sawtooth', 0.15, 0.1);
+      import('../state.js').then(({ projectiles, particles }) => {
+        projectiles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * 360,
+          vy: Math.sin(angle) * 360,
+          type: 'fireball',
+          damage: 0,
+          radius: 14,
+          life: 1.8,
+          isRemoteVisualOnly: true
+        });
+      });
     } else if (sc.skillKey === 'frost') {
       AudioEngine.playTone(320, 'sine', 0.2, 0.15);
+      import('../state.js').then(({ particles }) => {
+        for (let a = 0; a < Math.PI * 2; a += 0.3) {
+          particles.push({
+            x: originX,
+            y: originY,
+            vx: Math.cos(a) * 260,
+            vy: Math.sin(a) * 260,
+            color: '#00f2fe',
+            life: 0.45,
+            maxLife: 0.45,
+            size: 6
+          });
+        }
+      });
     } else if (sc.skillKey === 'slash') {
       AudioEngine.playSlash();
+      import('../state.js').then(({ particles }) => {
+        for (let i = 0; i < 8; i++) {
+          const spread = angle + (Math.random() - 0.5) * 0.8;
+          particles.push({
+            x: originX + Math.cos(spread) * 30,
+            y: originY + Math.sin(spread) * 30,
+            vx: Math.cos(spread) * 160,
+            vy: Math.sin(spread) * 160,
+            color: '#ffd700',
+            life: 0.22,
+            maxLife: 0.22,
+            size: 5
+          });
+        }
+      });
+    } else if (sc.skillKey === 'meteor') {
+      AudioEngine.playTone(180, 'sawtooth', 0.35, 0.25);
+      import('../state.js').then(({ particles }) => {
+        for (let i = 0; i < 20; i++) {
+          const a = Math.random() * Math.PI * 2;
+          particles.push({
+            x: targetX + Math.cos(a) * 40,
+            y: targetY + Math.sin(a) * 40,
+            vx: Math.cos(a) * 200,
+            vy: Math.sin(a) * 200,
+            color: '#ff3d00',
+            life: 0.5,
+            maxLife: 0.5,
+            size: 7
+          });
+        }
+      });
+    } else if (sc.skillKey === 'dash') {
+      AudioEngine.playTone(600, 'triangle', 0.12, 0.1);
+      import('../state.js').then(({ particles }) => {
+        for (let i = 0; i < 12; i++) {
+          particles.push({
+            x: originX + (Math.random() - 0.5) * 20,
+            y: originY + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 80,
+            vy: (Math.random() - 0.5) * 80,
+            color: '#00e676',
+            life: 0.3,
+            maxLife: 0.3,
+            size: 4
+          });
+        }
+      });
     }
   }
 

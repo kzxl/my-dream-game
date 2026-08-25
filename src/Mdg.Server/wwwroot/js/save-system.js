@@ -10,7 +10,7 @@ import { updateAttributesModal, updateHudAvatar, updateExpBar } from './ui/hud.j
 import { spawnDamageNumber } from './combat.js';
 import { getCurrentUser } from './auth.js';
 
-export let activeCharacterId = localStorage.getItem('mdg_active_char_id') || 'hero_default';
+export let activeCharacterId = localStorage.getItem('mdg_active_char_id') || player.id || 'hero_default';
 let isSaving = false;
 
 export function setActiveCharacterId(id) {

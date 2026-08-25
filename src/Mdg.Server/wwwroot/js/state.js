@@ -16,17 +16,31 @@ export const camera = {
   maxZoom: 1.35
 };
 
+function getInitialCharacterId() {
+  try {
+    let cid = localStorage.getItem('mdg_active_char_id');
+    if (!cid || cid === 'hero_default') {
+      cid = 'hero_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('mdg_active_char_id', cid);
+    }
+    return cid;
+  } catch (e) {
+    return 'hero_' + Math.random().toString(36).substring(2, 9);
+  }
+}
+
+const initialCharId = getInitialCharacterId();
+
 export const player = {
-  x: 672,
-  y: 672,
+  x: 2000,
+  y: 2000,
   vx: 0,
   vy: 0,
-  speed: 185,
+  speed: 210,
+  radius: 16,
   facing: 'down',
   isMoving: false,
-  isAttacking: false,
   isDead: false,
-  invulnerableTimer: 0,
   zoneResurrectionsUsed: 0,
   portalCooldown: 0,
   animFrame: 0,
@@ -34,8 +48,8 @@ export const player = {
   freezeTimer: 0,
   attackTimer: 0,
 
-  id: 'hero_default',
-  name: 'The Unbound',
+  id: initialCharId,
+  name: 'Hero ' + initialCharId.substring(5, 9).toUpperCase(),
   gender: 'Male',
   classSpec: 'Novice',
   level: 1,

@@ -37,11 +37,19 @@ public sealed class GameHub : Hub
 
     public async Task JoinZone(string characterId, string characterName, string classSpec, string gender, string zoneId, string channelId, double x, double y, int level, double life, double maxLife)
     {
+        var resolvedCharId = (string.IsNullOrWhiteSpace(characterId) || characterId == "hero_default")
+            ? $"hero_guest_{Context.ConnectionId[..Math.Min(6, Context.ConnectionId.Length)]}"
+            : characterId;
+
+        var resolvedCharName = (string.IsNullOrWhiteSpace(characterName) || characterName == "The Unbound")
+            ? $"Adventurer #{Context.ConnectionId[..Math.Min(4, Context.ConnectionId.Length)].ToUpper()}"
+            : characterName;
+
         var player = new PlayerStateDto
         {
             ConnectionId = Context.ConnectionId,
-            CharacterId = string.IsNullOrWhiteSpace(characterId) ? Context.ConnectionId : characterId,
-            CharacterName = string.IsNullOrWhiteSpace(characterName) ? "Hero" : characterName,
+            CharacterId = resolvedCharId,
+            CharacterName = resolvedCharName,
             ClassSpec = classSpec ?? "Novice",
             Gender = gender ?? "Male",
             ZoneId = zoneId ?? "SanctuaryHaven",

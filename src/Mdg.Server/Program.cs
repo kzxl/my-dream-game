@@ -130,6 +130,24 @@ try
 }
 catch { }
 
+// Configure LAN & Multi-Machine network binding on all interfaces (0.0.0.0:5013)
+if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+{
+    builder.WebHost.UseUrls("http://0.0.0.0:5013");
+}
+
+// Enable permissive CORS for cross-device LAN multiplayer and API access
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Register EF Core DbContextFactory & Services
 builder.Services.AddDbContextFactory<MdgDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
@@ -159,6 +177,7 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<GameSessionService
 
 var app = builder.Build();
 
+app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
