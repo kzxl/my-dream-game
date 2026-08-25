@@ -38,6 +38,7 @@ import { setupCompendiumUI, toggleCompendiumUI, openCompendiumUI, closeCompendiu
 import { renderHunterGuildModal } from './ui/hunter-guild-ui.js';
 import { toggleMarketModal, openMarketModal } from './ui/trade-market-ui.js';
 import { initGamepadSystem, updateGamepad, toggleRadialWheel } from './systems/gamepad-controller.js';
+import { ApiClient } from './services/api-client.js';
 import { t, applyLocalization } from './i18n.js';
 
 window.keys = keys;
@@ -743,24 +744,69 @@ export function spawnMonsterCluster(cx, cy, count, typeOverride) {
   }
 }
 
-window.gainExp = function(amount) {
-  if (!amount || amount <= 0) return;
-  player.currentExp = (player.currentExp || 0) + amount;
-  if (!player.expToNext || player.expToNext <= 0) player.expToNext = 100;
+window.gainExp = async function(amount) {
+  const expNum = Number(amount);
+  if (isNaN(expNum) || expNum <= 0) return;
+
+  // 1. Attempt Server-Authoritative Progression Calculation
+  const serverRes = await ApiClient.gainExpAuthoritative(player.level, player.currentExp, expNum, player.classSpec);
+
+  if (serverRes && typeof serverRes.newLevel === 'number') {
+    player.level = Math.clamp(serverRes.newLevel, 1, 100);
+    player.currentExp = Math.max(0, serverRes.newExp);
+    player.expToNext = Math.max(100, serverRes.expToNext);
+    player.skillPoints = Math.max(0, (player.skillPoints || 0) + (serverRes.skillPointsGained || 0));
+
+    if (serverRes.maxLifeGain > 0) {
+      player.maxLife = (player.maxLife || 500) + serverRes.maxLifeGain;
+      player.life = player.maxLife;
+    }
+    if (serverRes.maxManaGain > 0) {
+      player.maxMana = (player.maxMana || 200) + serverRes.maxManaGain;
+      player.mana = player.maxMana;
+    }
+
+    if (serverRes.leveledUp) {
+      AudioEngine.playLevelUp();
+      spawnDamageNumber(player.x, player.y - 60, `LEVEL UP (Lv.${player.level})! +${serverRes.skillPointsGained} SP`, true, '#ffd700');
+
+      const hudLevel = document.getElementById('hud-level');
+      if (hudLevel) hudLevel.innerText = `Lv.${player.level}`;
+
+      if (serverRes.eligibleForAscendance) {
+        document.getElementById('btn-ascend-trigger')?.classList.remove('hidden');
+      }
+
+      updateSkillBadges();
+      const modal = document.getElementById('skills-modal');
+      if (modal && !modal.classList.contains('hidden')) {
+        renderSkillUpgradeModal();
+      }
+    }
+
+    updateExpBar();
+    return;
+  }
+
+  // 2. Ultra-Safe Bounded Fallback
+  player.currentExp = (Number(player.currentExp) || 0) + expNum;
+  if (!player.expToNext || isNaN(player.expToNext) || player.expToNext <= 0) {
+    player.expToNext = Math.max(100, Math.round(100 * Math.pow(1.36, (player.level || 1) - 1)));
+  }
 
   let leveledUp = false;
   let loops = 0;
   while (player.currentExp >= player.expToNext && player.level < 100 && loops < 50) {
     loops++;
     player.currentExp -= player.expToNext;
-    player.level++;
-    player.skillPoints++;
-    player.expToNext = Math.max(50, Math.round(player.expToNext * 1.4));
+    player.level = (player.level || 1) + 1;
+    player.skillPoints = (player.skillPoints || 0) + 1;
+    player.expToNext = Math.max(100, Math.round(100 * Math.pow(1.36, player.level - 1)));
     leveledUp = true;
 
-    player.maxLife += 20;
+    player.maxLife = (player.maxLife || 500) + 25;
     player.life = player.maxLife;
-    player.maxMana += 10;
+    player.maxMana = (player.maxMana || 200) + 12;
     player.mana = player.maxMana;
 
     AudioEngine.playLevelUp();
@@ -774,11 +820,18 @@ window.gainExp = function(amount) {
     }
   }
 
+  if (player.level >= 100) {
+    player.currentExp = 0;
+  }
+
   if (leveledUp) {
     updateSkillBadges();
-    renderSkillUpgradeModal();
-    updateExpBar();
+    const modal = document.getElementById('skills-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      renderSkillUpgradeModal();
+    }
   }
+  updateExpBar();
 };
 
 let lastTime = performance.now();

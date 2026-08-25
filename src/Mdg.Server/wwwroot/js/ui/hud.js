@@ -17,6 +17,7 @@ import { renderRosterModal } from './roster-ui.js';
 import { sendPetToTown, companion } from '../companion.js';
 import { openGoogleAuthModal } from '../auth.js';
 import { MPClient } from '../services/multiplayer-client.js';
+import { ApiClient } from '../services/api-client.js';
 import { CHANNELS } from '../data/channels.js';
 import { t, applyLocalization } from '../i18n.js';
 
@@ -169,14 +170,14 @@ export function selectClassSpecialization(spec) {
   saveToDatabase();
 }
 
-export function updateAttributesModal() {
+export async function updateAttributesModal() {
   const subTitle = document.getElementById('stat-hero-sub');
-  if (subTitle) subTitle.innerText = `Level ${player.level} ${player.classSpec} • ${player.gender === 'Male' ? '♂ Hero' : '♀ Heroine'}`;
+  if (subTitle) subTitle.innerText = `Level ${player.level || 1} ${player.classSpec || 'Novice'} • ${player.gender === 'Male' ? '♂ Hero' : '♀ Heroine'}`;
 
   // Base Attributes
-  let baseStr = 25 + (player.level * 2) + (player.classSpec === 'Vanguard' ? 25 : 0);
-  let baseDex = 20 + (player.level * 2) + (player.classSpec === 'ShadowRogue' ? 25 : 0);
-  let baseInt = 20 + (player.level * 2) + (player.classSpec === 'Arcanist' ? 25 : 0);
+  let baseStr = 25 + ((player.level || 1) * 2) + (player.classSpec === 'Vanguard' ? 25 : 0);
+  let baseDex = 20 + ((player.level || 1) * 2) + (player.classSpec === 'ShadowRogue' ? 25 : 0);
+  let baseInt = 20 + ((player.level || 1) * 2) + (player.classSpec === 'Arcanist' ? 25 : 0);
 
   const strEl = document.getElementById('val-str');
   if (strEl) strEl.innerText = baseStr;
@@ -185,19 +186,39 @@ export function updateAttributesModal() {
   const intEl = document.getElementById('val-int');
   if (intEl) intEl.innerText = baseInt;
 
+  // Query Server-Authoritative Stats
+  const equippedList = Object.values(player.equipped || {}).filter(Boolean);
+  const serverStats = await ApiClient.calculateCharacterStats(
+    player.level,
+    player.classSpec,
+    baseStr,
+    baseDex,
+    baseInt,
+    1,
+    equippedList,
+    player.allocatedDevotionNodes || []
+  );
+
   // Defenses
+  const armorVal = serverStats ? serverStats.armor : (player.armor || 0);
+  const pdrVal = serverStats ? serverStats.physicalReductionPercent : Math.min(90, Math.round((armorVal / (armorVal + 50 * (player.level || 1))) * 100));
+  const evasionVal = serverStats ? serverStats.evasion : (player.evasion || 350);
+
   const armorEl = document.getElementById('stat-armor');
-  if (armorEl) armorEl.innerText = `${player.armor} (58% PDR)`;
+  if (armorEl) armorEl.innerText = `${armorVal} (${pdrVal}% PDR)`;
   const evasionEl = document.getElementById('stat-evasion');
-  if (evasionEl) evasionEl.innerText = `${player.evasion || 350} (42% Evade)`;
+  if (evasionEl) evasionEl.innerText = `${evasionVal} (Evade)`;
   const blockEl = document.getElementById('stat-block');
   if (blockEl) blockEl.innerText = `28% (Cap 75%)`;
 
   // Offense
+  const critVal = serverStats ? serverStats.critChancePercent : (Number(player.critChance) || 5.0);
+  const multiVal = serverStats ? serverStats.critMultiplierPercent : (Number(player.critMulti) || 150);
+
   const critEl = document.getElementById('stat-crit-chance');
-  if (critEl) critEl.innerText = `${player.critChance.toFixed(1)}%`;
+  if (critEl) critEl.innerText = `${critVal.toFixed(1)}%`;
   const multiEl = document.getElementById('stat-crit-multi');
-  if (multiEl) multiEl.innerText = `${player.critMulti}% (${(player.critMulti / 100).toFixed(1)}x)`;
+  if (multiEl) multiEl.innerText = `${multiVal}% (${(multiVal / 100).toFixed(1)}x)`;
 }
 
 export function toggleModal(id) {

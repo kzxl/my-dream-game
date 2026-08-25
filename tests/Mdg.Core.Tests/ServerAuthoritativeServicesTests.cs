@@ -139,6 +139,28 @@ namespace Mdg.Core.Tests
         }
 
         [Fact]
+        public void ProgressionService_Calculates_Exp_Gain_And_Level_Up()
+        {
+            var service = new ProgressionService();
+
+            var req = new ExpGainRequestDto
+            {
+                CurrentLevel = 1,
+                CurrentExp = 50,
+                ExpGained = 300,
+                ClassSpec = "Novice"
+            };
+
+            var res = service.CalculateExpGain(req);
+            Assert.True(res.LeveledUp);
+            Assert.True(res.NewLevel > 1);
+            Assert.True(res.SkillPointsGained >= 1);
+            Assert.True(res.MaxLifeGain > 0);
+            Assert.True(res.MaxManaGain > 0);
+            Assert.True(res.ExpToNext > 0);
+        }
+
+        [Fact]
         public void EconomyService_Calculates_Pet_Selling_Currencies_And_Gold()
         {
             var service = new EconomyService();

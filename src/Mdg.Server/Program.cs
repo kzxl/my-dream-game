@@ -506,6 +506,12 @@ app.MapPost("/api/v1/spire/claim", (SpireService spireService, ClaimSpireFloorRe
     return Results.Ok(result);
 });
 
+app.MapPost("/api/v1/progression/gain-exp", (ProgressionService progressionService, ExpGainRequestDto req) =>
+{
+    var result = progressionService.CalculateExpGain(req);
+    return Results.Ok(result);
+});
+
 app.MapPost("/api/v1/progression/ascendance/select", (ProgressionService progressionService, AscendanceSelectRequestDto req) =>
 {
     var result = progressionService.SelectAscendance(req);

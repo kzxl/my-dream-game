@@ -108,6 +108,30 @@ export const ApiClient = {
   },
 
   /**
+   * Request server-authoritative experience calculation and level progression
+   */
+  async gainExpAuthoritative(currentLevel, currentExp, expGained, classSpec) {
+    try {
+      const res = await fetch('/api/v1/progression/gain-exp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentLevel: Math.max(1, Number(currentLevel) || 1),
+          currentExp: Math.max(0, Number(currentExp) || 0),
+          expGained: Math.max(0, Number(expGained) || 0),
+          classSpec: classSpec || 'Novice'
+        })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[ApiClient] Server gainExp fallback to safe local:', err);
+    }
+    return null;
+  },
+
+  /**
    * Character Roster APIs
    */
   async fetchCharacters(accountId = 'guest') {
