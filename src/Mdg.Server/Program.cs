@@ -153,6 +153,7 @@ builder.Services.AddDbContextFactory<MdgDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<IMasterDataCacheService, MasterDataCacheService>();
 builder.Services.AddSingleton<GameDatabaseService>();
 builder.Services.AddSingleton<GameSessionService>();
 builder.Services.AddSingleton<CompanionManager>();
@@ -640,9 +641,35 @@ app.MapPost("/api/v1/market/cancel", async (GameDatabaseService db, MarketCancel
     return success ? Results.Ok(new { success, message, listing }) : Results.BadRequest(new { success, message });
 });
 
-// Seed Master Database on Startup if needed
+// MASTER DATA APIS (In-Memory Fast O(1) Access)
+app.MapGet("/api/v1/masterdata/starter-kits", (IMasterDataCacheService cache, string? classSpec) =>
+{
+    return string.IsNullOrWhiteSpace(classSpec)
+        ? Results.Ok(cache.GetStarterKits())
+        : Results.Ok(cache.GetStarterKitForClass(classSpec));
+});
+
+app.MapGet("/api/v1/masterdata/items", (IMasterDataCacheService cache) =>
+{
+    return Results.Ok(cache.GetAllItemTemplates());
+});
+
+app.MapGet("/api/v1/masterdata/modifiers", (IMasterDataCacheService cache, string? category, string? type) =>
+{
+    return Results.Ok(cache.GetModifiers(category, type));
+});
+
+app.MapGet("/api/v1/masterdata/monsters", (IMasterDataCacheService cache) =>
+{
+    return Results.Ok(cache.GetAllMonsterTemplates());
+});
+
+// Seed Master Database on Startup if needed & Warmup Cache
 var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<MdgDbContext>>();
 await DatabaseSeeder.SeedAllAsync(dbContextFactory);
+
+var masterCache = app.Services.GetRequiredService<IMasterDataCacheService>();
+await masterCache.WarmupAsync();
 
 app.Run();
 

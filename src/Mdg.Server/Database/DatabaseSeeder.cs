@@ -222,6 +222,17 @@ CREATE TABLE IF NOT EXISTS ""DevotionNodes"" (
     ""CreatedAt"" TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ""IX_DevotionNodes_ConstellationId"" ON ""DevotionNodes"" (""ConstellationId"");
+
+CREATE TABLE IF NOT EXISTS ""ClassStarterKits"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_ClassStarterKits"" PRIMARY KEY,
+    ""ClassSpec"" TEXT NOT NULL,
+    ""Slot"" TEXT NOT NULL,
+    ""ItemTemplateId"" TEXT NOT NULL,
+    ""Quantity"" INTEGER NOT NULL,
+    ""InitialLevel"" INTEGER NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_ClassStarterKits_ClassSpec"" ON ""ClassStarterKits"" (""ClassSpec"");
 ");
         }
         catch { }
@@ -335,6 +346,30 @@ CREATE INDEX IF NOT EXISTS ""IX_DevotionNodes_ConstellationId"" ON ""DevotionNod
             await db.DevotionNodes.AddRangeAsync(devNodes);
             await db.SaveChangesAsync();
         }
+
+        // 13. Seed Class Starter Kits
+        if (!await db.ClassStarterKits.AnyAsync())
+        {
+            var kits = BuildDefaultClassStarterKits();
+            await db.ClassStarterKits.AddRangeAsync(kits);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    public static List<ClassStarterKitEntity> BuildDefaultClassStarterKits()
+    {
+        return new List<ClassStarterKitEntity>
+        {
+            new() { Id = "kit_vanguard", ClassSpec = "Vanguard", Slot = "MainHand", ItemTemplateId = "starter_blade_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_paladin", ClassSpec = "Paladin", Slot = "MainHand", ItemTemplateId = "starter_blade_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_sorceress", ClassSpec = "Sorceress", Slot = "MainHand", ItemTemplateId = "starter_staff_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_mage", ClassSpec = "Mage", Slot = "MainHand", ItemTemplateId = "starter_staff_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_rogue", ClassSpec = "Rogue", Slot = "MainHand", ItemTemplateId = "starter_dagger_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_assassin", ClassSpec = "Assassin", Slot = "MainHand", ItemTemplateId = "starter_dagger_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_ranger", ClassSpec = "Ranger", Slot = "MainHand", ItemTemplateId = "starter_bow_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_archer", ClassSpec = "Archer", Slot = "MainHand", ItemTemplateId = "starter_bow_1", Quantity = 1, InitialLevel = 1 },
+            new() { Id = "kit_novice", ClassSpec = "Novice", Slot = "MainHand", ItemTemplateId = "starter_blade_1", Quantity = 1, InitialLevel = 1 }
+        };
     }
 
     public static List<ItemTemplateEntity> BuildDefaultItemTemplates()
@@ -527,6 +562,72 @@ CREATE INDEX IF NOT EXISTS ""IX_DevotionNodes_ConstellationId"" ON ""DevotionNod
                 Description = "Channels pure solar plasma into blazing firestorms.",
                 StatsJson = JsonSerializer.Serialize(new Dictionary<string, object> { ["damage"] = 75, ["fireRes"] = 30 }),
                 ModsJson = JsonSerializer.Serialize(new[] { "+75 Fire Spell Damage", "+50% Fireball Projectile Speed", "+30% Fire Penetration" })
+            },
+
+            // --- STARTER WEAPONS (Class Starter Kits) ---
+            new()
+            {
+                Id = "starter_blade_1",
+                Name = "Rusty Iron Blade",
+                BaseType = "Rusty Iron Blade",
+                Category = "weapon",
+                Rarity = "Normal",
+                Slot = "MainHand",
+                RequiredLevel = 1,
+                MinIlvl = 1,
+                Icon = "🗡️",
+                Color = "#c8c8c8",
+                Description = "A weathered blade carried by novice warriors.",
+                Lore = "A simple iron blade forged for novice explorers.",
+                StatsJson = JsonSerializer.Serialize(new Dictionary<string, object> { ["damage"] = 15, ["attackSpeed"] = 1.20, ["critChance"] = 5.0 })
+            },
+            new()
+            {
+                Id = "starter_staff_1",
+                Name = "Novice Apprentice Staff",
+                BaseType = "Apprentice Staff",
+                Category = "weapon",
+                Rarity = "Normal",
+                Slot = "MainHand",
+                RequiredLevel = 1,
+                MinIlvl = 1,
+                Icon = "🪄",
+                Color = "#c8c8c8",
+                Description = "A light wooden staff infused with ambient mana sparks.",
+                Lore = "Carved from elder ash wood by the Sanctuary acolytes.",
+                StatsJson = JsonSerializer.Serialize(new Dictionary<string, object> { ["damage"] = 14, ["attackSpeed"] = 1.15, ["critChance"] = 6.0, ["mana"] = 20 })
+            },
+            new()
+            {
+                Id = "starter_dagger_1",
+                Name = "Rusty Kris Dagger",
+                BaseType = "Kris Dagger",
+                Category = "weapon",
+                Rarity = "Normal",
+                Slot = "MainHand",
+                RequiredLevel = 1,
+                MinIlvl = 1,
+                Icon = "🗡️",
+                Color = "#c8c8c8",
+                Description = "A serrated dagger favored by agile rogues and assassins.",
+                Lore = "Lightweight and swift for precision strikes.",
+                StatsJson = JsonSerializer.Serialize(new Dictionary<string, object> { ["damage"] = 13, ["attackSpeed"] = 1.40, ["critChance"] = 8.0 })
+            },
+            new()
+            {
+                Id = "starter_bow_1",
+                Name = "Short Hunting Bow",
+                BaseType = "Short Bow",
+                Category = "weapon",
+                Rarity = "Normal",
+                Slot = "MainHand",
+                RequiredLevel = 1,
+                MinIlvl = 1,
+                Icon = "🏹",
+                Color = "#c8c8c8",
+                Description = "A flexible bow crafted for swift ranged scouting.",
+                Lore = "Seasoned yew wood bound with hemp string.",
+                StatsJson = JsonSerializer.Serialize(new Dictionary<string, object> { ["damage"] = 14, ["attackSpeed"] = 1.30, ["critChance"] = 7.0 })
             },
 
             // --- BASE EQUIPMENT ---

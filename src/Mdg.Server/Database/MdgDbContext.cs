@@ -103,6 +103,7 @@ public class MdgDbContext : DbContext
     public DbSet<NpcDialogueTemplateEntity> NpcDialogues => Set<NpcDialogueTemplateEntity>();
     public DbSet<DevotionConstellationEntity> DevotionConstellations => Set<DevotionConstellationEntity>();
     public DbSet<DevotionNodeEntity> DevotionNodes => Set<DevotionNodeEntity>();
+    public DbSet<ClassStarterKitEntity> ClassStarterKits => Set<ClassStarterKitEntity>();
 
     public MdgDbContext(DbContextOptions<MdgDbContext> options) : base(options) { }
 
@@ -309,6 +310,13 @@ public class MdgDbContext : DbContext
             b.ToTable("DevotionNodes");
             b.HasKey(n => n.Id);
             b.HasIndex(n => n.ConstellationId);
+        });
+
+        modelBuilder.Entity<ClassStarterKitEntity>(b =>
+        {
+            b.ToTable("ClassStarterKits");
+            b.HasKey(k => k.Id);
+            b.HasIndex(k => k.ClassSpec);
         });
     }
 }

@@ -34,6 +34,8 @@ public class UnifiedModifierTemplateEntity
     public int Tier { get; set; } = 1;
     public int Weight { get; set; } = 1000;
     public string DescriptionTemplate { get; set; } = string.Empty; // "+{0}% to Fire Resistance"
+    public string AllowedSlotsJson { get; set; } = "[]"; // e.g. ["MainHand"] or ["Helm","BodyArmor","Boots"]
+    public string EffectPayloadJson { get; set; } = "{}"; // e.g. {"auraRadius":350, "glowColor":"#ff3300", "onDeathExplode":true}
     public string TagsJson { get; set; } = "[]";
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
@@ -204,6 +206,17 @@ public class DevotionNodeEntity
     public string Icon { get; set; } = "✨";
     public bool IsRoot { get; set; } = false;
     public bool IsProc { get; set; } = false;
+    public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}
+
+public class ClassStarterKitEntity
+{
+    public string Id { get; set; } = string.Empty; // e.g. kit_vanguard, kit_sorceress, kit_rogue, kit_ranger, kit_paladin
+    public string ClassSpec { get; set; } = "Vanguard";
+    public string Slot { get; set; } = "MainHand";
+    public string ItemTemplateId { get; set; } = "starter_blade_1";
+    public int Quantity { get; set; } = 1;
+    public int InitialLevel { get; set; } = 1;
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
 

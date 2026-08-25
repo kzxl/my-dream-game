@@ -11,10 +11,12 @@ namespace Mdg.Server.Database;
 public sealed class GameDatabaseService
 {
     private readonly IDbContextFactory<MdgDbContext> _contextFactory;
+    private readonly Mdg.Server.Services.IMasterDataCacheService? _masterDataCache;
 
-    public GameDatabaseService(IDbContextFactory<MdgDbContext> contextFactory)
+    public GameDatabaseService(IDbContextFactory<MdgDbContext> contextFactory, Mdg.Server.Services.IMasterDataCacheService? masterDataCache = null)
     {
         _contextFactory = contextFactory;
+        _masterDataCache = masterDataCache;
         try
         {
             using var db = _contextFactory.CreateDbContext();
@@ -275,26 +277,28 @@ public sealed class GameDatabaseService
             PositionX = 2000,
             PositionY = 2000,
             Skills = new(),
-            EquippedGear = new Dictionary<string, object>
-            {
-                ["MainHand"] = new
+            EquippedGear = _masterDataCache != null 
+                ? _masterDataCache.BuildStarterGearForClass(dto.ClassSpec ?? "Novice")
+                : new Dictionary<string, object>
                 {
-                    id = "starter_blade_1",
-                    name = "Rusty Iron Blade",
-                    category = "weapon",
-                    slot = "MainHand",
-                    rarity = "Normal",
-                    tier = 1,
-                    requiredLevel = 1,
-                    itemLevel = 1,
-                    damage = 15,
-                    attackSpeed = 1.20,
-                    critChance = 5.0,
-                    icon = "🗡️",
-                    color = "#c8c8c8",
-                    description = "A weathered starter blade carried by novice warriors."
-                }
-            },
+                    ["MainHand"] = new
+                    {
+                        id = "starter_blade_1",
+                        name = "Rusty Iron Blade",
+                        category = "weapon",
+                        slot = "MainHand",
+                        rarity = "Normal",
+                        tier = 1,
+                        requiredLevel = 1,
+                        itemLevel = 1,
+                        damage = 15,
+                        attackSpeed = 1.20,
+                        critChance = 5.0,
+                        icon = "🗡️",
+                        color = "#c8c8c8",
+                        description = "A weathered starter blade carried by novice warriors."
+                    }
+                },
             BackpackItems = new(),
             CreatedAt = DateTime.UtcNow.ToString("o"),
             UpdatedAt = DateTime.UtcNow.ToString("o")
