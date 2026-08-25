@@ -159,6 +159,168 @@ namespace Mdg.Core.Tests
             Assert.Contains(res.CurrenciesEarned.Keys, k => k == "Genesis Prism" || k == "Aether Spark" || k == "Fracture Core");
             Assert.NotEmpty(res.Items);
         }
+
+        [Fact]
+        public void ForgeService_Salvages_Items_Correctly()
+        {
+            var service = new ForgeService();
+
+            var normalItem = new LootItemDto { Name = "Iron Sword", Rarity = "Normal", Slot = "mainhand" };
+            var normalSalvage = service.Salvage(new SalvageRequestDto(normalItem));
+            Assert.True(normalSalvage.Success);
+            Assert.True(normalSalvage.ProducedMaterials.ContainsKey("mat_iron_ore"));
+
+            var uniqueItem = new LootItemDto { Name = "Genesis Blade", Rarity = "Unique", Slot = "mainhand" };
+            var uniqueSalvage = service.Salvage(new SalvageRequestDto(uniqueItem));
+            Assert.True(uniqueSalvage.Success);
+            Assert.True(uniqueSalvage.ProducedMaterials.ContainsKey("fracture_core"));
+        }
+
+        [Fact]
+        public void ForgeService_Crafts_Base_Equipment_Correctly()
+        {
+            var service = new ForgeService();
+            var mats = new Dictionary<string, int>
+            {
+                ["mat_iron_ingot"] = 10,
+                ["mat_tanned_leather"] = 10,
+                ["mat_heartwood"] = 5
+            };
+
+            var req = new CraftBaseRequestDto(
+                RecipeId: "forge_iron_sword",
+                CharacterLevel: 5,
+                CraftingMasteryLevel: 10,
+                CraftingMasteryExp: 50,
+                UnlockedRecipes: new List<string> { "forge_iron_sword" },
+                Materials: mats);
+
+            var res = service.CraftBaseEquipment(req);
+            Assert.True(res.Success);
+            Assert.NotNull(res.Item);
+            Assert.Equal("mainhand", res.Item.Slot);
+            Assert.True(res.Item.Sockets >= 1);
+            Assert.True(res.ExpGain > 0);
+        }
+
+        [Fact]
+        public void ForgeService_Smelts_And_Brews_Correctly()
+        {
+            var service = new ForgeService();
+
+            // Smelt Glass Vial
+            var smeltMats = new Dictionary<string, int> { ["mat_silica_sand"] = 6 };
+            var smeltRes = service.Smelt(new SmeltRequestDto("smelt_glass_vial", 1, smeltMats));
+            Assert.True(smeltRes.Success);
+            Assert.Equal("item_empty_vial", smeltRes.OutputItemId);
+            Assert.Equal(1, smeltRes.OutputQuantity);
+            Assert.Equal(3, smeltRes.RemainingMaterials["mat_silica_sand"]);
+
+            // Brew Lesser Life Flask
+            var brewMats = new Dictionary<string, int>
+            {
+                ["item_empty_vial"] = 1,
+                ["mat_aether_water"] = 1,
+                ["mat_blood_herb"] = 3
+            };
+            var brewRes = service.BrewFlask(new BrewFlaskRequestDto("alch_life_lesser", 1, brewMats));
+            Assert.True(brewRes.Success);
+            Assert.NotNull(brewRes.FlaskItem);
+            Assert.Equal("flask", brewRes.FlaskItem.Slot);
+        }
+
+        [Fact]
+        public void ProfessionService_Gathers_Resource_And_Levels_Up()
+        {
+            var service = new ProfessionService();
+
+            // Level requirement check
+            var failReq = new GatherResourceRequestDto("node_adamantite", "mining", 1, 0);
+            var failRes = service.GatherResource(failReq);
+            Assert.False(failRes.Success);
+
+            // Valid gathering with Exp
+            var validReq = new GatherResourceRequestDto("node_iron_ore", "mining", 1, 90);
+            var validRes = service.GatherResource(validReq);
+            Assert.True(validRes.Success);
+            Assert.True(validRes.YieldQuantity >= 2);
+            Assert.Equal("mat_iron_ore", validRes.YieldMatId);
+            Assert.True(validRes.LeveledUp);
+            Assert.Equal(2, validRes.NewProfessionLevel);
+        }
+
+        [Fact]
+        public void ShadowService_Extracts_Soldier_And_Maintains_Capacity()
+        {
+            var service = new ShadowService();
+
+            var currentArmy = new List<ShadowSoldierDto>
+            {
+                new() { Name = "Soldier 1", CurrentLife = 100, MaxLife = 100 },
+                new() { Name = "Soldier 2", CurrentLife = 100, MaxLife = 100 },
+                new() { Name = "Soldier 3", CurrentLife = 100, MaxLife = 100 }
+            };
+
+            var req = new ExtractShadowRequestDto(
+                MonsterName: "Malakor Guardian",
+                MonsterType: "demon",
+                Rarity: "Rare",
+                BaseLife: 1000,
+                BaseDamage: 100,
+                CurrentArmy: currentArmy,
+                MaxCapacity: 3);
+
+            var res = service.ExtractShadow(req);
+            Assert.True(res.Success);
+            Assert.NotNull(res.ExtractedSoldier);
+            Assert.Equal("Shadow Malakor Guardian", res.ExtractedSoldier.Name);
+            Assert.Equal(600, res.ExtractedSoldier.MaxLife); // 60% of 1000
+            Assert.Equal(3, res.Army.Count); // Enforced max capacity 3
+        }
+
+        [Fact]
+        public void SpireService_Calculates_Floors_And_Rewards()
+        {
+            var service = new SpireService();
+
+            // Floor 10 Boss definition
+            var floor10 = service.GetFloor(10);
+            Assert.True(floor10.IsBossFloor);
+            Assert.NotEmpty(floor10.BossType);
+            Assert.True(floor10.HealthMultiplier > 1.0f);
+
+            // Claim floor 10
+            var claimReq = new ClaimSpireFloorRequestDto(10, 9, "hero_1");
+            var claimRes = service.ClaimFloor(claimReq);
+            Assert.True(claimRes.Success);
+            Assert.Equal(10, claimRes.HighestClearedFloor);
+            Assert.True(claimRes.ExpAwarded > 0);
+            Assert.True(claimRes.RewardCurrencies.ContainsKey("fracture_core"));
+        }
+
+        [Fact]
+        public void ProgressionService_Handles_Ascendance_And_MonsterLore()
+        {
+            var service = new ProgressionService();
+
+            // Ascendance Selection (Requires Lv.60 + Trial)
+            var failAscReq = new AscendanceSelectRequestDto(40, "IronVanguard", false, "hero_1");
+            var failAscRes = service.SelectAscendance(failAscReq);
+            Assert.False(failAscRes.Success);
+
+            var validAscReq = new AscendanceSelectRequestDto(65, "IronVanguard", true, "hero_1");
+            var validAscRes = service.SelectAscendance(validAscReq);
+            Assert.True(validAscRes.Success);
+            Assert.Equal("IronVanguard", validAscRes.Archetype);
+            Assert.Contains("IronFortress", validAscRes.ActiveKeystones);
+
+            // Monster Lore Mastery
+            var loreBonus = service.GetMonsterLoreBonus(3500, false);
+            Assert.Equal("Apex Nemesis", loreBonus.TierTitle);
+            Assert.Equal(25f, loreBonus.BonusDamagePercent);
+            Assert.Equal(35f, loreBonus.BonusIir);
+        }
     }
 }
+
 

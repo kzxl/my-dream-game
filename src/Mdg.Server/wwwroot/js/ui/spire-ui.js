@@ -5,6 +5,7 @@
 import { player } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { getSpireFloorData, MAX_SPIRE_FLOOR } from '../data/spire.js';
+import { ApiClient } from '../services/api-client.js';
 
 let selectedFloor = 1;
 
@@ -151,4 +152,29 @@ function updateSpireUI() {
   `;
 
   document.getElementById('btnEnterSpireFloor').innerText = `🚀 ENTER SPIRE FLOOR ${selectedFloor}`;
+}
+
+export async function claimSpireFloorReward(floorNumber) {
+  const highest = player.highestClearedSpireFloor || 0;
+  const res = await ApiClient.claimSpireFloor(floorNumber, highest, player.id || 'hero_default');
+  if (res && res.success) {
+    player.highestClearedSpireFloor = res.highestClearedFloor;
+    if (res.rewardCurrencies) {
+      if (!player.currencies) player.currencies = {};
+      if (!player.materials) player.materials = {};
+      for (const [k, v] of Object.entries(res.rewardCurrencies)) {
+        if (k === 'gold') {
+          player.gold = (player.gold || 0) + v;
+        } else if (k === 'fracture_core') {
+          for (let i = 0; i < v; i++) {
+            player.bag.push({ name: 'Fracture Core', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🔮' });
+          }
+        } else {
+          player.materials[k] = (player.materials[k] || 0) + v;
+        }
+      }
+    }
+    return res;
+  }
+  return null;
 }

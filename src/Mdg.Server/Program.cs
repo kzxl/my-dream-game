@@ -145,6 +145,10 @@ builder.Services.AddSingleton<DevotionTree>();
 builder.Services.AddSingleton<ResurrectionSessionManager>();
 builder.Services.AddSingleton<LootService>();
 builder.Services.AddSingleton<ForgeService>();
+builder.Services.AddSingleton<ProfessionService>();
+builder.Services.AddSingleton<ShadowService>();
+builder.Services.AddSingleton<SpireService>();
+builder.Services.AddSingleton<ProgressionService>();
 builder.Services.AddSingleton<CharacterStatService>();
 builder.Services.AddSingleton<SkillProgressionService>();
 builder.Services.AddSingleton<EconomyService>();
@@ -431,6 +435,66 @@ app.MapPost("/api/v1/loot/drop", (LootService lootService, LootDropRequestDto re
 app.MapPost("/api/v1/forge/apply-currency", (ForgeService forgeService, ForgeRequestDto req) =>
 {
     var result = forgeService.ApplyCurrency(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/forge/salvage", (ForgeService forgeService, SalvageRequestDto req) =>
+{
+    var result = forgeService.Salvage(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/forge/craft-base", (ForgeService forgeService, CraftBaseRequestDto req) =>
+{
+    var result = forgeService.CraftBaseEquipment(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/forge/smelt", (ForgeService forgeService, SmeltRequestDto req) =>
+{
+    var result = forgeService.Smelt(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/forge/brew-flask", (ForgeService forgeService, BrewFlaskRequestDto req) =>
+{
+    var result = forgeService.BrewFlask(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/professions/gather", (ProfessionService professionService, GatherResourceRequestDto req) =>
+{
+    var result = professionService.GatherResource(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/shadow/extract", (ShadowService shadowService, ExtractShadowRequestDto req) =>
+{
+    var result = shadowService.ExtractShadow(req);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/v1/spire/floor/{floorNumber:int}", (SpireService spireService, int floorNumber) =>
+{
+    var result = spireService.GetFloor(floorNumber);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/spire/claim", (SpireService spireService, ClaimSpireFloorRequestDto req) =>
+{
+    var result = spireService.ClaimFloor(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/progression/ascendance/select", (ProgressionService progressionService, AscendanceSelectRequestDto req) =>
+{
+    var result = progressionService.SelectAscendance(req);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/v1/mastery/monster-lore/bonus", (ProgressionService progressionService, int killCount, bool isBoss) =>
+{
+    var result = progressionService.GetMonsterLoreBonus(killCount, isBoss);
     return Results.Ok(result);
 });
 

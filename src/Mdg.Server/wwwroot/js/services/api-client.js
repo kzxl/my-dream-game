@@ -270,6 +270,206 @@ export const ApiClient = {
       console.warn('[ApiClient] validateDevotionTree fallback:', err);
     }
     return null;
+  },
+
+  /**
+   * Forge: Salvage Anvil API
+   */
+  async salvageItem(item) {
+    try {
+      const res = await fetch('/api/v1/forge/salvage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] salvageItem fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Forge: Base Equipment Synthesizer API
+   */
+  async craftBaseEquipment(recipeId, characterLevel, craftingMasteryLevel, craftingMasteryExp, unlockedRecipes, materials) {
+    try {
+      const res = await fetch('/api/v1/forge/craft-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeId,
+          characterLevel: characterLevel || 1,
+          craftingMasteryLevel: craftingMasteryLevel || 1,
+          craftingMasteryExp: craftingMasteryExp || 0,
+          unlockedRecipes: unlockedRecipes || [],
+          materials: materials || {}
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] craftBaseEquipment fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Forge: Smelting & Refining API
+   */
+  async smeltMaterials(recipeId, characterLevel, materials) {
+    try {
+      const res = await fetch('/api/v1/forge/smelt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeId,
+          characterLevel: characterLevel || 1,
+          materials: materials || {}
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] smeltMaterials fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Forge: Flask Alchemy Brewing API
+   */
+  async brewFlask(recipeId, characterLevel, materials) {
+    try {
+      const res = await fetch('/api/v1/forge/brew-flask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeId,
+          characterLevel: characterLevel || 1,
+          materials: materials || {}
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] brewFlask fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Professions: Gathering & Harvesting API
+   */
+  async gatherResource(nodeId, professionType, professionLevel, currentExp) {
+    try {
+      const res = await fetch('/api/v1/professions/gather', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId,
+          professionType,
+          professionLevel: professionLevel || 1,
+          currentExp: currentExp || 0
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] gatherResource fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Combat: Shadow Soldier Extraction (ARISE) API
+   */
+  async extractShadow(monsterName, monsterType, rarity, baseLife, baseDamage, currentArmy, maxCapacity) {
+    try {
+      const res = await fetch('/api/v1/shadow/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          monsterName,
+          monsterType,
+          rarity,
+          baseLife: baseLife || 500,
+          baseDamage: baseDamage || 50,
+          currentArmy: currentArmy || [],
+          maxCapacity: maxCapacity || 3
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] extractShadow fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Spire: Floor Details API
+   */
+  async getSpireFloor(floorNumber) {
+    try {
+      const res = await fetch(`/api/v1/spire/floor/${encodeURIComponent(floorNumber)}`);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] getSpireFloor fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Spire: Claim Floor Rewards API
+   */
+  async claimSpireFloor(floorNumber, highestClearedFloor, characterId = 'hero_default') {
+    try {
+      const res = await fetch('/api/v1/spire/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          floorNumber,
+          highestClearedFloor,
+          characterId
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] claimSpireFloor fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Progression: Ascendance Specialization API
+   */
+  async selectAscendance(characterLevel, archetype, isTrialCompleted, characterId = 'hero_default') {
+    try {
+      const res = await fetch('/api/v1/progression/ascendance/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterLevel,
+          archetype,
+          isTrialCompleted,
+          characterId
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] selectAscendance fallback:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Progression: Monster Lore Mastery Bonus API
+   */
+  async getMonsterLoreBonus(killCount, isBoss = false) {
+    try {
+      const res = await fetch(`/api/v1/mastery/monster-lore/bonus?killCount=${encodeURIComponent(killCount)}&isBoss=${encodeURIComponent(isBoss)}`);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] getMonsterLoreBonus fallback:', err);
+    }
+    return null;
   }
 };
+
 

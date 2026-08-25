@@ -6,6 +6,7 @@
 import { player, monsters, particles, floatingTexts } from '../state.js';
 import { AudioEngine } from '../audio.js';
 import { dealDamage, spawnDamageNumber } from '../combat.js';
+import { ApiClient } from '../services/api-client.js';
 
 export const shadowCorpses = [];
 export const shadowArmy = [];
@@ -30,7 +31,7 @@ export function spawnExtractableCorpse(monster) {
   });
 }
 
-export function extractShadow() {
+export async function extractShadow() {
   if (player.isDead) return;
 
   // Find closest corpse within 140px
@@ -77,28 +78,64 @@ export function extractShadow() {
 
   spawnDamageNumber(corpse.x, corpse.y - 50, `👑 ARISE! SHADOW ${corpse.name.toUpperCase()}`, true, '#c084fc');
 
-  // Enforce Max Capacity
-  if (shadowArmy.length >= MAX_SHADOW_ARMY) {
-    const dissolved = shadowArmy.shift();
-    spawnDamageNumber(dissolved.x, dissolved.y - 30, `💨 Shadow ${dissolved.name} Dissolved`, false, '#94a3b8');
-  }
+  // Attempt server-authoritative shadow soldier extraction
+  const serverRes = await ApiClient.extractShadow(
+    corpse.name,
+    corpse.monsterType,
+    corpse.rarity,
+    corpse.life,
+    corpse.damage,
+    shadowArmy,
+    MAX_SHADOW_ARMY
+  );
 
-  // Create Shadow Soldier
-  shadowArmy.push({
-    id: 'shadow_' + Math.random().toString(36).substring(2, 9),
-    name: corpse.name,
-    monsterType: corpse.monsterType,
-    rarity: corpse.rarity,
-    x: corpse.x,
-    y: corpse.y,
-    maxLife: Math.max(120, Math.round(corpse.life * 0.60)),
-    life: Math.max(120, Math.round(corpse.life * 0.60)),
-    damage: Math.max(25, Math.round(corpse.damage * 0.60)),
-    attackCooldown: 0,
-    animTimer: 0,
-    duration: 75.0, // 75s lifetime
-    maxDuration: 75.0
-  });
+  if (serverRes && serverRes.success && serverRes.extractedSoldier) {
+    // Enforce Max Capacity locally if needed
+    if (shadowArmy.length >= MAX_SHADOW_ARMY) {
+      const dissolved = shadowArmy.shift();
+      spawnDamageNumber(dissolved.x, dissolved.y - 30, `💨 Shadow ${dissolved.name} Dissolved`, false, '#94a3b8');
+    }
+
+    const s = serverRes.extractedSoldier;
+    shadowArmy.push({
+      id: s.id || ('shadow_' + Math.random().toString(36).substring(2, 9)),
+      name: s.name || corpse.name,
+      monsterType: s.monsterType || corpse.monsterType,
+      rarity: s.rarity || corpse.rarity,
+      x: corpse.x,
+      y: corpse.y,
+      maxLife: s.maxLife || Math.max(120, Math.round(corpse.life * 0.60)),
+      life: s.currentLife || Math.max(120, Math.round(corpse.life * 0.60)),
+      damage: s.damage || Math.max(25, Math.round(corpse.damage * 0.60)),
+      attackCooldown: 0,
+      animTimer: 0,
+      duration: s.duration || 75.0,
+      maxDuration: s.duration || 75.0
+    });
+  } else {
+    // Enforce Max Capacity
+    if (shadowArmy.length >= MAX_SHADOW_ARMY) {
+      const dissolved = shadowArmy.shift();
+      spawnDamageNumber(dissolved.x, dissolved.y - 30, `💨 Shadow ${dissolved.name} Dissolved`, false, '#94a3b8');
+    }
+
+    // Create Shadow Soldier
+    shadowArmy.push({
+      id: 'shadow_' + Math.random().toString(36).substring(2, 9),
+      name: corpse.name,
+      monsterType: corpse.monsterType,
+      rarity: corpse.rarity,
+      x: corpse.x,
+      y: corpse.y,
+      maxLife: Math.max(120, Math.round(corpse.life * 0.60)),
+      life: Math.max(120, Math.round(corpse.life * 0.60)),
+      damage: Math.max(25, Math.round(corpse.damage * 0.60)),
+      attackCooldown: 0,
+      animTimer: 0,
+      duration: 75.0, // 75s lifetime
+      maxDuration: 75.0
+    });
+  }
 
   renderShadowArmyHUD();
 }

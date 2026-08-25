@@ -16,6 +16,7 @@ import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
 import { assets, drawItemSpriteToCanvas } from '../assets.js';
 import { renderFlaskHUD, initFlasks } from '../systems/flask-system.js';
+import { ApiClient } from '../services/api-client.js';
 
 let activeForgeTab = 'smelting'; // 'smelting' | 'alchemy' | 'base_forge' | 'anvil' | 'salvage' | 'vault' | 'professions'
 let selectedItemIndex = -1;
@@ -369,7 +370,7 @@ function updateSmeltingUI() {
   }
 }
 
-function executeSmelt(recipe, times) {
+async function executeSmelt(recipe, times) {
   if (times <= 0) return;
   if (!player.materials) player.materials = {};
 
@@ -380,18 +381,28 @@ function executeSmelt(recipe, times) {
     }
   }
 
-  for (const [matId, reqCount] of Object.entries(recipe.costs)) {
-    player.materials[matId] -= reqCount * times;
-    if (player.materials[matId] <= 0) delete player.materials[matId];
+  // Attempt server-authoritative smelting
+  const serverRes = await ApiClient.smeltMaterials(recipe.id, player.level, player.materials);
+  if (serverRes && serverRes.success) {
+    player.materials = serverRes.remainingMaterials;
+    const totalOut = serverRes.outputQuantity || (recipe.outputCount * times);
+    const outMat = getMaterialInfo(recipe.outputMatId);
+    AudioEngine.playPickup?.() || AudioEngine.playTone(560, 'sine', 0.15, 0.1);
+    spawnDamageNumber(player.x, player.y - 45, `+${totalOut} ${outMat.nameVi || outMat.name}!`, false, outMat.color || '#38bdf8');
+    addCraftingExp(15 * times, 'Smelting');
+  } else {
+    for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+      player.materials[matId] -= reqCount * times;
+      if (player.materials[matId] <= 0) delete player.materials[matId];
+    }
+    const totalOut = recipe.outputCount * times;
+    player.materials[recipe.outputMatId] = (player.materials[recipe.outputMatId] || 0) + totalOut;
+
+    const outMat = getMaterialInfo(recipe.outputMatId);
+    AudioEngine.playPickup?.() || AudioEngine.playTone(560, 'sine', 0.15, 0.1);
+    spawnDamageNumber(player.x, player.y - 45, `+${totalOut} ${outMat.nameVi || outMat.name}!`, false, outMat.color || '#38bdf8');
+    addCraftingExp(15 * times, 'Smelting');
   }
-
-  const totalOut = recipe.outputCount * times;
-  player.materials[recipe.outputMatId] = (player.materials[recipe.outputMatId] || 0) + totalOut;
-
-  const outMat = getMaterialInfo(recipe.outputMatId);
-  AudioEngine.playPickup?.() || AudioEngine.playTone(560, 'sine', 0.15, 0.1);
-  spawnDamageNumber(player.x, player.y - 45, `+${totalOut} ${outMat.nameVi || outMat.name}!`, false, outMat.color || '#38bdf8');
-  addCraftingExp(15 * times, 'Smelting');
 
   updateSmeltingUI();
   updateBackpackUI();
@@ -529,7 +540,7 @@ function updateAlchemyUI() {
   }
 }
 
-function executeAlchemy(recipe) {
+async function executeAlchemy(recipe) {
   if (!player.materials) player.materials = {};
 
   for (const [matId, reqCount] of Object.entries(recipe.costs)) {
@@ -539,9 +550,15 @@ function executeAlchemy(recipe) {
     }
   }
 
-  for (const [matId, reqCount] of Object.entries(recipe.costs)) {
-    player.materials[matId] -= reqCount;
-    if (player.materials[matId] <= 0) delete player.materials[matId];
+  // Attempt server-authoritative alchemy
+  const serverRes = await ApiClient.brewFlask(recipe.id, player.level, player.materials);
+  if (serverRes && serverRes.success) {
+    player.materials = serverRes.remainingMaterials;
+  } else {
+    for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+      player.materials[matId] -= reqCount;
+      if (player.materials[matId] <= 0) delete player.materials[matId];
+    }
   }
 
   const newFlask = {
@@ -1009,22 +1026,38 @@ function updateSalvageUI() {
 
   const btnSalvage = document.getElementById('btnExecuteSalvage');
   if (btnSalvage) {
-    btnSalvage.onclick = () => {
+    btnSalvage.onclick = async () => {
       const item = player.bag[selectedSalvageIndex];
       if (!item) return alert('Please select a piece of equipment to salvage.');
 
-      const yields = previewSalvageItem(item);
       if (!player.materials) player.materials = {};
-
-      yields.forEach(y => {
-        if (y.isCurrency) {
-          player.bag.push({ name: 'Fracture Core', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🔮' });
-        } else {
-          player.materials[y.id] = (player.materials[y.id] || 0) + y.count;
-        }
-      });
-
       const itemName = item.name;
+
+      // Attempt server-authoritative salvage
+      const serverRes = await ApiClient.salvageItem(item);
+      if (serverRes && serverRes.success) {
+        if (serverRes.producedMaterials) {
+          for (const [matId, count] of Object.entries(serverRes.producedMaterials)) {
+            if (matId === 'fracture_core') {
+              for (let i = 0; i < count; i++) {
+                player.bag.push({ name: 'Fracture Core', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🔮' });
+              }
+            } else {
+              player.materials[matId] = (player.materials[matId] || 0) + count;
+            }
+          }
+        }
+      } else {
+        const yields = previewSalvageItem(item);
+        yields.forEach(y => {
+          if (y.isCurrency) {
+            player.bag.push({ name: 'Fracture Core', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🔮' });
+          } else {
+            player.materials[y.id] = (player.materials[y.id] || 0) + y.count;
+          }
+        });
+      }
+
       player.bag.splice(selectedSalvageIndex, 1);
       selectedSalvageIndex = -1;
 
@@ -1253,7 +1286,7 @@ function updateBaseForgingUI() {
       btnForge.disabled = !canAfford;
       btnForge.className = `forge-btn ${canAfford ? 'btn-craft' : 'disabled'}`;
       btnForge.innerText = '✨ Đúc Trang Bị (Forge Equipment)';
-      btnForge.onclick = () => {
+      btnForge.onclick = async () => {
         if (!isSelectedUnlocked) return alert('Bạn chưa học công thức này! Hãy săn quái đặc thù để tìm cuộn bí kíp.');
         if (!canAfford) return alert('Không đủ nguyên liệu thô để đúc trang bị này.');
 
@@ -1261,81 +1294,125 @@ function updateBaseForgingUI() {
           return alert('Túi đồ đã đầy! (Tối đa 32 ô)');
         }
 
-        // 1. Evaluate Crafting Mastery Perks
         const perks = getCraftingMasteryPerks();
 
-        // Check Resource Conservation / Refund
-        const isSaved = Math.random() * 100 < perks.resourceSaveChance;
-        if (!isSaved) {
-          for (const [matId, reqCount] of Object.entries(recipe.costs)) {
-            player.materials[matId] -= reqCount;
+        // Attempt server-authoritative base crafting
+        const serverRes = await ApiClient.craftBaseEquipment(
+          recipe.id,
+          player.level,
+          perks.level,
+          player.craftingMastery?.exp || 0,
+          player.unlockedRecipes,
+          player.materials
+        );
+
+        if (serverRes && serverRes.success && serverRes.item) {
+          player.materials = serverRes.remainingMaterials;
+          const forged = serverRes.item;
+
+          const newItem = {
+            name: forged.name,
+            baseType: forged.baseType,
+            slot: recipe.slot,
+            rarity: forged.rarity,
+            level: forged.itemLevel,
+            color: forged.rarity === 'Rare' ? '#ffd700' : '#ffffff',
+            icon: forged.icon || recipe.icon,
+            sockets: forged.sockets,
+            links: forged.socketLinks,
+            isMasterwork: serverRes.isMasterwork,
+            quality: serverRes.isMasterwork ? 20 : 0,
+            stats: forged.statBonuses || {},
+            craftedMods: forged.explicitMods || []
+          };
+
+          player.bag.push(newItem);
+
+          if (serverRes.isResourceSaved) {
+            AudioEngine.playTone(660, 'sine', 0.25, 0.15);
+            spawnDamageNumber(player.x, player.y - 65, '🍀 BẢO TOÀN NGUYÊN LIỆU!', true, '#4ade80');
           }
+
+          if (serverRes.isMasterwork) {
+            AudioEngine.playLevelUp?.() || AudioEngine.playTone(1100, 'sine', 0.4, 0.3);
+            spawnDamageNumber(player.x, player.y - 45, `⭐ ĐẠI THÀNH CÔNG: ${newItem.name}!`, true, '#ffd700');
+          } else {
+            AudioEngine.playTone(880, 'sine', 0.3, 0.2);
+            spawnDamageNumber(player.x, player.y - 45, `✨ ĐÃ ĐÚC THÀNH CÔNG ${newItem.name}!`, true, '#ffd700');
+          }
+
+          addCraftingExp(serverRes.expGain || 35, 'Base Forging');
         } else {
-          AudioEngine.playTone(660, 'sine', 0.25, 0.15);
-          spawnDamageNumber(player.x, player.y - 65, '🍀 BẢO TOÀN NGUYÊN LIỆU!', true, '#4ade80');
+          // Local fallback
+          const isSaved = Math.random() * 100 < perks.resourceSaveChance;
+          if (!isSaved) {
+            for (const [matId, reqCount] of Object.entries(recipe.costs)) {
+              player.materials[matId] -= reqCount;
+            }
+          } else {
+            AudioEngine.playTone(660, 'sine', 0.25, 0.15);
+            spawnDamageNumber(player.x, player.y - 65, '🍀 BẢO TOÀN NGUYÊN LIỆU!', true, '#4ade80');
+          }
+
+          let sockets = (recipe.slot === 'MainHand' || recipe.slot === 'BodyArmor') ? 2 : (recipe.slot === 'Ring' || recipe.slot === 'Amulet' ? 0 : 1);
+          const isExtraSocket = Math.random() * 100 < perks.extraSocketChance;
+          if (isExtraSocket && sockets < 6 && recipe.slot !== 'Ring' && recipe.slot !== 'Amulet') {
+            sockets = Math.min(6, sockets + 1);
+          }
+          const links = sockets > 1 ? 1 : 0;
+
+          let baseDmg = recipe.slot === 'MainHand' ? (recipe.level * 2 + 15) : 0;
+          let baseArmor = recipe.slot === 'BodyArmor' ? (recipe.level * 4 + 40) : 0;
+          let baseLife = recipe.slot === 'BodyArmor' ? (recipe.level * 2 + 20) : 0;
+
+          const isMasterwork = Math.random() * 100 < perks.masterworkCritChance;
+          let itemName = recipe.name;
+          let itemRarity = 'Normal';
+          let itemColor = '#ffffff';
+          const craftedMods = [];
+
+          if (isMasterwork) {
+            itemName = '⭐ Masterwork ' + recipe.name;
+            itemRarity = 'Rare';
+            itemColor = '#ffd700';
+            baseDmg = Math.round(baseDmg * 1.25);
+            baseArmor = Math.round(baseArmor * 1.25);
+            baseLife = Math.round(baseLife * 1.25);
+            craftedMods.push('✨ Masterwork: +25% Superior Base Stats');
+          }
+
+          const newItem = {
+            name: itemName,
+            baseType: recipe.baseType,
+            slot: recipe.slot,
+            rarity: itemRarity,
+            level: recipe.level,
+            color: itemColor,
+            icon: recipe.icon,
+            sockets: sockets,
+            links: links,
+            isMasterwork: isMasterwork,
+            quality: isMasterwork ? 20 : 0,
+            stats: {
+              damage: baseDmg,
+              armor: baseArmor,
+              life: baseLife
+            },
+            craftedMods: craftedMods
+          };
+
+          player.bag.push(newItem);
+
+          if (isMasterwork) {
+            AudioEngine.playLevelUp?.() || AudioEngine.playTone(1100, 'sine', 0.4, 0.3);
+            spawnDamageNumber(player.x, player.y - 45, `⭐ ĐẠI THÀNH CÔNG: ${itemName}!`, true, '#ffd700');
+          } else {
+            AudioEngine.playTone(880, 'sine', 0.3, 0.2);
+            spawnDamageNumber(player.x, player.y - 45, `✨ ĐÃ ĐÚC THÀNH CÔNG ${newItem.name}!`, true, '#ffd700');
+          }
+
+          addCraftingExp(35, 'Base Forging');
         }
-
-        // Check Extra Socket Blessing
-        let sockets = (recipe.slot === 'MainHand' || recipe.slot === 'BodyArmor') ? 2 : (recipe.slot === 'Ring' || recipe.slot === 'Amulet' ? 0 : 1);
-        const isExtraSocket = Math.random() * 100 < perks.extraSocketChance;
-        if (isExtraSocket && sockets < 6 && recipe.slot !== 'Ring' && recipe.slot !== 'Amulet') {
-          sockets = Math.min(6, sockets + 1);
-        }
-        const links = sockets > 1 ? 1 : 0;
-
-        // Base Stats
-        let baseDmg = recipe.slot === 'MainHand' ? (recipe.level * 2 + 15) : 0;
-        let baseArmor = recipe.slot === 'BodyArmor' ? (recipe.level * 4 + 40) : 0;
-        let baseLife = recipe.slot === 'BodyArmor' ? (recipe.level * 2 + 20) : 0;
-
-        // Check Masterwork Critical (+25% Stats & Superior Quality)
-        const isMasterwork = Math.random() * 100 < perks.masterworkCritChance;
-        let itemName = recipe.name;
-        let itemRarity = 'Normal';
-        let itemColor = '#ffffff';
-        const craftedMods = [];
-
-        if (isMasterwork) {
-          itemName = '⭐ Masterwork ' + recipe.name;
-          itemRarity = 'Rare';
-          itemColor = '#ffd700';
-          baseDmg = Math.round(baseDmg * 1.25);
-          baseArmor = Math.round(baseArmor * 1.25);
-          baseLife = Math.round(baseLife * 1.25);
-          craftedMods.push('✨ Masterwork: +25% Superior Base Stats');
-        }
-
-        const newItem = {
-          name: itemName,
-          baseType: recipe.baseType,
-          slot: recipe.slot,
-          rarity: itemRarity,
-          level: recipe.level,
-          color: itemColor,
-          icon: recipe.icon,
-          sockets: sockets,
-          links: links,
-          isMasterwork: isMasterwork,
-          quality: isMasterwork ? 20 : 0,
-          stats: {
-            damage: baseDmg,
-            armor: baseArmor,
-            life: baseLife
-          },
-          craftedMods: craftedMods
-        };
-
-        player.bag.push(newItem);
-
-        if (isMasterwork) {
-          AudioEngine.playLevelUp?.() || AudioEngine.playTone(1100, 'sine', 0.4, 0.3);
-          spawnDamageNumber(player.x, player.y - 45, `⭐ ĐẠI THÀNH CÔNG: ${itemName}!`, true, '#ffd700');
-        } else {
-          AudioEngine.playTone(880, 'sine', 0.3, 0.2);
-          spawnDamageNumber(player.x, player.y - 45, `✨ ĐÃ ĐÚC THÀNH CÔNG ${newItem.name}!`, true, '#ffd700');
-        }
-
-        addCraftingExp(35, 'Base Forging');
 
         updateBaseForgingUI();
         updateBackpackUI();

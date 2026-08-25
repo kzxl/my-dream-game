@@ -11,6 +11,7 @@ import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
 import { getMaterialInfo } from '../data/materials.js';
+import { ApiClient } from '../services/api-client.js';
 
 export const PROFESSIONS_INFO = {
   mining: {
@@ -336,32 +337,42 @@ export function tryInteractGatheringNode() {
 /**
  * Complete gathering process and grant rewards & profession EXP
  */
-function completeGatheringNode(node) {
+async function completeGatheringNode(node) {
   node.isDepleted = true;
 
   if (!player.materials) player.materials = {};
+  const prof = player.professions[node.profType] || { level: 1, exp: 0 };
 
-  const yieldCount = Math.floor(Math.random() * (node.maxYield - node.minYield + 1)) + node.minYield;
-  player.materials[node.yieldMatId] = (player.materials[node.yieldMatId] || 0) + yieldCount;
+  let yieldCount = Math.floor(Math.random() * (node.maxYield - node.minYield + 1)) + node.minYield;
+  let expGained = node.expGain;
+  let leveledUp = false;
+
+  // Attempt server-authoritative gathering calculation
+  const serverRes = await ApiClient.gatherResource(node.id, node.profType, prof.level, prof.exp);
+  if (serverRes && serverRes.success) {
+    yieldCount = serverRes.yieldQuantity;
+    expGained = serverRes.expGained;
+    prof.level = serverRes.newProfessionLevel;
+    prof.exp = serverRes.newExp;
+    leveledUp = serverRes.leveledUp;
+    player.materials[serverRes.yieldMatId] = (player.materials[serverRes.yieldMatId] || 0) + yieldCount;
+  } else {
+    player.materials[node.yieldMatId] = (player.materials[node.yieldMatId] || 0) + yieldCount;
+    prof.exp = (prof.exp || 0) + expGained;
+    const maxExp = prof.level * 100;
+    if (prof.exp >= maxExp && prof.level < 50) {
+      prof.exp -= maxExp;
+      prof.level++;
+      leveledUp = true;
+    }
+  }
 
   const matInfo = getMaterialInfo(node.yieldMatId);
-
-  // Add Profession EXP
-  const prof = player.professions[node.profType];
-  prof.exp = (prof.exp || 0) + node.expGain;
-  const maxExp = prof.level * 100;
-
-  let leveledUp = false;
-  if (prof.exp >= maxExp && prof.level < 50) {
-    prof.exp -= maxExp;
-    prof.level++;
-    leveledUp = true;
-  }
 
   // Audio & Floating Text
   AudioEngine.playPickup?.() || AudioEngine.playTone(680, 'sine', 0.2, 0.15);
 
-  spawnDamageNumber(node.x, node.y - 50, `+${yieldCount} ${matInfo.name}! (+${node.expGain} EXP)`, true, node.color);
+  spawnDamageNumber(node.x, node.y - 50, `+${yieldCount} ${matInfo.name}! (+${expGained} EXP)`, true, node.color);
 
   if (leveledUp) {
     setTimeout(() => {
