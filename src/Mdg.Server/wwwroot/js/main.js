@@ -328,7 +328,13 @@ export async function loadZone(zoneId, spawnX, spawnY) {
   spawnMapIncursions(currentZoneId, mapW, mapH, canWalk);
 
   // 3.6. Spawn World Mineral Veins & Herb Patches for Gathering Professions
-  spawnResourceNodesForZone(currentZoneId, mapW, mapH, canWalk);
+  spawnResourceNodesForZone(
+    currentZoneId,
+    mapW,
+    mapH,
+    canWalk,
+    (tx, ty) => (currentZoneMap && currentZoneMap.grid && currentZoneMap.grid[ty] ? currentZoneMap.grid[ty][tx] : 0)
+  );
 
   // 4. Environmental Hazard Alert & Banner
   const subText = currentZoneMap.hazard ? `⚠️ ${currentZoneMap.hazard.hazardName}: ${currentZoneMap.hazard.description}` : currentZoneMap.subtitle;
@@ -1531,8 +1537,15 @@ function update(dt) {
   // Companion Pet Engine Update (Auto-loot, Aura & Delivery)
   updateCompanion(dt);
 
-  // Gathering & Profession System Update (Channeling & Node Sparkles)
-  updateGatheringSystem(dt);
+  // Gathering & Profession System Update (Channeling, Sparkles & Node Regrowth)
+  updateGatheringSystem(
+    dt,
+    currentZoneId,
+    mapW,
+    mapH,
+    canWalk,
+    (tx, ty) => (currentZoneMap && currentZoneMap.grid && currentZoneMap.grid[ty] ? currentZoneMap.grid[ty][tx] : 0)
+  );
 
   const bossHud = document.getElementById('boss-hud') || document.getElementById('boss-hud-bar');
   if (bossHud) {

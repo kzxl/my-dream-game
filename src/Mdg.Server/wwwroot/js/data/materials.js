@@ -191,7 +191,79 @@ export const MATERIALS_CATALOG = {
     desc: 'Volcanic wyrm scale impenetrable to flame and physical strikes.'
   },
 
-  // E. Elemental & Genesis Shards
+  // E. Expanded Specialized Biome Materials
+  mat_pure_silver: {
+    id: 'mat_pure_silver',
+    name: 'Ancient Pure Silver',
+    nameVi: 'Bạc Cổ Tinh Khiết',
+    category: 'Ore',
+    icon: '🪙',
+    color: '#e2e8f0',
+    rarity: 'Uncommon',
+    desc: 'High-purity silver harvested from subterranean crypt veins. Enhances undead slaying gear.'
+  },
+  mat_titan_ore: {
+    id: 'mat_titan_ore',
+    name: 'Titan Heavy Ore',
+    nameVi: 'Quặng Titan Khổng Lồ',
+    category: 'Ore',
+    icon: '🪨',
+    color: '#94a3b8',
+    rarity: 'Rare',
+    desc: 'Dense titan ore mined from the highest peaks. Forges heavy armor and colossus blades.'
+  },
+  mat_astral_crystal: {
+    id: 'mat_astral_crystal',
+    name: 'Genesis Astral Crystal',
+    nameVi: 'Pha Lê Khởi Nguyên',
+    category: 'Ore',
+    icon: '💠',
+    color: '#00f2fe',
+    rarity: 'Mythic',
+    desc: 'Purest crystalline essence forged at the celestial core of Aethelis.'
+  },
+  mat_moon_spore: {
+    id: 'mat_moon_spore',
+    name: 'Moonlight Mushroom Spore',
+    nameVi: 'Bào Tử Nấm Nguyệt Dạ',
+    category: 'Herb',
+    icon: '🍄',
+    color: '#c084fc',
+    rarity: 'Uncommon',
+    desc: 'Bioluminescent fungal spores harvested under dense forest canopies. Brews stealth and mana draughts.'
+  },
+  mat_dragon_lily: {
+    id: 'mat_dragon_lily',
+    name: 'Dragonflame Lily',
+    nameVi: 'Hỏa Long Hoa',
+    category: 'Herb',
+    icon: '🌺',
+    color: '#f97316',
+    rarity: 'Rare',
+    desc: 'A fiery bloom flourishing on scorched basalt fields. Brews destructive fire elixirs.'
+  },
+  mat_starflower: {
+    id: 'mat_starflower',
+    name: 'Astral Starflower',
+    nameVi: 'Tinh Tú Chi Hoa',
+    category: 'Herb',
+    icon: '✨',
+    color: '#ffd700',
+    rarity: 'Mythic',
+    desc: 'Cosmic flora that blossoms only under pure celestial astral light.'
+  },
+  mat_divine_elixir: {
+    id: 'mat_divine_elixir',
+    name: 'Divine Catalyst Dew',
+    nameVi: 'Giọt Nước Thánh Linh',
+    category: 'Solvent',
+    icon: '💧',
+    color: '#ffd700',
+    rarity: 'Mythic',
+    desc: 'Concentrated essence of life and ascension.'
+  },
+
+  // F. Elemental & Genesis Shards
   mat_fire_core: {
     id: 'mat_fire_core',
     name: 'Molten Core',
