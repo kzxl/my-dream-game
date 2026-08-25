@@ -171,8 +171,7 @@ export function getNearestTargetInCone(origin, centerAngle, coneDegrees = 45, ma
     if (dist > maxDist) continue;
 
     const angleToTarget = Math.atan2(m.y - origin.y, m.x - origin.x);
-    let diff = Math.abs(angleToTarget - centerAngle);
-    while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
+    let diff = Math.abs(Math.atan2(Math.sin(angleToTarget - centerAngle), Math.cos(angleToTarget - centerAngle)));
 
     if (diff <= halfConeRad && dist < minDist) {
       minDist = dist;

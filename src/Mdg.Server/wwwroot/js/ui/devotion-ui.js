@@ -876,6 +876,9 @@ function setupDevotionEvents(modal) {
     const node = DEVOTION_TREE_NODES[id];
 
     nodeEl.onclick = () => {
+      if (!Array.isArray(player.devotionAllocated)) player.devotionAllocated = ['nexus_root'];
+      if (!Array.isArray(player.devotionProcs)) player.devotionProcs = [];
+
       const isAllocated = player.devotionAllocated.includes(node.id);
       const parentAllocated = !node.parentId || player.devotionAllocated.includes(node.parentId);
 
@@ -901,19 +904,19 @@ function setupDevotionEvents(modal) {
           AudioEngine.playTone?.(220, 'sawtooth', 0.1, 0.1);
           return alert('You must allocate connecting precursor stars first.');
         }
-        if (player.devotionPoints - player.devotionAllocated.length <= 0) {
+        if ((player.devotionPoints || 8) - player.devotionAllocated.length <= 0) {
           AudioEngine.playTone?.(220, 'sawtooth', 0.1, 0.1);
           return alert('No available Devotion Points remaining.');
         }
 
         player.devotionAllocated.push(node.id);
         if (node.isProc) {
-          if (!player.devotionProcs) player.devotionProcs = [];
           player.devotionProcs.push(node.val);
         }
         AudioEngine.playTone?.(680, 'triangle', 0.25, 0.15);
       }
 
+      player.allocatedDevotionNodes = [...player.devotionAllocated];
       saveToDatabase(true);
       renderDevotionModal(true);
     };

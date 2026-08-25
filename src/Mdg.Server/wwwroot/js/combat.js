@@ -1297,11 +1297,13 @@ export function castDash() {
   }
 
   const dist = s.baseDistance + (s.level - 1) * s.distancePerLvl + (isAwakened ? 80 : 0);
-  let remainingDist = dist;
+  let remainingDist = Math.max(0, Number(dist) || 120);
   const stepSize = 14;
+  let dashSafety = 0;
 
-  while (remainingDist > 0) {
+  while (remainingDist > 0 && dashSafety++ < 40) {
     const curStep = Math.min(stepSize, remainingDist);
+    if (curStep <= 0) break;
     const nx = player.x + dx * curStep;
     const ny = player.y + dy * curStep;
 

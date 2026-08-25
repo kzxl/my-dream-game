@@ -58,7 +58,12 @@ export const player = {
   skillPoints: 3,
 
   devotionPoints: 8,
-  allocatedDevotionNodes: ['ph_1', 'fw_1'],
+  allocatedDevotionNodes: ['nexus_root'],
+  devotionAllocated: ['nexus_root'],
+  devotionProcs: [],
+  awakenedSkills: { slash: false, fireball: false, frost: false, meteor: false, dash: false },
+  activeHiddenSynergies: [],
+  currencies: { gold: 200, fracture_core: 5 },
 
   speedBonusPct: 0,
   armorBonusPct: 0,

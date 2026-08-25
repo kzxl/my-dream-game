@@ -79,20 +79,25 @@ export function updateHudAvatar() {
   if (levelEl) levelEl.innerText = `Lv.${player.level || 1}`;
 }
 
-/**
- * Updates Experience Bar progression at bottom of screen
- */
+let expCache = { fill: null, text: null, lastExp: -1, lastTarget: -1, lastLvl: -1 };
+
 export function updateExpBar() {
-  const fill = document.getElementById('bottom-exp-fill');
-  const text = document.getElementById('bottom-exp-text');
-  if (!fill || !text) return;
+  if (!expCache.fill) expCache.fill = document.getElementById('bottom-exp-fill');
+  if (!expCache.text) expCache.text = document.getElementById('bottom-exp-text');
+  if (!expCache.fill || !expCache.text) return;
 
-  const current = player.currentExp || 0;
-  const target = player.expToNext || 100;
+  const current = Math.max(0, Number(player.currentExp) || 0);
+  const target = Math.max(1, Number(player.expToNext) || 100);
+  const lvl = Math.max(1, Number(player.level) || 1);
+
+  if (current === expCache.lastExp && target === expCache.lastTarget && lvl === expCache.lastLvl) return;
+  expCache.lastExp = current;
+  expCache.lastTarget = target;
+  expCache.lastLvl = lvl;
+
   const pct = Math.min(100, Math.max(0, (current / target) * 100));
-
-  fill.style.width = `${pct.toFixed(1)}%`;
-  text.innerText = `Lv.${player.level} • EXP: ${current} / ${target} (${pct.toFixed(1)}%)`;
+  expCache.fill.style.width = `${pct.toFixed(1)}%`;
+  expCache.text.innerText = `Lv.${lvl} • EXP: ${current} / ${target} (${pct.toFixed(1)}%)`;
 }
 
 /**

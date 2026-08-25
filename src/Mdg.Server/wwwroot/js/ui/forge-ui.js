@@ -75,16 +75,20 @@ export function getCraftingMasteryPerks() {
 }
 
 export function addCraftingExp(amount, sourceLabel = 'Crafting') {
+  const expNum = Number(amount);
+  if (isNaN(expNum) || expNum <= 0) return;
+
   if (!player.craftingMastery) {
     player.craftingMastery = { level: 1, exp: 0, rank: 'Apprentice', rankTitle: '🛠️ Novice Apprentice' };
   }
   if (player.craftingMastery.level >= 50) return;
 
-  player.craftingMastery.exp += amount;
+  player.craftingMastery.exp = (Number(player.craftingMastery.exp) || 0) + expNum;
   let leveledUp = false;
+  let loops = 0;
 
-  while (player.craftingMastery.level < 50) {
-    const req = Math.round(150 * Math.pow(1.12, player.craftingMastery.level - 1));
+  while (player.craftingMastery.level < 50 && loops++ < 50) {
+    const req = Math.max(100, Math.round(150 * Math.pow(1.12, (player.craftingMastery.level || 1) - 1)));
     if (player.craftingMastery.exp >= req) {
       player.craftingMastery.exp -= req;
       player.craftingMastery.level++;
