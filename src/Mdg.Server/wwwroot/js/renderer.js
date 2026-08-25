@@ -159,8 +159,9 @@ export function renderGame(canvas, ctx, minimapCanvas, mmCtx, currentZone, zoneD
   // Floating Damage Numbers & Notifications
   if (getGameSetting('showDamageNumbers')) {
     floatingTexts.forEach(ft => {
+      if (!ft || !ft.text || isNaN(ft.x) || isNaN(ft.y)) return;
       ctx.font = ft.isCrit ? 'bold 15px "Outfit", sans-serif' : 'bold 12px "Outfit", sans-serif';
-      ctx.fillStyle = ft.color;
+      ctx.fillStyle = ft.color || '#ffffff';
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
       ctx.strokeText(ft.text, ft.x, ft.y);

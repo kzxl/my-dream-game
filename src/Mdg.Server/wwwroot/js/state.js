@@ -107,11 +107,11 @@ export const player = {
   monsterKills: {},
   activeBuffs: [],
   skillProficiencies: {
-    slash: { exp: 450, rank: 'D', rankName: 'Hardened Combatant (D)' },
-    fireball: { exp: 1200, rank: 'C', rankName: 'Skilled Specialist (C)' },
-    frost: { exp: 150, rank: 'E', rankName: 'Adept Adept (E)' },
-    meteor: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)' },
-    dash: { exp: 600, rank: 'D', rankName: 'Hardened Combatant (D)' }
+    slash: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 },
+    fireball: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 },
+    frost: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 },
+    meteor: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 },
+    dash: { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 }
   },
   highestClearedSpireFloor: 0,
   statPoints: { str: 15, dex: 15, int: 15, vit: 15, unallocated: 5 },

@@ -29,13 +29,14 @@ export const PROFICIENCY_THRESHOLDS = [
 ];
 
 export function recordSkillProficiency(skillKey, gain = 10) {
+  if (!skillKey || typeof skillKey !== 'string') return;
   if (!player.skillProficiencies) player.skillProficiencies = {};
   if (!player.skillProficiencies[skillKey]) {
-    player.skillProficiencies[skillKey] = { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)' };
+    player.skillProficiencies[skillKey] = { exp: 0, rank: 'F', rankName: 'Novice Practitioner (F)', bonusDmg: 0 };
   }
   const prof = player.skillProficiencies[skillKey];
-  const oldRank = prof.rank;
-  prof.exp += gain;
+  const oldRank = prof.rank || 'F';
+  prof.exp = (Number(prof.exp) || 0) + (Number(gain) || 0);
 
   let currentTier = PROFICIENCY_THRESHOLDS[0];
   for (let i = PROFICIENCY_THRESHOLDS.length - 1; i >= 0; i--) {
@@ -50,8 +51,21 @@ export function recordSkillProficiency(skillKey, gain = 10) {
   prof.bonusDmg = currentTier.bonusDmg;
 
   if (prof.rank !== oldRank) {
-    AudioEngine.playLevelUp?.();
-    spawnDamageNumber(player.x, player.y - 75, `🌟 PROFICIENCY RANK UP: ${skillKey.toUpperCase()} -> [${prof.rank}]!`, true, '#ffd700');
+    try {
+      AudioEngine.playLevelUp?.();
+      spawnDamageNumber(player.x || 0, (player.y || 0) - 75, `🌟 PROFICIENCY RANK UP: ${skillKey.toUpperCase()} -> [${prof.rank}]!`, true, '#ffd700');
+    } catch (e) {
+      console.warn('Rank up audio/damage number error:', e);
+    }
+
+    try {
+      const modal = document.getElementById('skills-modal');
+      if (modal && !modal.classList.contains('hidden')) {
+        renderSkillUpgradeModal();
+      }
+    } catch (e) {
+      console.warn('Skills modal refresh warning:', e);
+    }
   }
 }
 

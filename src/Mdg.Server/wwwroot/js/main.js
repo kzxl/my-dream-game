@@ -1595,9 +1595,14 @@ function update(dt) {
   // Update & Clamp Floating Numbers / Texts (Max 40)
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const ft = floatingTexts[i];
-    ft.y += ft.vy * dt;
-    ft.life -= dt;
-    if (ft.life <= 0) floatingTexts.splice(i, 1);
+    if (!ft) {
+      floatingTexts.splice(i, 1);
+      continue;
+    }
+    const vy = typeof ft.vy === 'number' ? ft.vy : -55;
+    ft.y += vy * dt;
+    ft.life = (ft.life || 1.0) - dt;
+    if (ft.life <= 0 || isNaN(ft.y)) floatingTexts.splice(i, 1);
   }
   if (floatingTexts.length > 40) {
     floatingTexts.splice(0, floatingTexts.length - 40);

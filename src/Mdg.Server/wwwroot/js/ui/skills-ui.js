@@ -240,7 +240,13 @@ export function renderSkillUpgradeModal() {
     meteor: { name: 'Starfall Cataclysm', icon: '☄️', essenceId: 'essence_meteor', essenceName: 'Essence of the Cosmic Void', desc: 'Summons 5 consecutive cosmic meteors raining down across the entire battlefield with apocalyptic area coverage.' },
     dash: { name: 'Flash Phantasm Mirage', icon: '⚡', essenceId: 'essence_dash', essenceName: 'Essence of the Phantom Mirage', desc: 'Phases forward leaving behind dual phantasm clones that execute instant critical slashes upon nearby foes.' }
   };
-  const curAwkDef = awkDefs[selectedTreeSkillKey];
+  const curAwkDef = awkDefs[selectedTreeSkillKey] || {
+    name: (s?.name || 'Skill') + ' Awakening',
+    icon: '✨',
+    essenceId: '',
+    essenceName: 'Awakening Catalyst',
+    desc: 'Unleashes the primordial awakening potential of this skill.'
+  };
 
   const rankOrder = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SSS', 'Mythic'];
   const rankIndex = rankOrder.indexOf(prof.rank || 'F');
@@ -249,7 +255,8 @@ export function renderSkillUpgradeModal() {
 
   const expReqs = { F: 500, E: 2000, D: 8000, C: 25000, B: 75000, A: 200000, S: 600000, SSS: 1800000, Mythic: 1800000 };
   const currentCap = expReqs[prof.rank || 'F'] || 1000;
-  const profPercent = Math.min(100, Math.round((prof.exp / currentCap) * 100));
+  const currentExp = Number(prof.exp) || 0;
+  const profPercent = Math.min(100, Math.max(0, Math.round((currentExp / currentCap) * 100)));
 
   const treeSection = document.createElement('div');
   treeSection.className = 'skill-tree-interactive-section';
