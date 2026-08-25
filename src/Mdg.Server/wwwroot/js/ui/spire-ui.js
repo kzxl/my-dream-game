@@ -163,14 +163,13 @@ export async function claimSpireFloorReward(floorNumber) {
       if (!player.currencies) player.currencies = {};
       if (!player.materials) player.materials = {};
       for (const [k, v] of Object.entries(res.rewardCurrencies)) {
+        const amount = Number(v) || 0;
         if (k === 'gold') {
-          player.gold = (player.gold || 0) + v;
+          player.gold = (player.gold || 0) + amount;
         } else if (k === 'fracture_core') {
-          for (let i = 0; i < v; i++) {
-            player.bag.push({ name: 'Fracture Core', slot: 'Currency', rarity: 'Rare', color: '#ffd700', icon: '🔮' });
-          }
+          player.currencies['fracture_core'] = (player.currencies['fracture_core'] || 0) + amount;
         } else {
-          player.materials[k] = (player.materials[k] || 0) + v;
+          player.materials[k] = (player.materials[k] || 0) + amount;
         }
       }
     }

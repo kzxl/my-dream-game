@@ -536,6 +536,36 @@ app.MapPost("/api/v1/skills/validate-tree", (SkillProgressionService skillServic
     return Results.Ok(result);
 });
 
+app.MapPost("/api/v1/skills/node/allocate", (SkillProgressionService skillService, SkillNodeActionRequestDto req) =>
+{
+    var result = skillService.AllocateNode(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/skills/tree/respec", (SkillProgressionService skillService, SkillTreeRespecRequestDto req) =>
+{
+    var result = skillService.RespecTree(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/skills/level-up", (SkillProgressionService skillService, SkillLevelUpRequestDto req) =>
+{
+    var result = skillService.LevelUpSkill(req);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/v1/craft/mastery/add-exp", (ForgeService forgeService, CraftingExpRequestDto req) =>
+{
+    var result = forgeService.AddCraftingExp(req);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/v1/craft/mastery/perks", (ForgeService forgeService, int level, long exp) =>
+{
+    var result = forgeService.GetCraftingPerks(level, exp);
+    return Results.Ok(result);
+});
+
 app.MapPost("/api/v1/economy/pet-sell", (EconomyService economyService, PetSellRequestDto req) =>
 {
     var result = economyService.ProcessPetDelivery(req);

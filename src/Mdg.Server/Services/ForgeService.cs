@@ -323,17 +323,80 @@ namespace Mdg.Server.Services
                 BeamHeight = beamHeight
             };
         }
+
+        public CraftingExpResultDto AddCraftingExp(CraftingExpRequestDto req)
+        {
+            int level = Math.Clamp(req.CurrentLevel, 1, CraftingMasteryEngine.MAX_MASTERY_LEVEL);
+            long exp = Math.Max(0, req.CurrentExp);
+            CraftingMasteryEngine.AddExp(ref level, ref exp, Math.Max(0, req.ExpGained), out bool leveledUp);
+
+            var state = CraftingMasteryEngine.CalculateState(level, exp);
+            return new CraftingExpResultDto(
+                true,
+                leveledUp ? $"Crafting Mastery Level Up: {state.RankTitle}" : "Crafting Exp added",
+                state.Level,
+                state.CurrentExp,
+                state.ExpToNext,
+                state.Rank.ToString(),
+                state.RankTitle,
+                leveledUp,
+                state.ResourceSaveChancePercent,
+                state.MasterworkCritChancePercent,
+                state.ExtraSocketChancePercent,
+                state.QualityBonusPercent);
+        }
+
+        public CraftingExpResultDto GetCraftingPerks(int level, long exp)
+        {
+            var state = CraftingMasteryEngine.CalculateState(level, exp);
+            return new CraftingExpResultDto(
+                true,
+                "OK",
+                state.Level,
+                state.CurrentExp,
+                state.ExpToNext,
+                state.Rank.ToString(),
+                state.RankTitle,
+                false,
+                state.ResourceSaveChancePercent,
+                state.MasterworkCritChancePercent,
+                state.ExtraSocketChancePercent,
+                state.QualityBonusPercent);
+        }
     }
 
+    public record CraftingExpRequestDto(
+        int CurrentLevel,
+        long CurrentExp,
+        long ExpGained);
+
+    public record CraftingExpResultDto(
+        [property: JsonPropertyName("success")] bool Success,
+        [property: JsonPropertyName("message")] string Message,
+        [property: JsonPropertyName("level")] int Level,
+        [property: JsonPropertyName("exp")] long Exp,
+        [property: JsonPropertyName("expToNext")] long ExpToNext,
+        [property: JsonPropertyName("rank")] string Rank,
+        [property: JsonPropertyName("rankTitle")] string RankTitle,
+        [property: JsonPropertyName("leveledUp")] bool LeveledUp,
+        [property: JsonPropertyName("resourceSaveChancePercent")] double ResourceSaveChancePercent,
+        [property: JsonPropertyName("masterworkCritChancePercent")] double MasterworkCritChancePercent,
+        [property: JsonPropertyName("extraSocketChancePercent")] double ExtraSocketChancePercent,
+        [property: JsonPropertyName("qualityBonusPercent")] double QualityBonusPercent);
+
     public record SalvageRequestDto(LootItemDto? Item);
-    public record SalvageResultDto(bool Success, string Message, Dictionary<string, int> ProducedMaterials);
+
+    public record SalvageResultDto(
+        bool Success,
+        string Message,
+        Dictionary<string, int> ProducedMaterials);
 
     public record CraftBaseRequestDto(
         string? RecipeId,
         int CharacterLevel,
+        List<string>? UnlockedRecipes,
         int CraftingMasteryLevel,
         long CraftingMasteryExp,
-        List<string>? UnlockedRecipes,
         Dictionary<string, int>? Materials);
 
     public record CraftBaseResultDto(

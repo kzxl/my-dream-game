@@ -74,7 +74,7 @@ export function getCraftingMasteryPerks() {
   };
 }
 
-export function addCraftingExp(amount, sourceLabel = 'Crafting') {
+export async function addCraftingExp(amount, sourceLabel = 'Crafting') {
   const expNum = Number(amount);
   if (isNaN(expNum) || expNum <= 0) return;
 
@@ -83,23 +83,30 @@ export function addCraftingExp(amount, sourceLabel = 'Crafting') {
   }
   if (player.craftingMastery.level >= 50) return;
 
-  player.craftingMastery.exp = (Number(player.craftingMastery.exp) || 0) + expNum;
+  // Server-Authoritative Crafting Mastery Exp
+  const serverRes = await ApiClient.addCraftingExp(player.craftingMastery.level, player.craftingMastery.exp, expNum);
+
   let leveledUp = false;
-  let loops = 0;
-
-  while (player.craftingMastery.level < 50 && loops++ < 50) {
-    const req = Math.max(100, Math.round(150 * Math.pow(1.12, (player.craftingMastery.level || 1) - 1)));
-    if (player.craftingMastery.exp >= req) {
-      player.craftingMastery.exp -= req;
-      player.craftingMastery.level++;
-      leveledUp = true;
-    } else {
-      break;
+  if (serverRes && serverRes.success) {
+    player.craftingMastery.level = serverRes.level;
+    player.craftingMastery.exp = serverRes.exp;
+    player.craftingMastery.rank = serverRes.rank;
+    player.craftingMastery.rankTitle = serverRes.rankTitle;
+    leveledUp = serverRes.leveledUp;
+  } else {
+    player.craftingMastery.exp = (Number(player.craftingMastery.exp) || 0) + expNum;
+    let loops = 0;
+    while (player.craftingMastery.level < 50 && loops++ < 50) {
+      const req = Math.max(100, Math.round(150 * Math.pow(1.12, (player.craftingMastery.level || 1) - 1)));
+      if (player.craftingMastery.exp >= req) {
+        player.craftingMastery.exp -= req;
+        player.craftingMastery.level++;
+        leveledUp = true;
+      } else {
+        break;
+      }
     }
-  }
-
-  if (player.craftingMastery.level >= 50) {
-    player.craftingMastery.exp = 0;
+    if (player.craftingMastery.level >= 50) player.craftingMastery.exp = 0;
   }
 
   const perks = getCraftingMasteryPerks();

@@ -131,6 +131,89 @@ export const ApiClient = {
     return null;
   },
 
+  async allocateSkillNode(skillKey, nodeId, nodeCost, skillLevel, allocatedNodeIds) {
+    try {
+      const res = await fetch('/api/v1/skills/node/allocate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skillKey,
+          nodeId,
+          nodeCost: Number(nodeCost) || 1,
+          skillLevel: Number(skillLevel) || 1,
+          allocatedNodeIds: allocatedNodeIds || []
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] allocateSkillNode fallback:', err);
+    }
+    return null;
+  },
+
+  async respecSkillTree(skillKey, skillLevel) {
+    try {
+      const res = await fetch('/api/v1/skills/tree/respec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skillKey,
+          skillLevel: Number(skillLevel) || 1
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] respecSkillTree fallback:', err);
+    }
+    return null;
+  },
+
+  async levelUpSkillWithPoint(skillKey, currentLevel, playerSkillPoints) {
+    try {
+      const res = await fetch('/api/v1/skills/level-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skillKey,
+          currentLevel: Number(currentLevel) || 1,
+          playerSkillPoints: Number(playerSkillPoints) || 0
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] levelUpSkillWithPoint fallback:', err);
+    }
+    return null;
+  },
+
+  async addCraftingExp(currentLevel, currentExp, expGained) {
+    try {
+      const res = await fetch('/api/v1/craft/mastery/add-exp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentLevel: Number(currentLevel) || 1,
+          currentExp: Number(currentExp) || 0,
+          expGained: Number(expGained) || 0
+        })
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] addCraftingExp fallback:', err);
+    }
+    return null;
+  },
+
+  async getCraftingPerks(level, exp) {
+    try {
+      const res = await fetch(`/api/v1/craft/mastery/perks?level=${level || 1}&exp=${exp || 0}`);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('[ApiClient] getCraftingPerks fallback:', err);
+    }
+    return null;
+  },
+
   /**
    * Character Roster APIs
    */

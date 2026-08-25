@@ -1,30 +1,29 @@
-/**
- * Skill Gem Socket Board & Interactive Skill Mastery Tree UI (Last Epoch / PoE Hybrid)
- */
-
 import { player } from '../state.js';
-import { SKILLS, SKILL_MASTERY_TREES, skillSocketBoard, isNodeAllocated, allocateNode, respecSkillTree, getSpentMasteryPoints, getSkillExpMultiplier, isSkillUnlocked } from '../data/skills.js';
+import { SKILLS, SKILL_MASTERY_TREES, skillSocketBoard, isNodeAllocated, allocateNode, respecSkillTree, getSpentMasteryPoints, getSkillExpMultiplier, isSkillUnlocked, allocatedMasteryNodes } from '../data/skills.js';
 import { POSSIBLE_LOOT, RARITY_COLORS } from '../data/items.js';
 import { AudioEngine } from '../audio.js';
 import { spawnDamageNumber } from '../combat.js';
 import { saveToDatabase } from '../save-system.js';
 import { updateBackpackUI } from './inventory.js';
+import { ApiClient } from '../services/api-client.js';
 
 let selectedTreeSkillKey = 'slash';
 
 export function addSkillExp(skillKey, amount) {
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0) return;
+
   const s = SKILLS[skillKey];
-  if (!s || s.level >= s.maxLevel || !amount || amount <= 0) return;
+  if (!s || s.level >= (s.maxLevel || 30)) return;
   if (!s.expToNext || s.expToNext <= 0) s.expToNext = 120;
 
   const rate = getSkillExpMultiplier(skillKey, player);
-  const gained = Math.round(amount * rate);
+  const gained = Math.round(numAmount * rate);
 
   s.exp = (s.exp || 0) + gained;
   let skillLeveled = false;
   let loops = 0;
-  while (s.exp >= s.expToNext && s.level < s.maxLevel && loops < 50) {
-    loops++;
+  while (s.exp >= s.expToNext && s.level < (s.maxLevel || 30) && loops++ < 50) {
     s.exp -= s.expToNext;
     s.level++;
     s.expToNext = Math.max(50, Math.round(s.expToNext * 1.35));
@@ -42,14 +41,25 @@ export function addSkillExp(skillKey, amount) {
   }
 }
 
-export function levelUpSkillWithPoint(skillKey) {
+export async function levelUpSkillWithPoint(skillKey) {
   if (player.skillPoints <= 0) return;
   const s = SKILLS[skillKey];
-  if (!s || s.level >= s.maxLevel) return;
-  player.skillPoints--;
-  s.level++;
-  s.exp = 0;
-  s.expToNext = Math.round(s.expToNext * 1.35);
+  if (!s || s.level >= (s.maxLevel || 30)) return;
+
+  // Server-Authoritative Skill Level Up
+  const serverRes = await ApiClient.levelUpSkillWithPoint(skillKey, s.level, player.skillPoints);
+  if (serverRes && serverRes.success) {
+    s.level = serverRes.newLevel;
+    player.skillPoints = serverRes.remainingPlayerSkillPoints;
+    s.exp = 0;
+    s.expToNext = serverRes.newExpToNext;
+  } else {
+    player.skillPoints--;
+    s.level++;
+    s.exp = 0;
+    s.expToNext = Math.max(120, Math.round((s.expToNext || 120) * 1.35));
+  }
+
   AudioEngine.playSkillLevelUp();
   spawnDamageNumber(player.x, player.y - 50, `${s.name} Lv.${s.level}! (+1 SMP)`, true, '#ffd700');
   updateSkillBadges();
@@ -323,7 +333,9 @@ export function renderSkillUpgradeModal() {
     });
   }
 
-  treeSection.querySelector('#btn-respec-tree').addEventListener('click', () => {
+  treeSection.querySelector('#btn-respec-tree').addEventListener('click', async () => {
+    const s = SKILLS[selectedTreeSkillKey];
+    await ApiClient.respecSkillTree(selectedTreeSkillKey, s ? s.level : 1);
     respecSkillTree(selectedTreeSkillKey);
     AudioEngine.playPickup();
     renderSkillUpgradeModal();
@@ -357,8 +369,19 @@ export function renderSkillUpgradeModal() {
       </div>
     `;
 
-    nodeEl.addEventListener('click', () => {
-      if (allocateNode(selectedTreeSkillKey, node.id, player)) {
+    nodeEl.addEventListener('click', async () => {
+      const currentAlloc = Array.from(allocatedMasteryNodes[selectedTreeSkillKey] || []);
+      const s = SKILLS[selectedTreeSkillKey];
+      const serverRes = await ApiClient.allocateSkillNode(selectedTreeSkillKey, node.id, node.cost, s ? s.level : 1, currentAlloc);
+
+      if (serverRes && serverRes.success) {
+        if (!allocatedMasteryNodes[selectedTreeSkillKey]) allocatedMasteryNodes[selectedTreeSkillKey] = new Set();
+        allocatedMasteryNodes[selectedTreeSkillKey].add(node.id);
+        AudioEngine.playSkillLevelUp();
+        spawnDamageNumber(player.x, player.y - 45, `Unlocked: ${node.name}`, true, '#1abc9c');
+        renderSkillUpgradeModal();
+        saveToDatabase(true);
+      } else if (allocateNode(selectedTreeSkillKey, node.id, player)) {
         AudioEngine.playSkillLevelUp();
         spawnDamageNumber(player.x, player.y - 45, `Unlocked: ${node.name}`, true, '#1abc9c');
         renderSkillUpgradeModal();
