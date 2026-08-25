@@ -647,20 +647,25 @@
     cooldowns: { slash: 0, fireball: 0, frost: 0, meteor: 0, dash: 0 },
 
     equipped: {
-      Helm: POSSIBLE_LOOT[1],
-      Amulet: POSSIBLE_LOOT[6],
-      MainHand: POSSIBLE_LOOT[0],
-      BodyArmor: POSSIBLE_LOOT[4],
-      OffHand: POSSIBLE_LOOT[3],
-      Ring: POSSIBLE_LOOT[7],
-      Boots: POSSIBLE_LOOT[5]
+      MainHand: {
+        id: 'starter_blade_1',
+        name: 'Rusty Iron Blade',
+        category: 'weapon',
+        slot: 'MainHand',
+        rarity: 'Normal',
+        tier: 1,
+        requiredLevel: 1,
+        itemLevel: 1,
+        damage: 15,
+        attackSpeed: 1.20,
+        critChance: 5.0,
+        icon: '🗡️',
+        color: '#c8c8c8',
+        description: 'A weathered starter blade carried by novice warriors.',
+        affixes: []
+      }
     },
-    bag: [
-      POSSIBLE_LOOT[2],
-      POSSIBLE_LOOT[8],
-      POSSIBLE_LOOT[9],
-      POSSIBLE_LOOT[8]
-    ],
+    bag: [],
     bagFilter: 'all'
   };
 
