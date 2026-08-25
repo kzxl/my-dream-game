@@ -28,15 +28,41 @@ let draggedItemInfo = null;
 let contextItemData = null;
 
 /**
+ * Normalize Slot string across varied item definitions
+ */
+export function normalizeSlot(slot, category) {
+  if (!slot && !category) return null;
+  const s = (slot || '').trim();
+  const sLower = s.toLowerCase();
+  const cLower = (category || '').toLowerCase();
+
+  if (s === 'MainHand' || sLower === 'mainhand' || sLower === 'weapon' || cLower === 'weapon') return 'MainHand';
+  if (s === 'OffHand' || sLower === 'offhand' || sLower === 'shield') return 'OffHand';
+  if (s === 'Helm' || sLower === 'helm' || sLower === 'helmet' || sLower === 'head') return 'Helm';
+  if (s === 'BodyArmor' || sLower === 'bodyarmor' || sLower === 'chest' || sLower === 'body') return 'BodyArmor';
+  if (s === 'Boots' || sLower === 'boots' || sLower === 'boot' || sLower === 'shoes') return 'Boots';
+  if (s === 'Amulet' || sLower === 'amulet' || sLower === 'neck' || sLower === 'necklace') return 'Amulet';
+  if (s === 'Ring' || sLower === 'ring' || sLower === 'finger') return 'Ring';
+  if (sLower === 'armor' || cLower === 'armor') return 'BodyArmor';
+  if (cLower === 'accessory') return 'Ring';
+
+  return null;
+}
+
+/**
  * Categorize item for Tab Filtering
  */
 export function getItemCategory(item) {
   if (!item) return 'empty';
-  if (item.slot === 'MainHand' || item.category === 'weapon') return 'weapon';
-  if (['BodyArmor', 'Helm', 'OffHand', 'Boots'].includes(item.slot) || item.category === 'armor') return 'armor';
-  if (['Ring', 'Amulet'].includes(item.slot) || item.category === 'accessory') return 'accessory';
-  if (item.slot === 'Currency' || item.rarity === 'Currency' || item.slot === 'Gem' || item.rarity === 'SkillGem' || item.rarity === 'SupportGem') return 'currency';
-  if (item.category === 'consumable' || item.id === 'scroll_resurrection' || item.category === 'map' || item.slot === 'Map' || item.category === 'recipe' || item.slot === 'Recipe') return 'consumable';
+  const normSlot = normalizeSlot(item.slot, item.category);
+  const cat = (item.category || '').toLowerCase();
+  const slot = (item.slot || '').toLowerCase();
+
+  if (normSlot === 'MainHand' || cat === 'weapon') return 'weapon';
+  if (normSlot === 'Ring' || normSlot === 'Amulet' || cat === 'accessory') return 'accessory';
+  if (['BodyArmor', 'Helm', 'OffHand', 'Boots'].includes(normSlot) || cat === 'armor') return 'armor';
+  if (slot === 'currency' || item.rarity === 'Currency' || slot === 'gem' || item.rarity === 'SkillGem' || item.rarity === 'SupportGem' || cat === 'currency') return 'currency';
+  if (cat === 'consumable' || item.id === 'scroll_resurrection' || cat === 'map' || slot === 'map' || cat === 'recipe' || slot === 'recipe') return 'consumable';
   return 'other';
 }
 
@@ -158,6 +184,9 @@ export function updateBackpackUI() {
     }
 
     if (item) {
+      const normSlot = normalizeSlot(item.slot, item.category);
+      if (normSlot) item.slot = normSlot;
+
       slot.className = `bag-slot-card rarity-${item.rarity || 'Normal'}`;
       slot.setAttribute('draggable', 'true');
 
@@ -309,7 +338,9 @@ function handleBagDrop(targetIndex) {
     if (player.bag[targetIndex]) {
       // If target bag slot has item and matches slot, equip target item!
       const targetBagItem = player.bag[targetIndex];
-      if (targetBagItem.slot === sourceSlot) {
+      const targetSlot = normalizeSlot(targetBagItem.slot, targetBagItem.category);
+      if (targetSlot === sourceSlot) {
+        targetBagItem.slot = sourceSlot;
         player.equipped[sourceSlot] = targetBagItem;
         player.bag[targetIndex] = currentGear;
       } else {
@@ -443,9 +474,12 @@ export function updatePaperdollUI() {
     // Drag Over on Paperdoll slot
     slotEl.ondragover = e => {
       e.preventDefault();
-      if (draggedItemInfo && draggedItemInfo.item && draggedItemInfo.item.slot === slotKey) {
-        e.dataTransfer.dropEffect = 'move';
-        slotEl.classList.add('drag-over');
+      if (draggedItemInfo && draggedItemInfo.item) {
+        const targetSlot = normalizeSlot(draggedItemInfo.item.slot, draggedItemInfo.item.category);
+        if (targetSlot === slotKey) {
+          e.dataTransfer.dropEffect = 'move';
+          slotEl.classList.add('drag-over');
+        }
       }
     };
 
@@ -458,7 +492,8 @@ export function updatePaperdollUI() {
       slotEl.classList.remove('drag-over');
       if (draggedItemInfo && draggedItemInfo.source === 'bag') {
         const itemToEquip = draggedItemInfo.item;
-        if (itemToEquip && itemToEquip.slot === slotKey) {
+        const targetSlot = normalizeSlot(itemToEquip?.slot, itemToEquip?.category);
+        if (itemToEquip && targetSlot === slotKey) {
           handleQuickEquipOrUse(itemToEquip, draggedItemInfo.index);
         }
       }
@@ -535,7 +570,9 @@ export function getSlotDefaultIcon(slotKey) {
 export function handleQuickEquipOrUse(item, bagIndex) {
   if (!item) return;
 
-  if (item.slot && item.slot !== 'Currency' && item.slot !== 'Gem' && item.category !== 'map') {
+  const targetSlot = normalizeSlot(item.slot, item.category);
+
+  if (targetSlot) {
     // Check level requirement
     if (item.requiredLevel && player.level < item.requiredLevel) {
       spawnDamageNumber(player.x, player.y - 45, `⚠️ Requires Level ${item.requiredLevel}! (Lv.${player.level})`, true, '#e06c75');
@@ -543,8 +580,11 @@ export function handleQuickEquipOrUse(item, bagIndex) {
       return;
     }
 
+    // Standardize item slot
+    item.slot = targetSlot;
+
     // Equip gear to Paperdoll
-    const prev = player.equipped[item.slot];
+    const prev = player.equipped[targetSlot];
     if (bagIndex !== undefined && bagIndex >= 0) {
       if (prev) player.bag[bagIndex] = prev;
       else player.bag.splice(bagIndex, 1);
@@ -556,7 +596,7 @@ export function handleQuickEquipOrUse(item, bagIndex) {
       }
     }
 
-    player.equipped[item.slot] = item;
+    player.equipped[targetSlot] = item;
     playItemEquipAudio(item);
     spawnDamageNumber(player.x, player.y - 40, `Equipped: ${item.name}`, false, RARITY_COLORS[item.rarity] || '#00e676');
 

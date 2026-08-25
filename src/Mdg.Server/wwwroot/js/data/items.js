@@ -199,37 +199,37 @@ export const BASE_EQUIPMENT = [
 
   // --- ACCESSORIES (Amulets & Rings) ---
   {
-    tier: 1, requiredLevel: 1, category: 'armor', slot: 'Amulet',
+    tier: 1, requiredLevel: 1, category: 'accessory', slot: 'Amulet',
     baseName: 'Copper Medallion', icon: '📿', sprite: ITEM_SPRITES.amulet_heart,
     baseStats: { maxLife: 15, maxMana: 10 },
     lore: 'A modest good-luck pendant.'
   },
   {
-    tier: 3, requiredLevel: 35, category: 'armor', slot: 'Amulet',
+    tier: 3, requiredLevel: 35, category: 'accessory', slot: 'Amulet',
     baseName: 'Solar Medallion', icon: '📿', sprite: ITEM_SPRITES.amulet_diamond,
     baseStats: { maxLife: 60, critMulti: 15 },
     lore: 'Radiates a soothing celestial warmth.'
   },
   {
-    tier: 5, requiredLevel: 70, category: 'armor', slot: 'Amulet',
+    tier: 5, requiredLevel: 70, category: 'accessory', slot: 'Amulet',
     baseName: 'Amulet of the Celestial Void', icon: '📿', sprite: ITEM_SPRITES.amulet_diamond,
     baseStats: { maxLife: 120, critMulti: 30, damage: 25 },
     lore: 'Pinnacle amulet resonating with eternal constellations.'
   },
   {
-    tier: 1, requiredLevel: 1, category: 'armor', slot: 'Ring',
+    tier: 1, requiredLevel: 1, category: 'accessory', slot: 'Ring',
     baseName: 'Iron Band', icon: '💍', sprite: ITEM_SPRITES.ring_ruby,
     baseStats: { armor: 15, maxLife: 10 },
     lore: 'A simple forged ring.'
   },
   {
-    tier: 3, requiredLevel: 35, category: 'armor', slot: 'Ring',
+    tier: 3, requiredLevel: 35, category: 'accessory', slot: 'Ring',
     baseName: 'Glacial Signet Ring', icon: '💍', sprite: ITEM_SPRITES.ring_sapphire,
     baseStats: { coldRes: 25, es: 45 },
     lore: 'Cold to the touch, engraved with frost glyphs.'
   },
   {
-    tier: 5, requiredLevel: 70, category: 'armor', slot: 'Ring',
+    tier: 5, requiredLevel: 70, category: 'accessory', slot: 'Ring',
     baseName: 'Opal Genesis Ring', icon: '💍', sprite: ITEM_SPRITES.ring_sapphire,
     baseStats: { damage: 20, allRes: 15, critChance: 5 },
     lore: 'Pinnacle ring forged from primordial Genesis crystal.'
