@@ -21,6 +21,8 @@ class MultiplayerClient {
     this.processedChatIds = new Set();
     this.currentChannel = localStorage.getItem('mdg_current_channel') || 'CH-1';
     this.pingInterval = null;
+    this.pingMs = 18;
+    this.serverTickRate = 30;
   }
 
   init() {
@@ -28,6 +30,7 @@ class MultiplayerClient {
     this.isInitialized = true;
     this.connect();
     this.setupChannelUI();
+    this.startPingMonitor();
     
     // Position broadcast loop (20 TPS)
     setInterval(() => {
@@ -48,6 +51,44 @@ class MultiplayerClient {
         }
       }, 10000);
     }
+  }
+
+  startPingMonitor() {
+    this.measurePing();
+    setInterval(() => this.measurePing(), 3000);
+  }
+
+  async measurePing() {
+    try {
+      const t0 = performance.now();
+      const res = await fetch('/api/v1/health', { cache: 'no-store' });
+      if (res.ok) {
+        const t1 = performance.now();
+        this.pingMs = Math.max(1, Math.round(t1 - t0));
+        const data = await res.json();
+        if (data.tickRate) this.serverTickRate = data.tickRate;
+        this.updateChannelUI();
+      }
+    } catch (e) {
+      // Offline / network issue
+    }
+  }
+
+  getPingInfo() {
+    const ping = Math.max(1, this.pingMs || 20);
+    let color = '#4ade80';
+    let label = 'Rất Tốt (Stable)';
+    let emoji = '🟢';
+    if (ping > 120) {
+      color = '#ef4444';
+      label = 'Chậm (High Latency)';
+      emoji = '🔴';
+    } else if (ping > 60) {
+      color = '#f59e0b';
+      label = 'Ổn Định (Good)';
+      emoji = '🟡';
+    }
+    return { pingMs: ping, color, label, emoji };
   }
 
   connect() {
@@ -279,8 +320,9 @@ class MultiplayerClient {
     const chEl = document.getElementById('channelSelectBtn');
     if (chEl) {
       const chObj = CHANNELS.find(c => c.id === this.currentChannel) || CHANNELS[0];
-      chEl.innerHTML = `${chObj.icon} ${chObj.id} ▾`;
-      chEl.title = `Current World Channel: ${chObj.name}. Click to switch channel!`;
+      const p = this.getPingInfo();
+      chEl.innerHTML = `${chObj.icon} ${chObj.id} <span class="ch-ping-indicator" style="color:${p.color}; font-weight:800; font-size:10px; margin-left:3px;">● ${p.pingMs}ms</span> ▾`;
+      chEl.title = `Kênh Hiện Tại: ${chObj.name} | Độ trễ Server: ${p.pingMs}ms (${p.label})`;
     }
   }
 

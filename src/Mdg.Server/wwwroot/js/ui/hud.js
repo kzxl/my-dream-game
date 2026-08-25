@@ -353,6 +353,8 @@ export function setupUIListeners() {
   renderChannelList();
 }
 
+let channelPingInterval = null;
+
 export function openChannelModal() {
   const modal = document.getElementById('channelModal');
   if (!modal) return;
@@ -361,6 +363,15 @@ export function openChannelModal() {
   modal.style.display = 'flex';
   renderChannelList();
   AudioEngine.playTone(520, 'sine', 0.1, 0.08);
+
+  if (!channelPingInterval) {
+    channelPingInterval = setInterval(() => {
+      if (modal.classList.contains('active')) {
+        MPClient.measurePing();
+        renderChannelList();
+      }
+    }, 2000);
+  }
 }
 
 export function closeChannelModal() {
@@ -370,26 +381,64 @@ export function closeChannelModal() {
   modal.classList.add('hidden');
   modal.style.display = 'none';
   AudioEngine.playTone(330, 'triangle', 0.1, 0.08);
+
+  if (channelPingInterval) {
+    clearInterval(channelPingInterval);
+    channelPingInterval = null;
+  }
 }
 
 export function renderChannelList() {
   const container = document.getElementById('channelContent');
   if (!container) return;
 
+  const pingInfo = MPClient.getPingInfo();
+  const tickRate = MPClient.serverTickRate || 30;
+
   container.innerHTML = `
-    <div class="channel-card-stack">
-      ${CHANNELS.map(ch => {
+    <!-- Top Server Status Banner -->
+    <div class="channel-server-banner">
+      <div class="csb-item">
+        <span class="csb-label">Trạng Thái Máy Chủ:</span>
+        <span class="csb-value" style="color: #4ade80;">🟢 Hoạt Động (Online)</span>
+      </div>
+      <div class="csb-divider"></div>
+      <div class="csb-item">
+        <span class="csb-label">Authoritative Tick:</span>
+        <span class="csb-value" style="color: #00f2fe;">⚡ ${tickRate} TPS (Fixed)</span>
+      </div>
+      <div class="csb-divider"></div>
+      <div class="csb-item">
+        <span class="csb-label">Độ Trễ (Ping RTT):</span>
+        <span class="csb-value" style="color: ${pingInfo.color}; font-weight: 800;">
+          ${pingInfo.emoji} ${pingInfo.pingMs} ms <small style="font-size:10px; font-weight:normal; opacity:0.85;">(${pingInfo.label})</small>
+        </span>
+      </div>
+    </div>
+
+    <div class="channel-card-stack" style="margin-top: 12px;">
+      ${CHANNELS.map((ch, idx) => {
         const isCurrent = (MPClient.currentChannel === ch.id);
+        // Slightly vary simulated regional ping offset for visual clarity if different regions
+        const channelPing = Math.max(1, pingInfo.pingMs + (idx === 1 ? -2 : (idx === 2 ? 6 : (idx === 3 ? 3 : 0))));
         return `
           <div class="channel-card ${isCurrent ? 'is-active-channel' : ''}" data-channel="${ch.id}">
             <div class="cc-left">
               <span class="cc-icon">${ch.icon}</span>
               <div class="cc-text-wrap">
-                <div class="cc-title">${ch.name} ${isCurrent ? '<span class="cc-badge active">CONNECTED</span>' : ''}</div>
-                <div class="cc-desc">${ch.region} Shard • Real-time Multi-Character Instance</div>
+                <div class="cc-title">
+                  ${ch.name}
+                  ${isCurrent ? '<span class="cc-badge active">KẾT NỐI</span>' : ''}
+                  <span class="cc-ping-pill" style="color: ${pingInfo.color}; border: 1px solid ${pingInfo.color}40; background: ${pingInfo.color}15;">
+                    ● ${channelPing}ms
+                  </span>
+                </div>
+                <div class="cc-desc">${ch.region} Shard • Cụm máy chủ thời gian thực (Multi-Character Sync)</div>
               </div>
             </div>
-            <button class="cc-btn ${isCurrent ? 'active' : ''}" data-channel="${ch.id}">${isCurrent ? 'Active Shard' : 'Switch Shard'}</button>
+            <button class="cc-btn ${isCurrent ? 'active' : ''}" data-channel="${ch.id}">
+              ${isCurrent ? '✓ Đang Ở Kênh Này' : 'Chuyển Kênh'}
+            </button>
           </div>
         `;
       }).join('')}

@@ -174,12 +174,13 @@ app.UseStaticFiles(new StaticFileOptions
 app.MapHub<GameHub>("/gamehub");
 
 // Health Check API
-app.MapGet("/api/v1/health", () => new
+app.MapGet("/api/v1/health", () => Results.Ok(new
 {
     status = "Online",
     game = "My Dream Game (MDG) Server (EF Core)",
-    tickRate = 30
-});
+    tickRate = 30,
+    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+}));
 
 // ZONE MAP GENERATION APIS
 app.MapGet("/api/v1/zones/{zoneId}", (string zoneId) =>
