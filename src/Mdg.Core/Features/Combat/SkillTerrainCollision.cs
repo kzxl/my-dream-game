@@ -7,7 +7,9 @@ public static class SkillTerrainCollision
 {
     public static bool IsProjectileBlockedByTile(int tileType)
     {
-        return tileType == ZoneMapGenerator.TILE_WALL || tileType == ZoneMapGenerator.TILE_ANCIENT_PILLAR;
+        return tileType == ZoneMapGenerator.TILE_WALL 
+            || tileType == ZoneMapGenerator.TILE_ANCIENT_PILLAR 
+            || tileType == ZoneMapGenerator.TILE_DESTRUCTIBLE_WALL;
     }
 
     public static bool CanProjectilePassOverTile(int tileType)

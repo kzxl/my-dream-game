@@ -117,8 +117,51 @@ export function isProjectileBlocked(x, y) {
   return tile === 1 || tile === 10; // 1 = Solid Wall, 10 = Solid Stone Pillar
 }
 
+export function mutateTerrainByProjectile(p) {
+  if (!currentZoneMap || !currentZoneMap.grid) return;
+  const tx = Math.floor(p.x / 48);
+  const ty = Math.floor(p.y / 48);
+  if (ty < 0 || ty >= currentZoneMap.heightInTiles || tx < 0 || tx >= currentZoneMap.widthInTiles) return;
+  const tile = currentZoneMap.grid[ty][tx];
+
+  // Ice projectile freezes deep water into walkable ice
+  if (p.type === 'frost' && tile === 2) {
+    currentZoneMap.grid[ty][tx] = 7; // Glacial Ice
+    floatingTexts.push({ x: (tx + 0.5) * 48, y: (ty + 0.5) * 48 - 15, text: '❄️ FROZEN WATER!', color: '#00f2fe', life: 1.2 });
+    for (let k = 0; k < 6; k++) {
+      particles.push({
+        x: (tx + 0.5) * 48 + (Math.random() - 0.5) * 20,
+        y: (ty + 0.5) * 48 + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 80,
+        vy: (Math.random() - 0.5) * 80,
+        color: '#74b9ff',
+        life: 0.5,
+        size: 4
+      });
+    }
+  }
+
+  // Fire skill melts ice / deep snow into natural floor
+  if ((p.type === 'fireball' || p.fireDmg) && (tile === 7 || tile === 12)) {
+    currentZoneMap.grid[ty][tx] = 0; // Natural floor
+    floatingTexts.push({ x: (tx + 0.5) * 48, y: (ty + 0.5) * 48 - 15, text: '🔥 MELTED ICE!', color: '#ff7675', life: 1.2 });
+    for (let k = 0; k < 6; k++) {
+      particles.push({
+        x: (tx + 0.5) * 48 + (Math.random() - 0.5) * 20,
+        y: (ty + 0.5) * 48 + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 80,
+        vy: -Math.random() * 80,
+        color: '#dfe6e9',
+        life: 0.6,
+        size: 4
+      });
+    }
+  }
+}
+
 window.canWalk = canWalk;
 window.isProjectileBlocked = isProjectileBlocked;
+window.mutateTerrainByProjectile = mutateTerrainByProjectile;
 
 export function findSafeWalkableCoord(reqX, reqY) {
   if (!currentZoneMap || !currentZoneMap.grid) return { x: reqX || 672, y: reqY || 672 };
@@ -1285,7 +1328,8 @@ function update(dt) {
 
     let hit = false;
 
-    // 1. Terrain Wall / Pillar Collision Check
+    // 1. Terrain Wall / Pillar Collision Check & Elemental Mutation
+    mutateTerrainByProjectile(p);
     if (isProjectileBlocked(p.x, p.y)) {
       hit = true;
       AudioEngine.playTone(180, 'triangle', 0.12, 0.08);

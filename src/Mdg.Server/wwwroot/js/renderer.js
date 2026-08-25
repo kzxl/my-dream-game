@@ -223,10 +223,12 @@ export function drawSeamlessTerrain(canvas, ctx, currentZone, zoneData) {
   const viewH = canvas.height / camera.zoom;
   const tileSize = 48;
 
+  const gridH = zoneData.grid.length;
+  const gridW = zoneData.grid[0].length;
   const startTileX = Math.max(0, Math.floor((player.x - viewW / 2) / tileSize) - 1);
-  const endTileX = Math.min(zoneData.widthInTiles, Math.ceil((player.x + viewW / 2) / tileSize) + 1);
+  const endTileX = Math.min(gridW, Math.ceil((player.x + viewW / 2) / tileSize) + 1);
   const startTileY = Math.max(0, Math.floor((player.y - viewH / 2) / tileSize) - 1);
-  const endTileY = Math.min(zoneData.heightInTiles, Math.ceil((player.y + viewH / 2) / tileSize) + 1);
+  const endTileY = Math.min(gridH, Math.ceil((player.y + viewH / 2) / tileSize) + 1);
 
   const isCrypt = currentZone.id === 'ForgottenCrypt';
   const isTundra = currentZone.id === 'FrostpeakTundra';

@@ -1,12 +1,6 @@
 /**
- * Procedural Map, On-Demand Chunk Streaming & Organic Terrain Generator for MDG (ARPG Engine)
- * Vast Expanded World Maps (128x128 to 160x160 tiles) & 6 Interactive Terrain Mechanics:
- *  1. CAMOUFLAGE_BUSH (14): 80% Stealth Ambush (+50% Dmg & 100% Crit on strike from bush)
- *  2. GLACIAL_ICE (7): Inertial Drift & +25% Movement Speed
- *  3. ELECTRIC_GROUND (8): +20% Attack/Cast Speed Leyline
- *  4. TOXIC_MIASMA (6): Slow -35% & Poison Hazard
- *  5. LAVA (5): 20 Fire Dmg/s Hazard
- *  6. DESTRUCTIBLE_WALL (15): Breakable Barricade with 120 HP for secret shortcuts!
+ * Procedural Map, Deterministic Seeded Noise & Organic Terrain Generator for MDG (ARPG Engine)
+ * Synchronized with Server-Authoritative C# Core (16 Tile Types Matrix)
  */
 
 export const TILE_SIZE = 48;
@@ -31,34 +25,39 @@ export const TILE_TYPES = {
 };
 
 export class MapGenerator {
-  static generateZone(zoneId) {
+  static generateZone(zoneId, seed = 1337) {
+    let map;
     if (zoneId === 'SanctuaryHaven' || zoneId === 'GlacialOutpost' || zoneId === 'AshenRedoubt' || zoneId === 'OasisSanctum' || zoneId === 'AethelisCitadel') {
-      return this.generateHaven(64, 64);
+      map = this.generateHaven(64, 64);
     } else if (zoneId === 'WhisperingPlains') {
-      return this.generatePlains(160, 160);
+      map = this.generatePlains(128, 128);
     } else if (zoneId === 'VerdantCanopy') {
-      return this.generateCanopy(140, 140);
+      map = this.generateCanopy(128, 128);
     } else if (zoneId === 'ForgottenCrypt' || zoneId === 'DreadTombs' || zoneId === 'NecropolisOfSouls') {
-      return this.generateCryptDungeon(128, 128);
+      map = this.generateCryptDungeon(96, 96);
     } else if (zoneId === 'FrostpeakTundra') {
-      return this.generateTundra(160, 160);
+      map = this.generateTundra(128, 128);
     } else if (zoneId === 'HowlingIceCaverns') {
-      return this.generateIceCaverns(128, 128);
+      map = this.generateIceCaverns(128, 128);
     } else if (zoneId === 'StormpeakRidge') {
-      return this.generateStormpeak(160, 160);
+      map = this.generateStormpeak(128, 128);
     } else if (zoneId === 'ObsidianWastes') {
-      return this.generateObsidianWastes(140, 140);
+      map = this.generateObsidianWastes(128, 128);
     } else if (zoneId === 'MoltenCaldera' || zoneId === 'InfernalHeart') {
-      return this.generateCaldera(160, 160);
+      map = this.generateCaldera(128, 128);
     } else if (zoneId === 'ShiftingDunes') {
-      return this.generateShiftingDunes(140, 140);
+      map = this.generateShiftingDunes(128, 128);
     } else if (zoneId === 'VoidAbyss' || zoneId === 'CitadelOfTheVoid') {
-      return this.generateVoidAbyss(128, 128);
+      map = this.generateVoidAbyss(96, 96);
     } else if (zoneId === 'SpireArena') {
-      return this.generateSpireArena(64, 64);
+      map = this.generateSpireArena(64, 64);
+    } else {
+      map = this.generateHaven(64, 64);
     }
 
-    return this.generateHaven(64, 64);
+    // Ensure connectivity
+    this.ensurePortalsReachable(map);
+    return map;
   }
 
   // =========================================================================
@@ -127,28 +126,29 @@ export class MapGenerator {
       worldWidth: w * TILE_SIZE,
       worldHeight: h * TILE_SIZE,
       grid: grid,
-      spawn: { x: cx * TILE_SIZE, y: cy * TILE_SIZE },
+      spawnX: cx * TILE_SIZE,
+      spawnY: cy * TILE_SIZE,
       portals: [
         { x: (w - 3) * TILE_SIZE, y: cy * TILE_SIZE, targetZone: 'WhisperingPlains', targetX: 250, targetY: (h / 2) * TILE_SIZE, name: '🌀 To Whispering Plains' },
-        { x: cx * TILE_SIZE, y: (h - 3) * TILE_SIZE, targetZone: 'FrostpeakTundra', targetX: (w / 2) * TILE_SIZE, targetY: 250, name: '❄️ Journey to Frostpeak' }
+        { x: cx * TILE_SIZE, y: (h - 3) * TILE_SIZE, targetZone: 'ForgottenCrypt', targetX: 400, targetY: 400, name: '🏰 To Forgotten Crypt' }
       ]
     };
   }
 
   // =========================================================================
-  // 2. WHISPERING PLAINS (160x160 - 7680x7680 px - Vast Wilderness & Camouflage Bushes)
+  // 2. WHISPERING PLAINS (128x128 - 6144x6144 px)
   // =========================================================================
-  static generatePlains(w = 160, h = 160) {
+  static generatePlains(w = 128, h = 128) {
     const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
     for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
     for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
 
     const riverBaseX = Math.floor(w / 2);
-    const bridgeYPositions = [30, 60, 90, 120];
+    const bridgeYPositions = [25, 50, 75, 100];
 
     // Winding River
     for (let y = 1; y < h - 1; y++) {
-      const wave = Math.sin(y / 10.0) * 14.0 + Math.cos(y / 5.0) * 5.0;
+      const wave = Math.sin(y / 9.0) * 11.0 + Math.cos(y / 4.5) * 4.0;
       const rx = Math.round(riverBaseX + wave);
 
       if (rx - 3 >= 1) grid[y][rx - 3] = TILE_TYPES.SHALLOW_WATER_SAND;
@@ -163,9 +163,9 @@ export class MapGenerator {
 
     // Bridges
     bridgeYPositions.forEach(by => {
-      for (let dy = -2; dy <= 2; dy++) {
+      for (let dy = -1; dy <= 1; dy++) {
         const y = by + dy;
-        for (let x = riverBaseX - 18; x <= riverBaseX + 18; x++) {
+        for (let x = riverBaseX - 15; x <= riverBaseX + 15; x++) {
           if (grid[y][x] === TILE_TYPES.WATER_DEEP || grid[y][x] === TILE_TYPES.SHALLOW_WATER_SAND) {
             grid[y][x] = TILE_TYPES.PATH;
           }
@@ -173,12 +173,12 @@ export class MapGenerator {
       }
     });
 
-    // Camouflage Stealth Bushes Clusters (Tall Grass for Ambush)
-    for (let cy = 10; cy < h - 10; cy += 18) {
-      for (let cx = 10; cx < w - 10; cx += 22) {
+    // Camouflage Stealth Bushes Clusters
+    for (let cy = 8; cy < h - 8; cy += 14) {
+      for (let cx = 8; cx < w - 8; cx += 16) {
         if (grid[cy][cx] === TILE_TYPES.FLOOR) {
-          for (let dy = -2; dy <= 2; dy++) {
-            for (let dx = -3; dx <= 3; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
               if (Math.random() < 0.75 && grid[cy + dy][cx + dx] === TILE_TYPES.FLOOR) {
                 grid[cy + dy][cx + dx] = TILE_TYPES.CAMOUFLAGE_BUSH;
               }
@@ -188,10 +188,10 @@ export class MapGenerator {
       }
     }
 
-    // Secret Destructible Barricades (Blocking shortcut caves)
-    for (let i = 0; i < 6; i++) {
-      const bx = 30 + i * 20;
-      const by = 40 + (i % 2) * 50;
+    // Secret Destructible Barricades (Tile 15)
+    for (let i = 0; i < 5; i++) {
+      const bx = 25 + i * 18;
+      const by = 35 + (i % 2) * 45;
       grid[by][bx] = TILE_TYPES.DESTRUCTIBLE_WALL;
       grid[by + 1][bx] = TILE_TYPES.DESTRUCTIBLE_WALL;
     }
@@ -209,7 +209,7 @@ export class MapGenerator {
       id: 'WhisperingPlains',
       name: 'Whispering Plains',
       subtitle: '🌾 Vast Wilderness with Winding River, Beast Outposts & Camouflage Ambush Bushes',
-      levelRange: 'Lv. 5-15',
+      levelRange: 'Lv. 5-12',
       hazard: {
         hazardName: 'Wild Winds',
         description: 'Dense camouflage bushes grant 80% stealth and +50% Ambush Strike damage!'
@@ -219,38 +219,31 @@ export class MapGenerator {
       worldWidth: w * TILE_SIZE,
       worldHeight: h * TILE_SIZE,
       grid: grid,
-      spawn: { x: 250, y: midY * TILE_SIZE },
+      spawnX: 250,
+      spawnY: midY * TILE_SIZE,
       portals: [
         { x: 120, y: midY * TILE_SIZE, targetZone: 'SanctuaryHaven', targetX: 2800, targetY: 1536, name: '🌿 Back to Haven' },
         { x: (w - 3) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'FrostpeakTundra', targetX: 250, targetY: midY * TILE_SIZE, name: '❄️ To Frostpeak Tundra' },
-        { x: (w / 2) * TILE_SIZE, y: (h - 3) * TILE_SIZE, targetZone: 'ForgottenCrypt', targetX: 250, targetY: 250, name: '🏰 Into Forgotten Crypt' }
-      ],
-      monsterSpawns: [
-        { x: 1200, y: 1200, count: 8, type: 'slime' },
-        { x: 2200, y: 3500, count: 10, type: 'wolf' },
-        { x: 5000, y: 1800, count: 12, type: 'goblin' },
-        { x: 5500, y: 5500, count: 10, type: 'wolf' },
-        { x: 3500, y: 4000, count: 8, type: 'slime' }
+        { x: (w / 2) * TILE_SIZE, y: (h - 3) * TILE_SIZE, targetZone: 'ForgottenCrypt', targetX: 350, targetY: 350, name: '🏰 Into Forgotten Crypt' }
       ]
     };
   }
 
   // =========================================================================
-  // 3. FROSTPEAK TUNDRA (160x160 - 7680x7680 px - Permafrost Slick Ice)
+  // 3. FROSTPEAK TUNDRA (128x128 - 6144x6144 px)
   // =========================================================================
-  static generateTundra(w = 160, h = 160) {
+  static generateTundra(w = 128, h = 128) {
     const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
     for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
     for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
 
-    // Glacier Permafrost Slick Ice Fields (Inertial Drifting & +25% Speed)
-    for (let y = 8; y < h - 8; y++) {
-      for (let x = 8; x < w - 8; x++) {
-        const n = Math.sin(x * 0.12) * Math.cos(y * 0.12) + Math.sin((x + y) * 0.08) * 0.5;
-        if (n > 0.45) {
+    for (let y = 6; y < h - 6; y++) {
+      for (let x = 6; x < w - 6; x++) {
+        const n = Math.sin(x * 0.1) * Math.cos(y * 0.1) + Math.sin((x + y) * 0.06) * 0.4;
+        if (n > 0.38) {
           grid[y][x] = TILE_TYPES.GLACIAL_ICE;
-        } else if (n < -0.55) {
-          grid[y][x] = TILE_TYPES.WALL;
+        } else if (n < -0.42) {
+          grid[y][x] = TILE_TYPES.DEEP_SNOW;
         }
       }
     }
@@ -265,7 +258,7 @@ export class MapGenerator {
       id: 'FrostpeakTundra',
       name: 'Frostpeak Tundra',
       subtitle: '❄️ Endless Permafrost Glacier (Slick Ice Fields & Howling Cryomancers)',
-      levelRange: 'Lv. 15-28',
+      levelRange: 'Lv. 16-25',
       hazard: {
         hazardName: 'Permafrost Slickness',
         description: 'Slick ice fields reduce friction by 60% and boost movement speed by +25%!'
@@ -275,23 +268,19 @@ export class MapGenerator {
       worldWidth: w * TILE_SIZE,
       worldHeight: h * TILE_SIZE,
       grid: grid,
-      spawn: { x: 250, y: midY * TILE_SIZE },
+      spawnX: 250,
+      spawnY: midY * TILE_SIZE,
       portals: [
-        { x: 120, y: midY * TILE_SIZE, targetZone: 'WhisperingPlains', targetX: 7400, targetY: midY * TILE_SIZE, name: '🌾 Back to Plains' },
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'WhisperingPlains', targetX: 5800, targetY: midY * TILE_SIZE, name: '🌾 Back to Plains' },
         { x: (w - 3) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'MoltenCaldera', targetX: 250, targetY: midY * TILE_SIZE, name: '🔥 To Molten Caldera' }
-      ],
-      monsterSpawns: [
-        { x: 1800, y: 1800, count: 8, type: 'frost_ghoul' },
-        { x: 4500, y: 3500, count: 9, type: 'frost_golem' },
-        { x: 6000, y: 5500, count: 10, type: 'frost_ghoul' }
       ]
     };
   }
 
   // =========================================================================
-  // 4. MOLTEN CALDERA (160x160 - 7680x7680 px - Lava & Destructible Rocks)
+  // 4. MOLTEN CALDERA (128x128 - 6144x6144 px)
   // =========================================================================
-  static generateCaldera(w = 160, h = 160) {
+  static generateCaldera(w = 128, h = 128) {
     const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
     for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
     for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
@@ -299,71 +288,73 @@ export class MapGenerator {
     const cx = Math.floor(w / 2);
     const cy = Math.floor(h / 2);
 
-    // Multi-Caldera Magma Chambers
-    for (let y = 10; y < h - 10; y++) {
-      for (let x = 10; x < w - 10; x++) {
+    for (let y = cy - 24; y <= cy + 24; y++) {
+      for (let x = cx - 24; x <= cx + 24; x++) {
         const dist = Math.hypot(x - cx, y - cy);
-        if (dist <= 28 && dist >= 12) {
+        if (dist <= 22 && dist >= 10) {
           grid[y][x] = TILE_TYPES.LAVA;
-        } else if (dist > 28 && dist <= 33) {
+        } else if (dist > 22 && dist <= 26) {
           grid[y][x] = TILE_TYPES.BURNT_GROUND;
         }
       }
     }
 
+    // Obsidian Pillars
+    grid[cy - 16][cx - 16] = TILE_TYPES.ANCIENT_PILLAR;
+    grid[cy - 16][cx + 16] = TILE_TYPES.ANCIENT_PILLAR;
+    grid[cy + 16][cx - 16] = TILE_TYPES.ANCIENT_PILLAR;
+    grid[cy + 16][cx + 16] = TILE_TYPES.ANCIENT_PILLAR;
+
     // Breakable Obsidian Barricades
-    for (let i = 0; i < 8; i++) {
-      const bx = cx - 20 + i * 5;
-      grid[cy - 10][bx] = TILE_TYPES.DESTRUCTIBLE_WALL;
-      grid[cy + 10][bx] = TILE_TYPES.DESTRUCTIBLE_WALL;
+    for (let i = 0; i < 6; i++) {
+      const bx = cx - 15 + i * 6;
+      grid[cy - 8][bx] = TILE_TYPES.DESTRUCTIBLE_WALL;
+      grid[cy + 8][bx] = TILE_TYPES.DESTRUCTIBLE_WALL;
     }
 
     const midY = Math.floor(h / 2);
-    for (let x = 1; x < w - 1; x++) {
-      grid[midY][x] = TILE_TYPES.PATH;
-      grid[midY + 1][x] = TILE_TYPES.PATH;
+    for (let x = cx - 24; x <= cx + 24; x++) {
+      grid[cy][x] = TILE_TYPES.PATH;
+      grid[cy + 1][x] = TILE_TYPES.PATH;
     }
 
     return {
       id: 'MoltenCaldera',
       name: 'Molten Caldera',
       subtitle: '🔥 Colossal Volcanic Crater (Lava Rivers, Magma Pools & Destructible Walls)',
-      levelRange: 'Lv. 28-45',
+      levelRange: 'Lv. 24-32',
       hazard: {
         hazardName: 'Molten Lava',
-        description: 'Molten lava deals 20 Fire Dmg/s. Break obsidian walls to reveal hidden caverns!'
+        description: 'Molten lava deals 40 Fire Dmg/s. Break obsidian walls to reveal hidden caverns!'
       },
       widthInTiles: w,
       heightInTiles: h,
       worldWidth: w * TILE_SIZE,
       worldHeight: h * TILE_SIZE,
       grid: grid,
-      spawn: { x: 250, y: midY * TILE_SIZE },
+      spawnX: 250,
+      spawnY: midY * TILE_SIZE,
       portals: [
-        { x: 120, y: midY * TILE_SIZE, targetZone: 'FrostpeakTundra', targetX: 7400, targetY: midY * TILE_SIZE, name: '❄️ To Frostpeak' },
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'FrostpeakTundra', targetX: 5800, targetY: midY * TILE_SIZE, name: '❄️ To Frostpeak' },
         { x: (w - 3) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'StormpeakRidge', targetX: 250, targetY: midY * TILE_SIZE, name: '⚡ To Stormpeak Ridge' }
-      ],
-      monsterSpawns: [
-        { x: 2000, y: 2000, count: 9, type: 'fire_imp' },
-        { x: 5000, y: 5000, count: 10, type: 'magma_golem' }
       ]
     };
   }
 
   // =========================================================================
-  // 5. STORMPEAK RIDGE (160x160 - 7680x7680 px - Electric Leylines)
+  // 5. STORMPEAK RIDGE (128x128 - 6144x6144 px)
   // =========================================================================
-  static generateStormpeak(w = 160, h = 160) {
+  static generateStormpeak(w = 128, h = 128) {
     const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.FLOOR));
     for (let x = 0; x < w; x++) { grid[0][x] = TILE_TYPES.WALL; grid[h - 1][x] = TILE_TYPES.WALL; }
     for (let y = 0; y < h; y++) { grid[y][0] = TILE_TYPES.WALL; grid[y][w - 1] = TILE_TYPES.WALL; }
 
-    for (let y = 10; y < h - 10; y++) {
-      for (let x = 10; x < w - 10; x++) {
-        const noise = Math.sin(x * 0.15) * Math.cos(y * 0.15);
+    for (let y = 8; y < h - 8; y++) {
+      for (let x = 8; x < w - 8; x++) {
+        const noise = Math.sin(x * 0.12) * Math.cos(y * 0.12);
         if (noise > 0.42) {
           grid[y][x] = TILE_TYPES.CHASM;
-        } else if (noise < -0.38) {
+        } else if (noise < -0.36) {
           grid[y][x] = TILE_TYPES.ELECTRIC_GROUND;
         }
       }
@@ -379,7 +370,7 @@ export class MapGenerator {
       id: 'StormpeakRidge',
       name: 'Stormpeak Ridge',
       subtitle: '⚡ High Mountain Peaks (Electric Leylines: +20% Cast Speed & Thunder Storms)',
-      levelRange: 'Lv. 40-55',
+      levelRange: 'Lv. 30-40',
       hazard: {
         hazardName: 'Electric Leylines',
         description: 'Electric leylines empower heroes with +20% Attack/Cast Speed and +15% Lightning Dmg!'
@@ -389,69 +380,99 @@ export class MapGenerator {
       worldWidth: w * TILE_SIZE,
       worldHeight: h * TILE_SIZE,
       grid: grid,
-      spawn: { x: 250, y: midY * TILE_SIZE },
+      spawnX: 250,
+      spawnY: midY * TILE_SIZE,
       portals: [
-        { x: 120, y: midY * TILE_SIZE, targetZone: 'MoltenCaldera', targetX: 7400, targetY: midY * TILE_SIZE, name: '🔥 To Caldera' },
-        { x: (w - 3) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'VoidAbyss', targetX: 250, targetY: midY * TILE_SIZE, name: '🌌 To Void Abyss' }
+        { x: 120, y: midY * TILE_SIZE, targetZone: 'MoltenCaldera', targetX: 5800, targetY: midY * TILE_SIZE, name: '🔥 To Caldera' },
+        { x: (w - 3) * TILE_SIZE, y: midY * TILE_SIZE, targetZone: 'VoidAbyss', targetX: 350, targetY: midY * TILE_SIZE, name: '🌌 To Void Abyss' }
       ]
     };
   }
 
   // =========================================================================
-  // 6. FORGOTTEN CRYPT DUNGEON (128x128 - 6144x6144 px - Toxic Miasma)
+  // 6. FORGOTTEN CRYPT DUNGEON (96x96 - 4608x4608 px)
   // =========================================================================
-  static generateCryptDungeon(w = 128, h = 128) {
+  static generateCryptDungeon(w = 96, h = 96) {
     const grid = Array.from({ length: h }, () => Array(w).fill(TILE_TYPES.WALL));
 
     const rooms = [
-      { x: 10, y: 10, rw: 24, rh: 24 },
-      { x: 75, y: 10, rw: 28, rh: 24 },
-      { x: 10, y: 75, rw: 24, rh: 28 },
-      { x: 75, y: 75, rw: 32, rh: 32 },
-      { x: 45, y: 45, rw: 28, rh: 28 }
+      { x: 8, y: 8, rw: 20, rh: 20 },
+      { x: 60, y: 8, rw: 24, rh: 20 },
+      { x: 8, y: 60, rw: 20, rh: 24 },
+      { x: 56, y: 56, rw: 28, rh: 28 }, // Boss chamber
+      { x: 36, y: 36, rw: 24, rh: 24 }
     ];
 
     rooms.forEach(r => {
       for (let y = r.y; y < r.y + r.rh; y++) {
         for (let x = r.x; x < r.x + r.rw; x++) {
-          grid[y][x] = TILE_TYPES.FLOOR;
+          const isCorner = (x === r.x && y === r.y) || (x === r.x + r.rw - 1 && y === r.y) ||
+                          (x === r.x && y === r.y + r.rh - 1) || (x === r.x + r.rw - 1 && y === r.y + r.rh - 1);
+          if (!isCorner) grid[y][x] = TILE_TYPES.FLOOR;
         }
+      }
+      if (r.rw >= 20 && r.rh >= 20) {
+        grid[r.y + 4][r.x + 4] = TILE_TYPES.ANCIENT_PILLAR;
+        grid[r.y + 4][r.x + r.rw - 5] = TILE_TYPES.ANCIENT_PILLAR;
+        grid[r.y + r.rh - 5][r.x + 4] = TILE_TYPES.ANCIENT_PILLAR;
+        grid[r.y + r.rh - 5][r.x + r.rw - 5] = TILE_TYPES.ANCIENT_PILLAR;
       }
     });
 
-    // Toxic Miasma Pools in central crypt
-    for (let y = 52; y <= 66; y++) {
-      for (let x = 52; x <= 66; x++) {
+    // Toxic Miasma in boss room
+    for (let y = 66; y <= 74; y++) {
+      for (let x = 66; x <= 74; x++) {
         if (Math.random() < 0.6) grid[y][x] = TILE_TYPES.TOXIC_MIASMA;
       }
     }
 
     // Corridors
-    for (let x = 20; x <= 90; x++) { grid[20][x] = TILE_TYPES.FLOOR; grid[21][x] = TILE_TYPES.FLOOR; }
-    for (let x = 20; x <= 90; x++) { grid[85][x] = TILE_TYPES.FLOOR; grid[86][x] = TILE_TYPES.FLOOR; }
-    for (let y = 20; y <= 85; y++) { grid[y][55] = TILE_TYPES.FLOOR; grid[y][56] = TILE_TYPES.FLOOR; }
+    for (let x = 18; x <= 48; x++) { grid[18][x] = TILE_TYPES.PATH; grid[19][x] = TILE_TYPES.PATH; }
+    for (let y = 18; y <= 48; y++) { grid[y][48] = TILE_TYPES.PATH; grid[y][49] = TILE_TYPES.PATH; }
+    for (let x = 48; x <= 70; x++) { grid[48][x] = TILE_TYPES.PATH; grid[49][x] = TILE_TYPES.PATH; }
+    for (let y = 48; y <= 70; y++) { grid[y][70] = TILE_TYPES.PATH; grid[y][71] = TILE_TYPES.PATH; }
 
     return {
       id: 'ForgottenCrypt',
       name: 'Forgotten Crypt',
       subtitle: '💀 Multi-Chamber Catacombs (Toxic Miasma Pools & Undead Legion)',
-      levelRange: 'Lv. 12-22',
+      levelRange: 'Lv. 10-18',
       widthInTiles: w,
       heightInTiles: h,
       worldWidth: w * TILE_SIZE,
       worldHeight: h * TILE_SIZE,
       grid: grid,
-      spawn: { x: 18 * TILE_SIZE, y: 18 * TILE_SIZE },
+      spawnX: 14 * TILE_SIZE,
+      spawnY: 14 * TILE_SIZE,
       portals: [
-        { x: 14 * TILE_SIZE, y: 14 * TILE_SIZE, targetZone: 'WhisperingPlains', targetX: 3800, targetY: 7400, name: '🌾 Back to Plains' }
+        { x: 10 * TILE_SIZE, y: 10 * TILE_SIZE, targetZone: 'SanctuaryHaven', targetX: 1536, targetY: 2800, name: '🌿 Back to Haven' },
+        { x: 74 * TILE_SIZE, y: 74 * TILE_SIZE, targetZone: 'VoidAbyss', targetX: 350, targetY: 2300, name: '🌌 To Void Abyss' }
       ]
     };
   }
 
-  static generateCanopy(w = 140, h = 140) { return this.generatePlains(w, h); }
+  static generateCanopy(w = 128, h = 128) { return this.generatePlains(w, h); }
   static generateIceCaverns(w = 128, h = 128) { return this.generateTundra(w, h); }
-  static generateObsidianWastes(w = 140, h = 140) { return this.generateCaldera(w, h); }
-  static generateShiftingDunes(w = 140, h = 140) { return this.generatePlains(w, h); }
-  static generateVoidAbyss(w = 128, h = 128) { return this.generateHaven(w, h); }
+  static generateObsidianWastes(w = 128, h = 128) { return this.generateCaldera(w, h); }
+  static generateShiftingDunes(w = 128, h = 128) { return this.generatePlains(w, h); }
+  static generateVoidAbyss(w = 96, h = 96) { return this.generateHaven(w, h); }
   static generateSpireArena(w = 64, h = 64) { return this.generateHaven(w, h); }
+
+  static ensurePortalsReachable(map) {
+    if (!map || !map.grid || !map.portals) return;
+    const grid = map.grid;
+    const h = grid.Count || grid.length;
+    const w = grid[0].Count || grid[0].length;
+    const isWalkable = tile => tile !== 1 && tile !== 2 && tile !== 10 && tile !== 11 && tile !== 15;
+
+    const spawnTx = Math.min(w - 2, Math.max(1, Math.round(map.spawnX / TILE_SIZE)));
+    const spawnTy = Math.min(h - 2, Math.max(1, Math.round(map.spawnY / TILE_SIZE)));
+    grid[spawnTy][spawnTx] = TILE_TYPES.FLOOR;
+
+    map.portals.forEach(p => {
+      const ptx = Math.min(w - 2, Math.max(1, Math.round(p.x / TILE_SIZE)));
+      const pty = Math.min(h - 2, Math.max(1, Math.round(p.y / TILE_SIZE)));
+      grid[pty][ptx] = TILE_TYPES.PATH;
+    });
+  }
 }

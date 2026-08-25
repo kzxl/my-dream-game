@@ -11,15 +11,15 @@ namespace Mdg.Core.Tests;
 public sealed class ExpansionFeatureTests
 {
     [Fact]
-    public void MapExpansion_WhisperingPlains_Is96x96AndHasPois()
+    public void MapExpansion_WhisperingPlains_IsExpandedAndHasPois()
     {
         var map = ZoneMapGenerator.GenerateZone("WhisperingPlains");
 
         Assert.NotNull(map);
-        Assert.Equal(96, map.WidthInTiles);
-        Assert.Equal(96, map.HeightInTiles);
-        Assert.Equal(96 * 48, map.WorldWidth);
-        Assert.Equal(96 * 48, map.WorldHeight);
+        Assert.Equal(128, map.WidthInTiles);
+        Assert.Equal(128, map.HeightInTiles);
+        Assert.Equal(128 * 48, map.WorldWidth);
+        Assert.Equal(128 * 48, map.WorldHeight);
 
         Assert.NotNull(map.Pois);
         Assert.True(map.Pois.Count >= 3, "Expected at least 3 POIs in Whispering Plains.");

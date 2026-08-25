@@ -202,9 +202,9 @@ app.MapGet("/api/v1/health", () => Results.Ok(new
 }));
 
 // ZONE MAP GENERATION APIS
-app.MapGet("/api/v1/zones/{zoneId}", (string zoneId) =>
+app.MapGet("/api/v1/zones/{zoneId}", (string zoneId, int? seed) =>
 {
-    var map = ZoneMapGenerator.GenerateZone(zoneId);
+    var map = ZoneMapGenerator.GenerateZone(zoneId, seed);
     return Results.Ok(map);
 });
 

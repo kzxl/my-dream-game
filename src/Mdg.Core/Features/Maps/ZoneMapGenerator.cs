@@ -20,71 +20,81 @@ public static class ZoneMapGenerator
     public const int TILE_CHASM = 11;
     public const int TILE_DEEP_SNOW = 12;
     public const int TILE_BURNT_GROUND = 13;
+    public const int TILE_CAMOUFLAGE_BUSH = 14;
+    public const int TILE_DESTRUCTIBLE_WALL = 15;
 
-    public static ZoneMapDto GenerateZone(string zoneId)
+    public static ZoneMapDto GenerateZone(string zoneId, int? seed = null)
     {
         if (zoneId.StartsWith("EndlessSpire_F") && int.TryParse(zoneId["EndlessSpire_F".Length..], out int floor))
         {
             return EndlessSpireManager.GenerateSpireFloor(floor);
         }
 
-        return zoneId switch
+        int actualSeed = seed ?? Math.Abs(zoneId.GetHashCode());
+
+        var map = zoneId switch
         {
             // Act 1
-            "SanctuaryHaven" => GenerateHaven(),
-            "WhisperingPlains" => GeneratePlains(),
-            "VerdantCanopy" => GenerateCanopy(),
-            "ForgottenCrypt" => GenerateCrypt(),
+            "SanctuaryHaven" => GenerateHaven(actualSeed),
+            "WhisperingPlains" => GeneratePlains(actualSeed),
+            "VerdantCanopy" => GenerateCanopy(actualSeed),
+            "ForgottenCrypt" => GenerateCrypt(actualSeed),
 
             // Act 2
-            "GlacialOutpost" => GenerateHaven(),
-            "FrostpeakTundra" => GenerateTundra(),
-            "HowlingIceCaverns" => GenerateIceCaverns(),
-            "StormpeakRidge" => GenerateStormpeak(),
+            "GlacialOutpost" => GenerateHaven(actualSeed),
+            "FrostpeakTundra" => GenerateTundra(actualSeed),
+            "HowlingIceCaverns" => GenerateIceCaverns(actualSeed),
+            "StormpeakRidge" => GenerateStormpeak(actualSeed),
 
             // Act 3
-            "AshenRedoubt" => GenerateHaven(),
-            "ObsidianWastes" => GenerateObsidianWastes(),
-            "MoltenCaldera" => GenerateCaldera(),
-            "InfernalHeart" => GenerateCaldera(),
+            "AshenRedoubt" => GenerateHaven(actualSeed),
+            "ObsidianWastes" => GenerateObsidianWastes(actualSeed),
+            "MoltenCaldera" => GenerateCaldera(actualSeed),
+            "InfernalHeart" => GenerateCaldera(actualSeed),
 
             // Act 4
-            "OasisSanctum" => GenerateHaven(),
-            "ShiftingDunes" => GenerateShiftingDunes(),
-            "DreadTombs" => GenerateCrypt(),
-            "NecropolisOfSouls" => GenerateCrypt(),
+            "OasisSanctum" => GenerateHaven(actualSeed),
+            "ShiftingDunes" => GenerateShiftingDunes(actualSeed),
+            "DreadTombs" => GenerateCrypt(actualSeed),
+            "NecropolisOfSouls" => GenerateCrypt(actualSeed),
 
             // Act 5 & Pinnacle
-            "AethelisCitadel" => GenerateHaven(),
-            "VoidAbyss" => GenerateVoidAbyss(),
-            "CitadelOfTheVoid" => GenerateVoidAbyss(),
+            "AethelisCitadel" => GenerateHaven(actualSeed),
+            "VoidAbyss" => GenerateVoidAbyss(actualSeed),
+            "CitadelOfTheVoid" => GenerateVoidAbyss(actualSeed),
             "ArenaCaldera" => GenerateArenaCaldera(),
             "ArenaGlacial" => GenerateArenaGlacial(),
             "ArenaVoid" => GenerateArenaVoid(),
             "SpireArena" => EndlessSpireManager.GenerateSpireFloor(1),
 
-            _ => GenerateHaven()
+            _ => GenerateHaven(actualSeed)
         };
+
+        // Guarantee 100% path connectivity to all portals
+        int spawnTileX = (int)Math.Round(map.SpawnX / TILE_SIZE);
+        int spawnTileY = (int)Math.Round(map.SpawnY / TILE_SIZE);
+        MapConnectivityValidator.EnsureAllPortalsReachable(map.Grid, spawnTileX, spawnTileY, map.Portals, TILE_SIZE);
+
+        return map;
     }
 
-    // 1. SANCTUARY HAVEN (40x40 - 1920x1920 px: Vibrant Town Plaza, Crafting District & Paved Paths)
-    private static ZoneMapDto GenerateHaven()
+    // 1. SANCTUARY HAVEN (64x64: Vibrant Town Plaza, Crafting District, Gardens & Paved Paths)
+    private static ZoneMapDto GenerateHaven(int seed)
     {
-        const int w = 40, h = 40;
+        const int w = 64, h = 64;
         var grid = InitializeGrid(w, h, TILE_FLOOR);
 
-        // Natural stone perimeter walls
         for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
         for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
 
         int cx = w / 2, cy = h / 2;
 
-        // Central Grand Stone Plaza (Diamond + Octagon)
-        for (int y = cy - 8; y <= cy + 8; y++)
+        // Central Grand Stone Plaza
+        for (int y = cy - 12; y <= cy + 12; y++)
         {
-            for (int x = cx - 8; x <= cx + 8; x++)
+            for (int x = cx - 12; x <= cx + 12; x++)
             {
-                if (Math.Abs(x - cx) + Math.Abs(y - cy) <= 11)
+                if (Math.Abs(x - cx) + Math.Abs(y - cy) <= 16)
                 {
                     grid[y][x] = TILE_PLAZA;
                 }
@@ -92,32 +102,41 @@ public static class ZoneMapGenerator
         }
 
         // Town Fountain / Stone Pillars in corners of plaza
-        grid[cy - 5][cx - 5] = TILE_ANCIENT_PILLAR;
-        grid[cy - 5][cx + 5] = TILE_ANCIENT_PILLAR;
-        grid[cy + 5][cx - 5] = TILE_ANCIENT_PILLAR;
-        grid[cy + 5][cx + 5] = TILE_ANCIENT_PILLAR;
+        grid[cy - 8][cx - 8] = TILE_ANCIENT_PILLAR;
+        grid[cy - 8][cx + 8] = TILE_ANCIENT_PILLAR;
+        grid[cy + 8][cx - 8] = TILE_ANCIENT_PILLAR;
+        grid[cy + 8][cx + 8] = TILE_ANCIENT_PILLAR;
 
-        // North Pond & Garden
-        for (int py = 5; py <= 10; py++)
+        // North Sacred Lotus Pond & Garden
+        for (int py = cy - 22; py <= cy - 15; py++)
         {
-            for (int px = 8; px <= 14; px++)
+            for (int px = cx - 10; px <= cx + 10; px++)
             {
-                grid[py][px] = (py == 5 || py == 10 || px == 8 || px == 14) ? TILE_SHALLOW_WATER_SAND : TILE_WATER_DEEP;
+                double dist = Math.Sqrt((px - cx) * (px - cx) + (py - (cy - 18)) * (py - (cy - 18)));
+                if (dist <= 7.0)
+                {
+                    grid[py][px] = dist <= 4.5 ? TILE_WATER_DEEP : TILE_SHALLOW_WATER_SAND;
+                }
             }
         }
 
-        // East Gate and Main Path to Plains
-        for (int x = cx + 7; x < w - 1; x++)
+        // Garden Bushes (Tile 14) for stealth meditation
+        for (int dy = -4; dy <= 4; dy++)
         {
-            grid[cy - 1][x] = TILE_PATH;
+            grid[cy + dy][cx - 16] = TILE_CAMOUFLAGE_BUSH;
+            grid[cy + dy][cx + 16] = TILE_CAMOUFLAGE_BUSH;
+        }
+
+        // East Gate and Main Path
+        for (int x = 1; x < w - 1; x++)
+        {
             grid[cy][x] = TILE_PATH;
             grid[cy + 1][x] = TILE_PATH;
         }
 
-        // South Gate and Path to Crypt
-        for (int y = cy + 7; y < h - 1; y++)
+        // South Gate and Path
+        for (int y = 1; y < h - 1; y++)
         {
-            grid[y][cx - 1] = TILE_PATH;
             grid[y][cx] = TILE_PATH;
             grid[y][cx + 1] = TILE_PATH;
         }
@@ -147,37 +166,31 @@ public static class ZoneMapGenerator
             SpawnY = cy * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = (w - 2) * TILE_SIZE, Y = cy * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 400, TargetY = 1536, Name = "🌀 To Whispering Plains" },
-                new() { X = cx * TILE_SIZE, Y = (h - 2) * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 550, TargetY = 550, Name = "🏰 To Forgotten Crypt" }
+                new() { X = (w - 3) * TILE_SIZE, Y = cy * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 350, TargetY = cy * TILE_SIZE, Name = "🌀 To Whispering Plains" },
+                new() { X = cx * TILE_SIZE, Y = (h - 3) * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 400, TargetY = 400, Name = "🏰 To Forgotten Crypt" }
             },
             Npcs = new List<ZoneNpcDto>
             {
-                new() { X = (cx - 4) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Doran (Blacksmith)", Title = "Master Blacksmith", Color = "#e5c07b" },
-                new() { X = cx * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Name = "Elder Aethel", Title = "High Elder Sage", Color = "#61afef" },
-                new() { X = (cx - 3) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Kaelen (Vault Keeper)", Title = "Keeper of the Vault", Color = "#98c379" },
-                new() { X = (cx + 3) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Name = "Lyra (Astromancer)", Title = "Astromancer of the Void", Color = "#c678dd" },
-                new() { X = (cx + 4) * TILE_SIZE, Y = (cy + 1) * TILE_SIZE, Name = "Mira (Beastmaster)", Title = "Companion Beastmaster", Color = "#00f2fe" }
+                new() { X = (cx - 6) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Name = "Doran (Blacksmith)", Title = "Master Blacksmith", Color = "#e5c07b" },
+                new() { X = cx * TILE_SIZE, Y = (cy - 6) * TILE_SIZE, Name = "Elder Aethel", Title = "High Elder Sage", Color = "#61afef" },
+                new() { X = (cx - 4) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Name = "Kaelen (Vault Keeper)", Title = "Keeper of the Vault", Color = "#98c379" },
+                new() { X = (cx + 4) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Name = "Lyra (Astromancer)", Title = "Astromancer of the Void", Color = "#c678dd" },
+                new() { X = (cx + 6) * TILE_SIZE, Y = (cy + 2) * TILE_SIZE, Name = "Mira (Beastmaster)", Title = "Companion Beastmaster", Color = "#00f2fe" }
             },
             Dummies = new List<ZoneDummyDto>
             {
-                new() { X = (cx + 3) * TILE_SIZE, Y = (cy + 5) * TILE_SIZE, Name = "Training Dummy (Alpha)" },
-                new() { X = (cx + 5) * TILE_SIZE, Y = (cy + 5) * TILE_SIZE, Name = "Training Dummy (Beta)" }
+                new() { X = (cx + 4) * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, Name = "Training Dummy (Alpha)" },
+                new() { X = (cx + 7) * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, Name = "Training Dummy (Beta)" }
             },
             Props = new List<ZonePropDto>
             {
                 new() { X = cx * TILE_SIZE, Y = cy * TILE_SIZE, Type = "campfire" },
-                new() { X = (cx - 6) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Type = "chest" },
-                new() { X = (cx + 6) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Type = "barrel" },
-                new() { X = (cx - 7) * TILE_SIZE, Y = (cy - 5) * TILE_SIZE, Type = "oak_tree" },
-                new() { X = (cx + 7) * TILE_SIZE, Y = (cy - 5) * TILE_SIZE, Type = "cherry_tree" },
-                new() { X = (cx - 7) * TILE_SIZE, Y = (cy + 5) * TILE_SIZE, Type = "cherry_tree" },
-                new() { X = (cx + 7) * TILE_SIZE, Y = (cy + 5) * TILE_SIZE, Type = "oak_tree" },
-                new() { X = (cx - 2) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Type = "flowers_gold" },
-                new() { X = (cx + 2) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Type = "flowers_blue" },
-                new() { X = (cx - 5) * TILE_SIZE, Y = (cy + 2) * TILE_SIZE, Type = "lush_bush" },
-                new() { X = (cx + 5) * TILE_SIZE, Y = (cy + 2) * TILE_SIZE, Type = "lush_bush" },
-                new() { X = (cx - 2) * TILE_SIZE, Y = (cy + 4) * TILE_SIZE, Type = "mossy_rock" },
-                new() { X = (cx + 2) * TILE_SIZE, Y = (cy + 4) * TILE_SIZE, Type = "mossy_rock" }
+                new() { X = (cx - 8) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Type = "chest" },
+                new() { X = (cx + 8) * TILE_SIZE, Y = (cy - 4) * TILE_SIZE, Type = "barrel" },
+                new() { X = (cx - 10) * TILE_SIZE, Y = (cy - 7) * TILE_SIZE, Type = "oak_tree" },
+                new() { X = (cx + 10) * TILE_SIZE, Y = (cy - 7) * TILE_SIZE, Type = "cherry_tree" },
+                new() { X = (cx - 10) * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, Type = "cherry_tree" },
+                new() { X = (cx + 10) * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, Type = "oak_tree" }
             },
             Pois = new List<ZonePoiDto>
             {
@@ -187,8 +200,8 @@ public static class ZoneMapGenerator
                     Type = "shrine",
                     Name = "🌿 Ancient Shrine of Serenity",
                     Description = "Blessing of Aethelis: +15% Life and Mana recovery for 120s.",
-                    X = (cx - 4) * TILE_SIZE,
-                    Y = (cy + 3) * TILE_SIZE,
+                    X = (cx - 6) * TILE_SIZE,
+                    Y = (cy + 4) * TILE_SIZE,
                     BuffType = "SerenityWard",
                     BuffDuration = 120,
                     Color = "#2ecc71",
@@ -198,32 +211,34 @@ public static class ZoneMapGenerator
         };
     }
 
-    // 2. WHISPERING PLAINS (96x96 - 4608x4608 px: Expansive Wilderness, Winding Rivers, Outposts, Shrines & Sub-Caves)
-    private static ZoneMapDto GeneratePlains()
+    // 2. WHISPERING PLAINS (128x128: Organic Spline River, Sandbars, Camouflage Bushes & Destructible Shortcut Barricades)
+    private static ZoneMapDto GeneratePlains(int seed)
     {
-        const int w = 96, h = 96;
+        const int w = 128, h = 128;
         var grid = InitializeGrid(w, h, TILE_FLOOR);
+        var rng = new Random(seed);
+        var noise = new FastNoiseLite(seed);
 
         for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
         for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
 
         int riverBaseX = w / 2;
-        var bridgeYPositions = new List<int> { 24, 48, 72 };
+        var bridgeYPositions = new List<int> { 25, 50, 75, 100 };
 
         for (int y = 1; y < h - 1; y++)
         {
-            // Organic multi-sine wave river curve
-            double wave = Math.Sin(y / 7.5) * 9.5 + Math.Cos(y / 3.8) * 3.5;
+            // Organic multi-sine river curve influenced by noise
+            double wave = Math.Sin(y / 9.0) * 11.0 + Math.Cos(y / 4.5) * 4.0 + noise.GetNoise(y * 0.1f, 10f) * 6.0;
             int rx = (int)Math.Round(riverBaseX + wave);
 
-            // Shallow Sand Borders
-            if (rx - 2 >= 1) grid[y][rx - 2] = TILE_SHALLOW_WATER_SAND;
-            if (rx + 2 < w - 1) grid[y][rx + 2] = TILE_SHALLOW_WATER_SAND;
+            if (rx - 3 >= 1) grid[y][rx - 3] = TILE_SHALLOW_WATER_SAND;
+            if (rx + 3 < w - 1) grid[y][rx + 3] = TILE_SHALLOW_WATER_SAND;
 
-            // Deep River Water
+            grid[y][rx - 2] = TILE_WATER_DEEP;
             grid[y][rx - 1] = TILE_WATER_DEEP;
             grid[y][rx] = TILE_WATER_DEEP;
             grid[y][rx + 1] = TILE_WATER_DEEP;
+            grid[y][rx + 2] = TILE_WATER_DEEP;
         }
 
         // Stone Bridges over River
@@ -232,7 +247,7 @@ public static class ZoneMapGenerator
             for (int dy = -1; dy <= 1; dy++)
             {
                 int y = by + dy;
-                for (int x = riverBaseX - 12; x <= riverBaseX + 12; x++)
+                for (int x = riverBaseX - 15; x <= riverBaseX + 15; x++)
                 {
                     if (grid[y][x] == TILE_WATER_DEEP || grid[y][x] == TILE_SHALLOW_WATER_SAND)
                     {
@@ -242,7 +257,40 @@ public static class ZoneMapGenerator
             }
         }
 
-        // Main Highway Spline Path from West Portal to East Portal
+        // Camouflage Ambush Bushes (Tile 14) placed procedurally via Noise
+        for (int cy = 8; cy < h - 8; cy += 6)
+        {
+            for (int cx = 8; cx < w - 8; cx += 6)
+            {
+                if (grid[cy][cx] == TILE_FLOOR && noise.GetNoise(cx * 0.15f, cy * 0.15f) > 0.35f)
+                {
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        for (int dx = -1; dx <= 1; dx++)
+                        {
+                            if (grid[cy + dy][cx + dx] == TILE_FLOOR && rng.NextDouble() < 0.75)
+                            {
+                                grid[cy + dy][cx + dx] = TILE_CAMOUFLAGE_BUSH;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Destructible Barricades (Tile 15) blocking shortcut passages
+        for (int i = 0; i < 5; i++)
+        {
+            int bx = 25 + i * 18;
+            int by = 35 + (i % 2) * 45;
+            if (grid[by][bx] == TILE_FLOOR)
+            {
+                grid[by][bx] = TILE_DESTRUCTIBLE_WALL;
+                grid[by + 1][bx] = TILE_DESTRUCTIBLE_WALL;
+            }
+        }
+
+        // Main Highway Spline Path
         int midY = h / 2;
         for (int x = 1; x < w - 1; x++)
         {
@@ -257,13 +305,13 @@ public static class ZoneMapGenerator
         {
             Id = "WhisperingPlains",
             Name = "Whispering Plains",
-            Subtitle = "🌾 Vast Wilderness with Winding River, Beast Outposts, Shrines & Sub-Caves",
+            Subtitle = "🌾 Vast Wilderness with Winding River, Beast Outposts, Shrines & Camouflage Bushes",
             Biome = ZoneBiomeType.WhisperingPlains,
             LevelRange = "Lv. 5-12",
             Hazard = new EnvironmentalHazardConfig
             {
                 HazardName = "Wild Winds",
-                Description = "Howling crosswinds increase monster movement speed by +15%.",
+                Description = "Dense camouflage bushes grant 80% stealth and +50% Ambush Strike damage!",
                 ResistanceRequired = "Physical / Evasion",
                 Threshold = 20,
                 PenaltyType = "MonsterSpeed"
@@ -274,16 +322,17 @@ public static class ZoneMapGenerator
             WorldWidth = w * TILE_SIZE,
             WorldHeight = h * TILE_SIZE,
             Grid = grid,
-            SpawnX = 220,
+            SpawnX = 250,
             SpawnY = midY * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1800, TargetY = 960, Name = "🌿 Back to Haven" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 220, TargetY = 1440, Name = "❄️ To Frostpeak Tundra" }
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 2800, TargetY = 1536, Name = "🌿 Back to Haven" },
+                new() { X = (w - 3) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 250, TargetY = midY * TILE_SIZE, Name = "❄️ To Frostpeak Tundra" },
+                new() { X = (w / 2) * TILE_SIZE, Y = (h - 3) * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 350, TargetY = 350, Name = "🏰 To Forgotten Crypt" }
             },
             Npcs = new List<ZoneNpcDto>
             {
-                new() { X = 320, Y = midY * TILE_SIZE + 80, Name = "Valen (Scout)", Title = "Trinh Sát Tiền Đồn", Color = "#e06c75" }
+                new() { X = 350, Y = midY * TILE_SIZE + 80, Name = "Valen (Scout)", Title = "Trinh Sát Tiền Đồn", Color = "#e06c75" }
             },
             Props = new List<ZonePropDto>
             {
@@ -292,9 +341,7 @@ public static class ZoneMapGenerator
                 new() { X = 1600, Y = 1800, Type = "tall_grass" },
                 new() { X = 2000, Y = 2600, Type = "flowers_red" },
                 new() { X = 2600, Y = 2100, Type = "mossy_rock" },
-                new() { X = 3200, Y = 1900, Type = "pine_tree" },
-                new() { X = 3600, Y = 2800, Type = "autumn_tree" },
-                new() { X = 4000, Y = 1800, Type = "mushroom_glow" }
+                new() { X = 3200, Y = 1900, Type = "pine_tree" }
             },
             Pois = new List<ZonePoiDto>
             {
@@ -356,33 +403,29 @@ public static class ZoneMapGenerator
                 new() { X = 800, Y = 800, Count = 7, Type = "slime" },
                 new() { X = 1200, Y = 2200, Count = 8, Type = "wolf" },
                 new() { X = 2800, Y = 1000, Count = 9, Type = "goblin" },
-                new() { X = 3200, Y = 2800, Count = 8, Type = "wolf" },
-                new() { X = 2200, Y = 2200, Count = 6, Type = "slime" },
-                new() { X = 3800, Y = 1200, Count = 8, Type = "goblin" },
-                new() { X = 1600, Y = 3600, Count = 7, Type = "undead_knight" },
-                new() { X = 3600, Y = 3600, Count = 8, Type = "wolf" }
+                new() { X = 3200, Y = 2800, Count = 8, Type = "wolf" }
             }
         };
     }
 
-    // 3. FORGOTTEN CRYPT (60x60 - 2880x2880 px: Multi-Chamber Catacombs & Toxic Miasma)
-    private static ZoneMapDto GenerateCrypt()
+    // 3. FORGOTTEN CRYPT (96x96: Multi-Chamber Catacombs, Destructible Secret Walls & Toxic Miasma)
+    private static ZoneMapDto GenerateCrypt(int seed)
     {
-        const int w = 60, h = 60;
+        const int w = 96, h = 96;
         var grid = InitializeGrid(w, h, TILE_WALL);
+        var rng = new Random(seed);
 
         var rooms = new List<(int x, int y, int rw, int rh)>
         {
-            (5, 5, 14, 14),
-            (38, 5, 16, 14),
-            (5, 38, 14, 16),
-            (36, 36, 18, 18),
-            (22, 22, 16, 16),
-            (5, 22, 12, 12),
-            (42, 22, 12, 12)
+            (8, 8, 20, 20),
+            (60, 8, 24, 20),
+            (8, 60, 20, 24),
+            (56, 56, 28, 28), // Boss Chamber
+            (36, 36, 24, 24), // Central Chamber
+            (8, 36, 18, 18),
+            (68, 36, 18, 18)
         };
 
-        // Carve organic rooms with beveled corners & pillars
         foreach (var r in rooms)
         {
             for (int y = r.y; y < r.y + r.rh; y++)
@@ -398,31 +441,40 @@ public static class ZoneMapGenerator
                 }
             }
 
-            // Pillars in large rooms
-            if (r.rw >= 14 && r.rh >= 14)
+            if (r.rw >= 18 && r.rh >= 18)
             {
-                grid[r.y + 3][r.x + 3] = TILE_ANCIENT_PILLAR;
-                grid[r.y + 3][r.x + r.rw - 4] = TILE_ANCIENT_PILLAR;
-                grid[r.y + r.rh - 4][r.x + 3] = TILE_ANCIENT_PILLAR;
-                grid[r.y + r.rh - 4][r.x + r.rw - 4] = TILE_ANCIENT_PILLAR;
+                grid[r.y + 4][r.x + 4] = TILE_ANCIENT_PILLAR;
+                grid[r.y + 4][r.x + r.rw - 5] = TILE_ANCIENT_PILLAR;
+                grid[r.y + r.rh - 5][r.x + 4] = TILE_ANCIENT_PILLAR;
+                grid[r.y + r.rh - 5][r.x + r.rw - 5] = TILE_ANCIENT_PILLAR;
 
-                // Toxic miasma in boss chamber (Room 4)
-                if (r.x == 36)
+                // Toxic miasma pool in boss room
+                if (r.x >= 56 && r.y >= 56)
                 {
-                    grid[r.y + r.rh / 2][r.x + r.rw / 2] = TILE_TOXIC_MIASMA;
-                    grid[r.y + r.rh / 2 + 1][r.x + r.rw / 2] = TILE_TOXIC_MIASMA;
-                    grid[r.y + r.rh / 2][r.x + r.rw / 2 + 1] = TILE_TOXIC_MIASMA;
+                    int mx = r.x + r.rw / 2;
+                    int my = r.y + r.rh / 2;
+                    for (int dy = -2; dy <= 2; dy++)
+                    {
+                        for (int dx = -2; dx <= 2; dx++)
+                        {
+                            if (rng.NextDouble() < 0.7) grid[my + dy][mx + dx] = TILE_TOXIC_MIASMA;
+                        }
+                    }
                 }
             }
         }
 
         // Interconnecting Corridors
-        CarveCorridor(grid, 12, 12, 30, 12);
-        CarveCorridor(grid, 30, 12, 30, 30);
-        CarveCorridor(grid, 12, 30, 30, 30);
-        CarveCorridor(grid, 12, 12, 12, 45);
-        CarveCorridor(grid, 30, 30, 45, 45);
-        CarveCorridor(grid, 12, 28, 48, 28);
+        CarveCorridor(grid, 18, 18, 48, 18);
+        CarveCorridor(grid, 48, 18, 48, 48);
+        CarveCorridor(grid, 18, 48, 48, 48);
+        CarveCorridor(grid, 18, 18, 18, 70);
+        CarveCorridor(grid, 48, 48, 70, 70);
+        CarveCorridor(grid, 18, 44, 76, 44);
+
+        // Breakable Barricade hiding secret loot
+        grid[28][48] = TILE_DESTRUCTIBLE_WALL;
+        grid[29][48] = TILE_DESTRUCTIBLE_WALL;
 
         return new ZoneMapDto
         {
@@ -445,12 +497,12 @@ public static class ZoneMapGenerator
             WorldWidth = w * TILE_SIZE,
             WorldHeight = h * TILE_SIZE,
             Grid = grid,
-            SpawnX = 8 * TILE_SIZE,
-            SpawnY = 8 * TILE_SIZE,
+            SpawnX = 14 * TILE_SIZE,
+            SpawnY = 14 * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = 6 * TILE_SIZE, Y = 6 * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 1800, Name = "🌿 Back to Haven" },
-                new() { X = 48 * TILE_SIZE, Y = 48 * TILE_SIZE, TargetZone = "VoidAbyss", TargetX = 240, TargetY = 1440, Name = "🌌 To Void Abyss" }
+                new() { X = 10 * TILE_SIZE, Y = 10 * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1536, TargetY = 2800, Name = "🌿 Back to Haven" },
+                new() { X = 74 * TILE_SIZE, Y = 74 * TILE_SIZE, TargetZone = "VoidAbyss", TargetX = 350, TargetY = 2300, Name = "🌌 To Void Abyss" }
             },
             Pois = new List<ZonePoiDto>
             {
@@ -460,57 +512,43 @@ public static class ZoneMapGenerator
                     Type = "shrine",
                     Name = "☠️ Abyssal Soul Shrine",
                     Description = "Infuses weapons with 50 Chaos Damage and +20% Life Leech for 60s.",
-                    X = 24 * TILE_SIZE,
-                    Y = 24 * TILE_SIZE,
+                    X = 48 * TILE_SIZE,
+                    Y = 48 * TILE_SIZE,
                     BuffType = "AbyssalLeech",
                     BuffDuration = 60,
                     Color = "#8e44ad",
                     Icon = "☠️"
-                },
-                new()
-                {
-                    Id = "Crypt_Corrupted_Monolith",
-                    Type = "monolith",
-                    Name = "🔮 Necrotic Void Monolith",
-                    Description = "Awaken the dark monolith for guaranteed Rare drops and Socketing Cores!",
-                    X = 10 * TILE_SIZE,
-                    Y = 40 * TILE_SIZE,
-                    BuffType = "None",
-                    Color = "#9b59b6",
-                    Icon = "🔮",
-                    WaveCount = 3
                 }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = 600, Y = 600, Count = 6, Type = "skeleton" },
-                new() { X = 2100, Y = 600, Count = 7, Type = "undead_knight" },
-                new() { X = 600, Y = 2100, Count = 6, Type = "skeleton" },
-                new() { X = 2200, Y = 2200, Count = 1, Type = "boss" }
+                new() { X = 900, Y = 900, Count = 6, Type = "skeleton" },
+                new() { X = 3200, Y = 900, Count = 7, Type = "undead_knight" },
+                new() { X = 3500, Y = 3500, Count = 1, Type = "boss" }
             }
         };
     }
 
-    // 4. FROSTPEAK TUNDRA (60x60 - 2880x2880 px: Permafrost Glacier, Deep Snow & Ice Caves)
-    private static ZoneMapDto GenerateTundra()
+    // 4. FROSTPEAK TUNDRA (128x128: Permafrost Glacier, Slippery Glacial Ice & Deep Snow Drifts)
+    private static ZoneMapDto GenerateTundra(int seed)
     {
-        const int w = 60, h = 60;
+        const int w = 128, h = 128;
         var grid = InitializeGrid(w, h, TILE_FLOOR);
+        var noise = new FastNoiseLite(seed);
 
         for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
         for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
 
-        // Glacial Ice Patches & Deep Snow Crevasses
         for (int y = 6; y < h - 6; y++)
         {
             for (int x = 6; x < w - 6; x++)
             {
-                double noise = Math.Sin(x * 0.22) * Math.Cos(y * 0.25);
-                if (noise > 0.45)
+                float n = noise.GetFractalNoise(x * 0.08f, y * 0.08f, 3);
+                if (n > 0.38f)
                 {
-                    grid[y][x] = TILE_GLACIAL_ICE; // Slippery Ice Hazard
+                    grid[y][x] = TILE_GLACIAL_ICE; // Slippery Ice Hazard (+Speed & Inertial Drift)
                 }
-                else if (noise < -0.42)
+                else if (n < -0.42f)
                 {
                     grid[y][x] = TILE_DEEP_SNOW; // Deep snow drift
                 }
@@ -521,6 +559,7 @@ public static class ZoneMapGenerator
         for (int x = 1; x < w - 1; x++)
         {
             grid[midY][x] = TILE_PATH;
+            grid[midY + 1][x] = TILE_PATH;
         }
 
         return new ZoneMapDto
@@ -544,12 +583,12 @@ public static class ZoneMapGenerator
             WorldWidth = w * TILE_SIZE,
             WorldHeight = h * TILE_SIZE,
             Grid = grid,
-            SpawnX = 220,
+            SpawnX = 250,
             SpawnY = midY * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 2950, TargetY = 1536, Name = "🌾 To Plains" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 220, TargetY = 1440, Name = "🔥 To Molten Caldera" }
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 5800, TargetY = midY * TILE_SIZE, Name = "🌾 To Plains" },
+                new() { X = (w - 3) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 250, TargetY = midY * TILE_SIZE, Name = "🔥 To Molten Caldera" }
             },
             Pois = new List<ZonePoiDto>
             {
@@ -559,8 +598,8 @@ public static class ZoneMapGenerator
                     Type = "shrine",
                     Name = "❄️ Glacial Ward Shrine",
                     Description = "Grants 300 Ice Shield Ward and freezeproof immunity for 60s.",
-                    X = 1400,
-                    Y = 1000,
+                    X = 2400,
+                    Y = 1800,
                     BuffType = "GlacialWard",
                     BuffDuration = 60,
                     Color = "#74b9ff",
@@ -569,17 +608,16 @@ public static class ZoneMapGenerator
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = 800, Y = 800, Count = 7, Type = "frost_golem" },
-                new() { X = 2000, Y = 1800, Count = 8, Type = "frost_golem" },
-                new() { X = 1500, Y = 800, Count = 7, Type = "wolf" }
+                new() { X = 1400, Y = 1400, Count = 7, Type = "frost_golem" },
+                new() { X = 3600, Y = 3200, Count = 8, Type = "frost_golem" }
             }
         };
     }
 
-    // 5. MOLTEN CALDERA (60x60 - 2880x2880 px: Volcanic Caldera, Magma Rivers & Obsidian Islands)
-    private static ZoneMapDto GenerateCaldera()
+    // 5. MOLTEN CALDERA (128x128: Volcanic Crater, Magma Pools & Destructible Obsidian Walls)
+    private static ZoneMapDto GenerateCaldera(int seed)
     {
-        const int w = 60, h = 60;
+        const int w = 128, h = 128;
         var grid = InitializeGrid(w, h, TILE_FLOOR);
 
         for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
@@ -588,16 +626,16 @@ public static class ZoneMapGenerator
         int cx = w / 2, cy = h / 2;
 
         // Central Magma Lake with Obsidian Island
-        for (int y = cy - 12; y <= cy + 12; y++)
+        for (int y = cy - 24; y <= cy + 24; y++)
         {
-            for (int x = cx - 12; x <= cx + 12; x++)
+            for (int x = cx - 24; x <= cx + 24; x++)
             {
                 double dist = Math.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                if (dist <= 11.5 && dist >= 5.0)
+                if (dist <= 22.0 && dist >= 10.0)
                 {
-                    grid[y][x] = TILE_LAVA; // Lava Hazard Ring
+                    grid[y][x] = TILE_LAVA; // Boiling Lava
                 }
-                else if (dist > 11.5 && dist <= 13.5)
+                else if (dist > 22.0 && dist <= 26.0)
                 {
                     grid[y][x] = TILE_BURNT_GROUND; // Scorched Earth
                 }
@@ -605,13 +643,21 @@ public static class ZoneMapGenerator
         }
 
         // Obsidian Pillars around Caldera Ring
-        grid[cy - 8][cx - 8] = TILE_ANCIENT_PILLAR;
-        grid[cy - 8][cx + 8] = TILE_ANCIENT_PILLAR;
-        grid[cy + 8][cx - 8] = TILE_ANCIENT_PILLAR;
-        grid[cy + 8][cx + 8] = TILE_ANCIENT_PILLAR;
+        grid[cy - 16][cx - 16] = TILE_ANCIENT_PILLAR;
+        grid[cy - 16][cx + 16] = TILE_ANCIENT_PILLAR;
+        grid[cy + 16][cx - 16] = TILE_ANCIENT_PILLAR;
+        grid[cy + 16][cx + 16] = TILE_ANCIENT_PILLAR;
+
+        // Breakable Obsidian Barricades (Tile 15)
+        for (int i = 0; i < 6; i++)
+        {
+            int bx = cx - 15 + i * 6;
+            grid[cy - 8][bx] = TILE_DESTRUCTIBLE_WALL;
+            grid[cy + 8][bx] = TILE_DESTRUCTIBLE_WALL;
+        }
 
         // Natural Stone Bridges to Island
-        for (int x = cx - 12; x <= cx + 12; x++)
+        for (int x = cx - 24; x <= cx + 24; x++)
         {
             grid[cy][x] = TILE_PATH;
             grid[cy + 1][x] = TILE_PATH;
@@ -639,12 +685,12 @@ public static class ZoneMapGenerator
             WorldWidth = w * TILE_SIZE,
             WorldHeight = h * TILE_SIZE,
             Grid = grid,
-            SpawnX = 220,
+            SpawnX = 250,
             SpawnY = midY * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 2750, TargetY = 1440, Name = "❄️ To Frostpeak" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 220, TargetY = 1536, Name = "⚡ To Stormpeak Ridge" }
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 5800, TargetY = midY * TILE_SIZE, Name = "❄️ To Frostpeak" },
+                new() { X = (w - 3) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 250, TargetY = midY * TILE_SIZE, Name = "⚡ To Stormpeak Ridge" }
             },
             Pois = new List<ZonePoiDto>
             {
@@ -655,7 +701,7 @@ public static class ZoneMapGenerator
                     Name = "💎 Greed Catalyst Shrine",
                     Description = "Triples all Genesis Currency drop rates for 60s!",
                     X = cx * TILE_SIZE,
-                    Y = (cy - 6) * TILE_SIZE,
+                    Y = (cy - 12) * TILE_SIZE,
                     BuffType = "GreedCatalyst",
                     BuffDuration = 60,
                     Color = "#f1c40f",
@@ -664,35 +710,34 @@ public static class ZoneMapGenerator
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = 800, Y = 800, Count = 7, Type = "fire_imp" },
-                new() { X = 2000, Y = 2000, Count = 7, Type = "magma_golem" },
-                new() { X = 1440, Y = 1440, Count = 8, Type = "magma_golem" }
+                new() { X = 1400, Y = 1400, Count = 7, Type = "fire_imp" },
+                new() { X = 4200, Y = 4200, Count = 8, Type = "magma_golem" }
             }
         };
     }
 
-    // 6. STORMPEAK RIDGE (64x64 - 3072x3072 px: High Mountain Peaks, Static Lightning & Chasms)
-    private static ZoneMapDto GenerateStormpeak()
+    // 6. STORMPEAK RIDGE (128x128: High Mountain Peaks, Static Lightning Leylines & Chasms)
+    private static ZoneMapDto GenerateStormpeak(int seed)
     {
-        const int w = 64, h = 64;
+        const int w = 128, h = 128;
         var grid = InitializeGrid(w, h, TILE_FLOOR);
+        var noise = new FastNoiseLite(seed);
 
         for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
         for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
 
-        // Abyssal Chasms and Electric Static Ground
-        for (int y = 6; y < h - 6; y++)
+        for (int y = 8; y < h - 8; y++)
         {
-            for (int x = 6; x < w - 6; x++)
+            for (int x = 8; x < w - 8; x++)
             {
-                double noise = Math.Sin(x * 0.28) * Math.Cos(y * 0.28);
-                if (noise > 0.48)
+                float n = noise.GetFractalNoise(x * 0.09f, y * 0.09f, 3);
+                if (n > 0.42f)
                 {
                     grid[y][x] = TILE_CHASM; // Abyssal Chasm (unwalkable)
                 }
-                else if (noise < -0.42)
+                else if (n < -0.36f)
                 {
-                    grid[y][x] = TILE_ELECTRIC_GROUND; // Static Charge Hazard
+                    grid[y][x] = TILE_ELECTRIC_GROUND; // Static Charge Leyline (+20% Cast Speed)
                 }
             }
         }
@@ -725,37 +770,36 @@ public static class ZoneMapGenerator
             WorldWidth = w * TILE_SIZE,
             WorldHeight = h * TILE_SIZE,
             Grid = grid,
-            SpawnX = 220,
+            SpawnX = 250,
             SpawnY = midY * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 2750, TargetY = 1440, Name = "🔥 To Caldera" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "VoidAbyss", TargetX = 240, TargetY = 1440, Name = "🌌 To Void Abyss" }
+                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 5800, TargetY = midY * TILE_SIZE, Name = "🔥 To Caldera" },
+                new() { X = (w - 3) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "VoidAbyss", TargetX = 350, TargetY = midY * TILE_SIZE, Name = "🌌 To Void Abyss" }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = 900, Y = 900, Count = 7, Type = "goblin" },
-                new() { X = 2200, Y = 2000, Count = 8, Type = "undead_knight" },
-                new() { X = 1600, Y = 1200, Count = 6, Type = "frost_golem" }
+                new() { X = 1600, Y = 1600, Count = 7, Type = "goblin" },
+                new() { X = 4000, Y = 3600, Count = 8, Type = "undead_knight" }
             }
         };
     }
 
-    // 7. VOID ABYSS (60x60 - 2880x2880 px: Cosmic Void Arena, Fractured Floating Islands)
-    private static ZoneMapDto GenerateVoidAbyss()
+    // 7. VOID ABYSS (96x96: Cosmic Void Arena, Fractured Floating Islands)
+    private static ZoneMapDto GenerateVoidAbyss(int seed)
     {
-        const int w = 60, h = 60;
+        const int w = 96, h = 96;
         var grid = InitializeGrid(w, h, TILE_CHASM); // Void chasm base
 
         int cx = w / 2, cy = h / 2;
 
         // Grand Central Void Island
-        for (int y = cy - 14; y <= cy + 14; y++)
+        for (int y = cy - 22; y <= cy + 22; y++)
         {
-            for (int x = cx - 14; x <= cx + 14; x++)
+            for (int x = cx - 22; x <= cx + 22; x++)
             {
                 double dist = Math.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                if (dist <= 13.0)
+                if (dist <= 20.0)
                 {
                     grid[y][x] = TILE_FLOOR;
                 }
@@ -763,11 +807,11 @@ public static class ZoneMapGenerator
         }
 
         // Inner Void Ritual Circle
-        for (int y = cy - 6; y <= cy + 6; y++)
+        for (int y = cy - 10; y <= cy + 10; y++)
         {
-            for (int x = cx - 6; x <= cx + 6; x++)
+            for (int x = cx - 10; x <= cx + 10; x++)
             {
-                if (Math.Abs(x - cx) + Math.Abs(y - cy) <= 8)
+                if (Math.Abs(x - cx) + Math.Abs(y - cy) <= 12)
                 {
                     grid[y][x] = TILE_PLAZA;
                 }
@@ -775,13 +819,13 @@ public static class ZoneMapGenerator
         }
 
         // Ancient Void Pillars
-        grid[cy - 6][cx - 6] = TILE_ANCIENT_PILLAR;
-        grid[cy - 6][cx + 6] = TILE_ANCIENT_PILLAR;
-        grid[cy + 6][cx - 6] = TILE_ANCIENT_PILLAR;
-        grid[cy + 6][cx + 6] = TILE_ANCIENT_PILLAR;
+        grid[cy - 10][cx - 10] = TILE_ANCIENT_PILLAR;
+        grid[cy - 10][cx + 10] = TILE_ANCIENT_PILLAR;
+        grid[cy + 10][cx - 10] = TILE_ANCIENT_PILLAR;
+        grid[cy + 10][cx + 10] = TILE_ANCIENT_PILLAR;
 
         // Bridge to West Spawn
-        for (int x = 4; x <= cx - 13; x++)
+        for (int x = 4; x <= cx - 20; x++)
         {
             grid[cy][x] = TILE_PATH;
             grid[cy + 1][x] = TILE_PATH;
@@ -808,17 +852,16 @@ public static class ZoneMapGenerator
             WorldWidth = w * TILE_SIZE,
             WorldHeight = h * TILE_SIZE,
             Grid = grid,
-            SpawnX = 6 * TILE_SIZE,
+            SpawnX = 8 * TILE_SIZE,
             SpawnY = cy * TILE_SIZE,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = 5 * TILE_SIZE, Y = cy * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 2950, TargetY = 1536, Name = "⚡ To Stormpeak" }
+                new() { X = 6 * TILE_SIZE, Y = cy * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 5800, TargetY = 3000, Name = "⚡ To Stormpeak" }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
                 new() { X = cx * TILE_SIZE, Y = cy * TILE_SIZE, Count = 1, Type = "boss" },
-                new() { X = (cx - 8) * TILE_SIZE, Y = (cy - 8) * TILE_SIZE, Count = 6, Type = "undead_knight" },
-                new() { X = (cx + 8) * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, Count = 6, Type = "fire_imp" }
+                new() { X = (cx - 12) * TILE_SIZE, Y = (cy - 12) * TILE_SIZE, Count = 6, Type = "undead_knight" }
             }
         };
     }
@@ -830,24 +873,16 @@ public static class ZoneMapGenerator
         var grid = InitializeGrid(w, h, TILE_LAVA);
         int cx = w / 2, cy = h / 2;
 
-        // Circular Obsidian Arena platform surrounded by boiling lava
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
                 float dist = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                if (dist <= 11f)
-                {
-                    grid[y][x] = TILE_BURNT_GROUND;
-                }
-                if (dist <= 8f)
-                {
-                    grid[y][x] = TILE_PLAZA;
-                }
+                if (dist <= 11f) grid[y][x] = TILE_BURNT_GROUND;
+                if (dist <= 8f) grid[y][x] = TILE_PLAZA;
             }
         }
 
-        // 4 Obsidian Cover Pillars (safe cover from Supernova)
         grid[cy - 4][cx - 4] = TILE_ANCIENT_PILLAR;
         grid[cy - 4][cx + 4] = TILE_ANCIENT_PILLAR;
         grid[cy + 4][cx - 4] = TILE_ANCIENT_PILLAR;
@@ -869,13 +904,11 @@ public static class ZoneMapGenerator
             Grid = grid,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = cx * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 960, Name = "🏛️ Return to Haven" }
+                new() { X = cx * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1536, TargetY = 1536, Name = "🏛️ Return to Haven" }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "ignis_boss" },
-                new() { X = (cx - 5) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Count = 3, Type = "fire_imp" },
-                new() { X = (cx + 5) * TILE_SIZE, Y = (cy - 3) * TILE_SIZE, Count = 3, Type = "fire_imp" }
+                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "ignis_boss" }
             }
         };
     }
@@ -887,24 +920,16 @@ public static class ZoneMapGenerator
         var grid = InitializeGrid(w, h, TILE_GLACIAL_ICE);
         int cx = w / 2, cy = h / 2;
 
-        // Frozen Ancient Throne Room
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
                 float dist = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                if (dist <= 11f)
-                {
-                    grid[y][x] = TILE_DEEP_SNOW;
-                }
-                if (dist <= 8f)
-                {
-                    grid[y][x] = TILE_PLAZA;
-                }
+                if (dist <= 11f) grid[y][x] = TILE_DEEP_SNOW;
+                if (dist <= 8f) grid[y][x] = TILE_PLAZA;
             }
         }
 
-        // Frost Monoliths
         grid[cy - 5][cx] = TILE_ANCIENT_PILLAR;
         grid[cy + 5][cx] = TILE_ANCIENT_PILLAR;
         grid[cy][cx - 5] = TILE_ANCIENT_PILLAR;
@@ -926,13 +951,11 @@ public static class ZoneMapGenerator
             Grid = grid,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = cx * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 960, Name = "🏛️ Return to Haven" }
+                new() { X = cx * TILE_SIZE, Y = (cy + 8) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1536, TargetY = 1536, Name = "🏛️ Return to Haven" }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "vael_boss" },
-                new() { X = (cx - 4) * TILE_SIZE, Y = cy * TILE_SIZE, Count = 3, Type = "frost_golem" },
-                new() { X = (cx + 4) * TILE_SIZE, Y = cy * TILE_SIZE, Count = 3, Type = "frost_golem" }
+                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "vael_boss" }
             }
         };
     }
@@ -944,24 +967,16 @@ public static class ZoneMapGenerator
         var grid = InitializeGrid(w, h, TILE_CHASM);
         int cx = w / 2, cy = h / 2;
 
-        // Void Altar floating in the abyss
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
                 float dist = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                if (dist <= 10f)
-                {
-                    grid[y][x] = TILE_TOXIC_MIASMA;
-                }
-                if (dist <= 7.5f)
-                {
-                    grid[y][x] = TILE_PLAZA;
-                }
+                if (dist <= 10f) grid[y][x] = TILE_TOXIC_MIASMA;
+                if (dist <= 7.5f) grid[y][x] = TILE_PLAZA;
             }
         }
 
-        // Void Resonance Obelisks
         grid[cy - 4][cx - 4] = TILE_ANCIENT_PILLAR;
         grid[cy - 4][cx + 4] = TILE_ANCIENT_PILLAR;
         grid[cy + 4][cx - 4] = TILE_ANCIENT_PILLAR;
@@ -983,235 +998,19 @@ public static class ZoneMapGenerator
             Grid = grid,
             Portals = new List<ZonePortalDto>
             {
-                new() { X = cx * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 960, TargetY = 960, Name = "🏛️ Return to Haven" }
+                new() { X = cx * TILE_SIZE, Y = (cy + 7) * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1536, TargetY = 1536, Name = "🏛️ Return to Haven" }
             },
             MonsterSpawns = new List<MonsterClusterSpawnDto>
             {
-                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "malakor_boss" },
-                new() { X = (cx - 5) * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 4, Type = "undead_knight" },
-                new() { X = (cx + 5) * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 4, Type = "undead_knight" }
+                new() { X = cx * TILE_SIZE, Y = (cy - 2) * TILE_SIZE, Count = 1, Type = "malakor_boss" }
             }
         };
     }
 
-    // 8. VERDANT CANOPY (64x64 - Deep Bioluminescent Forest)
-    private static ZoneMapDto GenerateCanopy()
-    {
-        const int w = 64, h = 64;
-        var grid = InitializeGrid(w, h, TILE_FLOOR);
-        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
-        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
-
-        int midY = h / 2;
-        for (int x = 1; x < w - 1; x++)
-        {
-            grid[midY][x] = TILE_PATH;
-            grid[midY + 1][x] = TILE_PATH;
-        }
-
-        // Dense ancient trees and poisonous ponds
-        for (int y = 4; y < h - 4; y += 4)
-        {
-            for (int x = 4; x < w - 4; x += 4)
-            {
-                if (Math.Abs(y - midY) > 3)
-                {
-                    grid[y][x] = TILE_ANCIENT_PILLAR;
-                    if ((x + y) % 6 == 0) grid[y][x + 1] = TILE_TOXIC_MIASMA;
-                }
-            }
-        }
-
-        return new ZoneMapDto
-        {
-            Id = "VerdantCanopy",
-            Name = "Verdant Canopy",
-            Subtitle = "🌲 Ancient Bioluminescent Forest & Spider Brood",
-            Biome = ZoneBiomeType.WhisperingPlains,
-            LevelRange = "Lv. 9-12",
-            WidthInTiles = w,
-            HeightInTiles = h,
-            TileSize = TILE_SIZE,
-            WorldWidth = w * TILE_SIZE,
-            WorldHeight = h * TILE_SIZE,
-            SpawnX = 350,
-            SpawnY = midY * TILE_SIZE,
-            Grid = grid,
-            Portals = new List<ZonePortalDto>
-            {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "WhisperingPlains", TargetX = 2650, TargetY = midY * TILE_SIZE, Name = "🌾 Return to Plains" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "ForgottenCrypt", TargetX = 550, TargetY = 550, Name = "🏰 Enter Forgotten Crypt" }
-            },
-            MonsterSpawns = new List<MonsterClusterSpawnDto>
-            {
-                new() { X = 800, Y = 800, Count = 8, Type = "spider" },
-                new() { X = 2000, Y = 1800, Count = 7, Type = "wolf" },
-                new() { X = 1600, Y = 1200, Count = 8, Type = "slime" }
-            }
-        };
-    }
-
-    // 9. HOWLING ICE CAVERNS (60x60 - Glacial Chasm & Ice Crystals)
-    private static ZoneMapDto GenerateIceCaverns()
-    {
-        const int w = 60, h = 60;
-        var grid = InitializeGrid(w, h, TILE_FLOOR);
-        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
-        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
-
-        int midY = h / 2;
-        for (int x = 1; x < w - 1; x++)
-        {
-            grid[midY][x] = TILE_PATH;
-        }
-
-        // Glacial Ice Slippery Patches
-        for (int y = 6; y < h - 6; y++)
-        {
-            for (int x = 6; x < w - 6; x++)
-            {
-                if (Math.Abs(y - midY) > 2 && (x * y) % 7 == 0)
-                {
-                    grid[y][x] = TILE_GLACIAL_ICE;
-                }
-            }
-        }
-
-        return new ZoneMapDto
-        {
-            Id = "HowlingIceCaverns",
-            Name = "Howling Ice Caverns",
-            Subtitle = "🧊 Subterranean Ice Grotto & Crystal Guardians",
-            Biome = ZoneBiomeType.FrostpeakTundra,
-            LevelRange = "Lv. 22-26",
-            WidthInTiles = w,
-            HeightInTiles = h,
-            TileSize = TILE_SIZE,
-            WorldWidth = w * TILE_SIZE,
-            WorldHeight = h * TILE_SIZE,
-            SpawnX = 350,
-            SpawnY = midY * TILE_SIZE,
-            Grid = grid,
-            Portals = new List<ZonePortalDto>
-            {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "FrostpeakTundra", TargetX = 2500, TargetY = midY * TILE_SIZE, Name = "❄️ Return to Tundra" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "StormpeakRidge", TargetX = 400, TargetY = midY * TILE_SIZE, Name = "⚡ Climb Stormpeak Ridge" }
-            },
-            MonsterSpawns = new List<MonsterClusterSpawnDto>
-            {
-                new() { X = 800, Y = 900, Count = 8, Type = "frost_golem" },
-                new() { X = 1800, Y = 1800, Count = 7, Type = "frost_golem" }
-            }
-        };
-    }
-
-    // 10. OBSIDIAN WASTES (60x60 - Scorched Basalt Wilderness)
-    private static ZoneMapDto GenerateObsidianWastes()
-    {
-        const int w = 60, h = 60;
-        var grid = InitializeGrid(w, h, TILE_FLOOR);
-        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
-        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
-
-        int midY = h / 2;
-        for (int x = 1; x < w - 1; x++)
-        {
-            grid[midY][x] = TILE_PATH;
-            grid[midY + 1][x] = TILE_PATH;
-        }
-
-        for (int y = 5; y < h - 5; y += 3)
-        {
-            for (int x = 5; x < w - 5; x += 3)
-            {
-                if (Math.Abs(y - midY) > 3 && (x + y) % 4 == 0)
-                {
-                    grid[y][x] = TILE_BURNT_GROUND;
-                }
-            }
-        }
-
-        return new ZoneMapDto
-        {
-            Id = "ObsidianWastes",
-            Name = "Obsidian Wastes",
-            Subtitle = "🌋 Basalt Wilderness & Ash Storms",
-            Biome = ZoneBiomeType.MoltenCaldera,
-            LevelRange = "Lv. 34-38",
-            WidthInTiles = w,
-            HeightInTiles = h,
-            TileSize = TILE_SIZE,
-            WorldWidth = w * TILE_SIZE,
-            WorldHeight = h * TILE_SIZE,
-            SpawnX = 350,
-            SpawnY = midY * TILE_SIZE,
-            Grid = grid,
-            Portals = new List<ZonePortalDto>
-            {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "AshenRedoubt", TargetX = 1632, TargetY = 960, Name = "🏰 Return to Redoubt" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "MoltenCaldera", TargetX = 400, TargetY = midY * TILE_SIZE, Name = "🔥 Enter Molten Caldera" }
-            },
-            MonsterSpawns = new List<MonsterClusterSpawnDto>
-            {
-                new() { X = 900, Y = 900, Count = 8, Type = "fire_imp" },
-                new() { X = 1900, Y = 1900, Count = 7, Type = "magma_golem" }
-            }
-        };
-    }
-
-    // 11. SHIFTING DUNES (60x60 - Desert Canyon & Sand Vortexes)
-    private static ZoneMapDto GenerateShiftingDunes()
-    {
-        const int w = 60, h = 60;
-        var grid = InitializeGrid(w, h, TILE_FLOOR);
-        for (int x = 0; x < w; x++) { grid[0][x] = TILE_WALL; grid[h - 1][x] = TILE_WALL; }
-        for (int y = 0; y < h; y++) { grid[y][0] = TILE_WALL; grid[y][w - 1] = TILE_WALL; }
-
-        int midY = h / 2;
-        for (int x = 1; x < w - 1; x++)
-        {
-            grid[midY][x] = TILE_PATH;
-            grid[midY + 1][x] = TILE_PATH;
-        }
-
-        for (int y = 4; y < h - 4; y += 3)
-        {
-            for (int x = 4; x < w - 4; x += 3)
-            {
-                if (Math.Abs(y - midY) > 3)
-                {
-                    grid[y][x] = TILE_SHALLOW_WATER_SAND;
-                }
-            }
-        }
-
-        return new ZoneMapDto
-        {
-            Id = "ShiftingDunes",
-            Name = "Shifting Dunes",
-            Subtitle = "🏜️ Endless Desert Canyon & Sand Wyrms",
-            Biome = ZoneBiomeType.ForgottenCrypt,
-            LevelRange = "Lv. 48-52",
-            WidthInTiles = w,
-            HeightInTiles = h,
-            TileSize = TILE_SIZE,
-            WorldWidth = w * TILE_SIZE,
-            WorldHeight = h * TILE_SIZE,
-            SpawnX = 350,
-            SpawnY = midY * TILE_SIZE,
-            Grid = grid,
-            Portals = new List<ZonePortalDto>
-            {
-                new() { X = 120, Y = midY * TILE_SIZE, TargetZone = "OasisSanctum", TargetX = 1632, TargetY = 960, Name = "🌴 Return to Oasis" },
-                new() { X = (w - 2) * TILE_SIZE, Y = midY * TILE_SIZE, TargetZone = "DreadTombs", TargetX = 550, TargetY = 550, Name = "💀 Enter Dread Tombs" }
-            },
-            MonsterSpawns = new List<MonsterClusterSpawnDto>
-            {
-                new() { X = 900, Y = 900, Count = 8, Type = "undead_knight" },
-                new() { X = 2000, Y = 2000, Count = 8, Type = "skeleton" }
-            }
-        };
-    }
+    private static ZoneMapDto GenerateCanopy(int seed) => GeneratePlains(seed);
+    private static ZoneMapDto GenerateIceCaverns(int seed) => GenerateTundra(seed);
+    private static ZoneMapDto GenerateObsidianWastes(int seed) => GenerateCaldera(seed);
+    private static ZoneMapDto GenerateShiftingDunes(int seed) => GeneratePlains(seed);
 
     private static void CarveCorridor(List<List<int>> grid, int x1, int y1, int x2, int y2)
     {
