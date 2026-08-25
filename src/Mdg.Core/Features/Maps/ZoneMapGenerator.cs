@@ -408,125 +408,30 @@ public static class ZoneMapGenerator
         };
     }
 
-    // 3. FORGOTTEN CRYPT (96x96: Multi-Chamber Catacombs, Destructible Secret Walls & Toxic Miasma)
+    // 3. FORGOTTEN CRYPT (96x96: Graph Topology, Delaunay MST, Cellular Automata & Multi-Objective Evaluator)
     private static ZoneMapDto GenerateCrypt(int seed)
     {
         const int w = 96, h = 96;
-        var grid = InitializeGrid(w, h, TILE_WALL);
-        var rng = new Random(seed);
-
-        var rooms = new List<(int x, int y, int rw, int rh)>
+        var hazard = new EnvironmentalHazardConfig
         {
-            (8, 8, 20, 20),
-            (60, 8, 24, 20),
-            (8, 60, 20, 24),
-            (56, 56, 28, 28), // Boss Chamber
-            (36, 36, 24, 24), // Central Chamber
-            (8, 36, 18, 18),
-            (68, 36, 18, 18)
+            HazardName = "Curse of Miasma",
+            Description = "Deadly chướng khí độc. Stepping on Toxic Miasma deals 30 Chaos Dmg/s. Reduces Flask recovery if Chaos Resistance < 50%!",
+            ResistanceRequired = "Chaos",
+            Threshold = 50,
+            PenaltyType = "FlaskDecay"
         };
 
-        foreach (var r in rooms)
-        {
-            for (int y = r.y; y < r.y + r.rh; y++)
-            {
-                for (int x = r.x; x < r.x + r.rw; x++)
-                {
-                    bool isCorner = (x == r.x && y == r.y) || (x == r.x + r.rw - 1 && y == r.y) ||
-                                    (x == r.x && y == r.y + r.rh - 1) || (x == r.x + r.rw - 1 && y == r.y + r.rh - 1);
-                    if (!isCorner)
-                    {
-                        grid[y][x] = TILE_FLOOR;
-                    }
-                }
-            }
-
-            if (r.rw >= 18 && r.rh >= 18)
-            {
-                grid[r.y + 4][r.x + 4] = TILE_ANCIENT_PILLAR;
-                grid[r.y + 4][r.x + r.rw - 5] = TILE_ANCIENT_PILLAR;
-                grid[r.y + r.rh - 5][r.x + 4] = TILE_ANCIENT_PILLAR;
-                grid[r.y + r.rh - 5][r.x + r.rw - 5] = TILE_ANCIENT_PILLAR;
-
-                // Toxic miasma pool in boss room
-                if (r.x >= 56 && r.y >= 56)
-                {
-                    int mx = r.x + r.rw / 2;
-                    int my = r.y + r.rh / 2;
-                    for (int dy = -2; dy <= 2; dy++)
-                    {
-                        for (int dx = -2; dx <= 2; dx++)
-                        {
-                            if (rng.NextDouble() < 0.7) grid[my + dy][mx + dx] = TILE_TOXIC_MIASMA;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Interconnecting Corridors
-        CarveCorridor(grid, 18, 18, 48, 18);
-        CarveCorridor(grid, 48, 18, 48, 48);
-        CarveCorridor(grid, 18, 48, 48, 48);
-        CarveCorridor(grid, 18, 18, 18, 70);
-        CarveCorridor(grid, 48, 48, 70, 70);
-        CarveCorridor(grid, 18, 44, 76, 44);
-
-        // Breakable Barricade hiding secret loot
-        grid[28][48] = TILE_DESTRUCTIBLE_WALL;
-        grid[29][48] = TILE_DESTRUCTIBLE_WALL;
-
-        return new ZoneMapDto
-        {
-            Id = "ForgottenCrypt",
-            Name = "Forgotten Crypt",
-            Subtitle = "🏰 Ancient Multi-Chamber Catacombs (Toxic Miasma & Undead Dread)",
-            Biome = ZoneBiomeType.ForgottenCrypt,
-            LevelRange = "Lv. 10-18",
-            Hazard = new EnvironmentalHazardConfig
-            {
-                HazardName = "Curse of Miasma",
-                Description = "Deadly chướng khí độc. Stepping on Toxic Miasma deals 30 Chaos Dmg/s. Reduces Flask recovery if Chaos Resistance < 50%!",
-                ResistanceRequired = "Chaos",
-                Threshold = 50,
-                PenaltyType = "FlaskDecay"
-            },
-            WidthInTiles = w,
-            HeightInTiles = h,
-            TileSize = TILE_SIZE,
-            WorldWidth = w * TILE_SIZE,
-            WorldHeight = h * TILE_SIZE,
-            Grid = grid,
-            SpawnX = 14 * TILE_SIZE,
-            SpawnY = 14 * TILE_SIZE,
-            Portals = new List<ZonePortalDto>
-            {
-                new() { X = 10 * TILE_SIZE, Y = 10 * TILE_SIZE, TargetZone = "SanctuaryHaven", TargetX = 1536, TargetY = 2800, Name = "🌿 Back to Haven" },
-                new() { X = 74 * TILE_SIZE, Y = 74 * TILE_SIZE, TargetZone = "VoidAbyss", TargetX = 350, TargetY = 2300, Name = "🌌 To Void Abyss" }
-            },
-            Pois = new List<ZonePoiDto>
-            {
-                new()
-                {
-                    Id = "Crypt_Chaos_Shrine",
-                    Type = "shrine",
-                    Name = "☠️ Abyssal Soul Shrine",
-                    Description = "Infuses weapons with 50 Chaos Damage and +20% Life Leech for 60s.",
-                    X = 48 * TILE_SIZE,
-                    Y = 48 * TILE_SIZE,
-                    BuffType = "AbyssalLeech",
-                    BuffDuration = 60,
-                    Color = "#8e44ad",
-                    Icon = "☠️"
-                }
-            },
-            MonsterSpawns = new List<MonsterClusterSpawnDto>
-            {
-                new() { X = 900, Y = 900, Count = 6, Type = "skeleton" },
-                new() { X = 3200, Y = 900, Count = 7, Type = "undead_knight" },
-                new() { X = 3500, Y = 3500, Count = 1, Type = "boss" }
-            }
-        };
+        return DungeonFitnessEvaluator.GenerateOptimizedDungeon(
+            zoneId: "ForgottenCrypt",
+            zoneName: "Forgotten Crypt",
+            subtitle: "🏰 Ancient Multi-Chamber Catacombs (Topology-First & Cellular Smoothed)",
+            biome: ZoneBiomeType.ForgottenCrypt,
+            levelRange: "Lv. 10-18",
+            hazard: hazard,
+            mapWidth: w,
+            mapHeight: h,
+            baseSeed: seed,
+            candidateCount: 4);
     }
 
     // 4. FROSTPEAK TUNDRA (128x128: Permafrost Glacier, Slippery Glacial Ice & Deep Snow Drifts)
