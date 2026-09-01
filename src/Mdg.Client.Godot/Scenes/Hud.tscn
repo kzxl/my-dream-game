@@ -1,0 +1,133 @@
+[gd_scene load_steps=2 format=3 uid="uid://e0h1hudctrl"]
+
+[ext_resource type="Script" path="res://Scripts/UI/HudController.cs" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer" node_paths=PackedStringArray("LifeBar", "ManaBar", "EnergyShieldBar", "LifeText", "ManaText", "EsText", "MonstersAliveLabel", "CombatStatusLabel")]
+script = ExtResource("1_hud")
+LifeBar = NodePath("Root/BottomPanel/LifeBar")
+ManaBar = NodePath("Root/BottomPanel/ManaBar")
+EnergyShieldBar = NodePath("Root/BottomPanel/EsBar")
+LifeText = NodePath("Root/BottomPanel/LifeBar/LifeText")
+ManaText = NodePath("Root/BottomPanel/ManaBar/ManaText")
+EsText = NodePath("Root/BottomPanel/EsBar/EsText")
+MonstersAliveLabel = NodePath("Root/TopPanel/MonstersLabel")
+CombatStatusLabel = NodePath("Root/TopPanel/StatusLabel")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopPanel" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = -20.0
+offset_bottom = 65.0
+grow_horizontal = 2
+
+[node name="HBox" type="HBoxContainer" parent="Root/TopPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="MonstersLabel" type="Label" parent="Root/TopPanel/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Quái vật còn lại: 5"
+
+[node name="VSeparator" type="VSeparator" parent="Root/TopPanel/HBox"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="Root/TopPanel/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚔️ MDG Aethelis (Chế độ Offline Chơi Đơn) — WASD: Di chuyển | Chuột trái: Chém | Q: Fireball | E: Frost Nova | Space: Dash"
+
+[node name="BottomPanel" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -90.0
+offset_right = 300.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="VBox" type="VBoxContainer" parent="Root/BottomPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="EsBar" type="ProgressBar" parent="Root/BottomPanel/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+max_value = 80.0
+value = 80.0
+show_percentage = false
+
+[node name="EsText" type="Label" parent="Root/BottomPanel/VBox/EsBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 10
+text = "ES: 80 / 80"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BarsHBox" type="HBoxContainer" parent="Root/BottomPanel/VBox"]
+layout_mode = 2
+
+[node name="LifeBar" type="ProgressBar" parent="Root/BottomPanel/VBox/BarsHBox"]
+custom_minimum_size = Vector2(280, 26)
+layout_mode = 2
+max_value = 250.0
+value = 250.0
+show_percentage = false
+
+[node name="LifeText" type="Label" parent="Root/BottomPanel/VBox/BarsHBox/LifeBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "HP: 250 / 250"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ManaBar" type="ProgressBar" parent="Root/BottomPanel/VBox/BarsHBox"]
+custom_minimum_size = Vector2(280, 26)
+layout_mode = 2
+max_value = 120.0
+value = 120.0
+show_percentage = false
+
+[node name="ManaText" type="Label" parent="Root/BottomPanel/VBox/BarsHBox/ManaBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "MP: 120 / 120"
+horizontal_alignment = 1
+vertical_alignment = 1

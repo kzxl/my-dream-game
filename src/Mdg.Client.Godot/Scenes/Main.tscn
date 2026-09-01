@@ -1,0 +1,32 @@
+[gd_scene load_steps=7 format=3 uid="uid://f0m1mainscene"]
+
+[ext_resource type="Script" path="res://Scripts/Core/GameManager.cs" id="1_gm"]
+[ext_resource type="PackedScene" uid="uid://d0p1playerctrl" path="res://Scenes/Player.tscn" id="2_ply"]
+[ext_resource type="PackedScene" uid="uid://c0m1monsterview" path="res://Scenes/Monster.tscn" id="3_mon"]
+[ext_resource type="PackedScene" uid="uid://b0f1floatingtext" path="res://Scenes/FloatingText.tscn" id="4_fct"]
+[ext_resource type="PackedScene" uid="uid://e0h1hudctrl" path="res://Scenes/Hud.tscn" id="5_hud"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 3
+glow_enabled = true
+glow_intensity = 0.6
+glow_bloom = 0.2
+
+[node name="MainWorld" type="Node2D" node_paths=PackedStringArray("Hud")]
+script = ExtResource("1_gm")
+PlayerScene = ExtResource("2_ply")
+MonsterScene = ExtResource("3_mon")
+FloatingTextScene = ExtResource("4_fct")
+Hud = NodePath("HUD")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_left = -2000.0
+offset_top = -2000.0
+offset_right = 2000.0
+offset_bottom = 2000.0
+color = Color(0.08, 0.1, 0.12, 1)
+
+[node name="HUD" parent="." instance=ExtResource("5_hud")]

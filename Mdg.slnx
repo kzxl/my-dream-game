@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Mdg.Client.Adapter/Mdg.Client.Adapter.csproj" />
+    <Project Path="src/Mdg.Client.Godot/Mdg.Client.Godot.csproj" />
     <Project Path="src/Mdg.Core/Mdg.Core.csproj" />
     <Project Path="src/Mdg.Server/Mdg.Server.csproj" />
   </Folder>

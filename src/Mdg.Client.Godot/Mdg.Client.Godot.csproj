@@ -1,0 +1,17 @@
+<Project Sdk="Godot.NET.Sdk/4.3.0">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>Mdg.Client.Godot</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mdg.Core\Mdg.Core.csproj" />
+    <ProjectReference Include="..\Mdg.Client.Adapter\Mdg.Client.Adapter.csproj" />
+  </ItemGroup>
+
+</Project>
