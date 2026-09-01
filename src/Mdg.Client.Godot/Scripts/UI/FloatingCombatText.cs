@@ -19,11 +19,11 @@ namespace Mdg.Client.Godot.Scripts.UI
             var tween = CreateTween();
             tween.SetParallel(true);
             tween.TweenProperty(this, "position:y", Position.Y - floatDistance, duration)
-                 .SetTrans(Tween.TransitionType.Out)
-                 .SetEase(Tween.EaseType.Cubic);
+                 .SetTrans(Tween.TransitionType.Cubic)
+                 .SetEase(Tween.EaseType.Out);
             tween.TweenProperty(this, "modulate:a", 0.0f, duration)
-                 .SetTrans(Tween.TransitionType.In)
-                 .SetEase(Tween.EaseType.Quad);
+                 .SetTrans(Tween.TransitionType.Quad)
+                 .SetEase(Tween.EaseType.In);
 
             tween.SetParallel(false);
             tween.TweenCallback(Callable.From(QueueFree));

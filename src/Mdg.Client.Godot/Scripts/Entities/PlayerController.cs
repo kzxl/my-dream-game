@@ -83,17 +83,17 @@ namespace Mdg.Client.Godot.Scripts.Entities
         {
             if (_gameManager == null || CorePlayer == null) return;
 
-            // Tạo Damage Payload cho đòn đánh thường
             float baseDmg = CorePlayer.Stats.GetValue(StatType.PhysicalDamage);
             if (baseDmg <= 0) baseDmg = 35f;
 
-            var payload = new DamagePayload(
-                attackerId: CorePlayer.Id,
-                portions: new[] { new DamagePortion(DamageType.Physical, baseDmg) },
-                accuracyRating: CorePlayer.Stats.GetValue(StatType.Accuracy),
-                critChance: CorePlayer.Stats.GetValue(StatType.CritChance),
-                critMultiplier: CorePlayer.Stats.GetValue(StatType.CritMultiplier)
-            );
+            var payload = new DamagePayload
+            {
+                AttackerId = CorePlayer.Id,
+                AccuracyRating = CorePlayer.Stats.GetValue(StatType.AccuracyRating),
+                CritChance = CorePlayer.Stats.GetValue(StatType.CriticalStrikeChance),
+                CritMultiplier = CorePlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier)
+            };
+            payload.AddPortion(DamageType.Physical, baseDmg);
 
             // Bắn event SkillExecuted
             _gameManager.EventBus.Publish(new SkillExecutedEvent
@@ -112,13 +112,14 @@ namespace Mdg.Client.Godot.Scripts.Entities
             if (_gameManager == null || CorePlayer == null) return;
 
             float fireDmg = 65f;
-            var payload = new DamagePayload(
-                attackerId: CorePlayer.Id,
-                portions: new[] { new DamagePortion(DamageType.Fire, fireDmg) },
-                accuracyRating: 500f,
-                critChance: 15f,
-                critMultiplier: 180f
-            );
+            var payload = new DamagePayload
+            {
+                AttackerId = CorePlayer.Id,
+                AccuracyRating = 500f,
+                CritChance = 15f,
+                CritMultiplier = 180f
+            };
+            payload.AddPortion(DamageType.Fire, fireDmg);
 
             _gameManager.EventBus.Publish(new SkillExecutedEvent
             {
@@ -136,13 +137,14 @@ namespace Mdg.Client.Godot.Scripts.Entities
             if (_gameManager == null || CorePlayer == null) return;
 
             float coldDmg = 45f;
-            var payload = new DamagePayload(
-                attackerId: CorePlayer.Id,
-                portions: new[] { new DamagePortion(DamageType.Cold, coldDmg) },
-                accuracyRating: 500f,
-                critChance: 25f,
-                critMultiplier: 150f
-            );
+            var payload = new DamagePayload
+            {
+                AttackerId = CorePlayer.Id,
+                AccuracyRating = 500f,
+                CritChance = 25f,
+                CritMultiplier = 150f
+            };
+            payload.AddPortion(DamageType.Cold, coldDmg);
 
             _gameManager.EventBus.Publish(new SkillExecutedEvent
             {

@@ -66,9 +66,9 @@ namespace Mdg.Client.Godot.Scripts.Core
             LocalPlayer.Stats.SetBaseValue(StatType.MaxEnergyShield, 80f);
             LocalPlayer.Stats.SetBaseValue(StatType.PhysicalDamage, 45f);
             LocalPlayer.Stats.SetBaseValue(StatType.MovementSpeed, 240f);
-            LocalPlayer.Stats.SetBaseValue(StatType.CritChance, 18f);
-            LocalPlayer.Stats.SetBaseValue(StatType.CritMultiplier, 175f);
-            LocalPlayer.Stats.SetBaseValue(StatType.Accuracy, 450f);
+            LocalPlayer.Stats.SetBaseValue(StatType.CriticalStrikeChance, 18f);
+            LocalPlayer.Stats.SetBaseValue(StatType.CriticalStrikeMultiplier, 175f);
+            LocalPlayer.Stats.SetBaseValue(StatType.AccuracyRating, 450f);
 
             // Tạo Player Node
             if (PlayerScene != null)
