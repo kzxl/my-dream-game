@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="shadowBg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1b3834"/>
+      <stop offset="60%" stop-color="#0e1f1c"/>
+      <stop offset="100%" stop-color="#050d0c"/>
+    </radialGradient>
+    <linearGradient id="hoodLeather" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#344340"/>
+      <stop offset="50%" stop-color="#1e2725"/>
+      <stop offset="100%" stop-color="#0f1413"/>
+    </linearGradient>
+    <linearGradient id="emeraldGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#50fa7b"/>
+      <stop offset="100%" stop-color="#00f2fe"/>
+    </linearGradient>
+    <filter id="rogueGlow">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="14" fill="url(#shadowBg)" />
+  <rect x="3" y="3" width="122" height="122" rx="12" fill="none" stroke="#2a453f" stroke-width="2" opacity="0.8" />
+
+  <!-- Shadow Shoulder Armor & Daggers Scabbard -->
+  <path d="M12 128 C16 98, 38 88, 54 84 L74 84 C90 88, 112 98, 116 128 Z" fill="url(#hoodLeather)" />
+  <line x1="28" y1="90" x2="48" y2="128" stroke="#50fa7b" stroke-width="1.5" opacity="0.6" />
+  <line x1="100" y1="90" x2="80" y2="128" stroke="#50fa7b" stroke-width="1.5" opacity="0.6" />
+
+  <!-- Assassin Hood Outer Shape -->
+  <path d="M30 64 C30 20, 98 20, 98 64 C98 84, 88 94, 64 96 C40 94, 30 84, 30 64 Z" fill="url(#hoodLeather)" stroke="#2f403c" stroke-width="1.5" />
+  <!-- Hood Peak Point -->
+  <path d="M64 16 L76 34 L52 34 Z" fill="url(#hoodLeather)" />
+
+  <!-- Dark Deep Shadow Inside Hood -->
+  <path d="M42 46 C42 34, 86 34, 86 46 C86 74, 78 84, 64 86 C50 84, 42 74, 42 46 Z" fill="#080c0b" />
+
+  <!-- Cloth Face Mask Cover -->
+  <path d="M46 60 L82 60 L76 82 L52 82 Z" fill="#182220" stroke="#253531" stroke-width="1" />
+
+  <!-- Lethal Glowing Emerald Eyes in Shadows -->
+  <ellipse cx="54" cy="52" rx="5" ry="2.2" fill="#000" />
+  <polygon points="51,52 57,50 56,54" fill="#50fa7b" filter="url(#rogueGlow)" />
+  <circle cx="54" cy="52" r="1.2" fill="#fff" />
+
+  <ellipse cx="74" cy="52" rx="5" ry="2.2" fill="#000" />
+  <polygon points="71,50 77,52 72,54" fill="#50fa7b" filter="url(#rogueGlow)" />
+  <circle cx="74" cy="52" r="1.2" fill="#fff" />
+
+  <!-- Poison Dust Particles -->
+  <circle cx="28" cy="40" r="1.5" fill="#50fa7b" opacity="0.7" filter="url(#rogueGlow)" />
+  <circle cx="102" cy="74" r="1" fill="#50fa7b" opacity="0.6" filter="url(#rogueGlow)" />
+  <circle cx="64" cy="110" r="1.5" fill="#00f2fe" opacity="0.5" filter="url(#rogueGlow)" />
+</svg>

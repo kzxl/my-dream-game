@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="arcaneMaleBg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#351a54"/>
+      <stop offset="60%" stop-color="#180c29"/>
+      <stop offset="100%" stop-color="#0a0414"/>
+    </radialGradient>
+    <linearGradient id="arcaneRobeMale" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5e2b85"/>
+      <stop offset="50%" stop-color="#3a1657"/>
+      <stop offset="100%" stop-color="#1c072e"/>
+    </linearGradient>
+    <filter id="arcGlowMale">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="14" fill="url(#arcaneMaleBg)" />
+  <rect x="3" y="3" width="122" height="122" rx="12" fill="none" stroke="#795290" stroke-width="2" opacity="0.8" />
+
+  <!-- Silver Wizard Hair & Beard -->
+  <path d="M30 40 C18 65, 22 105, 34 128 L94 128 C106 105, 110 65, 98 40 Z" fill="#b0b8c4" />
+
+  <!-- Robe & High Arcane Collar -->
+  <path d="M12 128 C16 98, 38 88, 54 86 L74 86 C90 88, 112 98, 116 128 Z" fill="url(#arcaneRobeMale)" />
+  <path d="M44 86 L64 128 L84 86 Z" fill="#c678dd" opacity="0.85" />
+
+  <!-- Face Base -->
+  <path d="M46 44 C46 30, 82 30, 82 44 C82 64, 76 76, 64 78 C52 76, 46 64, 46 44 Z" fill="#e8cfbf" />
+
+  <!-- Silver Hair Bangs & Beard -->
+  <path d="M40 36 C48 18, 80 18, 88 36 C78 28, 48 28, 40 36 Z" fill="#d0d7de" />
+  <path d="M50 64 C56 76, 72 76, 78 64 C76 76, 70 82, 64 82 C58 82, 52 76, 50 64 Z" fill="#b0b8c4" />
+
+  <!-- Glowing Azure Eyes -->
+  <ellipse cx="55" cy="50" rx="4" ry="2.5" fill="#0b1726" />
+  <circle cx="55" cy="50" r="1.8" fill="#00f2fe" filter="url(#arcGlowMale)" />
+  <ellipse cx="73" cy="50" rx="4" ry="2.5" fill="#0b1726" />
+  <circle cx="73" cy="50" r="1.8" fill="#00f2fe" filter="url(#arcGlowMale)" />
+
+  <!-- Orbiting Lightning Spark -->
+  <polygon points="64,18 68,26 64,34 60,26" fill="#c678dd" filter="url(#arcGlowMale)" />
+</svg>
