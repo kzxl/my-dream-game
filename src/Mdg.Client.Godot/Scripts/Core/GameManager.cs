@@ -239,63 +239,118 @@ namespace Mdg.Client.Godot.Scripts.Core
 
             if (Map?.CurrentMap == null) return;
 
-            var spawners = Map.CurrentMap.MonsterSpawns;
-            if (spawners == null || spawners.Count == 0)
+            string zoneId = Map.CurrentZoneId ?? "SanctuaryHaven";
+            if (zoneId.Equals("SanctuaryHaven", StringComparison.OrdinalIgnoreCase))
             {
                 // Thị trấn an toàn (Sanctuary Haven) -> Không có quái vật hoang dã
                 Hud?.UpdateMonstersAlive(0);
                 return;
             }
 
+            int baseZoneLevel = zoneId switch
+            {
+                "WhisperingPlains" => 4,
+                "ForgottenCrypt" => 10,
+                "FrostpeakTundra" => 18,
+                "MoltenCaldera" => 28,
+                "VoidAbyss" => 42,
+                _ => Math.Max(1, _playerLevel)
+            };
+
+            var spawners = Map.CurrentMap.MonsterSpawns;
             var rand = new Random();
 
-            foreach (var sp in spawners)
+            if (spawners != null)
             {
-                if (sp.Type == "boss")
+                foreach (var sp in spawners)
                 {
-                    var boss = new MonsterEntity("Malakor, Void Inquisitor", MonsterRarity.PinnacleBoss, 800f, 55f);
-                    boss.AddAffix(MonsterAffixType.AetherWard);
-                    boss.AddAffix(MonsterAffixType.MagmaConduit);
-                    _activeBossEntity = boss;
-                    _bossCurrentStagger = 0f;
-                    _isBossStaggered = false;
-                    Hud?.ShowBossHud(boss.Name, boss.CurrentHealth, boss.MaxHealth, 0f);
-
-                    if (MonsterScene != null)
+                    if (sp.Type == "boss")
                     {
-                        var mView = MonsterScene.Instantiate<MonsterView>();
-                        AddChild(mView);
-                        mView.Initialize(boss, new FixVector2((float)sp.X, (float)sp.Y), this, PlayerView);
-                        _monsters[boss.Id] = (boss, mView);
+                        int bossLevel = baseZoneLevel + 3;
+                        var boss = new MonsterEntity("Malakor, Void Inquisitor", MonsterRarity.PinnacleBoss, 800f, 55f, 90f, bossLevel);
+                        boss.AddAffix(MonsterAffixType.AetherWard);
+                        boss.AddAffix(MonsterAffixType.MagmaConduit);
+                        _activeBossEntity = boss;
+                        _bossCurrentStagger = 0f;
+                        _isBossStaggered = false;
+                        Hud?.ShowBossHud($"[Lv.{bossLevel}] {boss.Name}", boss.CurrentHealth, boss.MaxHealth, 0f);
+
+                        if (MonsterScene != null)
+                        {
+                            var mView = MonsterScene.Instantiate<MonsterView>();
+                            AddChild(mView);
+                            mView.Initialize(boss, new FixVector2((float)sp.X, (float)sp.Y), this, PlayerView);
+                            _monsters[boss.Id] = (boss, mView);
+                        }
+                    }
+                    else
+                    {
+                        // Sinh thủ lĩnh bầy đàn (Champion / Rare)
+                        string mName = GetMonsterDisplayName(sp.Type);
+                        var leaderRarity = rand.NextDouble() < 0.35 ? MonsterRarity.Rare : MonsterRarity.Champion;
+                        int leaderLevel = baseZoneLevel + (leaderRarity == MonsterRarity.Rare ? 2 : 1);
+                        float leaderHp = (sp.Type == "golem" || sp.Type == "spectre") ? 320f : 200f;
+                        var leader = new MonsterEntity(mName, leaderRarity, leaderHp, 28f, 100f, leaderLevel);
+                        leader.AddAffix(MonsterAffixType.AetherWard);
+
+                        if (MonsterScene != null)
+                        {
+                            var lView = MonsterScene.Instantiate<MonsterView>();
+                            AddChild(lView);
+                            lView.Initialize(leader, new FixVector2((float)sp.X, (float)sp.Y), this, PlayerView);
+                            _monsters[leader.Id] = (leader, lView);
+
+                            // Tăng số lượng quái vật tay sai (4-7 con mỗi bầy)
+                            int minionCount = Math.Max(4, sp.Count + 2);
+                            for (int i = 0; i < minionCount; i++)
+                            {
+                                float offsetX = (float)GD.RandRange(-85, 85);
+                                float offsetY = (float)GD.RandRange(-85, 85);
+                                var minion = new MonsterEntity(mName, MonsterRarity.Normal, leaderHp * 0.55f, 16f, 95f, baseZoneLevel);
+                                var minionView = MonsterScene.Instantiate<MonsterView>();
+                                AddChild(minionView);
+                                minionView.Initialize(minion, new FixVector2((float)sp.X + offsetX, (float)sp.Y + offsetY), this, PlayerView);
+                                _monsters[minion.Id] = (minion, minionView);
+                            }
+                        }
                     }
                 }
-                else
+            }
+
+            // Sinh thêm các bầy quái tuần tra phân tán khắp bản đồ (Ambient Horde Packs)
+            int tileSize = Map.CurrentMap.TileSize > 0 ? Map.CurrentMap.TileSize : 48;
+            int width = Map.CurrentMap.WidthInTiles;
+            int height = Map.CurrentMap.HeightInTiles;
+            var grid = Map.CurrentMap.Grid;
+
+            string[] mobTypes = new[] { "wolf", "goblin", "skeleton", "fire_imp", "void_spectre", "undead_knight", "magma_golem" };
+
+            int ambientPacksCount = 8;
+            for (int p = 0; p < ambientPacksCount; p++)
+            {
+                int tx = rand.Next(4, Math.Max(5, width - 4));
+                int ty = rand.Next(4, Math.Max(5, height - 4));
+
+                if (grid.Count > ty && grid[ty].Count > tx && grid[ty][tx] == 0)
                 {
-                    // Sinh thủ lĩnh bầy đàn (Champion / Rare)
-                    string mName = GetMonsterDisplayName(sp.Type);
-                    var leaderRarity = rand.NextDouble() < 0.35 ? MonsterRarity.Rare : MonsterRarity.Champion;
-                    float leaderHp = (sp.Type == "golem" || sp.Type == "spectre") ? 320f : 200f;
-                    var leader = new MonsterEntity(mName, leaderRarity, leaderHp, 28f);
-                    leader.AddAffix(MonsterAffixType.AetherWard);
+                    Vector2 packCenter = new Vector2(tx * tileSize, ty * tileSize);
+                    if (PlayerView != null && packCenter.DistanceTo(PlayerView.Position) < 250f) continue;
 
-                    if (MonsterScene != null)
+                    string packType = mobTypes[rand.Next(mobTypes.Length)];
+                    string packName = GetMonsterDisplayName(packType);
+                    int packSize = rand.Next(3, 6);
+
+                    for (int m = 0; m < packSize; m++)
                     {
-                        var lView = MonsterScene.Instantiate<MonsterView>();
-                        AddChild(lView);
-                        lView.Initialize(leader, new FixVector2((float)sp.X, (float)sp.Y), this, PlayerView);
-                        _monsters[leader.Id] = (leader, lView);
-
-                        // Sinh các quái vật tay sai đi kèm trong bầy
-                        int minionCount = Math.Max(2, sp.Count - 1);
-                        for (int i = 0; i < minionCount; i++)
+                        float ox = (float)GD.RandRange(-50, 50);
+                        float oy = (float)GD.RandRange(-50, 50);
+                        var mob = new MonsterEntity(packName, MonsterRarity.Normal, 160f, 15f, 90f, baseZoneLevel);
+                        if (MonsterScene != null)
                         {
-                            float offsetX = (float)GD.RandRange(-65, 65);
-                            float offsetY = (float)GD.RandRange(-65, 65);
-                            var minion = new MonsterEntity(mName, MonsterRarity.Normal, leaderHp * 0.55f, 16f);
-                            var minionView = MonsterScene.Instantiate<MonsterView>();
-                            AddChild(minionView);
-                            minionView.Initialize(minion, new FixVector2((float)sp.X + offsetX, (float)sp.Y + offsetY), this, PlayerView);
-                            _monsters[minion.Id] = (minion, minionView);
+                            var mobView = MonsterScene.Instantiate<MonsterView>();
+                            AddChild(mobView);
+                            mobView.Initialize(mob, new FixVector2(packCenter.X + ox, packCenter.Y + oy), this, PlayerView);
+                            _monsters[mob.Id] = (mob, mobView);
                         }
                     }
                 }

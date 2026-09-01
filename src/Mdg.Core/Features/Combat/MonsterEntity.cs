@@ -15,6 +15,8 @@ namespace Mdg.Core.Features.Combat
         public float WardShield { get; set; } = 0f;
         public float MaxWardShield { get; set; } = 0f;
 
+        public int Level { get; set; } = 1;
+
         // 3-Tier Defensive Layers
         public float EvasionChance { get; set; } = 0f;
         public float BlockChance { get; set; } = 0f;
@@ -30,13 +32,17 @@ namespace Mdg.Core.Features.Combat
         public bool IsAlive => CurrentHealth > 0;
         public float HealthPercentage => MaxHealth > 0 ? (CurrentHealth / MaxHealth) * 100f : 0f;
 
-        public MonsterEntity(string name, MonsterRarity rarity, float baseHealth, float baseDamage, float moveSpeed = 100f)
+        public MonsterEntity(string name, MonsterRarity rarity, float baseHealth, float baseDamage, float moveSpeed = 100f, int level = 1)
         {
             Name = name;
             Rarity = rarity;
             MoveSpeed = moveSpeed;
+            Level = Math.Max(1, level);
 
-            // Scale HP and Damage based on Rarity
+            // Scale HP và Damage dựa trên Cấp độ (Level) và Phẩm cấp (Rarity)
+            float levelHpMult = 1.0f + (Level - 1) * 0.18f;
+            float levelDmgMult = 1.0f + (Level - 1) * 0.12f;
+
             float hpMult = rarity switch
             {
                 MonsterRarity.Champion => 3.5f,
@@ -53,9 +59,9 @@ namespace Mdg.Core.Features.Combat
                 _ => 1.0f
             };
 
-            MaxHealth = baseHealth * hpMult;
+            MaxHealth = baseHealth * hpMult * levelHpMult;
             CurrentHealth = MaxHealth;
-            BaseDamage = baseDamage * dmgMult;
+            BaseDamage = baseDamage * dmgMult * levelDmgMult;
         }
 
         public void AddAffix(MonsterAffixType affix)

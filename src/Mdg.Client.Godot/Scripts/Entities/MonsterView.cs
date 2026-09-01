@@ -167,7 +167,7 @@ namespace Mdg.Client.Godot.Scripts.Entities
                     _ => ""
                 };
 
-                NameLabel.Text = $"{rarityPrefix}{CoreEntity.Name}";
+                NameLabel.Text = $"[Lv.{CoreEntity.Level}] {rarityPrefix}{CoreEntity.Name}";
                 NameLabel.Modulate = CoreEntity.Rarity switch
                 {
                     MonsterRarity.Champion => new Color(0.35f, 0.75f, 1f),
