@@ -1,17 +1,37 @@
-[gd_scene load_steps=2 format=3 uid="uid://e0h1hudctrl"]
+[gd_scene load_steps=8 format=3 uid="uid://e0h1hudctrl"]
 
 [ext_resource type="Script" path="res://Scripts/UI/HudController.cs" id="1_hud"]
+[ext_resource type="Script" path="res://Scripts/UI/InventoryModal.cs" id="2_inv"]
+[ext_resource type="Script" path="res://Scripts/UI/SkillsModal.cs" id="3_skl"]
+[ext_resource type="Script" path="res://Scripts/UI/ForgeModal.cs" id="4_frg"]
+[ext_resource type="Script" path="res://Scripts/UI/CompendiumModal.cs" id="5_cmp"]
+[ext_resource type="Script" path="res://Scripts/UI/WorldMapModal.cs" id="6_wmp"]
+[ext_resource type="Script" path="res://Scripts/UI/DefeatModal.cs" id="7_dft"]
 
-[node name="HUD" type="CanvasLayer" node_paths=PackedStringArray("LifeBar", "ManaBar", "EnergyShieldBar", "LifeText", "ManaText", "EsText", "MonstersAliveLabel", "CombatStatusLabel")]
+[node name="HUD" type="CanvasLayer" node_paths=PackedStringArray("LifeBar", "ManaBar", "EnergyShieldBar", "LifeText", "ManaText", "EsText", "MonstersAliveLabel", "CombatStatusLabel", "PlayerNameLabel", "LevelLabel", "ExpBar", "ExpText", "BossHudContainer", "BossNameLabel", "BossHpBar", "BossStaggerBar", "InventoryModal", "SkillsModal", "ForgeModal", "CompendiumModal", "WorldMapModal", "DefeatModal")]
 script = ExtResource("1_hud")
-LifeBar = NodePath("Root/BottomPanel/LifeBar")
-ManaBar = NodePath("Root/BottomPanel/ManaBar")
-EnergyShieldBar = NodePath("Root/BottomPanel/EsBar")
-LifeText = NodePath("Root/BottomPanel/LifeBar/LifeText")
-ManaText = NodePath("Root/BottomPanel/ManaBar/ManaText")
-EsText = NodePath("Root/BottomPanel/EsBar/EsText")
-MonstersAliveLabel = NodePath("Root/TopPanel/MonstersLabel")
-CombatStatusLabel = NodePath("Root/TopPanel/StatusLabel")
+LifeBar = NodePath("Root/BottomCenter/BarsHBox/LifeBar")
+ManaBar = NodePath("Root/BottomCenter/BarsHBox/ManaBar")
+EnergyShieldBar = NodePath("Root/BottomCenter/EsBar")
+LifeText = NodePath("Root/BottomCenter/BarsHBox/LifeBar/LifeText")
+ManaText = NodePath("Root/BottomCenter/BarsHBox/ManaBar/ManaText")
+EsText = NodePath("Root/BottomCenter/EsBar/EsText")
+MonstersAliveLabel = NodePath("Root/TopPanel/HBox/MonstersLabel")
+CombatStatusLabel = NodePath("Root/TopPanel/HBox/StatusLabel")
+PlayerNameLabel = NodePath("Root/TopLeft/Panel/VBox/NameLabel")
+LevelLabel = NodePath("Root/TopLeft/Panel/VBox/LevelLabel")
+ExpBar = NodePath("Root/BottomExpBar")
+ExpText = NodePath("Root/BottomExpBar/ExpText")
+BossHudContainer = NodePath("Root/BossHud")
+BossNameLabel = NodePath("Root/BossHud/BossName")
+BossHpBar = NodePath("Root/BossHud/HpBar")
+BossStaggerBar = NodePath("Root/BossHud/StaggerBar")
+InventoryModal = NodePath("Root/Modals/InventoryModal")
+SkillsModal = NodePath("Root/Modals/SkillsModal")
+ForgeModal = NodePath("Root/Modals/ForgeModal")
+CompendiumModal = NodePath("Root/Modals/CompendiumModal")
+WorldMapModal = NodePath("Root/Modals/WorldMapModal")
+DefeatModal = NodePath("Root/Modals/DefeatModal")
 
 [node name="Root" type="Control" parent="."]
 layout_mode = 3
@@ -26,9 +46,9 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 20.0
-offset_top = 15.0
+offset_top = 10.0
 offset_right = -20.0
-offset_bottom = 65.0
+offset_bottom = 50.0
 grow_horizontal = 2
 
 [node name="HBox" type="HBoxContainer" parent="Root/TopPanel"]
@@ -37,21 +57,138 @@ alignment = 1
 
 [node name="MonstersLabel" type="Label" parent="Root/TopPanel/HBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
-theme_override_font_sizes/font_size = 16
-text = "Quái vật còn lại: 5"
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+text = "Quái vật: 5"
 
 [node name="VSeparator" type="VSeparator" parent="Root/TopPanel/HBox"]
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 
 [node name="StatusLabel" type="Label" parent="Root/TopPanel/HBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 14
-text = "⚔️ MDG Aethelis (Chế độ Offline Chơi Đơn) — WASD: Di chuyển | Chuột trái: Chém | Q: Fireball | E: Frost Nova | Space: Dash"
+theme_override_font_sizes/font_size = 13
+text = "⚔️ MDG Aethelis — WASD: Di chuyển | Chuột trái: Chém | Q: Fireball | E: Frost Nova | Space: Dash | I: Túi đồ | K: Kỹ năng | B: Bàn rèn | Y: Bách khoa | M: Bản đồ"
 
-[node name="BottomPanel" type="PanelContainer" parent="Root"]
+[node name="TopLeft" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 60.0
+offset_right = 260.0
+offset_bottom = 130.0
+
+[node name="Panel" type="PanelContainer" parent="Root/TopLeft"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Root/TopLeft/Panel"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Root/TopLeft/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+text = "Novice Adventurer [Vanguard]"
+
+[node name="LevelLabel" type="Label" parent="Root/TopLeft/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "⭐ Level 1 (0.0% EXP)"
+
+[node name="BossHud" type="Control" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 55.0
+offset_right = 220.0
+offset_bottom = 115.0
+grow_horizontal = 2
+
+[node name="BossName" type="Label" parent="Root/BossHud"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 20.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
+theme_override_font_sizes/font_size = 13
+text = "💀 MALAKOR, VOID INQUISITOR"
+horizontal_alignment = 1
+
+[node name="HpBar" type="ProgressBar" parent="Root/BossHud"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 22.0
+offset_bottom = 36.0
+grow_horizontal = 2
+max_value = 500.0
+value = 500.0
+show_percentage = false
+
+[node name="StaggerBar" type="ProgressBar" parent="Root/BossHud"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 38.0
+offset_bottom = 46.0
+grow_horizontal = 2
+max_value = 100.0
+value = 0.0
+show_percentage = false
+
+[node name="TopRightNav" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 60.0
+offset_right = -20.0
+offset_bottom = 220.0
+grow_horizontal = 0
+
+[node name="VBox" type="VBoxContainer" parent="Root/TopRightNav"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Root/TopRightNav/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "🧭 Menu Phím Tắt"
+horizontal_alignment = 1
+
+[node name="BtnChar" type="Button" parent="Root/TopRightNav/VBox"]
+layout_mode = 2
+text = "🎒 Túi Đồ & Trang Bị (I/C)"
+
+[node name="BtnSkills" type="Button" parent="Root/TopRightNav/VBox"]
+layout_mode = 2
+text = "⚔️ Kỹ Năng Chiến Đấu (K)"
+
+[node name="BtnForge" type="Button" parent="Root/TopRightNav/VBox"]
+layout_mode = 2
+text = "🔨 Bàn Rèn Chế Tạo (B)"
+
+[node name="BtnComp" type="Button" parent="Root/TopRightNav/VBox"]
+layout_mode = 2
+text = "📖 Bách Khoa Toàn Thư (Y)"
+
+[node name="BtnMap" type="Button" parent="Root/TopRightNav/VBox"]
+layout_mode = 2
+text = "🌌 Bản Đồ Thế Giới (M)"
+
+[node name="BottomCenter" type="PanelContainer" parent="Root"]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -59,25 +196,23 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -300.0
-offset_top = -90.0
+offset_top = -140.0
 offset_right = 300.0
-offset_bottom = -20.0
+offset_bottom = -25.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="VBox" type="VBoxContainer" parent="Root/BottomPanel"]
+[node name="VBox" type="VBoxContainer" parent="Root/BottomCenter"]
 layout_mode = 2
-alignment = 1
 
-[node name="EsBar" type="ProgressBar" parent="Root/BottomPanel/VBox"]
+[node name="EsBar" type="ProgressBar" parent="Root/BottomCenter"]
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
 max_value = 80.0
 value = 80.0
 show_percentage = false
 
-[node name="EsText" type="Label" parent="Root/BottomPanel/VBox/EsBar"]
+[node name="EsText" type="Label" parent="Root/BottomCenter/EsBar"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -89,45 +224,363 @@ text = "ES: 80 / 80"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="BarsHBox" type="HBoxContainer" parent="Root/BottomPanel/VBox"]
+[node name="BarsHBox" type="HBoxContainer" parent="Root/BottomCenter"]
 layout_mode = 2
 
-[node name="LifeBar" type="ProgressBar" parent="Root/BottomPanel/VBox/BarsHBox"]
-custom_minimum_size = Vector2(280, 26)
+[node name="LifeBar" type="ProgressBar" parent="Root/BottomCenter/BarsHBox"]
+custom_minimum_size = Vector2(290, 24)
 layout_mode = 2
 max_value = 250.0
 value = 250.0
 show_percentage = false
 
-[node name="LifeText" type="Label" parent="Root/BottomPanel/VBox/BarsHBox/LifeBar"]
+[node name="LifeText" type="Label" parent="Root/BottomCenter/BarsHBox/LifeBar"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "HP: 250 / 250"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ManaBar" type="ProgressBar" parent="Root/BottomPanel/VBox/BarsHBox"]
-custom_minimum_size = Vector2(280, 26)
+[node name="ManaBar" type="ProgressBar" parent="Root/BottomCenter/BarsHBox"]
+custom_minimum_size = Vector2(290, 24)
 layout_mode = 2
 max_value = 120.0
 value = 120.0
 show_percentage = false
 
-[node name="ManaText" type="Label" parent="Root/BottomPanel/VBox/BarsHBox/ManaBar"]
+[node name="ManaText" type="Label" parent="Root/BottomCenter/BarsHBox/ManaBar"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "MP: 120 / 120"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="HotbarHBox" type="HBoxContainer" parent="Root/BottomCenter"]
+layout_mode = 2
+alignment = 1
+
+[node name="Slot1" type="Button" parent="Root/BottomCenter/HotbarHBox"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "⚔️\nLMB"
+
+[node name="Slot2" type="Button" parent="Root/BottomCenter/HotbarHBox"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "🔥\nQ"
+
+[node name="Slot3" type="Button" parent="Root/BottomCenter/HotbarHBox"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "❄️\nE"
+
+[node name="Slot4" type="Button" parent="Root/BottomCenter/HotbarHBox"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "💨\nSpace"
+
+[node name="BottomExpBar" type="ProgressBar" parent="Root"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+max_value = 100.0
+value = 25.0
+show_percentage = false
+
+[node name="ExpText" type="Label" parent="Root/BottomExpBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 10
+text = "EXP: 250 / 1000 (25.0%)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Modals" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="InventoryModal" type="PanelContainer" parent="Root/Modals" node_paths=PackedStringArray("BackpackGrid", "GoldLabel", "SparksLabel", "ItemTooltip", "TooltipName", "TooltipType", "TooltipStats", "TooltipMods")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -220.0
+offset_right = 320.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_inv")
+BackpackGrid = NodePath("VBox/GridContainer")
+GoldLabel = NodePath("VBox/WealthHBox/GoldLabel")
+SparksLabel = NodePath("VBox/WealthHBox/SparksLabel")
+ItemTooltip = NodePath("TooltipPanel")
+TooltipName = NodePath("TooltipPanel/VBox/Name")
+TooltipType = NodePath("TooltipPanel/VBox/Type")
+TooltipStats = NodePath("TooltipPanel/VBox/Stats")
+TooltipMods = NodePath("TooltipPanel/VBox/Mods")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/InventoryModal"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="Root/Modals/InventoryModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "🎒 TÚI ĐỒ & TRANG BỊ (INVENTORY)"
+horizontal_alignment = 1
+
+[node name="GridContainer" type="GridContainer" parent="Root/Modals/InventoryModal/VBox"]
+layout_mode = 2
+columns = 8
+
+[node name="WealthHBox" type="HBoxContainer" parent="Root/Modals/InventoryModal/VBox"]
+layout_mode = 2
+
+[node name="GoldLabel" type="Label" parent="Root/Modals/InventoryModal/VBox/WealthHBox"]
+layout_mode = 2
+text = "🪙 1,500"
+
+[node name="SparksLabel" type="Label" parent="Root/Modals/InventoryModal/VBox/WealthHBox"]
+layout_mode = 2
+text = "✨ 24"
+
+[node name="TooltipPanel" type="PanelContainer" parent="Root/Modals/InventoryModal"]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 10.0
+offset_right = 240.0
+offset_bottom = 200.0
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/InventoryModal/TooltipPanel"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Root/Modals/InventoryModal/TooltipPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+text = "Item Name"
+
+[node name="Type" type="Label" parent="Root/Modals/InventoryModal/TooltipPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "Item Type"
+
+[node name="Stats" type="Label" parent="Root/Modals/InventoryModal/TooltipPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Stats"
+
+[node name="Mods" type="Label" parent="Root/Modals/InventoryModal/TooltipPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Modifiers"
+
+[node name="SkillsModal" type="PanelContainer" parent="Root/Modals" node_paths=PackedStringArray("SkillsListContainer")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -220.0
+offset_right = 300.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_skl")
+SkillsListContainer = NodePath("VBox/Scroll/SkillsList")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/SkillsModal"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="Root/Modals/SkillsModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "⚔️ CÂY KỸ NĂNG & THÀNH THẠO (SKILLS)"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Root/Modals/SkillsModal/VBox"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+
+[node name="SkillsList" type="VBoxContainer" parent="Root/Modals/SkillsModal/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ForgeModal" type="PanelContainer" parent="Root/Modals"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_frg")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/ForgeModal"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="Root/Modals/ForgeModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "🔨 BÀN RÈN GENESIS (FORGE & ALCHEMY)"
+horizontal_alignment = 1
+
+[node name="Info" type="Label" parent="Root/Modals/ForgeModal/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "7 Chức năng rèn:\n1. Genesis Crafting (Rèn đồ mới)\n2. Affix Re-Roll (Tẩy luyện dòng chỉ số)\n3. Tier Upgrade (Nâng cấp bậc đồ)\n4. Socket Linking (Đục & nối ngọc rune)\n5. Rune Inscription (Khảm ấn ngọc thần)\n6. Flask Alchemy (Luyện bình thuốc)\n7. Salvage (Tách đồ lấy nguyên liệu)"
+
+[node name="CompendiumModal" type="PanelContainer" parent="Root/Modals" node_paths=PackedStringArray("BestiaryListContainer")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -220.0
+offset_right = 300.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_cmp")
+BestiaryListContainer = NodePath("VBox/Scroll/BestiaryList")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/CompendiumModal"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="Root/Modals/CompendiumModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "📖 BÁCH KHOA TOÀN THƯ & BESTIARY"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Root/Modals/CompendiumModal/VBox"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+
+[node name="BestiaryList" type="VBoxContainer" parent="Root/Modals/CompendiumModal/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="WorldMapModal" type="PanelContainer" parent="Root/Modals" node_paths=PackedStringArray("ZonesContainer")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("6_wmp")
+ZonesContainer = NodePath("VBox/Scroll/ZonesList")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/WorldMapModal"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="Root/Modals/WorldMapModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.5, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "🌌 BẢN ĐỒ THẾ GIỚI & VIỄN CHINH (ATLAS)"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Root/Modals/WorldMapModal/VBox"]
+custom_minimum_size = Vector2(0, 330)
+layout_mode = 2
+
+[node name="ZonesList" type="VBoxContainer" parent="Root/Modals/WorldMapModal/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DefeatModal" type="PanelContainer" parent="Root/Modals" node_paths=PackedStringArray("RespawnTownButton", "ReviveScrollButton")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -120.0
+offset_right = 200.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("7_dft")
+RespawnTownButton = NodePath("VBox/BtnTown")
+ReviveScrollButton = NodePath("VBox/BtnRevive")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modals/DefeatModal"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Root/Modals/DefeatModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 18
+text = "☠️ BẠN ĐÃ TỬ TRẬN"
+horizontal_alignment = 1
+
+[node name="Desc" type="Label" parent="Root/Modals/DefeatModal/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Hãy chọn phương thức hồi sinh:"
+horizontal_alignment = 1
+
+[node name="BtnTown" type="Button" parent="Root/Modals/DefeatModal/VBox"]
+layout_mode = 2
+text = "🌿 Hồi sinh tại thị trấn Haven"
+
+[node name="BtnRevive" type="Button" parent="Root/Modals/DefeatModal/VBox"]
+layout_mode = 2
+text = "📜 Dùng cuộn giấy hồi sinh tại chỗ"

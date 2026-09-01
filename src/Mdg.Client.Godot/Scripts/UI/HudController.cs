@@ -7,14 +7,90 @@ namespace Mdg.Client.Godot.Scripts.UI
 {
     public partial class HudController : CanvasLayer
     {
-        [Export] public ProgressBar LifeBar { get; set; } = default!;
-        [Export] public ProgressBar ManaBar { get; set; } = default!;
-        [Export] public ProgressBar EnergyShieldBar { get; set; } = default!;
-        [Export] public Label LifeText { get; set; } = default!;
-        [Export] public Label ManaText { get; set; } = default!;
-        [Export] public Label EsText { get; set; } = default!;
-        [Export] public Label MonstersAliveLabel { get; set; } = default!;
-        [Export] public Label CombatStatusLabel { get; set; } = default!;
+        [Export] public ProgressBar? LifeBar { get; set; }
+        [Export] public ProgressBar? ManaBar { get; set; }
+        [Export] public ProgressBar? EnergyShieldBar { get; set; }
+        [Export] public Label? LifeText { get; set; }
+        [Export] public Label? ManaText { get; set; }
+        [Export] public Label? EsText { get; set; }
+        [Export] public Label? MonstersAliveLabel { get; set; }
+        [Export] public Label? CombatStatusLabel { get; set; }
+        [Export] public Label? PlayerNameLabel { get; set; }
+        [Export] public Label? LevelLabel { get; set; }
+        [Export] public ProgressBar? ExpBar { get; set; }
+        [Export] public Label? ExpText { get; set; }
+
+        // Boss HUD
+        [Export] public Control? BossHudContainer { get; set; }
+        [Export] public Label? BossNameLabel { get; set; }
+        [Export] public ProgressBar? BossHpBar { get; set; }
+        [Export] public ProgressBar? BossStaggerBar { get; set; }
+
+        // Modals
+        [Export] public InventoryModal? InventoryModal { get; set; }
+        [Export] public SkillsModal? SkillsModal { get; set; }
+        [Export] public ForgeModal? ForgeModal { get; set; }
+        [Export] public CompendiumModal? CompendiumModal { get; set; }
+        [Export] public WorldMapModal? WorldMapModal { get; set; }
+        [Export] public DefeatModal? DefeatModal { get; set; }
+
+        public override void _Ready()
+        {
+            if (BossHudContainer != null) BossHudContainer.Visible = false;
+
+            var btnChar = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnChar");
+            if (btnChar != null) btnChar.Pressed += () => InventoryModal?.Toggle();
+
+            var btnSkills = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnSkills");
+            if (btnSkills != null) btnSkills.Pressed += () => SkillsModal?.Toggle();
+
+            var btnForge = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnForge");
+            if (btnForge != null) btnForge.Pressed += () => ForgeModal?.Toggle();
+
+            var btnComp = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnComp");
+            if (btnComp != null) btnComp.Pressed += () => CompendiumModal?.Toggle();
+
+            var btnMap = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnMap");
+            if (btnMap != null) btnMap.Pressed += () => WorldMapModal?.Toggle();
+        }
+
+        public override void _UnhandledInput(InputEvent @event)
+        {
+            if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+            {
+                switch (keyEvent.Keycode)
+                {
+                    case Key.I:
+                    case Key.C:
+                        InventoryModal?.Toggle();
+                        break;
+                    case Key.K:
+                        SkillsModal?.Toggle();
+                        break;
+                    case Key.B:
+                        ForgeModal?.Toggle();
+                        break;
+                    case Key.Y:
+                        CompendiumModal?.Toggle();
+                        break;
+                    case Key.M:
+                        WorldMapModal?.Toggle();
+                        break;
+                    case Key.Escape:
+                        CloseAllModals();
+                        break;
+                }
+            }
+        }
+
+        public void CloseAllModals()
+        {
+            if (InventoryModal != null) InventoryModal.Visible = false;
+            if (SkillsModal != null) SkillsModal.Visible = false;
+            if (ForgeModal != null) ForgeModal.Visible = false;
+            if (CompendiumModal != null) CompendiumModal.Visible = false;
+            if (WorldMapModal != null) WorldMapModal.Visible = false;
+        }
 
         public void UpdatePlayerStats(Character player)
         {
@@ -24,12 +100,15 @@ namespace Mdg.Client.Godot.Scripts.UI
             float maxMana = player.Stats.GetValue(StatType.MaxMana);
             float maxEs = player.Stats.GetValue(StatType.MaxEnergyShield);
 
+            if (maxLife <= 0f) maxLife = 250f;
+            if (maxMana <= 0f) maxMana = 120f;
+            if (maxEs <= 0f) maxEs = 80f;
+
             if (LifeBar != null)
             {
-                LifeBar.MaxValue = MathF.Max(1f, maxLife);
+                LifeBar.MaxValue = maxLife;
                 LifeBar.Value = player.CurrentLife;
             }
-
             if (LifeText != null)
             {
                 LifeText.Text = $"HP: {MathF.Ceiling(player.CurrentLife)} / {MathF.Ceiling(maxLife)}";
@@ -37,10 +116,9 @@ namespace Mdg.Client.Godot.Scripts.UI
 
             if (ManaBar != null)
             {
-                ManaBar.MaxValue = MathF.Max(1f, maxMana);
+                ManaBar.MaxValue = maxMana;
                 ManaBar.Value = player.CurrentMana;
             }
-
             if (ManaText != null)
             {
                 ManaText.Text = $"MP: {MathF.Ceiling(player.CurrentMana)} / {MathF.Ceiling(maxMana)}";
@@ -48,14 +126,12 @@ namespace Mdg.Client.Godot.Scripts.UI
 
             if (EnergyShieldBar != null)
             {
-                EnergyShieldBar.MaxValue = MathF.Max(1f, maxEs);
+                EnergyShieldBar.MaxValue = maxEs;
                 EnergyShieldBar.Value = player.CurrentEnergyShield;
-                EnergyShieldBar.Visible = maxEs > 0;
             }
-
             if (EsText != null)
             {
-                EsText.Text = maxEs > 0 ? $"ES: {MathF.Ceiling(player.CurrentEnergyShield)} / {MathF.Ceiling(maxEs)}" : "";
+                EsText.Text = $"ES: {MathF.Ceiling(player.CurrentEnergyShield)} / {MathF.Ceiling(maxEs)}";
             }
         }
 
@@ -73,6 +149,29 @@ namespace Mdg.Client.Godot.Scripts.UI
             {
                 CombatStatusLabel.Text = status;
             }
+        }
+
+        public void ShowBossHud(string name, float currentHp, float maxHp, float staggerPct)
+        {
+            if (BossHudContainer != null)
+            {
+                BossHudContainer.Visible = true;
+                if (BossNameLabel != null) BossNameLabel.Text = $"💀 {name}";
+                if (BossHpBar != null)
+                {
+                    BossHpBar.MaxValue = maxHp;
+                    BossHpBar.Value = currentHp;
+                }
+                if (BossStaggerBar != null)
+                {
+                    BossStaggerBar.Value = staggerPct;
+                }
+            }
+        }
+
+        public void HideBossHud()
+        {
+            if (BossHudContainer != null) BossHudContainer.Visible = false;
         }
     }
 }

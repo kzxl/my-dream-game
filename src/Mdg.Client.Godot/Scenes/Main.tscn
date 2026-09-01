@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://f0m1mainscene"]
+[gd_scene load_steps=13 format=3 uid="uid://f0m1mainscene"]
 
 [ext_resource type="Script" path="res://Scripts/Core/GameManager.cs" id="1_gm"]
 [ext_resource type="PackedScene" uid="uid://d0p1playerctrl" path="res://Scenes/Player.tscn" id="2_ply"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://c0p1companionview" path="res://Scenes/Companion.tscn" id="8_comp"]
 [ext_resource type="PackedScene" uid="uid://m0m1mapmanager" path="res://Scenes/MapManager.tscn" id="9_mapm"]
 [ext_resource type="PackedScene" uid="uid://e0h1hudctrl" path="res://Scenes/Hud.tscn" id="10_hud"]
+[ext_resource type="Script" path="res://Scripts/Audio/AudioManager.cs" id="11_aud"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 3
@@ -31,6 +32,9 @@ Hud = NodePath("HUD")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
+
+[node name="AudioManager" type="Node" parent="."]
+script = ExtResource("11_aud")
 
 [node name="MapManager" parent="." instance=ExtResource("9_mapm")]
 
