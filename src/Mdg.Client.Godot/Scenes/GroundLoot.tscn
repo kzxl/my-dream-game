@@ -1,0 +1,33 @@
+[gd_scene load_steps=3 format=3 uid="uid://g0l1groundloot"]
+
+[ext_resource type="Script" path="res://Scripts/Combat/GroundLootView.cs" id="1_loot"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_loot"]
+radius = 24.0
+
+[node name="GroundLoot" type="Area2D" node_paths=PackedStringArray("ItemLabel", "LootBeam")]
+script = ExtResource("1_loot")
+ItemLabel = NodePath("ItemLabel")
+LootBeam = NodePath("LootBeam")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_loot")
+
+[node name="LootBeam" type="Line2D" parent="."]
+points = PackedVector2Array(0, 0, 0, -80)
+width = 3.0
+default_color = Color(1, 0.85, 0.2, 0.8)
+
+[node name="Panel" type="Polygon2D" parent="."]
+color = Color(0.04, 0.05, 0.07, 0.9)
+polygon = PackedVector2Array(-50, -10, 50, -10, 50, 10, -50, 10)
+
+[node name="ItemLabel" type="Label" parent="."]
+offset_left = -60.0
+offset_top = -10.0
+offset_right = 60.0
+offset_bottom = 10.0
+theme_override_font_sizes/font_size = 11
+text = "📦 Item Drop"
+horizontal_alignment = 1
+vertical_alignment = 1

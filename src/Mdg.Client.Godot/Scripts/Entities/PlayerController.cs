@@ -12,17 +12,115 @@ namespace Mdg.Client.Godot.Scripts.Entities
 {
     public partial class PlayerController : CharacterBody2D
     {
-        [Export] public Sprite2D PlayerSprite { get; set; } = default!;
-        [Export] public Camera2D Camera { get; set; } = default!;
+        [Export] public Sprite2D? PlayerSprite { get; set; }
+        [Export] public Camera2D? Camera { get; set; }
+        [Export] public Label? NameLabel { get; set; }
 
         public Character? CorePlayer { get; private set; }
-        private GameManager? _gameManager;
+        public string ClassSpec { get; private set; } = "Vanguard"; // Vanguard, Arcanist, ShadowRogue, Novice
+        public string Gender { get; private set; } = "Male";
 
-        public void Initialize(Character character, GameManager gameManager)
+        private GameManager? _gameManager;
+        private Texture2D? _heroTexture;
+        private AtlasTexture? _atlasTexture;
+
+        private float _animTimer = 0f;
+        private int _animFrame = 0;
+        private bool _isMoving = false;
+
+        public override void _Ready()
+        {
+            LoadHeroTexture();
+        }
+
+        private void LoadHeroTexture()
+        {
+            if (ResourceLoader.Exists("res://Assets/aethelis_heroes_classes_pack.jpg"))
+            {
+                _heroTexture = GD.Load<Texture2D>("res://Assets/aethelis_heroes_classes_pack.jpg");
+            }
+            else if (ResourceLoader.Exists("res://Assets/character_spritesheet.png"))
+            {
+                _heroTexture = GD.Load<Texture2D>("res://Assets/character_spritesheet.png");
+            }
+
+            UpdateHeroSprite();
+        }
+
+        public void Initialize(Character character, GameManager gameManager, string classSpec = "Vanguard", string gender = "Male")
         {
             CorePlayer = character ?? throw new ArgumentNullException(nameof(character));
             _gameManager = gameManager ?? throw new ArgumentNullException(nameof(gameManager));
+            ClassSpec = classSpec;
+            Gender = gender;
             Position = new Vector2(character.Position.X, character.Position.Y);
+
+            UpdateHeroSprite();
+            UpdateNameDisplay();
+        }
+
+        public void SetClassSpec(string spec, string gender)
+        {
+            ClassSpec = spec;
+            Gender = gender;
+            UpdateHeroSprite();
+            UpdateNameDisplay();
+        }
+
+        private void UpdateHeroSprite()
+        {
+            if (_heroTexture == null || PlayerSprite == null) return;
+
+            float totalW = _heroTexture.GetWidth();
+            float totalH = _heroTexture.GetHeight();
+            float cellW = totalW / 4f;
+            float cellH = totalH / 2f;
+
+            bool isFemale = Gender == "Female";
+            int col = 0, row = 0;
+
+            if (ClassSpec == "Vanguard")
+            {
+                col = isFemale ? 3 : 2; row = 0;
+            }
+            else if (ClassSpec == "Arcanist")
+            {
+                col = isFemale ? 1 : 0; row = 1;
+            }
+            else if (ClassSpec == "ShadowRogue")
+            {
+                col = isFemale ? 3 : 2; row = 1;
+            }
+            else
+            {
+                col = isFemale ? 1 : 0; row = 0;
+            }
+
+            _atlasTexture = new AtlasTexture
+            {
+                Atlas = _heroTexture,
+                Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
+            };
+
+            PlayerSprite.Texture = _atlasTexture;
+            PlayerSprite.Scale = new Vector2(0.45f, 0.45f);
+            PlayerSprite.Modulate = Colors.White;
+        }
+
+        private void UpdateNameDisplay()
+        {
+            if (NameLabel != null && CorePlayer != null)
+            {
+                string symbol = Gender == "Male" ? "♂" : "♀";
+                NameLabel.Text = $"{symbol} {CorePlayer.Name} [{ClassSpec}]";
+                NameLabel.Modulate = ClassSpec switch
+                {
+                    "Vanguard" => new Color(1f, 0.85f, 0.3f),
+                    "Arcanist" => new Color(0.38f, 0.75f, 1f),
+                    "ShadowRogue" => new Color(0.85f, 0.45f, 1f),
+                    _ => Colors.White
+                };
+            }
         }
 
         public override void _PhysicsProcess(double delta)
@@ -32,21 +130,34 @@ namespace Mdg.Client.Godot.Scripts.Entities
             // 1. Thu thập input di chuyển
             var inputDir = Input.GetVector("move_left", "move_right", "move_up", "move_down");
             float moveSpeed = CorePlayer.Stats.GetValue(StatType.MovementSpeed);
-            if (moveSpeed <= 0f) moveSpeed = 220f;
+            if (moveSpeed <= 0f) moveSpeed = 240f;
 
             Velocity = inputDir * moveSpeed;
             MoveAndSlide();
 
+            _isMoving = inputDir != Vector2.Zero;
+
             // 2. Cập nhật vị trí và hướng vào Core Entity
             CorePlayer.Position = new FixVector2(Position.X, Position.Y);
-            if (inputDir != Vector2.Zero)
+            if (_isMoving)
             {
                 CorePlayer.Direction = new FixVector2(inputDir.X, inputDir.Y).Normalized;
                 if (PlayerSprite != null)
                 {
-                    // Lật sprite theo hướng di chuyển ngang
                     if (inputDir.X < 0) PlayerSprite.FlipH = true;
                     else if (inputDir.X > 0) PlayerSprite.FlipH = false;
+
+                    // Hiệu ứng bước đi nhịp nhàng (bobbing)
+                    _animTimer += (float)delta * 12f;
+                    float bobOffset = MathF.Sin(_animTimer) * 2.5f;
+                    PlayerSprite.Position = new Vector2(0, bobOffset);
+                }
+            }
+            else
+            {
+                if (PlayerSprite != null)
+                {
+                    PlayerSprite.Position = Vector2.Zero;
                 }
             }
 
@@ -63,111 +174,19 @@ namespace Mdg.Client.Godot.Scripts.Entities
 
             if (Input.IsActionJustPressed("attack_primary"))
             {
-                ExecuteSlashAttack(mousePos);
+                _gameManager.CastPlayerSkill("slash", mousePos, aimDirection);
             }
             else if (Input.IsActionJustPressed("skill_fireball"))
             {
-                ExecuteFireball(mousePos, aimDirection);
+                _gameManager.CastPlayerSkill("fireball", mousePos, aimDirection);
             }
             else if (Input.IsActionJustPressed("skill_frostnova"))
             {
-                ExecuteFrostNova();
+                _gameManager.CastPlayerSkill("frost", GlobalPosition, aimDirection);
             }
             else if (Input.IsActionJustPressed("skill_dash"))
             {
-                ExecuteDash(aimDirection);
-            }
-        }
-
-        private void ExecuteSlashAttack(Vector2 targetPos)
-        {
-            if (_gameManager == null || CorePlayer == null) return;
-
-            float baseDmg = CorePlayer.Stats.GetValue(StatType.PhysicalDamage);
-            if (baseDmg <= 0) baseDmg = 35f;
-
-            var payload = new DamagePayload
-            {
-                AttackerId = CorePlayer.Id,
-                AccuracyRating = CorePlayer.Stats.GetValue(StatType.AccuracyRating),
-                CritChance = CorePlayer.Stats.GetValue(StatType.CriticalStrikeChance),
-                CritMultiplier = CorePlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier)
-            };
-            payload.AddPortion(DamageType.Physical, baseDmg);
-
-            // Bắn event SkillExecuted
-            _gameManager.EventBus.Publish(new SkillExecutedEvent
-            {
-                CasterId = CorePlayer.Id,
-                SkillId = "slash_cleave",
-                TargetPosition = new FixVector2(targetPos.X, targetPos.Y)
-            });
-
-            // Quét mục tiêu trong bán kính chém 90px
-            _gameManager.ApplyAreaDamage(Position.ToFixVector2(), 90f, payload);
-        }
-
-        private void ExecuteFireball(Vector2 targetPos, Vector2 direction)
-        {
-            if (_gameManager == null || CorePlayer == null) return;
-
-            float fireDmg = 65f;
-            var payload = new DamagePayload
-            {
-                AttackerId = CorePlayer.Id,
-                AccuracyRating = 500f,
-                CritChance = 15f,
-                CritMultiplier = 180f
-            };
-            payload.AddPortion(DamageType.Fire, fireDmg);
-
-            _gameManager.EventBus.Publish(new SkillExecutedEvent
-            {
-                CasterId = CorePlayer.Id,
-                SkillId = "pyro_fireball",
-                TargetPosition = new FixVector2(targetPos.X, targetPos.Y)
-            });
-
-            // Gây sát thương tại vị trí target của Fireball (bán kính nổ 110px)
-            _gameManager.ApplyAreaDamage(targetPos.ToFixVector2(), 110f, payload);
-        }
-
-        private void ExecuteFrostNova()
-        {
-            if (_gameManager == null || CorePlayer == null) return;
-
-            float coldDmg = 45f;
-            var payload = new DamagePayload
-            {
-                AttackerId = CorePlayer.Id,
-                AccuracyRating = 500f,
-                CritChance = 25f,
-                CritMultiplier = 150f
-            };
-            payload.AddPortion(DamageType.Cold, coldDmg);
-
-            _gameManager.EventBus.Publish(new SkillExecutedEvent
-            {
-                CasterId = CorePlayer.Id,
-                SkillId = "frost_nova",
-                TargetPosition = CorePlayer.Position
-            });
-
-            // Vòng tròn băng xung quanh người chơi bán kính 160px
-            _gameManager.ApplyAreaDamage(Position.ToFixVector2(), 160f, payload);
-        }
-
-        private void ExecuteDash(Vector2 direction)
-        {
-            if (direction == Vector2.Zero)
-            {
-                direction = PlayerSprite != null && PlayerSprite.FlipH ? Vector2.Left : Vector2.Right;
-            }
-
-            Position += direction * 150f;
-            if (CorePlayer != null)
-            {
-                CorePlayer.Position = Position.ToFixVector2();
+                _gameManager.CastPlayerSkill("dash", GlobalPosition + aimDirection * 180f, aimDirection);
             }
         }
     }

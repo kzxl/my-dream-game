@@ -5,17 +5,31 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_ply"]
 radius = 16.0
 
-[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("PlayerSprite", "Camera")]
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("PlayerSprite", "Camera", "NameLabel")]
 script = ExtResource("1_pctr")
 PlayerSprite = NodePath("Sprite2D")
 Camera = NodePath("Camera2D")
+NameLabel = NodePath("NameLabel")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0, 0, 0, 0.4)
+polygon = PackedVector2Array(-14, 18, -10, 22, 0, 24, 10, 22, 14, 18, 10, 14, 0, 12, -10, 14)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 8)
 shape = SubResource("CircleShape2D_ply")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-modulate = Color(0.2, 0.8, 0.4, 1)
-scale = Vector2(0.6, 0.6)
+position = Vector2(0, 0)
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -100.0
+offset_top = -42.0
+offset_right = 100.0
+offset_bottom = -22.0
+theme_override_font_sizes/font_size = 11
+text = "Hero"
+horizontal_alignment = 1
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true

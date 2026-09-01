@@ -1,10 +1,15 @@
-[gd_scene load_steps=7 format=3 uid="uid://f0m1mainscene"]
+[gd_scene load_steps=12 format=3 uid="uid://f0m1mainscene"]
 
 [ext_resource type="Script" path="res://Scripts/Core/GameManager.cs" id="1_gm"]
 [ext_resource type="PackedScene" uid="uid://d0p1playerctrl" path="res://Scenes/Player.tscn" id="2_ply"]
 [ext_resource type="PackedScene" uid="uid://c0m1monsterview" path="res://Scenes/Monster.tscn" id="3_mon"]
 [ext_resource type="PackedScene" uid="uid://b0f1floatingtext" path="res://Scenes/FloatingText.tscn" id="4_fct"]
-[ext_resource type="PackedScene" uid="uid://e0h1hudctrl" path="res://Scenes/Hud.tscn" id="5_hud"]
+[ext_resource type="PackedScene" uid="uid://p0j1projectileview" path="res://Scenes/Projectile.tscn" id="5_proj"]
+[ext_resource type="PackedScene" uid="uid://s0e1skilleffect" path="res://Scenes/SkillEffect.tscn" id="6_seff"]
+[ext_resource type="PackedScene" uid="uid://g0l1groundloot" path="res://Scenes/GroundLoot.tscn" id="7_loot"]
+[ext_resource type="PackedScene" uid="uid://c0p1companionview" path="res://Scenes/Companion.tscn" id="8_comp"]
+[ext_resource type="PackedScene" uid="uid://m0m1mapmanager" path="res://Scenes/MapManager.tscn" id="9_mapm"]
+[ext_resource type="PackedScene" uid="uid://e0h1hudctrl" path="res://Scenes/Hud.tscn" id="10_hud"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 3
@@ -12,21 +17,21 @@ glow_enabled = true
 glow_intensity = 0.6
 glow_bloom = 0.2
 
-[node name="MainWorld" type="Node2D" node_paths=PackedStringArray("Hud")]
+[node name="MainWorld" type="Node2D" node_paths=PackedStringArray("Map", "Hud")]
 script = ExtResource("1_gm")
 PlayerScene = ExtResource("2_ply")
 MonsterScene = ExtResource("3_mon")
 FloatingTextScene = ExtResource("4_fct")
+ProjectileScene = ExtResource("5_proj")
+SkillEffectScene = ExtResource("6_seff")
+GroundLootScene = ExtResource("7_loot")
+CompanionScene = ExtResource("8_comp")
+Map = NodePath("MapManager")
 Hud = NodePath("HUD")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_left = -2000.0
-offset_top = -2000.0
-offset_right = 2000.0
-offset_bottom = 2000.0
-color = Color(0.08, 0.1, 0.12, 1)
+[node name="MapManager" parent="." instance=ExtResource("9_mapm")]
 
-[node name="HUD" parent="." instance=ExtResource("5_hud")]
+[node name="HUD" parent="." instance=ExtResource("10_hud")]
