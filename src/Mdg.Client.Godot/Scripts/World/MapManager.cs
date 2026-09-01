@@ -20,8 +20,11 @@ namespace Mdg.Client.Godot.Scripts.World
         public ZoneMapDto? CurrentMap { get; private set; }
         public string CurrentZoneId { get; private set; } = "SanctuaryHaven";
 
-        private Texture2D? _terrainTexture;
-        private Texture2D? _wallTexture;
+        private Texture2D? _grassTexture;
+        private Texture2D? _stoneGroundTexture;
+        private Texture2D? _topDownWallTexture;
+        private Texture2D? _dungeonFloorTexture;
+        private Texture2D? _dungeonWallTexture;
         private Texture2D? _waterTexture;
 
         private Node2D? _environmentObjectsContainer;
@@ -49,8 +52,11 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void LoadTextures()
         {
-            _terrainTexture = TextureLoader.LoadFloorsTileset();
-            _wallTexture = TextureLoader.LoadWallTileset();
+            _grassTexture = TextureLoader.LoadGrassTileset();
+            _stoneGroundTexture = TextureLoader.LoadStoneGroundTileset();
+            _topDownWallTexture = TextureLoader.LoadTopDownWallTileset();
+            _dungeonFloorTexture = TextureLoader.LoadFloorsTileset();
+            _dungeonWallTexture = TextureLoader.LoadWallTileset();
             _waterTexture = TextureLoader.LoadWaterTileset();
         }
 
@@ -59,36 +65,18 @@ namespace Mdg.Client.Godot.Scripts.World
             CurrentZoneId = zoneId;
             CurrentMap = ZoneMapGenerator.GenerateZone(zoneId);
 
-            // Nạp lại texture nếu chưa nạp
-            if (_terrainTexture == null) LoadTextures();
+            if (_grassTexture == null) LoadTextures();
 
-            // Xóa các vật thể cũ
             ClearOldZone();
-
-            // Sinh collision tĩnh cho tường và chướng ngại vật
             BuildCollisions();
-
-            // Sinh Portals
             SpawnPortals();
-
-            // Sinh Shrines
             SpawnShrines();
-
-            // Sinh Gathering Nodes
             SpawnGatheringNodes();
-
-            // Sinh NPCs
             SpawnNpcs();
-
-            // Sinh Training Dummies (ở làng Haven)
             SpawnDummies();
-
-            // Sinh Props trang trí (Cây cối, đống lửa, hòm rương)
             SpawnProps();
 
-            // Yêu cầu vẽ lại Tilemap
             QueueRedraw();
-
             OnBannerRequested?.Invoke(CurrentMap.Name, CurrentMap.Subtitle);
 
             return CurrentMap;
@@ -110,8 +98,32 @@ namespace Mdg.Client.Godot.Scripts.World
         {
             if (CurrentMap == null || _environmentObjectsContainer == null) return;
 
+            var reservedPoints = new List<Vector2>();
+            if (CurrentMap.SpawnX > 0 && CurrentMap.SpawnY > 0)
+                reservedPoints.Add(new Vector2((float)CurrentMap.SpawnX, (float)CurrentMap.SpawnY));
+            foreach (var p in CurrentMap.Portals)
+                reservedPoints.Add(new Vector2((float)p.X, (float)p.Y));
+            foreach (var n in CurrentMap.Npcs)
+                reservedPoints.Add(new Vector2((float)n.X, (float)n.Y));
+            foreach (var s in CurrentMap.Pois)
+                reservedPoints.Add(new Vector2((float)s.X, (float)s.Y));
+
             foreach (var propDto in CurrentMap.Props)
             {
+                var propPos = new Vector2((float)propDto.X, (float)propDto.Y);
+
+                // Tránh đặt cây cối chắn ngay cửa Portal, NPC hoặc điểm xuất phát
+                bool isBlocked = false;
+                foreach (var res in reservedPoints)
+                {
+                    if (propPos.DistanceTo(res) < 85f)
+                    {
+                        isBlocked = true;
+                        break;
+                    }
+                }
+                if (isBlocked) continue;
+
                 var spr = new Sprite2D();
                 string type = propDto.Type.ToLowerInvariant();
 
@@ -129,7 +141,7 @@ namespace Mdg.Client.Godot.Scripts.World
                     spr.Offset = new Vector2(0, -10);
                 }
 
-                spr.Position = new Vector2((float)propDto.X, (float)propDto.Y);
+                spr.Position = propPos;
                 _environmentObjectsContainer.AddChild(spr);
             }
         }
@@ -137,11 +149,6 @@ namespace Mdg.Client.Godot.Scripts.World
         private static bool IsTreeProp(string type) =>
             type.Contains("tree") || type.Contains("pine") || type.Contains("oak") ||
             type.Contains("willow") || type.Contains("mushroom") || type.Contains("cherry");
-
-        private static bool IsFloraProp(string type) =>
-            type.Contains("flower") || type.Contains("bush") || type.Contains("grass") ||
-            type.Contains("clover") || type.Contains("lily") || type.Contains("fern") ||
-            type.Contains("bloom") || type.Contains("moss");
 
         private void ClearOldZone()
         {
@@ -254,19 +261,20 @@ namespace Mdg.Client.Godot.Scripts.World
                 int tx = rand.Next(4, Math.Max(5, maxX - 4));
                 int ty = rand.Next(4, Math.Max(5, maxY - 4));
 
-                if (CurrentMap.Grid.Count > ty && CurrentMap.Grid[ty].Count > tx && CurrentMap.Grid[ty][tx] == 0)
+                if (CurrentMap.Grid[ty][tx] == 0 || CurrentMap.Grid[ty][tx] == 3)
                 {
                     var nodeObj = GatheringNodeScene.Instantiate<GatheringNodeView>();
                     _environmentObjectsContainer.AddChild(nodeObj);
                     nodeObj.Position = new Vector2(tx * tileSize, ty * tileSize);
 
-                    if (i % 3 == 0)
+                    int nodeType = rand.Next(3);
+                    if (nodeType == 0)
                     {
-                        nodeObj.Setup($"ore_{i}", "Quặng Aetherite", "mining", 1, "mat_aether_ore", new Color(0.2f, 0.85f, 1f), 1.2f);
+                        nodeObj.Setup($"iron_ore_{i}", "Mỏ Quặng Sắt Aethel", "mining", 1, "mat_iron_ore", new Color(0.8f, 0.4f, 0.1f), 1.0f);
                     }
-                    else if (i % 3 == 1)
+                    else if (nodeType == 1)
                     {
-                        nodeObj.Setup($"herb_{i}", "Hoa Dạ Quang", "herbalism", 1, "mat_luna_bloom", new Color(0.4f, 1f, 0.4f), 0.9f);
+                        nodeObj.Setup($"herb_{i}", "Thảo Dược Băng Nguyệt", "herbalism", 1, "mat_frost_herb", new Color(0.2f, 0.8f, 0.9f), 1.0f);
                     }
                     else
                     {
@@ -305,6 +313,10 @@ namespace Mdg.Client.Godot.Scripts.World
             int height = grid.Count;
             int width = height > 0 ? grid[0].Count : 0;
 
+            bool isDungeon = CurrentZoneId.Contains("Crypt") || CurrentZoneId.Contains("Tomb") || CurrentZoneId.Contains("Necropolis") || CurrentZoneId.Contains("Void");
+            bool isSnow = CurrentZoneId.Contains("Tundra") || CurrentZoneId.Contains("Ice") || CurrentZoneId.Contains("Snow") || CurrentZoneId.Contains("Stormpeak");
+            bool isLava = CurrentZoneId.Contains("Caldera") || CurrentZoneId.Contains("Infernal") || CurrentZoneId.Contains("Obsidian");
+
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
@@ -314,28 +326,49 @@ namespace Mdg.Client.Godot.Scripts.World
 
                     switch (tile)
                     {
-                        case 0: // Sàn cỏ / đất tự nhiên (Floors)
-                            if (_terrainTexture != null)
+                        case 0: // Sàn cỏ / đất tự nhiên (FLOOR)
+                            if (isDungeon && _dungeonFloorTexture != null)
                             {
                                 int varCol = (x + y) % 4;
                                 int varRow = (x ^ y) % 4;
                                 var srcRect = new Rect2(varCol * 16, varRow * 16, 16, 16);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                DrawTextureRectRegion(_dungeonFloorTexture, destRect, srcRect);
+                            }
+                            else if (isLava)
+                            {
+                                DrawRect(destRect, new Color(0.16f, 0.11f, 0.09f));
+                            }
+                            else if (isSnow)
+                            {
+                                DrawRect(destRect, new Color(0.90f, 0.94f, 0.98f));
+                            }
+                            else if (_grassTexture != null)
+                            {
+                                int gx = (x * 2 + y) % 3;
+                                int gy = (x + y * 3) % 3;
+                                var srcRect = new Rect2(16 + gx * 16, 16 + gy * 16, 16, 16);
+                                DrawTextureRectRegion(_grassTexture, destRect, srcRect);
                             }
                             else
                             {
-                                DrawRect(destRect, new Color(0.12f, 0.25f, 0.12f));
+                                DrawRect(destRect, new Color(0.18f, 0.42f, 0.18f));
                             }
                             break;
 
-                        case 1: // Tường đá / vách núi (Walls)
-                        case 10:
-                        case 15:
-                            if (_wallTexture != null)
+                        case 1: // Tường đá / vách núi (WALL)
+                            if (isDungeon && _dungeonWallTexture != null)
                             {
                                 int varCol = (x + y) % 4;
                                 var srcRect = new Rect2(varCol * 16, 16, 16, 16);
-                                DrawTextureRectRegion(_wallTexture, destRect, srcRect);
+                                DrawTextureRectRegion(_dungeonWallTexture, destRect, srcRect);
+                            }
+                            else if (_topDownWallTexture != null)
+                            {
+                                int varCol = (x + y) % 4;
+                                var srcRect = new Rect2(varCol * 16, 16, 16, 16);
+                                DrawTextureRectRegion(_topDownWallTexture, destRect, srcRect);
+                                DrawRect(new Rect2(x * tileSize, y * tileSize, tileSize, 3), new Color(1f, 1f, 1f, 0.2f));
+                                DrawRect(new Rect2(x * tileSize, y * tileSize + tileSize - 4, tileSize, 4), new Color(0f, 0f, 0f, 0.4f));
                             }
                             else
                             {
@@ -343,7 +376,7 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 2: // Nước (Water)
+                        case 2: // Nước sâu (WATER_DEEP)
                             if (_waterTexture != null)
                             {
                                 int varCol = (x + y) % 4;
@@ -356,51 +389,107 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 3: // Đường lát đá (Cobblestone Path)
-                        case 4: // Quảng trường (Plaza)
-                            if (_terrainTexture != null)
+                        case 3: // Đường lát đá (PATH)
+                            if (_stoneGroundTexture != null)
                             {
-                                int varCol = (x + y) % 4;
-                                var srcRect = new Rect2(varCol * 16, 64, 16, 16);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                int varCol = (x + y) % 3;
+                                int varRow = (x ^ y) % 3;
+                                var srcRect = new Rect2(16 + varCol * 16, 16 + varRow * 16, 16, 16);
+                                DrawTextureRectRegion(_stoneGroundTexture, destRect, srcRect);
                             }
                             else
                             {
-                                DrawRect(destRect, new Color(0.4f, 0.38f, 0.35f));
+                                DrawRect(destRect, new Color(0.48f, 0.45f, 0.42f));
                             }
                             break;
 
-                        case 5: // Dung nham (Lava)
-                            if (_terrainTexture != null)
+                        case 4: // Quảng trường thị trấn (PLAZA)
+                            if (_stoneGroundTexture != null)
                             {
-                                int varCol = (x + y) % 4;
-                                var srcRect = new Rect2(varCol * 16, 128, 16, 16);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                int varCol = (x + y) % 2;
+                                int varRow = (x ^ y) % 2;
+                                var srcRect = new Rect2(32 + varCol * 16, 32 + varRow * 16, 16, 16);
+                                DrawTextureRectRegion(_stoneGroundTexture, destRect, srcRect);
                             }
                             else
                             {
-                                DrawRect(destRect, new Color(0.85f, 0.25f, 0.1f));
+                                DrawRect(destRect, new Color(0.55f, 0.52f, 0.48f));
                             }
                             break;
 
-                        case 7: // Băng tuyết (Glacial Ice)
-                            if (_terrainTexture != null)
+                        case 5: // Dung nham (LAVA)
+                            DrawRect(destRect, new Color(0.95f, 0.32f, 0.05f));
+                            DrawRect(new Rect2(x * tileSize + 4, y * tileSize + 4, tileSize - 8, tileSize - 8), new Color(1f, 0.6f, 0.1f, 0.7f));
+                            break;
+
+                        case 6: // Vùng độc tố (TOXIC_MIASMA)
+                            DrawRect(destRect, new Color(0.20f, 0.75f, 0.25f));
+                            break;
+
+                        case 7: // Băng tuyết (GLACIAL_ICE)
+                            DrawRect(destRect, new Color(0.40f, 0.85f, 0.98f));
+                            DrawRect(new Rect2(x * tileSize + 2, y * tileSize + 2, tileSize - 4, 3), new Color(1f, 1f, 1f, 0.5f));
+                            break;
+
+                        case 8: // Sàn điện từ (ELECTRIC_GROUND)
+                            DrawRect(destRect, new Color(0.35f, 0.65f, 1f));
+                            break;
+
+                        case 9: // Bờ cát / nước nông (SHALLOW_WATER_SAND)
+                            DrawRect(destRect, new Color(0.85f, 0.76f, 0.52f));
+                            break;
+
+                        case 10: // Cột đá cổ đại (ANCIENT_PILLAR)
+                            if (_topDownWallTexture != null)
                             {
-                                int varCol = (x + y) % 4;
-                                var srcRect = new Rect2(varCol * 16, 192, 16, 16);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                var srcRect = new Rect2(16, 16, 16, 16);
+                                DrawTextureRectRegion(_topDownWallTexture, destRect, srcRect);
                             }
                             else
                             {
-                                DrawRect(destRect, new Color(0.2f, 0.75f, 0.95f));
+                                DrawRect(destRect, new Color(0.12f, 0.14f, 0.18f));
                             }
+                            break;
+
+                        case 11: // Vực thẳm (CHASM)
+                            DrawRect(destRect, new Color(0.04f, 0.03f, 0.07f));
+                            break;
+
+                        case 12: // Tuyết dày (DEEP_SNOW)
+                            DrawRect(destRect, new Color(0.94f, 0.97f, 1f));
+                            break;
+
+                        case 13: // Đất cháy xém (BURNT_GROUND)
+                            DrawRect(destRect, new Color(0.18f, 0.12f, 0.1f));
+                            break;
+
+                        case 14: // Bụi rậm ngụy trang (CAMOUFLAGE_BUSH)
+                            if (_grassTexture != null)
+                            {
+                                var srcRect = new Rect2(16, 16, 16, 16);
+                                DrawTextureRectRegion(_grassTexture, destRect, srcRect);
+                            }
+                            DrawCircle(new Vector2(x * tileSize + tileSize / 2f, y * tileSize + tileSize / 2f), tileSize / 2.4f, new Color(0.15f, 0.52f, 0.22f, 0.9f));
+                            break;
+
+                        case 15: // Tường phá hủy (DESTRUCTIBLE_WALL)
+                            if (_topDownWallTexture != null)
+                            {
+                                var srcRect = new Rect2(0, 16, 16, 16);
+                                DrawTextureRectRegion(_topDownWallTexture, destRect, srcRect);
+                            }
+                            else
+                            {
+                                DrawRect(destRect, new Color(0.32f, 0.24f, 0.18f));
+                            }
+                            DrawRect(new Rect2(x * tileSize + 3, y * tileSize + 3, tileSize - 6, tileSize - 6), new Color(1f, 0.85f, 0.2f), false, 1.5f);
                             break;
 
                         default:
-                            if (_terrainTexture != null)
+                            if (_grassTexture != null)
                             {
-                                var srcRect = new Rect2(0, 0, 16, 16);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                var srcRect = new Rect2(16, 16, 16, 16);
+                                DrawTextureRectRegion(_grassTexture, destRect, srcRect);
                             }
                             else
                             {

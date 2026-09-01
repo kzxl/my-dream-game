@@ -195,8 +195,11 @@ namespace Mdg.Client.Godot.Scripts.Core
 
         private void SpawnPlayer()
         {
+            float spawnX = Map?.CurrentMap?.SpawnX > 0 ? (float)Map.CurrentMap.SpawnX : 1536f;
+            float spawnY = Map?.CurrentMap?.SpawnY > 0 ? (float)Map.CurrentMap.SpawnY : 1536f;
+
             LocalPlayer = new Character("Hero_Aethelis");
-            LocalPlayer.Position = new FixVector2(1500f, 1500f);
+            LocalPlayer.Position = new FixVector2(spawnX, spawnY);
 
             LocalPlayer.Stats.SetBaseValue(StatType.MaxLife, 250f);
             LocalPlayer.Stats.SetBaseValue(StatType.MaxMana, 120f);
@@ -216,6 +219,7 @@ namespace Mdg.Client.Godot.Scripts.Core
             {
                 var pNode = PlayerScene.Instantiate<PlayerController>();
                 AddChild(pNode);
+                pNode.Position = new Vector2(spawnX, spawnY);
                 pNode.Initialize(LocalPlayer, this, _classSpec, _gender);
                 PlayerView = pNode;
             }
