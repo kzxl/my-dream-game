@@ -46,3 +46,7 @@ Thumbs.db
 *.tmp
 publish/
 *.db
+
+## Godot 4 Engine Cache
+.godot/
+*.tmp
