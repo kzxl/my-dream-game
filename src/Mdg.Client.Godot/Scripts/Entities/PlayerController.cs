@@ -63,40 +63,29 @@ namespace Mdg.Client.Godot.Scripts.Entities
 
         private void UpdateHeroSprite()
         {
-            if (_heroTexture == null || PlayerSprite == null) return;
-
-            float totalW = _heroTexture.GetWidth();
-            float totalH = _heroTexture.GetHeight();
-            float cellW = totalW / 4f;
-            float cellH = totalH / 2f;
+            if (PlayerSprite == null) return;
 
             bool isFemale = Gender == "Female";
-            int col = 0, row = 0;
+            string fileName = "hero_novice_male.png";
 
             if (ClassSpec == "Vanguard")
             {
-                col = isFemale ? 3 : 2; row = 0;
+                fileName = isFemale ? "hero_vanguard_female.png" : "hero_vanguard_male.png";
             }
             else if (ClassSpec == "Arcanist")
             {
-                col = isFemale ? 1 : 0; row = 1;
+                fileName = isFemale ? "hero_arcanist_female.png" : "hero_arcanist_male.png";
             }
             else if (ClassSpec == "ShadowRogue")
             {
-                col = isFemale ? 3 : 2; row = 1;
+                fileName = isFemale ? "hero_shadowrogue_female.png" : "hero_shadowrogue_male.png";
             }
             else
             {
-                col = isFemale ? 1 : 0; row = 0;
+                fileName = isFemale ? "hero_novice_female.png" : "hero_novice_male.png";
             }
 
-            _atlasTexture = new AtlasTexture
-            {
-                Atlas = _heroTexture,
-                Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
-            };
-
-            PlayerSprite.Texture = _atlasTexture;
+            PlayerSprite.Texture = TextureLoader.LoadIndividual("Heroes", fileName);
             PlayerSprite.Scale = new Vector2(0.45f, 0.45f);
             PlayerSprite.Modulate = Colors.White;
         }

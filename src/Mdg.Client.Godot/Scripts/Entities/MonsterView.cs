@@ -72,117 +72,65 @@ namespace Mdg.Client.Godot.Scripts.Entities
                 AttackCooldown = 1.0f;
             }
 
-            SetupMonsterVisuals();
+            SetupMonsterSprite();
             UpdateHealthDisplay();
         }
 
-        private void SetupMonsterVisuals()
+        private void SetupMonsterSprite()
         {
             if (CoreEntity == null || MonsterSprite == null) return;
 
             string nameLower = CoreEntity.Name.ToLowerInvariant();
             float scaleMultiplier = 1.0f;
+            string fileName = "monster_goblin.png";
 
             if (CoreEntity.Rarity == MonsterRarity.PinnacleBoss)
             {
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/bosses_pack.png");
-                if (_monstersTexture != null)
-                {
-                    float colW = _monstersTexture.GetWidth() / 4f;
-                    float rowH = _monstersTexture.GetHeight() / 4f;
-                    int row = 0;
-                    if (nameLower.Contains("cryomancer") || nameLower.Contains("vael") || nameLower.Contains("frost")) row = 1;
-                    else if (nameLower.Contains("ignis") || nameLower.Contains("tyrant") || nameLower.Contains("magma") || nameLower.Contains("fire")) row = 2;
-                    else if (nameLower.Contains("drake") || nameLower.Contains("dragon") || nameLower.Contains("storm")) row = 3;
-                    else row = 0; // Malakor, Void Inquisitor
+                if (nameLower.Contains("cryomancer") || nameLower.Contains("vael") || nameLower.Contains("frost")) fileName = "boss_vael.png";
+                else if (nameLower.Contains("ignis") || nameLower.Contains("tyrant") || nameLower.Contains("magma") || nameLower.Contains("fire")) fileName = "boss_ignis.png";
+                else if (nameLower.Contains("drake") || nameLower.Contains("dragon") || nameLower.Contains("storm")) fileName = "boss_drake.png";
+                else fileName = "boss_malakor.png";
 
-                    _atlasTexture = new AtlasTexture
-                    {
-                        Atlas = _monstersTexture,
-                        Region = new Rect2(0, row * rowH, colW, rowH)
-                    };
-                    MonsterSprite.Texture = _atlasTexture;
-                    MonsterSprite.Scale = new Vector2(0.65f, 0.65f);
-                    scaleMultiplier = 1.7f;
-                }
+                MonsterSprite.Scale = new Vector2(0.65f, 0.65f);
+                scaleMultiplier = 1.7f;
             }
             else if (nameLower.Contains("spectre") || nameLower.Contains("chaos") || nameLower.Contains("tentacle") || nameLower.Contains("stalker") || nameLower.Contains("void"))
             {
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/abyssal_void_monsters_pack.png", "white");
-                if (_monstersTexture != null)
-                {
-                    float colW = _monstersTexture.GetWidth() / 4f;
-                    float rowH = _monstersTexture.GetHeight() / 4f;
-                    int row = 0;
-                    if (nameLower.Contains("chaos") || nameLower.Contains("eye")) row = 1;
-                    else if (nameLower.Contains("tentacle")) row = 2;
-                    else if (nameLower.Contains("stalker")) row = 3;
-                    else row = 0;
+                if (nameLower.Contains("chaos") || nameLower.Contains("eye")) fileName = "monster_chaos_eye.png";
+                else if (nameLower.Contains("tentacle")) fileName = "monster_tentacle_fiend.png";
+                else if (nameLower.Contains("stalker") || nameLower.Contains("horror")) fileName = "monster_horror_stalker.png";
+                else fileName = "monster_void_spectre.png";
 
-                    _atlasTexture = new AtlasTexture
-                    {
-                        Atlas = _monstersTexture,
-                        Region = new Rect2(0, row * rowH, colW, rowH)
-                    };
-                    MonsterSprite.Texture = _atlasTexture;
-                    MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
-                    scaleMultiplier = 1.25f;
-                }
+                MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
+                scaleMultiplier = 1.25f;
             }
             else if (nameLower.Contains("drake") || nameLower.Contains("salamander") || nameLower.Contains("serpent") || nameLower.Contains("roc"))
             {
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/elemental_beasts_pack.png", "white");
-                if (_monstersTexture != null)
-                {
-                    float colW = _monstersTexture.GetWidth() / 4f;
-                    float rowH = _monstersTexture.GetHeight() / 4f;
-                    int row = 0;
-                    if (nameLower.Contains("salamander")) row = 1;
-                    else if (nameLower.Contains("serpent")) row = 2;
-                    else if (nameLower.Contains("roc")) row = 3;
-                    else row = 0;
+                if (nameLower.Contains("salamander")) fileName = "monster_fire_salamander.png";
+                else if (nameLower.Contains("serpent")) fileName = "monster_crystal_serpent.png";
+                else if (nameLower.Contains("roc")) fileName = "monster_thunder_roc.png";
+                else fileName = "monster_storm_drake.png";
 
-                    _atlasTexture = new AtlasTexture
-                    {
-                        Atlas = _monstersTexture,
-                        Region = new Rect2(0, row * rowH, colW, rowH)
-                    };
-                    MonsterSprite.Texture = _atlasTexture;
-                    MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
-                    scaleMultiplier = 1.2f;
-                }
+                MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
+                scaleMultiplier = 1.2f;
             }
             else
             {
-                // Aethelis Monsters Pack (4 cols x 2 rows, black background)
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/aethelis_monsters_pack.jpg", "black")
-                    ?? TextureLoader.LoadTexture("res://Assets/monsters_creatures_grid.png", "white");
+                if (nameLower.Contains("imp") || nameLower.Contains("cinder")) fileName = "monster_fire_imp.png";
+                else if (nameLower.Contains("wraith")) fileName = "monster_void_wraith.png";
+                else if (nameLower.Contains("skeleton") || nameLower.Contains("undead")) fileName = "monster_skeleton.png";
+                else if (nameLower.Contains("wolf") || nameLower.Contains("hound")) fileName = "monster_wolf.png";
+                else if (nameLower.Contains("scorpion") || nameLower.Contains("golem")) fileName = "monster_scorpion.png";
+                else if (nameLower.Contains("goblin")) fileName = "monster_goblin.png";
+                else if (nameLower.Contains("spider")) fileName = "monster_spider.png";
+                else fileName = "monster_dreadknight.png";
 
-                if (_monstersTexture != null)
-                {
-                    float colW = _monstersTexture.GetWidth() / 4f;
-                    float rowH = _monstersTexture.GetHeight() / 2f;
-                    int col = 0, row = 0;
-
-                    if (nameLower.Contains("imp") || nameLower.Contains("cinder")) { col = 0; row = 0; }
-                    else if (nameLower.Contains("wraith") || nameLower.Contains("spectre")) { col = 1; row = 0; }
-                    else if (nameLower.Contains("skeleton") || nameLower.Contains("undead")) { col = 2; row = 0; }
-                    else if (nameLower.Contains("wolf") || nameLower.Contains("hound")) { col = 3; row = 0; }
-                    else if (nameLower.Contains("scorpion") || nameLower.Contains("golem")) { col = 0; row = 1; }
-                    else if (nameLower.Contains("goblin")) { col = 1; row = 1; }
-                    else if (nameLower.Contains("spider")) { col = 2; row = 1; }
-                    else { col = 3; row = 1; } // Dreadknight
-
-                    _atlasTexture = new AtlasTexture
-                    {
-                        Atlas = _monstersTexture,
-                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
-                    };
-                    MonsterSprite.Texture = _atlasTexture;
-                    MonsterSprite.Scale = new Vector2(0.48f, 0.48f);
-                    scaleMultiplier = CoreEntity.Rarity == MonsterRarity.Champion ? 1.15f : (CoreEntity.Rarity == MonsterRarity.Rare ? 1.3f : 1.0f);
-                }
+                MonsterSprite.Scale = new Vector2(0.48f, 0.48f);
+                scaleMultiplier = CoreEntity.Rarity == MonsterRarity.Champion ? 1.15f : (CoreEntity.Rarity == MonsterRarity.Rare ? 1.3f : 1.0f);
             }
+
+            MonsterSprite.Texture = TextureLoader.LoadIndividual("Monsters", fileName);
+            MonsterSprite.Offset = new Vector2(0, -15);
 
             Scale = new Vector2(scaleMultiplier, scaleMultiplier);
 

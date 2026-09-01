@@ -8,6 +8,23 @@ namespace Mdg.Client.Godot.Scripts.Common
     public static class TextureLoader
     {
         private static readonly Dictionary<string, Texture2D> _cache = new();
+        private static bool _initialized = false;
+
+        public static void EnsureAssetsExtracted()
+        {
+            if (!_initialized)
+            {
+                _initialized = true;
+                AssetSplitter.GenerateAllIndividualAssets();
+            }
+        }
+
+        public static Texture2D? LoadIndividual(string category, string filename)
+        {
+            EnsureAssetsExtracted();
+            string path = $"res://Assets/Individual/{category}/{filename}";
+            return LoadTexture(path, "none");
+        }
 
         public static Texture2D? LoadTexture(string resPath, string keyColor = "none")
         {

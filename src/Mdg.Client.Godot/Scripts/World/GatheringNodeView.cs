@@ -71,38 +71,27 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void UpdateNodeVisuals()
         {
-            if (_nodeSprite == null || _nodeTexture == null) return;
+            if (_nodeSprite == null) return;
 
-            float totalW = _nodeTexture.GetWidth();
-            float totalH = _nodeTexture.GetHeight();
-            float cellW = totalW / 4f;
-            float cellH = totalH / 2f;
-
-            int col = 0, row = 0;
             string keyLower = (NodeId + " " + NodeName + " " + YieldItemId + " " + ProfessionType).ToLowerInvariant();
+            string fileName = "node_iron_ore.png";
 
             if (ProfessionType == "herbalism" || keyLower.Contains("herb") || keyLower.Contains("lotus") || keyLower.Contains("flower") || keyLower.Contains("bloom"))
             {
-                row = 1;
-                if (keyLower.Contains("silver") || keyLower.Contains("dream")) col = 1;
-                else if (keyLower.Contains("blood") || keyLower.Contains("thistle")) col = 2;
-                else if (keyLower.Contains("lotus") || keyLower.Contains("celestial")) col = 3;
-                else col = 0; // peacebloom
+                if (keyLower.Contains("silver") || keyLower.Contains("dream")) fileName = "node_silverleaf.png";
+                else if (keyLower.Contains("blood") || keyLower.Contains("thistle")) fileName = "node_bloodthistle.png";
+                else if (keyLower.Contains("lotus") || keyLower.Contains("celestial")) fileName = "node_lotus.png";
+                else fileName = "node_peacebloom.png";
             }
             else
             {
-                row = 0;
-                if (keyLower.Contains("silver") || keyLower.Contains("mithril")) col = 1;
-                else if (keyLower.Contains("gold") || keyLower.Contains("adamantite")) col = 2;
-                else if (keyLower.Contains("aether") || keyLower.Contains("crystal")) col = 3;
-                else col = 0; // iron ore
+                if (keyLower.Contains("silver") || keyLower.Contains("mithril")) fileName = "node_silver_ore.png";
+                else if (keyLower.Contains("gold") || keyLower.Contains("adamantite")) fileName = "node_gold_ore.png";
+                else if (keyLower.Contains("aether") || keyLower.Contains("crystal")) fileName = "node_aether_crystal.png";
+                else fileName = "node_iron_ore.png";
             }
 
-            _nodeSprite.Texture = new AtlasTexture
-            {
-                Atlas = _nodeTexture,
-                Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
-            };
+            _nodeSprite.Texture = TextureLoader.LoadIndividual("Gathering", fileName);
             _nodeSprite.Scale = new Vector2(0.55f, 0.55f);
             _nodeSprite.Offset = new Vector2(0, -16);
         }

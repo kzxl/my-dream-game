@@ -48,24 +48,17 @@ namespace Mdg.Client.Godot.Scripts.Combat
 
         private void UpdateProjectileVisuals()
         {
-            if (ProjectileSprite == null || _spellsTexture == null) return;
+            if (ProjectileSprite == null) return;
 
-            float totalW = _spellsTexture.GetWidth();
-            float totalH = _spellsTexture.GetHeight();
-            float cellW = totalW / 4f;
-            float cellH = totalH / 4f;
-
-            int col = 0, row = 0;
-            if (ProjectileType == "fireball") { col = 0; row = 0; }
-            else if (ProjectileType == "frost") { col = 1; row = 0; }
-            else if (ProjectileType == "arcane") { col = 2; row = 0; }
-            else { col = 3; row = 0; }
-
-            ProjectileSprite.Texture = new AtlasTexture
+            string fileName = ProjectileType switch
             {
-                Atlas = _spellsTexture,
-                Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
+                "fireball" => "spell_fireball.png",
+                "frost" => "spell_frost_orb.png",
+                "arcane" => "spell_arcane_bolt.png",
+                _ => "spell_slash.png"
             };
+
+            ProjectileSprite.Texture = TextureLoader.LoadIndividual("Spells", fileName);
             ProjectileSprite.Scale = new Vector2(0.55f, 0.55f);
             ProjectileSprite.Modulate = ProjectileType switch
             {

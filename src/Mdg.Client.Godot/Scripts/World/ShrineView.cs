@@ -47,38 +47,25 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void UpdateShrineVisuals()
         {
-            if (_shrineSprite == null || _shrineTexture == null) return;
+            if (_shrineSprite == null) return;
 
-            float totalW = _shrineTexture.GetWidth();
-            float totalH = _shrineTexture.GetHeight();
-            float cellW = totalW / 4f;
-            float cellH = totalH;
-
-            int col = 0;
             string keyLower = (ShrineId + " " + ShrineName + " " + BuffType).ToLowerInvariant();
+            string fileName = "shrine_tempest.png";
 
             if (keyLower.Contains("monolith") || keyLower.Contains("void"))
             {
-                col = 2; // Corrupted Void Monolith
+                fileName = "shrine_monolith.png"; // Corrupted Void Monolith
             }
             else if (keyLower.Contains("cave") || keyLower.Contains("sub"))
             {
-                col = 3; // Sub Cave Entrance
+                fileName = "shrine_cave.png"; // Sub Cave Entrance
             }
             else if (keyLower.Contains("solar") || keyLower.Contains("might") || keyLower.Contains("haven") || keyLower.Contains("sanctuary"))
             {
-                col = 1; // Solar Altar
-            }
-            else
-            {
-                col = 0; // Tempest & Frost Shrine
+                fileName = "shrine_solar.png"; // Solar Altar
             }
 
-            _shrineSprite.Texture = new AtlasTexture
-            {
-                Atlas = _shrineTexture,
-                Region = new Rect2(col * cellW, 0, cellW, cellH)
-            };
+            _shrineSprite.Texture = TextureLoader.LoadIndividual("Shrines", fileName);
             _shrineSprite.Scale = new Vector2(0.55f, 0.55f);
             _shrineSprite.Offset = new Vector2(0, -22);
         }

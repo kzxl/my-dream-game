@@ -66,6 +66,7 @@ namespace Mdg.Client.Godot.Scripts.Core
 
         public override void _Ready()
         {
+            TextureLoader.EnsureAssetsExtracted();
             InitializeCoreSystems();
             InitializeMapAndZone();
             SpawnPlayer();

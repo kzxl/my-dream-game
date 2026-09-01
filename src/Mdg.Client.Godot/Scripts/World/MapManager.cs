@@ -45,6 +45,8 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void LoadTextures()
         {
+            TextureLoader.EnsureAssetsExtracted();
+
             _terrainTexture = TextureLoader.LoadTexture("res://Assets/aethelis_terrain_tileset.jpg");
             _waterTexture = TextureLoader.LoadTexture("res://Assets/aethelis_water_liquid_tileset.jpg");
             _treesTexture = TextureLoader.LoadTexture("res://Assets/aethelis_trees_master_pack.jpg", "black")
@@ -115,82 +117,55 @@ namespace Mdg.Client.Godot.Scripts.World
                 var spr = new Sprite2D();
                 string type = propDto.Type.ToLowerInvariant();
 
-                if (IsTreeProp(type) && _treesTexture != null)
+                if (IsTreeProp(type))
                 {
-                    // Master Trees Pack (4 cols x 3 rows)
-                    float colW = _treesTexture.GetWidth() / 4f;
-                    float rowH = _treesTexture.GetHeight() / 3f;
-                    int col = 0, row = 0;
+                    string fileName = "tree_oak.png";
+                    if (type.Contains("pine") || type.Contains("snow")) fileName = "tree_pine.png";
+                    else if (type.Contains("aether") || type.Contains("mystic")) fileName = "tree_aether.png";
+                    else if (type.Contains("volcanic") || type.Contains("basalt")) fileName = "tree_volcanic.png";
+                    else if (type.Contains("autumn") || type.Contains("maple")) fileName = "tree_autumn.png";
+                    else if (type.Contains("mushroom")) fileName = "tree_giant_mushroom.png";
+                    else if (type.Contains("willow")) fileName = "tree_willow.png";
+                    else if (type.Contains("cherry") || type.Contains("sakura")) fileName = "tree_cherry.png";
 
-                    if (type.Contains("pine") || type.Contains("snow")) { col = 1; row = 0; }
-                    else if (type.Contains("aether") || type.Contains("mystic")) { col = 2; row = 0; }
-                    else if (type.Contains("volcanic") || type.Contains("basalt")) { col = 3; row = 0; }
-                    else if (type.Contains("autumn") || type.Contains("maple")) { col = 0; row = 1; }
-                    else if (type.Contains("mushroom")) { col = 1; row = 1; }
-                    else if (type.Contains("willow")) { col = 2; row = 1; }
-                    else if (type.Contains("cherry") || type.Contains("sakura")) { col = 3; row = 2; }
-                    else { col = 0; row = 0; } // ancient oak
-
-                    spr.Texture = new AtlasTexture
-                    {
-                        Atlas = _treesTexture,
-                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
-                    };
+                    spr.Texture = TextureLoader.LoadIndividual("Trees", fileName);
                     spr.Scale = new Vector2(0.85f, 0.85f);
                     spr.Offset = new Vector2(0, -35);
                 }
-                else if (IsFloraProp(type) && _foliageTexture != null)
+                else if (IsFloraProp(type))
                 {
-                    // Foliage & Flora Pack (4 cols x 4 rows)
-                    float colW = _foliageTexture.GetWidth() / 4f;
-                    float rowH = _foliageTexture.GetHeight() / 4f;
-                    int col = 0, row = 0;
+                    string fileName = "flora_flowers_red.png";
+                    if (type.Contains("blue")) fileName = "flora_flowers_blue.png";
+                    else if (type.Contains("gold")) fileName = "flora_flowers_gold.png";
+                    else if (type.Contains("purple") || type.Contains("mana")) fileName = "flora_mana_bloom.png";
+                    else if (type.Contains("bush")) fileName = "flora_bush.png";
+                    else if (type.Contains("tall_grass") || type.Contains("fern")) fileName = "flora_tall_grass.png";
+                    else if (type.Contains("glow")) fileName = "flora_mushroom_glow.png";
+                    else if (type.Contains("cyan")) fileName = "flora_mushroom_cyan.png";
+                    else if (type.Contains("clover")) fileName = "flora_clover.png";
+                    else if (type.Contains("lily")) fileName = "flora_water_lily.png";
+                    else if (type.Contains("wildflowers")) fileName = "flora_wildflowers.png";
 
-                    if (type.Contains("blue")) { col = 1; row = 0; }
-                    else if (type.Contains("gold")) { col = 2; row = 0; }
-                    else if (type.Contains("purple") || type.Contains("mana")) { col = 3; row = 0; }
-                    else if (type.Contains("bush")) { col = 0; row = 1; }
-                    else if (type.Contains("tall_grass") || type.Contains("fern")) { col = 2; row = 1; }
-                    else if (type.Contains("glow")) { col = 0; row = 2; }
-                    else if (type.Contains("cyan")) { col = 1; row = 2; }
-                    else if (type.Contains("clover")) { col = 2; row = 2; }
-                    else if (type.Contains("lily")) { col = 3; row = 2; }
-                    else if (type.Contains("wildflowers")) { col = 3; row = 3; }
-                    else { col = 0; row = 0; } // flowers_red
-
-                    spr.Texture = new AtlasTexture
-                    {
-                        Atlas = _foliageTexture,
-                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
-                    };
+                    spr.Texture = TextureLoader.LoadIndividual("Flora", fileName);
                     spr.Scale = new Vector2(0.55f, 0.55f);
                     spr.Offset = new Vector2(0, -10);
                 }
-                else if (_propsTexture != null)
+                else
                 {
-                    // Interactive Props Pack (4 cols x 4 rows)
-                    float colW = _propsTexture.GetWidth() / 4f;
-                    float rowH = _propsTexture.GetHeight() / 4f;
-                    int col = 0, row = 0;
+                    string fileName = "prop_chest.png";
+                    if (type.Contains("gold")) fileName = "prop_chest_gold.png";
+                    else if (type.Contains("crystal")) fileName = "prop_chest_crystal.png";
+                    else if (type.Contains("waypoint")) fileName = "prop_waypoint.png";
+                    else if (type.Contains("barrel")) fileName = "prop_barrel.png";
+                    else if (type.Contains("vase") || type.Contains("pots")) fileName = "prop_vase.png";
+                    else if (type.Contains("lever")) fileName = "prop_lever.png";
+                    else if (type.Contains("campfire") || type.Contains("fire")) fileName = "prop_campfire.png";
+                    else if (type.Contains("torch")) fileName = "prop_torch.png";
+                    else if (type.Contains("pile")) fileName = "prop_gold_pile.png";
+                    else if (type.Contains("gargoyle")) fileName = "prop_gargoyle.png";
+                    else if (type.Contains("gate")) fileName = "prop_iron_gate.png";
 
-                    if (type.Contains("gold")) { col = 1; row = 0; }
-                    else if (type.Contains("crystal")) { col = 2; row = 0; }
-                    else if (type.Contains("waypoint")) { col = 3; row = 0; }
-                    else if (type.Contains("barrel")) { col = 0; row = 1; }
-                    else if (type.Contains("vase") || type.Contains("pots")) { col = 1; row = 1; }
-                    else if (type.Contains("lever")) { col = 2; row = 1; }
-                    else if (type.Contains("campfire") || type.Contains("fire")) { col = 3; row = 1; }
-                    else if (type.Contains("torch")) { col = 0; row = 2; }
-                    else if (type.Contains("pile")) { col = 1; row = 2; }
-                    else if (type.Contains("gargoyle")) { col = 2; row = 2; }
-                    else if (type.Contains("gate")) { col = 3; row = 2; }
-                    else { col = 0; row = 0; } // chest
-
-                    spr.Texture = new AtlasTexture
-                    {
-                        Atlas = _propsTexture,
-                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
-                    };
+                    spr.Texture = TextureLoader.LoadIndividual("Props", fileName);
                     spr.Scale = new Vector2(0.55f, 0.55f);
                     spr.Offset = new Vector2(0, -15);
                 }
