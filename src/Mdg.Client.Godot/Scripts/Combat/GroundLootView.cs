@@ -12,7 +12,6 @@ namespace Mdg.Client.Godot.Scripts.Combat
         public string ItemId { get; private set; } = string.Empty;
         public string ItemName { get; private set; } = "Item";
         public string Rarity { get; private set; } = "Normal";
-        public int GoldAmount { get; private set; } = 0;
 
         public event Action<GroundLootView>? OnLootPickedUp;
 
@@ -24,27 +23,22 @@ namespace Mdg.Client.Godot.Scripts.Combat
             BodyExited += OnBodyExited;
         }
 
-        public void Setup(string itemId, string name, string rarity, int goldAmount = 0)
+        public void Setup(string itemId, string name, string rarity)
         {
             ItemId = itemId;
             ItemName = name;
             Rarity = rarity;
-            GoldAmount = goldAmount;
 
             var rarityColor = rarity switch
             {
-                "Magic" => new Color(0.3f, 0.6f, 1f),
+                "Set" => new Color(0.1f, 0.9f, 0.4f),
+                "Magic" => new Color(0.35f, 0.65f, 1f),
                 "Rare" => new Color(1f, 0.85f, 0.2f),
-                "Unique" => new Color(0.9f, 0.45f, 0.1f),
-                "Currency" => new Color(0.85f, 0.75f, 0.5f),
-                _ => Colors.White
+                "Unique" => new Color(0.95f, 0.45f, 0.15f),
+                "Currency" => new Color(1f, 0.85f, 0.35f),
+                "Consumable" => new Color(0.4f, 0.9f, 0.9f),
+                _ => new Color(0.85f, 0.85f, 0.85f)
             };
-
-            if (goldAmount > 0)
-            {
-                ItemName = $"🪙 {goldAmount} Vàng";
-                rarityColor = new Color(1f, 0.85f, 0.2f);
-            }
 
             if (ItemLabel != null)
             {
@@ -54,7 +48,7 @@ namespace Mdg.Client.Godot.Scripts.Combat
 
             if (LootBeam != null)
             {
-                LootBeam.Visible = rarity == "Rare" || rarity == "Unique" || goldAmount > 50;
+                LootBeam.Visible = rarity == "Rare" || rarity == "Unique" || rarity == "Set" || rarity == "Currency";
                 LootBeam.DefaultColor = rarityColor;
             }
         }

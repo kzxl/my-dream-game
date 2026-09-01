@@ -14,6 +14,7 @@ using Mdg.Core.Engine;
 using Mdg.Core.Entities;
 using Mdg.Core.Events.DomainEvents;
 using Mdg.Core.Features.Combat;
+using Mdg.Core.Features.Items;
 using Mdg.Core.Features.Stats;
 
 namespace Mdg.Client.Godot.Scripts.Core
@@ -978,27 +979,51 @@ namespace Mdg.Client.Godot.Scripts.Core
         {
             if (GroundLootScene == null) return;
 
-            var lootNode = GroundLootScene.Instantiate<GroundLootView>();
-            AddChild(lootNode);
-            lootNode.Position = pos + new Vector2((float)GD.RandRange(-20, 20), (float)GD.RandRange(-20, 20));
-            _groundLoots.Add(lootNode);
+            // Sử dụng LootTable chuẩn của Aethelis: Rơi Trang bị (Unique/Set/Rare/Magic/Normal) & Tinh Thể Khởi Nguyên (Currency)
+            var droppedItems = LootTable.GenerateMonsterDrops(monster.Name, monster.Rarity, _playerLevel, 1.0f, 1.0f, 0, 0);
 
-            AudioManager.Instance?.PlayLootDrop(monster.Rarity.ToString());
-
-            var rand = new Random();
-            int gold = rand.Next(20, 80);
-
-            if (monster.Rarity == MonsterRarity.Rare || monster.Rarity == MonsterRarity.PinnacleBoss)
+            foreach (var item in droppedItems)
             {
-                lootNode.Setup("item_dragon_axe", "Rìu Long Cốt Huyền Thoại", "Rare", gold * 3);
+                var lootNode = GroundLootScene.Instantiate<GroundLootView>();
+                AddChild(lootNode);
+
+                Vector2 offset = new Vector2((float)GD.RandRange(-28, 28), (float)GD.RandRange(-28, 28));
+                lootNode.Position = pos + offset;
+                _groundLoots.Add(lootNode);
+
+                string displayName = $"{item.Icon} {item.Name}";
+                lootNode.Setup(item.Id.ToString(), displayName, item.Rarity.ToString());
+
+                lootNode.OnLootPickedUp += (node) =>
+                {
+                    _groundLoots.Remove(node);
+
+                    var color = item.Rarity switch
+                    {
+                        ItemRarity.Unique => new Color(0.95f, 0.45f, 0.15f),
+                        ItemRarity.Set => new Color(0.1f, 0.9f, 0.4f),
+                        ItemRarity.Rare => new Color(1f, 0.85f, 0.2f),
+                        ItemRarity.Magic => new Color(0.35f, 0.65f, 1f),
+                        ItemRarity.Currency => new Color(1f, 0.85f, 0.35f),
+                        _ => Colors.White
+                    };
+
+                    if (FloatingTextScene != null && PlayerView != null)
+                    {
+                        var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                        AddChild(fct);
+                        fct.Position = PlayerView.GlobalPosition + new Vector2((float)GD.RandRange(-15, 15), -35);
+                        fct.Setup($"Nhặt: {displayName}", color);
+                    }
+
+                    Hud?.SetCombatStatus($"📦 Đã nhặt: [{item.Rarity}] {displayName}");
+                    AudioManager.Instance?.PlayLootDrop(item.Rarity.ToString());
+                };
             }
-            else if (monster.Rarity == MonsterRarity.Champion)
+
+            if (droppedItems.Count > 0)
             {
-                lootNode.Setup("item_magic_blade", "Thanh Kiếm Phong Ma", "Magic", gold * 2);
-            }
-            else
-            {
-                lootNode.Setup("gold_drop", $"🪙 {gold} Vàng", "Normal", gold);
+                AudioManager.Instance?.PlayLootDrop(monster.Rarity.ToString());
             }
         }
 
