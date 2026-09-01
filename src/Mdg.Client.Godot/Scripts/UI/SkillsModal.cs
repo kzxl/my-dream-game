@@ -22,6 +22,9 @@ namespace Mdg.Client.Godot.Scripts.UI
             ["dash"] = 1
         };
 
+        public int GetSkillLevel(string key) => _skillLevels.GetValueOrDefault(key, 1);
+        public IReadOnlyDictionary<string, int> SkillLevels => _skillLevels;
+
         public override void _Ready()
         {
             Visible = false;

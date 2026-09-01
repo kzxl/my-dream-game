@@ -544,17 +544,21 @@ namespace Mdg.Client.Godot.Scripts.Core
         {
             if (LocalPlayer == null || PlayerView == null) return;
 
-            float baseDmg = LocalPlayer.Stats.GetValue(StatType.PhysicalDamage);
-            if (baseDmg <= 0) baseDmg = 45f;
+            int skillLvl = Hud?.SkillsModal?.GetSkillLevel("slash") ?? 1;
+            float skillBaseDmg = 45f + (skillLvl - 1) * 15f;
+
+            float charPhysDmg = LocalPlayer.Stats.GetValue(StatType.PhysicalDamage);
+            float bonusPhys = Math.Max(0f, charPhysDmg - 45f);
+            float finalSlashDmg = skillBaseDmg + bonusPhys;
 
             var payload = new DamagePayload
             {
                 AttackerId = LocalPlayer.Id,
-                AccuracyRating = LocalPlayer.Stats.GetValue(StatType.AccuracyRating),
-                CritChance = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance),
-                CritMultiplier = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier)
+                AccuracyRating = LocalPlayer.Stats.GetValue(StatType.AccuracyRating) > 0 ? LocalPlayer.Stats.GetValue(StatType.AccuracyRating) : 500f,
+                CritChance = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) : 15f,
+                CritMultiplier = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) : 150f
             };
-            payload.AddPortion(DamageType.Physical, baseDmg);
+            payload.AddPortion(DamageType.Physical, finalSlashDmg);
 
             if (SkillEffectScene != null)
             {
@@ -578,15 +582,20 @@ namespace Mdg.Client.Godot.Scripts.Core
         {
             if (LocalPlayer == null || PlayerView == null) return;
 
-            float fireDmg = 75f;
+            int skillLvl = Hud?.SkillsModal?.GetSkillLevel("fireball") ?? 1;
+            float skillBaseDmg = 75f + (skillLvl - 1) * 25f;
+
+            float charFireDmg = LocalPlayer.Stats.GetValue(StatType.FireDamage);
+            float finalFireDmg = skillBaseDmg + charFireDmg;
+
             var payload = new DamagePayload
             {
                 AttackerId = LocalPlayer.Id,
-                AccuracyRating = 500f,
-                CritChance = 25f,
-                CritMultiplier = 180f
+                AccuracyRating = LocalPlayer.Stats.GetValue(StatType.AccuracyRating) > 0 ? LocalPlayer.Stats.GetValue(StatType.AccuracyRating) : 500f,
+                CritChance = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) : 20f,
+                CritMultiplier = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) : 175f
             };
-            payload.AddPortion(DamageType.Fire, fireDmg);
+            payload.AddPortion(DamageType.Fire, finalFireDmg);
 
             if (ProjectileScene != null)
             {
@@ -618,15 +627,20 @@ namespace Mdg.Client.Godot.Scripts.Core
         {
             if (LocalPlayer == null || PlayerView == null) return;
 
-            float coldDmg = 55f;
+            int skillLvl = Hud?.SkillsModal?.GetSkillLevel("frost") ?? 1;
+            float skillBaseDmg = 55f + (skillLvl - 1) * 20f;
+
+            float charColdDmg = LocalPlayer.Stats.GetValue(StatType.ColdDamage);
+            float finalColdDmg = skillBaseDmg + charColdDmg;
+
             var payload = new DamagePayload
             {
                 AttackerId = LocalPlayer.Id,
-                AccuracyRating = 500f,
-                CritChance = 30f,
-                CritMultiplier = 160f
+                AccuracyRating = LocalPlayer.Stats.GetValue(StatType.AccuracyRating) > 0 ? LocalPlayer.Stats.GetValue(StatType.AccuracyRating) : 500f,
+                CritChance = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) : 25f,
+                CritMultiplier = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) : 160f
             };
-            payload.AddPortion(DamageType.Cold, coldDmg);
+            payload.AddPortion(DamageType.Cold, finalColdDmg);
 
             if (SkillEffectScene != null)
             {
@@ -678,15 +692,20 @@ namespace Mdg.Client.Godot.Scripts.Core
             {
                 if (!IsInstanceValid(this) || LocalPlayer == null) return;
 
-                float fireDmg = 140f;
+                int skillLvl = Hud?.SkillsModal?.GetSkillLevel("meteor") ?? 1;
+                float skillBaseDmg = 140f + (skillLvl - 1) * 40f;
+
+                float charFireDmg = LocalPlayer.Stats.GetValue(StatType.FireDamage);
+                float finalMeteorDmg = skillBaseDmg + charFireDmg;
+
                 var payload = new DamagePayload
                 {
                     AttackerId = LocalPlayer.Id,
-                    AccuracyRating = 600f,
-                    CritChance = 35f,
-                    CritMultiplier = 200f
+                    AccuracyRating = LocalPlayer.Stats.GetValue(StatType.AccuracyRating) > 0 ? LocalPlayer.Stats.GetValue(StatType.AccuracyRating) : 600f,
+                    CritChance = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeChance) : 30f,
+                    CritMultiplier = LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) > 0 ? LocalPlayer.Stats.GetValue(StatType.CriticalStrikeMultiplier) : 200f
                 };
-                payload.AddPortion(DamageType.Fire, fireDmg);
+                payload.AddPortion(DamageType.Fire, finalMeteorDmg);
 
                 if (SkillEffectScene != null)
                 {
