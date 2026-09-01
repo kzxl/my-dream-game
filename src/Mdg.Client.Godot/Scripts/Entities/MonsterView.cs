@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using Mdg.Client.Godot.Scripts.Common;
 using Mdg.Core.Common.Math;
 using Mdg.Core.Features.Combat;
 
@@ -30,13 +31,20 @@ namespace Mdg.Client.Godot.Scripts.Entities
 
         private void LoadMonsterTexture()
         {
-            if (ResourceLoader.Exists("res://Assets/monsters_master_pack.png"))
+            if (CoreEntity?.Rarity == MonsterRarity.PinnacleBoss)
             {
-                _monstersTexture = GD.Load<Texture2D>("res://Assets/monsters_master_pack.png");
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/bosses_pack.png")
+                    ?? TextureLoader.LoadTexture("res://Assets/monsters_master_pack.png");
             }
-            else if (ResourceLoader.Exists("res://Assets/monsters_pack.png"))
+            else if (CoreEntity?.Rarity == MonsterRarity.Rare || CoreEntity?.Rarity == MonsterRarity.Champion)
             {
-                _monstersTexture = GD.Load<Texture2D>("res://Assets/monsters_pack.png");
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/abyssal_void_monsters_pack.png", "white")
+                    ?? TextureLoader.LoadTexture("res://Assets/monsters_master_pack.png");
+            }
+            else
+            {
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/monsters_creatures_grid.png", "white")
+                    ?? TextureLoader.LoadTexture("res://Assets/monsters_pack.png");
             }
         }
 

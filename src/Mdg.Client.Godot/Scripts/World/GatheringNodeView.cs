@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using Mdg.Client.Godot.Scripts.Common;
 
 namespace Mdg.Client.Godot.Scripts.World
 {
@@ -22,6 +23,7 @@ namespace Mdg.Client.Godot.Scripts.World
         private bool _isHarvesting = false;
         private float _currentChannel = 0f;
         private bool _isDepleted = false;
+        private Texture2D? _nodeTexture;
 
         public event Action<GatheringNodeView, int>? OnNodeHarvested;
 
@@ -33,6 +35,15 @@ namespace Mdg.Client.Godot.Scripts.World
             _nameLabel = GetNodeOrNull<Label>("NameLabel");
             _progressBar = GetNodeOrNull<ProgressBar>("ProgressBar");
             _nodeSprite = GetNodeOrNull<Sprite2D>("Sprite2D");
+
+            _nodeTexture = TextureLoader.LoadTexture("res://Assets/gathering_nodes_pack.jpg", "black")
+                ?? TextureLoader.LoadTexture("res://Assets/props_interactive_grid.png", "black");
+
+            if (_nodeSprite != null && _nodeTexture != null)
+            {
+                _nodeSprite.Texture = _nodeTexture;
+                _nodeSprite.Scale = new Vector2(0.4f, 0.4f);
+            }
 
             if (_progressBar != null)
             {

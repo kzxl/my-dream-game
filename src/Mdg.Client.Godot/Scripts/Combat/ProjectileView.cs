@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using Mdg.Client.Godot.Scripts.Common;
 using Mdg.Core.Common.Math;
 using Mdg.Core.Features.Combat;
 
@@ -26,13 +27,13 @@ namespace Mdg.Client.Godot.Scripts.Combat
             BodyEntered += OnHitBody;
             AreaEntered += OnHitArea;
 
-            if (ResourceLoader.Exists("res://Assets/spells_fx_master_pack.png"))
+            _spellsTexture = TextureLoader.LoadTexture("res://Assets/spells_fx_master_pack.png")
+                ?? TextureLoader.LoadTexture("res://Assets/spells_fx_pack.png");
+
+            if (ProjectileSprite != null && _spellsTexture != null)
             {
-                _spellsTexture = GD.Load<Texture2D>("res://Assets/spells_fx_master_pack.png");
-            }
-            else if (ResourceLoader.Exists("res://Assets/spells_fx_pack.png"))
-            {
-                _spellsTexture = GD.Load<Texture2D>("res://Assets/spells_fx_pack.png");
+                ProjectileSprite.Texture = _spellsTexture;
+                ProjectileSprite.Scale = new Vector2(0.45f, 0.45f);
             }
         }
 

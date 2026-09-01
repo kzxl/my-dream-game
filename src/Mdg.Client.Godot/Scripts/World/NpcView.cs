@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using Mdg.Client.Godot.Scripts.Common;
 
 namespace Mdg.Client.Godot.Scripts.World
 {
@@ -12,6 +13,7 @@ namespace Mdg.Client.Godot.Scripts.World
         private Label? _nameLabel;
         private Sprite2D? _npcSprite;
         private bool _isPlayerInside = false;
+        private Texture2D? _npcTexture;
 
         public event Action<NpcView>? OnNpcInteracted;
 
@@ -22,6 +24,15 @@ namespace Mdg.Client.Godot.Scripts.World
 
             _nameLabel = GetNodeOrNull<Label>("NameLabel");
             _npcSprite = GetNodeOrNull<Sprite2D>("Sprite2D");
+
+            _npcTexture = TextureLoader.LoadTexture("res://Assets/aethelis_npcs_pack.jpg", "white")
+                ?? TextureLoader.LoadTexture("res://Assets/npcs_pack.png");
+
+            if (_npcSprite != null && _npcTexture != null)
+            {
+                _npcSprite.Texture = _npcTexture;
+                _npcSprite.Scale = new Vector2(0.45f, 0.45f);
+            }
 
             UpdateDisplay();
         }

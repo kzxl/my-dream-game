@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using Mdg.Client.Godot.Scripts.Common;
 
 namespace Mdg.Client.Godot.Scripts.World
 {
@@ -14,6 +15,7 @@ namespace Mdg.Client.Godot.Scripts.World
         private Label? _nameLabel;
         private Sprite2D? _shrineSprite;
         private bool _isPlayerInside = false;
+        private Texture2D? _shrineTexture;
 
         public event Action<ShrineView>? OnShrineActivated;
 
@@ -24,6 +26,15 @@ namespace Mdg.Client.Godot.Scripts.World
 
             _nameLabel = GetNodeOrNull<Label>("NameLabel");
             _shrineSprite = GetNodeOrNull<Sprite2D>("Sprite2D");
+
+            _shrineTexture = TextureLoader.LoadTexture("res://Assets/shrines_monoliths_pack.jpg", "black")
+                ?? TextureLoader.LoadTexture("res://Assets/props_interactive_grid.png", "black");
+
+            if (_shrineSprite != null && _shrineTexture != null)
+            {
+                _shrineSprite.Texture = _shrineTexture;
+                _shrineSprite.Scale = new Vector2(0.45f, 0.45f);
+            }
 
             UpdateDisplay();
         }

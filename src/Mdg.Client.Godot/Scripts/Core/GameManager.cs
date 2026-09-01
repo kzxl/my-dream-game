@@ -40,8 +40,21 @@ namespace Mdg.Client.Godot.Scripts.Core
         public CompanionView? CompanionView { get; private set; }
 
         private readonly Dictionary<Guid, (MonsterEntity Entity, MonsterView View)> _monsters = new();
+        private readonly List<GroundLootView> _groundLoots = new();
+
+        // Flask System (PoE Style 4 Flasks)
+        private readonly int[] _flaskCharges = new int[] { 3, 3, 2, 2 };
+        private readonly int[] _flaskMaxCharges = new int[] { 3, 3, 2, 2 };
+
         private float _cameraShakeDuration = 0f;
         private float _cameraShakeIntensity = 0f;
+
+        // Boss Tracking
+        private MonsterEntity? _activeBossEntity;
+        private float _bossMaxStagger = 300f;
+        private float _bossCurrentStagger = 0f;
+        private bool _isBossStaggered = false;
+        private float _staggerRecoveryTimer = 0f;
 
         public override void _Ready()
         {
@@ -54,15 +67,12 @@ namespace Mdg.Client.Godot.Scripts.Core
 
         private void InitializeCoreSystems()
         {
-            // 1. Khởi tạo GameWorld và Fixed-Tick Scheduler (30 Ticks/s)
             World = new GameWorld();
             World.Initialize();
             Scheduler = new GameTickScheduler(World, 30f);
 
-            // 2. Khởi tạo Cầu nối sự kiện PresentationEventBridge
             EventBridge = new PresentationEventBridge(World.EventBus);
 
-            // 3. Đăng ký nhận phản hồi từ Presentation Bridge
             EventBridge.OnDamageEffectRequested += HandleDamageEffect;
             EventBridge.OnDeathEffectRequested += HandleDeathEffect;
             EventBridge.OnSkillCastEffectRequested += HandleSkillCastEffect;
@@ -87,7 +97,6 @@ namespace Mdg.Client.Godot.Scripts.Core
 
             Map.LoadZone(targetZone);
 
-            // Cập nhật vị trí người chơi
             var spawnPos = new Vector2((float)targetX, (float)targetY);
             if (PlayerView != null)
             {
@@ -95,7 +104,6 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
             LocalPlayer.Position = new FixVector2((float)targetX, (float)targetY);
 
-            // Dọn quái vật cũ và sinh quái vật theo vùng mới
             ClearMonsters();
             SpawnInitialMonsters();
 
@@ -108,17 +116,20 @@ namespace Mdg.Client.Godot.Scripts.Core
             LocalPlayer = new Character("Hero_Aethelis");
             LocalPlayer.Position = new FixVector2(1500f, 1500f);
 
-            // Thiết lập chỉ số khởi đầu
             LocalPlayer.Stats.SetBaseValue(StatType.MaxLife, 250f);
             LocalPlayer.Stats.SetBaseValue(StatType.MaxMana, 120f);
-            LocalPlayer.Stats.SetBaseValue(StatType.MaxEnergyShield, 80f);
+            LocalPlayer.Stats.SetBaseValue(StatType.MaxEnergyShield, 100f);
             LocalPlayer.Stats.SetBaseValue(StatType.PhysicalDamage, 45f);
             LocalPlayer.Stats.SetBaseValue(StatType.MovementSpeed, 240f);
-            LocalPlayer.Stats.SetBaseValue(StatType.CriticalStrikeChance, 18f);
+            LocalPlayer.Stats.SetBaseValue(StatType.CriticalStrikeChance, 20f);
             LocalPlayer.Stats.SetBaseValue(StatType.CriticalStrikeMultiplier, 175f);
-            LocalPlayer.Stats.SetBaseValue(StatType.AccuracyRating, 450f);
+            LocalPlayer.Stats.SetBaseValue(StatType.AccuracyRating, 500f);
+            LocalPlayer.Stats.SetBaseValue(StatType.Armor, 120f);
+            LocalPlayer.Stats.SetBaseValue(StatType.FireResistance, 35f);
+            LocalPlayer.Stats.SetBaseValue(StatType.ColdResistance, 35f);
+            LocalPlayer.Stats.SetBaseValue(StatType.LightningResistance, 35f);
+            LocalPlayer.ResetResources();
 
-            // Tạo Player Node
             if (PlayerScene != null)
             {
                 var pNode = PlayerScene.Instantiate<PlayerController>();
@@ -146,9 +157,9 @@ namespace Mdg.Client.Godot.Scripts.Core
             {
                 (Name: "Sylvan Stalker", Rarity: MonsterRarity.Normal, Pos: new Vector2(1300, 1400), BaseHp: 120f, BaseDmg: 15f),
                 (Name: "Void Creeper", Rarity: MonsterRarity.Normal, Pos: new Vector2(1700, 1420), BaseHp: 150f, BaseDmg: 18f),
-                (Name: "Abyssal Brute", Rarity: MonsterRarity.Champion, Pos: new Vector2(1200, 1700), BaseHp: 200f, BaseDmg: 25f),
-                (Name: "Celestial Goliath", Rarity: MonsterRarity.Rare, Pos: new Vector2(1800, 1750), BaseHp: 280f, BaseDmg: 32f),
-                (Name: "Malakor, Void Inquisitor", Rarity: MonsterRarity.PinnacleBoss, Pos: new Vector2(1500, 1100), BaseHp: 500f, BaseDmg: 45f),
+                (Name: "Abyssal Brute", Rarity: MonsterRarity.Champion, Pos: new Vector2(1200, 1700), BaseHp: 220f, BaseDmg: 25f),
+                (Name: "Celestial Goliath", Rarity: MonsterRarity.Rare, Pos: new Vector2(1800, 1750), BaseHp: 320f, BaseDmg: 35f),
+                (Name: "Malakor, Void Inquisitor", Rarity: MonsterRarity.PinnacleBoss, Pos: new Vector2(1500, 1100), BaseHp: 800f, BaseDmg: 55f),
             };
 
             foreach (var cfg in spawnConfigs)
@@ -160,6 +171,14 @@ namespace Mdg.Client.Godot.Scripts.Core
                 {
                     monster.AddAffix(MonsterAffixType.AetherWard);
                     monster.AddAffix(MonsterAffixType.MagmaConduit);
+                }
+
+                if (cfg.Rarity == MonsterRarity.PinnacleBoss)
+                {
+                    _activeBossEntity = monster;
+                    _bossCurrentStagger = 0f;
+                    _isBossStaggered = false;
+                    Hud?.ShowBossHud(monster.Name, monster.CurrentHealth, monster.MaxHealth, 0f);
                 }
 
                 if (MonsterScene != null)
@@ -184,20 +203,41 @@ namespace Mdg.Client.Godot.Scripts.Core
                 }
             }
             _monsters.Clear();
+            _activeBossEntity = null;
+            Hud?.HideBossHud();
         }
 
         public override void _PhysicsProcess(double delta)
         {
-            // 1. Tiến hành tick simulation trong Core
             Scheduler?.Advance((float)delta);
 
-            // 2. Cập nhật HUD
             if (LocalPlayer != null && Hud != null)
             {
                 Hud.UpdatePlayerStats(LocalPlayer);
             }
 
-            // 3. Xử lý Camera Shake
+            // Xử lý Stagger Boss
+            if (_activeBossEntity != null && _activeBossEntity.IsAlive)
+            {
+                if (_isBossStaggered)
+                {
+                    _staggerRecoveryTimer -= (float)delta;
+                    if (_staggerRecoveryTimer <= 0f)
+                    {
+                        _isBossStaggered = false;
+                        _bossCurrentStagger = 0f;
+                        Hud?.SetCombatStatus("⚠️ Boss đã hồi phục từ trạng thái Choáng (Stagger)!");
+                    }
+                }
+
+                float staggerPct = Math.Min(100f, (_bossCurrentStagger / _bossMaxStagger) * 100f);
+                Hud?.ShowBossHud(_activeBossEntity.Name, _activeBossEntity.CurrentHealth, _activeBossEntity.MaxHealth, staggerPct);
+            }
+
+            // Companion tự động nhặt đồ xung quanh
+            ProcessCompanionAutoLoot();
+
+            // Camera Shake
             if (_cameraShakeDuration > 0f && PlayerView?.Camera != null)
             {
                 _cameraShakeDuration -= (float)delta;
@@ -213,10 +253,82 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
         }
 
+        private void ProcessCompanionAutoLoot()
+        {
+            if (CompanionView == null || !IsInstanceValid(CompanionView)) return;
+
+            for (int i = _groundLoots.Count - 1; i >= 0; i--)
+            {
+                var loot = _groundLoots[i];
+                if (!IsInstanceValid(loot))
+                {
+                    _groundLoots.RemoveAt(i);
+                    continue;
+                }
+
+                float dist = CompanionView.GlobalPosition.DistanceTo(loot.GlobalPosition);
+                if (dist < 180f)
+                {
+                    loot.PickUp();
+                    _groundLoots.RemoveAt(i);
+                    AudioManager.Instance?.PlayPickup();
+                    Hud?.SetCombatStatus($"🐾 Linh thú đã tự động nhặt: {loot.ItemName}!");
+                    break;
+                }
+            }
+        }
+
         public void TriggerCameraShake(float duration, float intensity)
         {
             _cameraShakeDuration = duration;
             _cameraShakeIntensity = intensity;
+        }
+
+        public void UsePlayerFlask(int slot)
+        {
+            if (LocalPlayer == null || slot < 1 || slot > 4) return;
+            int idx = slot - 1;
+
+            if (_flaskCharges[idx] <= 0)
+            {
+                Hud?.SetCombatStatus($"⚠️ Bình thuốc [{slot}] đã hết lần dùng (0/{_flaskMaxCharges[idx]})! Hãy diệt quái để nạp lại.");
+                return;
+            }
+
+            _flaskCharges[idx]--;
+            AudioManager.Instance?.PlayPickup();
+
+            switch (slot)
+            {
+                case 1: // Life Flask
+                    float healAmount = 150f;
+                    LocalPlayer.Heal(healAmount, EventBus, 0);
+                    Hud?.SetCombatStatus($"🧪 Dùng Bình Máu Thánh: Hồi phục +{healAmount} HP! (Còn {_flaskCharges[idx]}/{_flaskMaxCharges[idx]})");
+                    break;
+
+                case 2: // Mana Flask
+                    float manaAmount = 80f;
+                    Hud?.SetCombatStatus($"🧪 Dùng Bình Năng Lượng: Hồi phục +{manaAmount} MP! (Còn {_flaskCharges[idx]}/{_flaskMaxCharges[idx]})");
+                    break;
+
+                case 3: // Quicksilver Flask
+                    LocalPlayer.Stats.SetBaseValue(StatType.MovementSpeed, 340f);
+                    Hud?.SetCombatStatus($"💨 Dùng Quicksilver Flask: +40% Tốc độ di chuyển trong 4s! (Còn {_flaskCharges[idx]}/{_flaskMaxCharges[idx]})");
+                    GetTree().CreateTimer(4.0).Timeout += () =>
+                    {
+                        LocalPlayer?.Stats.SetBaseValue(StatType.MovementSpeed, 240f);
+                    };
+                    break;
+
+                case 4: // Diamond Flask
+                    LocalPlayer.Stats.SetBaseValue(StatType.CriticalStrikeChance, 60f);
+                    Hud?.SetCombatStatus($"✨ Dùng Diamond Flask: Tăng vọt Tỉ lệ bạo kích (+60% Crit) trong 4s! (Còn {_flaskCharges[idx]}/{_flaskMaxCharges[idx]})");
+                    GetTree().CreateTimer(4.0).Timeout += () =>
+                    {
+                        LocalPlayer?.Stats.SetBaseValue(StatType.CriticalStrikeChance, 20f);
+                    };
+                    break;
+            }
         }
 
         public void CastPlayerSkill(string skillId, Vector2 targetPos, Vector2 aimDir)
@@ -233,6 +345,9 @@ namespace Mdg.Client.Godot.Scripts.Core
                     break;
                 case "frost":
                     ExecuteFrostNova();
+                    break;
+                case "meteor":
+                    ExecuteMeteor(targetPos, aimDir);
                     break;
                 case "dash":
                     ExecuteDash(aimDir);
@@ -256,12 +371,11 @@ namespace Mdg.Client.Godot.Scripts.Core
             };
             payload.AddPortion(DamageType.Physical, baseDmg);
 
-            // Spawn VFX chém kiếm
             if (SkillEffectScene != null)
             {
                 var vfx = SkillEffectScene.Instantiate<SkillEffectView>();
                 AddChild(vfx);
-                vfx.Setup("slash", PlayerView.GlobalPosition + aimDir * 40f, 90f, new Color(1f, 0.85f, 0.2f), 0.25f);
+                vfx.Setup("slash", PlayerView.GlobalPosition + aimDir * 40f, 95f, new Color(1f, 0.85f, 0.2f), 0.25f);
                 vfx.Rotation = aimDir.Angle();
             }
 
@@ -272,7 +386,7 @@ namespace Mdg.Client.Godot.Scripts.Core
                 TargetPosition = new FixVector2(targetPos.X, targetPos.Y)
             });
 
-            ApplyAreaDamage(PlayerView.Position.ToFixVector2() + aimDir.ToFixVector2() * 40f, 95f, payload);
+            ApplyAreaDamage(PlayerView.Position.ToFixVector2() + aimDir.ToFixVector2() * 40f, 95f, payload, 35f);
         }
 
         private void ExecuteFireball(Vector2 targetPos, Vector2 aimDir)
@@ -284,19 +398,17 @@ namespace Mdg.Client.Godot.Scripts.Core
             {
                 AttackerId = LocalPlayer.Id,
                 AccuracyRating = 500f,
-                CritChance = 20f,
+                CritChance = 25f,
                 CritMultiplier = 180f
             };
             payload.AddPortion(DamageType.Fire, fireDmg);
 
-            // Spawn Projectile Fireball bay về phía mục tiêu
             if (ProjectileScene != null)
             {
                 var proj = ProjectileScene.Instantiate<ProjectileView>();
                 AddChild(proj);
                 proj.Setup("fireball", PlayerView.GlobalPosition, aimDir, payload, 110f, (explodePos, rad, pLoad) =>
                 {
-                    // Spawn VFX nổ lửa
                     if (SkillEffectScene != null)
                     {
                         var expVfx = SkillEffectScene.Instantiate<SkillEffectView>();
@@ -305,7 +417,7 @@ namespace Mdg.Client.Godot.Scripts.Core
                     }
 
                     TriggerCameraShake(0.15f, 4f);
-                    ApplyAreaDamage(explodePos.ToFixVector2(), rad, pLoad);
+                    ApplyAreaDamage(explodePos.ToFixVector2(), rad, pLoad, 50f);
                 });
             }
 
@@ -331,7 +443,6 @@ namespace Mdg.Client.Godot.Scripts.Core
             };
             payload.AddPortion(DamageType.Cold, coldDmg);
 
-            // Spawn VFX vòng tròn sóng băng mở rộng
             if (SkillEffectScene != null)
             {
                 var vfx = SkillEffectScene.Instantiate<SkillEffectView>();
@@ -348,7 +459,40 @@ namespace Mdg.Client.Godot.Scripts.Core
                 TargetPosition = LocalPlayer.Position
             });
 
-            ApplyAreaDamage(PlayerView.Position.ToFixVector2(), 160f, payload);
+            ApplyAreaDamage(PlayerView.Position.ToFixVector2(), 160f, payload, 40f);
+        }
+
+        private void ExecuteMeteor(Vector2 targetPos, Vector2 aimDir)
+        {
+            if (LocalPlayer == null || PlayerView == null) return;
+
+            float fireDmg = 140f;
+            var payload = new DamagePayload
+            {
+                AttackerId = LocalPlayer.Id,
+                AccuracyRating = 600f,
+                CritChance = 35f,
+                CritMultiplier = 200f
+            };
+            payload.AddPortion(DamageType.Fire, fireDmg);
+
+            if (SkillEffectScene != null)
+            {
+                var vfx = SkillEffectScene.Instantiate<SkillEffectView>();
+                AddChild(vfx);
+                vfx.Setup("meteor", targetPos, 140f, new Color(1f, 0.3f, 0.1f), 0.45f);
+            }
+
+            TriggerCameraShake(0.3f, 7f);
+
+            EventBus.Publish(new SkillExecutedEvent
+            {
+                CasterId = LocalPlayer.Id,
+                SkillId = "meteor_strike",
+                TargetPosition = new FixVector2(targetPos.X, targetPos.Y)
+            });
+
+            ApplyAreaDamage(targetPos.ToFixVector2(), 140f, payload, 90f);
         }
 
         private void ExecuteDash(Vector2 aimDir)
@@ -360,7 +504,6 @@ namespace Mdg.Client.Godot.Scripts.Core
                 aimDir = PlayerView.PlayerSprite != null && PlayerView.PlayerSprite.FlipH ? Vector2.Left : Vector2.Right;
             }
 
-            // Spawn Dash Ghost VFX
             if (SkillEffectScene != null)
             {
                 var vfx = SkillEffectScene.Instantiate<SkillEffectView>();
@@ -368,11 +511,11 @@ namespace Mdg.Client.Godot.Scripts.Core
                 vfx.Setup("dash", PlayerView.GlobalPosition, 30f, new Color(0.3f, 0.7f, 1f), 0.25f);
             }
 
-            PlayerView.Position += aimDir * 160f;
+            PlayerView.Position += aimDir * 180f;
             LocalPlayer.Position = PlayerView.Position.ToFixVector2();
         }
 
-        public void ApplyAreaDamage(FixVector2 center, float radius, DamagePayload payload)
+        public void ApplyAreaDamage(FixVector2 center, float radius, DamagePayload payload, float staggerGain = 20f)
         {
             float radiusSq = radius * radius;
             var damagedMonsters = new List<(MonsterEntity Entity, MonsterView View)>();
@@ -407,7 +550,35 @@ namespace Mdg.Client.Godot.Scripts.Core
 
                 if (!hitResult.IsEvaded)
                 {
-                    entity.TakeDamage(hitResult.TotalDamageDealt);
+                    float finalDmg = hitResult.TotalDamageDealt;
+
+                    // Nếu Boss đang bị Stagger -> Nhận thêm +50% More Damage
+                    if (entity == _activeBossEntity && _isBossStaggered)
+                    {
+                        finalDmg *= 1.5f;
+                    }
+
+                    entity.TakeDamage(finalDmg);
+
+                    // Tích lũy Stagger cho Boss
+                    if (entity == _activeBossEntity && !_isBossStaggered)
+                    {
+                        _bossCurrentStagger += staggerGain;
+                        if (_bossCurrentStagger >= _bossMaxStagger)
+                        {
+                            _isBossStaggered = true;
+                            _staggerRecoveryTimer = 4.0f; // 4s Stagger
+                            TriggerCameraShake(0.4f, 8f);
+                            Hud?.SetCombatStatus("⚡ BOSS ĐÃ BỊ CHOÁNG (STAGGER)! Sát thương nhận vào tăng +50% trong 4s!");
+                        }
+                    }
+
+                    // Hút máu (Life Leech: 4% sát thương)
+                    if (LocalPlayer != null)
+                    {
+                        float leech = finalDmg * 0.04f;
+                        LocalPlayer.Heal(leech, EventBus, 0);
+                    }
 
                     EventBus.Publish(new EntityDamagedEvent
                     {
@@ -474,6 +645,9 @@ namespace Mdg.Client.Godot.Scripts.Core
                 _monsters.Remove(e.TargetId);
                 Hud?.UpdateMonstersAlive(_monsters.Count);
 
+                // Nạp lại bình thuốc khi hạ gục quái
+                RechargeFlasks();
+
                 // Rơi vật phẩm / vàng khi quái vật bị hạ gục
                 SpawnGroundLoot(deathPos, tuple.Entity);
 
@@ -485,6 +659,17 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
         }
 
+        private void RechargeFlasks()
+        {
+            for (int i = 0; i < _flaskCharges.Length; i++)
+            {
+                if (_flaskCharges[i] < _flaskMaxCharges[i])
+                {
+                    _flaskCharges[i]++;
+                }
+            }
+        }
+
         private void SpawnGroundLoot(Vector2 pos, MonsterEntity monster)
         {
             if (GroundLootScene == null) return;
@@ -492,15 +677,20 @@ namespace Mdg.Client.Godot.Scripts.Core
             var lootNode = GroundLootScene.Instantiate<GroundLootView>();
             AddChild(lootNode);
             lootNode.Position = pos + new Vector2((float)GD.RandRange(-20, 20), (float)GD.RandRange(-20, 20));
+            _groundLoots.Add(lootNode);
 
             AudioManager.Instance?.PlayLootDrop(monster.Rarity.ToString());
 
             var rand = new Random();
-            int gold = rand.Next(15, 60);
+            int gold = rand.Next(20, 80);
 
             if (monster.Rarity == MonsterRarity.Rare || monster.Rarity == MonsterRarity.PinnacleBoss)
             {
                 lootNode.Setup("item_dragon_axe", "Rìu Long Cốt Huyền Thoại", "Rare", gold * 3);
+            }
+            else if (monster.Rarity == MonsterRarity.Champion)
+            {
+                lootNode.Setup("item_magic_blade", "Thanh Kiếm Phong Ma", "Magic", gold * 2);
             }
             else
             {

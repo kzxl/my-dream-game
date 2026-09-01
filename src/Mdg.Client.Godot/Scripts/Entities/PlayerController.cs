@@ -35,14 +35,8 @@ namespace Mdg.Client.Godot.Scripts.Entities
 
         private void LoadHeroTexture()
         {
-            if (ResourceLoader.Exists("res://Assets/aethelis_heroes_classes_pack.jpg"))
-            {
-                _heroTexture = GD.Load<Texture2D>("res://Assets/aethelis_heroes_classes_pack.jpg");
-            }
-            else if (ResourceLoader.Exists("res://Assets/character_spritesheet.png"))
-            {
-                _heroTexture = GD.Load<Texture2D>("res://Assets/character_spritesheet.png");
-            }
+            _heroTexture = TextureLoader.LoadTexture("res://Assets/aethelis_heroes_classes_pack.jpg", "white")
+                ?? TextureLoader.LoadTexture("res://Assets/character_spritesheet.png");
 
             UpdateHeroSprite();
         }
@@ -184,9 +178,29 @@ namespace Mdg.Client.Godot.Scripts.Entities
             {
                 _gameManager.CastPlayerSkill("frost", GlobalPosition, aimDirection);
             }
+            else if (Input.IsActionJustPressed("skill_meteor"))
+            {
+                _gameManager.CastPlayerSkill("meteor", mousePos, aimDirection);
+            }
             else if (Input.IsActionJustPressed("skill_dash"))
             {
                 _gameManager.CastPlayerSkill("dash", GlobalPosition + aimDirection * 180f, aimDirection);
+            }
+            else if (Input.IsActionJustPressed("flask_1"))
+            {
+                _gameManager.UsePlayerFlask(1);
+            }
+            else if (Input.IsActionJustPressed("flask_2"))
+            {
+                _gameManager.UsePlayerFlask(2);
+            }
+            else if (Input.IsActionJustPressed("flask_3"))
+            {
+                _gameManager.UsePlayerFlask(3);
+            }
+            else if (Input.IsActionJustPressed("flask_4"))
+            {
+                _gameManager.UsePlayerFlask(4);
             }
         }
     }

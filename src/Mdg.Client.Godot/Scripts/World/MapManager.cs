@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using Mdg.Client.Godot.Scripts.Common;
 using Mdg.Core.Common.Math;
 using Mdg.Core.Features.Combat;
 using Mdg.Core.Features.Maps;
@@ -41,23 +42,19 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void LoadTextures()
         {
-            if (ResourceLoader.Exists("res://Assets/aethelis_terrain_tileset.jpg"))
-                _terrainTexture = GD.Load<Texture2D>("res://Assets/aethelis_terrain_tileset.jpg");
-
-            if (ResourceLoader.Exists("res://Assets/aethelis_water_liquid_tileset.jpg"))
-                _waterTexture = GD.Load<Texture2D>("res://Assets/aethelis_water_liquid_tileset.jpg");
-
-            if (ResourceLoader.Exists("res://Assets/nature_props_master_pack.png"))
-                _natureTexture = GD.Load<Texture2D>("res://Assets/nature_props_master_pack.png");
-
-            if (ResourceLoader.Exists("res://Assets/props_pack.png"))
-                _propsTexture = GD.Load<Texture2D>("res://Assets/props_pack.png");
+            _terrainTexture = TextureLoader.LoadTexture("res://Assets/aethelis_terrain_tileset.jpg");
+            _waterTexture = TextureLoader.LoadTexture("res://Assets/aethelis_water_liquid_tileset.jpg");
+            _natureTexture = TextureLoader.LoadTexture("res://Assets/nature_props_master_pack.png", "black");
+            _propsTexture = TextureLoader.LoadTexture("res://Assets/props_pack.png", "black");
         }
 
         public ZoneMapDto LoadZone(string zoneId, double? spawnX = null, double? spawnY = null)
         {
             CurrentZoneId = zoneId;
             CurrentMap = ZoneMapGenerator.GenerateZone(zoneId);
+
+            // Nạp lại texture nếu chưa nạp
+            if (_terrainTexture == null) LoadTextures();
 
             // Xóa các vật thể cũ
             ClearOldZone();
@@ -176,9 +173,8 @@ namespace Mdg.Client.Godot.Scripts.World
         {
             if (CurrentMap == null || _environmentObjectsContainer == null || GatheringNodeScene == null) return;
 
-            // Sinh các điểm khai thác mẫu theo Biome
             var rand = new Random(CurrentZoneId.GetHashCode());
-            int numNodes = 6;
+            int numNodes = 8;
             int tileSize = CurrentMap.TileSize > 0 ? CurrentMap.TileSize : 48;
             int maxX = CurrentMap.WidthInTiles;
             int maxY = CurrentMap.HeightInTiles;
@@ -194,13 +190,17 @@ namespace Mdg.Client.Godot.Scripts.World
                     _environmentObjectsContainer.AddChild(nodeObj);
                     nodeObj.Position = new Vector2(tx * tileSize, ty * tileSize);
 
-                    if (i % 2 == 0)
+                    if (i % 3 == 0)
                     {
-                        nodeObj.Setup($"ore_{i}", "Quặng Aetherite", "mining", 1, "mat_aether_ore", new Color(0.2f, 0.8f, 1f), 1.2f);
+                        nodeObj.Setup($"ore_{i}", "Quặng Aetherite", "mining", 1, "mat_aether_ore", new Color(0.2f, 0.85f, 1f), 1.2f);
+                    }
+                    else if (i % 3 == 1)
+                    {
+                        nodeObj.Setup($"herb_{i}", "Hoa Dạ Quang", "herbalism", 1, "mat_luna_bloom", new Color(0.4f, 1f, 0.4f), 0.9f);
                     }
                     else
                     {
-                        nodeObj.Setup($"herb_{i}", "Hoa Dạ Quang", "herbalism", 1, "mat_luna_bloom", new Color(0.4f, 1f, 0.4f), 0.9f);
+                        nodeObj.Setup($"tree_{i}", "Gỗ Thần Cổ Đại", "mining", 1, "mat_elder_wood", new Color(0.85f, 0.6f, 0.3f), 1.0f);
                     }
                 }
             }
@@ -242,18 +242,18 @@ namespace Mdg.Client.Godot.Scripts.World
                     int tile = grid[y][x];
                     var destRect = new Rect2(x * tileSize, y * tileSize, tileSize, tileSize);
 
-                    // Tùy theo loại Tile vẽ texture hoặc fallback color
                     switch (tile)
                     {
-                        case 0: // Sàn thường
+                        case 0: // Sàn cỏ tự nhiên
                             if (_terrainTexture != null)
                             {
-                                var srcRect = new Rect2(0, 0, terCellW, terCellH);
+                                int varCol = (x + y) % 3;
+                                var srcRect = new Rect2(varCol * terCellW, 0, terCellW, terCellH);
                                 DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else
                             {
-                                DrawRect(destRect, new Color(0.12f, 0.15f, 0.12f));
+                                DrawRect(destRect, new Color(0.12f, 0.25f, 0.12f));
                             }
                             break;
 
@@ -262,6 +262,9 @@ namespace Mdg.Client.Godot.Scripts.World
                             {
                                 var srcRect = new Rect2(0, 3 * terCellH, terCellW, terCellH);
                                 DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                // Viền nổi 3D
+                                DrawRect(new Rect2(x * tileSize, y * tileSize, tileSize, 3), new Color(1f, 1f, 1f, 0.15f));
+                                DrawRect(new Rect2(x * tileSize, y * tileSize + tileSize - 4, tileSize, 4), new Color(0f, 0f, 0f, 0.35f));
                             }
                             else
                             {
@@ -269,10 +272,11 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 2: // Nước sâu
+                        case 2: // Nước sâu (Azure Fluid)
                             if (_waterTexture != null)
                             {
-                                var srcRect = new Rect2(0, 0, watCellW, watCellH);
+                                int animCol = (x + y) % 4;
+                                var srcRect = new Rect2(animCol * watCellW, 0, watCellW, watCellH);
                                 DrawTextureRectRegion(_waterTexture, destRect, srcRect);
                             }
                             else
@@ -281,11 +285,12 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 3: // Đường lát đá
-                        case 4: // Quảng trường
+                        case 3: // Đường lát đá (Cobblestone Path)
+                        case 4: // Quảng trường (Plaza)
                             if (_terrainTexture != null)
                             {
-                                var srcRect = new Rect2(terCellW, 2 * terCellH, terCellW, terCellH);
+                                int col = (x ^ y) % 2;
+                                var srcRect = new Rect2(col * terCellW, 2 * terCellH, terCellW, terCellH);
                                 DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else
@@ -328,6 +333,20 @@ namespace Mdg.Client.Godot.Scripts.World
                             {
                                 DrawRect(destRect, new Color(0.1f, 0.12f, 0.16f));
                             }
+                            break;
+
+                        case 14: // Bụi rậm ngụy trang (Camouflage Bush)
+                            if (_terrainTexture != null)
+                            {
+                                var srcRect = new Rect2(0, 0, terCellW, terCellH);
+                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
+                                DrawCircle(new Vector2(x * tileSize + tileSize / 2f, y * tileSize + tileSize / 2f), tileSize / 2.5f, new Color(0.18f, 0.55f, 0.25f, 0.85f));
+                            }
+                            break;
+
+                        case 15: // Tường phá hủy (Destructible Wall)
+                            DrawRect(destRect, new Color(0.28f, 0.22f, 0.18f));
+                            DrawRect(new Rect2(x * tileSize + 3, y * tileSize + 3, tileSize - 6, tileSize - 6), new Color(1f, 0.85f, 0.2f), false, 1.5f);
                             break;
 
                         default:
