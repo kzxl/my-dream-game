@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3 uid="uid://p0r1portalview"]
+
+[ext_resource type="Script" path="res://Scripts/World/PortalView.cs" id="1_port"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_port"]
+radius = 32.0
+
+[node name="Portal" type="Area2D"]
+script = ExtResource("1_port")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_port")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.4, 0.7, 1, 0.9)
+scale = Vector2(0.8, 0.8)
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -100.0
+offset_top = -45.0
+offset_right = 100.0
+offset_bottom = -25.0
+theme_override_font_sizes/font_size = 12
+text = "🌀 Portal"
+horizontal_alignment = 1

@@ -1,0 +1,14 @@
+[gd_scene load_steps=6 format=3 uid="uid://m0m1mapmanager"]
+
+[ext_resource type="Script" path="res://Scripts/World/MapManager.cs" id="1_mapm"]
+[ext_resource type="PackedScene" uid="uid://p0r1portalview" path="res://Scenes/Portal.tscn" id="2_port"]
+[ext_resource type="PackedScene" uid="uid://s0h1shrineview" path="res://Scenes/Shrine.tscn" id="3_shrn"]
+[ext_resource type="PackedScene" uid="uid://g0n1gatheringnode" path="res://Scenes/GatheringNode.tscn" id="4_gnod"]
+[ext_resource type="PackedScene" uid="uid://n0p1npcview" path="res://Scenes/Npc.tscn" id="5_npc"]
+
+[node name="MapManager" type="Node2D"]
+script = ExtResource("1_mapm")
+PortalScene = ExtResource("2_port")
+ShrineScene = ExtResource("3_shrn")
+GatheringNodeScene = ExtResource("4_gnod")
+NpcScene = ExtResource("5_npc")
