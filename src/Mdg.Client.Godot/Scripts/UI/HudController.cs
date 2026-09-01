@@ -135,6 +135,32 @@ namespace Mdg.Client.Godot.Scripts.UI
             }
         }
 
+        public void UpdateProgression(int level, float currentExp, float expToNext, string charName, string classSpec, string gender)
+        {
+            if (LevelLabel != null)
+            {
+                LevelLabel.Text = $"Cấp {level}";
+            }
+
+            if (PlayerNameLabel != null)
+            {
+                string symbol = gender == "Male" ? "♂" : "♀";
+                PlayerNameLabel.Text = $"{symbol} {charName} [{classSpec}]";
+            }
+
+            if (ExpBar != null)
+            {
+                ExpBar.MaxValue = expToNext;
+                ExpBar.Value = currentExp;
+            }
+
+            if (ExpText != null)
+            {
+                int pct = expToNext > 0 ? (int)MathF.Round((currentExp / expToNext) * 100f) : 0;
+                ExpText.Text = $"EXP: {MathF.Ceiling(currentExp)} / {MathF.Ceiling(expToNext)} ({pct}%)";
+            }
+        }
+
         public void UpdateMonstersAlive(int count)
         {
             if (MonstersAliveLabel != null)

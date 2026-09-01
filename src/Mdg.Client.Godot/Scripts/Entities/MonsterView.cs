@@ -17,21 +17,59 @@ namespace Mdg.Client.Godot.Scripts.Entities
         public MonsterEntity? CoreEntity { get; private set; }
         public Guid MonsterId { get; private set; }
 
+        [Export] public float AttackRange { get; set; } = 48f;
+        [Export] public float AttackCooldown { get; set; } = 1.3f;
+        [Export] public float AttackDamage { get; set; } = 20f;
+        [Export] public string AttackDamageType { get; set; } = "physical";
+
         private Node2D? _playerTarget;
+        private Core.GameManager? _gameManager;
         private Texture2D? _monstersTexture;
         private AtlasTexture? _atlasTexture;
 
         private float _hurtTimer = 0f;
+        private float _attackCooldownTimer = 0f;
         private float _wanderTimer = 0f;
         private Vector2 _wanderDir = Vector2.Zero;
         private float _animTimer = 0f;
 
-        public void Initialize(MonsterEntity entity, FixVector2 spawnPos, Node2D? playerTarget = null)
+        public void Initialize(MonsterEntity entity, FixVector2 spawnPos, Core.GameManager? gameManager = null, Node2D? playerTarget = null)
         {
             CoreEntity = entity ?? throw new ArgumentNullException(nameof(entity));
             MonsterId = entity.Id;
             Position = new Vector2(spawnPos.X, spawnPos.Y);
+            _gameManager = gameManager;
             _playerTarget = playerTarget;
+
+            string nameLower = entity.Name.ToLowerInvariant();
+            if (nameLower.Contains("imp") || nameLower.Contains("eye") || nameLower.Contains("spectre"))
+            {
+                AttackRange = 220f;
+                AttackDamage = 26f;
+                AttackDamageType = nameLower.Contains("imp") ? "fire" : "chaos";
+                AttackCooldown = 1.6f;
+            }
+            else if (nameLower.Contains("wolf") || nameLower.Contains("hound"))
+            {
+                AttackRange = 45f;
+                AttackDamage = 22f;
+                AttackDamageType = "physical";
+                AttackCooldown = 1.1f;
+            }
+            else if (nameLower.Contains("golem") || nameLower.Contains("frost"))
+            {
+                AttackRange = 55f;
+                AttackDamage = 35f;
+                AttackDamageType = nameLower.Contains("frost") ? "cold" : "fire";
+                AttackCooldown = 1.5f;
+            }
+            else if (entity.Rarity == MonsterRarity.PinnacleBoss)
+            {
+                AttackRange = 65f;
+                AttackDamage = 55f;
+                AttackDamageType = "chaos";
+                AttackCooldown = 1.0f;
+            }
 
             SetupMonsterVisuals();
             UpdateHealthDisplay();
@@ -222,13 +260,33 @@ namespace Mdg.Client.Godot.Scripts.Entities
         {
             if (_playerTarget == null || !IsInstanceValid(_playerTarget)) return;
 
+            if (_attackCooldownTimer > 0f)
+            {
+                _attackCooldownTimer -= delta;
+            }
+
             float distToPlayer = GlobalPosition.DistanceTo(_playerTarget.GlobalPosition);
 
-            // Bán kính phát hiện 450px
-            if (distToPlayer < 450f && distToPlayer > 35f)
+            // 1. Nếu người chơi trong tầm đánh -> Đứng lại tấn công
+            if (distToPlayer <= AttackRange)
             {
+                Velocity = Vector2.Zero;
+
+                if (MonsterSprite != null)
+                {
+                    MonsterSprite.FlipH = _playerTarget.GlobalPosition.X < GlobalPosition.X;
+                }
+
+                if (_attackCooldownTimer <= 0f && CoreEntity != null && CoreEntity.IsAlive)
+                {
+                    ExecuteAttackAgainstPlayer();
+                }
+            }
+            else if (distToPlayer < 450f)
+            {
+                // 2. Đuổi theo người chơi
                 Vector2 dir = (_playerTarget.GlobalPosition - GlobalPosition).Normalized();
-                Velocity = dir * 90f;
+                Velocity = dir * 95f;
                 MoveAndSlide();
 
                 if (MonsterSprite != null && dir.X != 0)
@@ -240,6 +298,7 @@ namespace Mdg.Client.Godot.Scripts.Entities
             }
             else
             {
+                // 3. Đi lang thang tự do (Wander)
                 _wanderTimer -= delta;
                 if (_wanderTimer <= 0f)
                 {
@@ -250,6 +309,26 @@ namespace Mdg.Client.Godot.Scripts.Entities
                 Velocity = _wanderDir * 25f;
                 MoveAndSlide();
             }
+        }
+
+        private void ExecuteAttackAgainstPlayer()
+        {
+            _attackCooldownTimer = AttackCooldown;
+
+            // Hiệu ứng nhào tới tấn công (Lunge attack)
+            if (MonsterSprite != null)
+            {
+                var tween = CreateTween();
+                Vector2 lungeDir = (_playerTarget != null && IsInstanceValid(_playerTarget))
+                    ? (_playerTarget.GlobalPosition - GlobalPosition).Normalized() * 12f
+                    : Vector2.Zero;
+
+                tween.TweenProperty(MonsterSprite, "position", lungeDir, 0.08f);
+                tween.TweenProperty(MonsterSprite, "position", Vector2.Zero, 0.12f);
+            }
+
+            float finalDmg = CoreEntity != null ? CoreEntity.BaseDamage : AttackDamage;
+            _gameManager?.MonsterAttackPlayer(this, CoreEntity, finalDmg, AttackDamageType);
         }
 
         public void PlayDeathAnimation()

@@ -42,6 +42,14 @@ namespace Mdg.Client.Godot.Scripts.Core
         private readonly Dictionary<Guid, (MonsterEntity Entity, MonsterView View)> _monsters = new();
         private readonly List<GroundLootView> _groundLoots = new();
 
+        // Player Level & Progression
+        private int _playerLevel = 1;
+        private float _currentExp = 0f;
+        private float _expToNext = 100f;
+        private int _skillPoints = 3;
+        private string _classSpec = "Vanguard";
+        private string _gender = "Male";
+
         // Flask System (PoE Style 4 Flasks)
         private readonly int[] _flaskCharges = new int[] { 3, 3, 2, 2 };
         private readonly int[] _flaskMaxCharges = new int[] { 3, 3, 2, 2 };
@@ -63,6 +71,8 @@ namespace Mdg.Client.Godot.Scripts.Core
             SpawnPlayer();
             SpawnCompanion();
             SpawnMonstersForCurrentZone();
+            SetupDefeatModal();
+            UpdateProgressionUI();
         }
 
         private void InitializeCoreSystems()
@@ -88,6 +98,15 @@ namespace Mdg.Client.Godot.Scripts.Core
                 {
                     Hud?.SetCombatStatus($"🌿 {title} — {sub}");
                 };
+            }
+        }
+
+        private void SetupDefeatModal()
+        {
+            if (Hud?.DefeatModal != null)
+            {
+                Hud.DefeatModal.OnRespawnTownRequested += RespawnPlayerInHaven;
+                Hud.DefeatModal.OnReviveScrollRequested += RespawnPlayerInHaven;
             }
         }
 
@@ -134,7 +153,7 @@ namespace Mdg.Client.Godot.Scripts.Core
             {
                 var pNode = PlayerScene.Instantiate<PlayerController>();
                 AddChild(pNode);
-                pNode.Initialize(LocalPlayer, this, "Vanguard", "Male");
+                pNode.Initialize(LocalPlayer, this, _classSpec, _gender);
                 PlayerView = pNode;
             }
         }
@@ -183,7 +202,7 @@ namespace Mdg.Client.Godot.Scripts.Core
                     {
                         var mView = MonsterScene.Instantiate<MonsterView>();
                         AddChild(mView);
-                        mView.Initialize(boss, new FixVector2((float)sp.X, (float)sp.Y), PlayerView);
+                        mView.Initialize(boss, new FixVector2((float)sp.X, (float)sp.Y), this, PlayerView);
                         _monsters[boss.Id] = (boss, mView);
                     }
                 }
@@ -200,7 +219,7 @@ namespace Mdg.Client.Godot.Scripts.Core
                     {
                         var lView = MonsterScene.Instantiate<MonsterView>();
                         AddChild(lView);
-                        lView.Initialize(leader, new FixVector2((float)sp.X, (float)sp.Y), PlayerView);
+                        lView.Initialize(leader, new FixVector2((float)sp.X, (float)sp.Y), this, PlayerView);
                         _monsters[leader.Id] = (leader, lView);
 
                         // Sinh các quái vật tay sai đi kèm trong bầy
@@ -212,7 +231,7 @@ namespace Mdg.Client.Godot.Scripts.Core
                             var minion = new MonsterEntity(mName, MonsterRarity.Normal, leaderHp * 0.55f, 16f);
                             var minionView = MonsterScene.Instantiate<MonsterView>();
                             AddChild(minionView);
-                            minionView.Initialize(minion, new FixVector2((float)sp.X + offsetX, (float)sp.Y + offsetY), PlayerView);
+                            minionView.Initialize(minion, new FixVector2((float)sp.X + offsetX, (float)sp.Y + offsetY), this, PlayerView);
                             _monsters[minion.Id] = (minion, minionView);
                         }
                     }
@@ -681,6 +700,125 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
         }
 
+        public void MonsterAttackPlayer(MonsterView monsterView, MonsterEntity? monster, float rawDmg, string dmgType)
+        {
+            if (LocalPlayer == null || !LocalPlayer.IsAlive || PlayerView == null) return;
+
+            // 1. Kiểm tra né tránh Evasion
+            float evasionChance = LocalPlayer.Stats.GetValue(StatType.Evasion);
+            if (evasionChance > 0f && (float)GD.RandRange(0, 100) < evasionChance)
+            {
+                if (FloatingTextScene != null)
+                {
+                    var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                    AddChild(fct);
+                    fct.Position = PlayerView.GlobalPosition + new Vector2(0, -35);
+                    fct.Setup("DODGED!", new Color(0.7f, 0.75f, 0.8f));
+                }
+                return;
+            }
+
+            // 2. Kiểm tra đỡ đòn Block
+            float blockMult = 1.0f;
+            float blockChance = LocalPlayer.Stats.GetValue(StatType.BlockChance);
+            if (blockChance > 0f && (float)GD.RandRange(0, 100) < blockChance)
+            {
+                blockMult = 0.25f; // Giảm 75% sát thương khi đỡ đòn thành công
+                if (FloatingTextScene != null)
+                {
+                    var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                    AddChild(fct);
+                    fct.Position = PlayerView.GlobalPosition + new Vector2(0, -35);
+                    fct.Setup("🛡️ BLOCKED!", new Color(1f, 0.85f, 0.2f));
+                }
+            }
+
+            // 3. Tính toán giảm thương (Armor & Resistances)
+            float baseDmg = rawDmg * blockMult;
+            float finalDmg = baseDmg;
+
+            if (dmgType == "fire")
+            {
+                float fireRes = LocalPlayer.Stats.GetValue(StatType.FireResistance);
+                finalDmg = baseDmg * (1f - Math.Min(0.75f, fireRes / 100f));
+            }
+            else if (dmgType == "cold")
+            {
+                float coldRes = LocalPlayer.Stats.GetValue(StatType.ColdResistance);
+                finalDmg = baseDmg * (1f - Math.Min(0.75f, coldRes / 100f));
+            }
+            else if (dmgType == "lightning")
+            {
+                float lightRes = LocalPlayer.Stats.GetValue(StatType.LightningResistance);
+                finalDmg = baseDmg * (1f - Math.Min(0.75f, lightRes / 100f));
+            }
+            else if (dmgType == "chaos")
+            {
+                float chaosRes = LocalPlayer.Stats.GetValue(StatType.ChaosResistance);
+                finalDmg = baseDmg * (1f - Math.Min(0.75f, chaosRes / 100f));
+            }
+            else
+            {
+                // Giảm giáp vật lý (Armor Mitigation Formula)
+                float armor = LocalPlayer.Stats.GetValue(StatType.Armor);
+                if (armor <= 0f) armor = 60f;
+                float physMitigation = Math.Min(0.85f, armor / (armor + 5f * baseDmg));
+                finalDmg = baseDmg * (1f - physMitigation);
+            }
+
+            float totalDmg = Math.Max(1f, MathF.Ceiling(finalDmg));
+
+            // 4. Trừ vào Energy Shield trước, sau đó vào Life
+            var damagePayload = new DamagePayload();
+            damagePayload.AddPortion(DamageType.Physical, totalDmg);
+            LocalPlayer.TakeDamage(damagePayload, EventBus, 0);
+
+            // 5. Phản hồi âm thanh & Hình ảnh
+            AudioManager.Instance?.PlayHit(false);
+            TriggerCameraShake(0.12f, 3f);
+            PlayerView.TakeHitVisualFeedback();
+
+            Color dmgColor = dmgType switch
+            {
+                "fire" => new Color(1f, 0.45f, 0.2f),
+                "cold" => new Color(0.3f, 0.75f, 1f),
+                "chaos" => new Color(0.8f, 0.4f, 1f),
+                _ => new Color(1f, 0.25f, 0.25f)
+            };
+
+            if (FloatingTextScene != null)
+            {
+                var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                AddChild(fct);
+                fct.Position = PlayerView.GlobalPosition + new Vector2((float)GD.RandRange(-10, 10), -25);
+                fct.Setup($"-{totalDmg}", dmgColor);
+            }
+
+            // 6. Xử lý khi người chơi tử nạn
+            if (!LocalPlayer.IsAlive || LocalPlayer.CurrentLife <= 0f)
+            {
+                HandlePlayerDefeated();
+            }
+        }
+
+        private void HandlePlayerDefeated()
+        {
+            Hud?.SetCombatStatus("☠️ BẠN ĐÃ TỬ NẠN! Hãy chọn hồi sinh về thị trấn Haven.");
+            Hud?.DefeatModal?.ShowDefeat();
+        }
+
+        public void RespawnPlayerInHaven()
+        {
+            if (LocalPlayer == null || PlayerView == null) return;
+
+            LocalPlayer.ResetResources();
+            Map?.LoadZone("SanctuaryHaven");
+            PlayerView.Position = new Vector2(1500f, 1500f);
+            LocalPlayer.Position = new FixVector2(1500f, 1500f);
+            SpawnMonstersForCurrentZone();
+            Hud?.SetCombatStatus("🌿 Đã hồi sinh an toàn tại Sanctuary Haven!");
+        }
+
         private void HandleDamageEffect(DamageEffectArgs e)
         {
             if (_monsters.TryGetValue(e.TargetId, out var tuple) && IsInstanceValid(tuple.View))
@@ -726,7 +864,18 @@ namespace Mdg.Client.Godot.Scripts.Core
                 // Nạp lại bình thuốc khi hạ gục quái
                 RechargeFlasks();
 
-                // Rơi vật phẩm / vàng khi quái vật bị hạ gục
+                // 1. Tính toán & Cộng EXP cho người chơi
+                float expGained = tuple.Entity.Rarity switch
+                {
+                    MonsterRarity.PinnacleBoss => 650f,
+                    MonsterRarity.Rare => 200f,
+                    MonsterRarity.Champion => 110f,
+                    _ => 45f
+                };
+
+                GainExp(expGained);
+
+                // 2. Rơi vật phẩm / vàng khi quái vật bị hạ gục
                 SpawnGroundLoot(deathPos, tuple.Entity);
 
                 if (_monsters.Count == 0)
@@ -735,6 +884,55 @@ namespace Mdg.Client.Godot.Scripts.Core
                     Hud?.SetCombatStatus("🎉 CHIẾN THẮNG! Đã quét sạch quái vật vùng đất Aethelis!");
                 }
             }
+        }
+
+        public void GainExp(float amount)
+        {
+            if (LocalPlayer == null || amount <= 0f) return;
+
+            _currentExp += amount;
+
+            if (FloatingTextScene != null && PlayerView != null)
+            {
+                var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                AddChild(fct);
+                fct.Position = PlayerView.GlobalPosition + new Vector2((float)GD.RandRange(-12, 12), -45);
+                fct.Setup($"+{MathF.Ceiling(amount)} EXP", new Color(0.2f, 0.95f, 1f));
+            }
+
+            while (_currentExp >= _expToNext)
+            {
+                _currentExp -= _expToNext;
+                _playerLevel++;
+                _expToNext = MathF.Round(100f * MathF.Pow(_playerLevel, 1.35f));
+                _skillPoints++;
+
+                // Tăng chỉ số khi lên cấp
+                LocalPlayer.Stats.SetBaseValue(StatType.MaxLife, LocalPlayer.Stats.GetValue(StatType.MaxLife) + 25f);
+                LocalPlayer.Stats.SetBaseValue(StatType.MaxMana, LocalPlayer.Stats.GetValue(StatType.MaxMana) + 12f);
+                LocalPlayer.Stats.SetBaseValue(StatType.PhysicalDamage, LocalPlayer.Stats.GetValue(StatType.PhysicalDamage) + 5f);
+                LocalPlayer.Heal(9999f, EventBus, 0);
+
+                AudioManager.Instance?.PlayLevelUp();
+                TriggerCameraShake(0.25f, 5f);
+
+                if (FloatingTextScene != null && PlayerView != null)
+                {
+                    var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                    AddChild(fct);
+                    fct.Position = PlayerView.GlobalPosition + new Vector2(0, -65);
+                    fct.Setup($"🎉 LEVEL UP (Lv.{_playerLevel})! +1 SP", new Color(1f, 0.85f, 0.2f));
+                }
+
+                Hud?.SetCombatStatus($"🎉 LEVEL UP! Bạn đã đạt Cấp {_playerLevel}! (+1 SP, +25 Max HP, +12 Max MP)");
+            }
+
+            UpdateProgressionUI();
+        }
+
+        private void UpdateProgressionUI()
+        {
+            Hud?.UpdateProgression(_playerLevel, _currentExp, _expToNext, LocalPlayer?.Name ?? "Hero", _classSpec, _gender);
         }
 
         private void RechargeFlasks()

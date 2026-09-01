@@ -117,6 +117,16 @@ namespace Mdg.Client.Godot.Scripts.Entities
             }
         }
 
+        public void TakeHitVisualFeedback()
+        {
+            if (PlayerSprite != null)
+            {
+                var tween = CreateTween();
+                tween.TweenProperty(PlayerSprite, "modulate", new Color(1f, 0.25f, 0.25f), 0.05f);
+                tween.TweenProperty(PlayerSprite, "modulate", Colors.White, 0.1f);
+            }
+        }
+
         public override void _PhysicsProcess(double delta)
         {
             if (CorePlayer == null || _gameManager == null) return;
