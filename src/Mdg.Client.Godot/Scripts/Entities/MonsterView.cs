@@ -14,39 +14,17 @@ namespace Mdg.Client.Godot.Scripts.Entities
         [Export] public Label? NameLabel { get; set; }
         [Export] public Node2D? AuraRing { get; set; }
 
-        public Guid MonsterId { get; private set; }
         public MonsterEntity? CoreEntity { get; private set; }
+        public Guid MonsterId { get; private set; }
 
+        private Node2D? _playerTarget;
         private Texture2D? _monstersTexture;
         private AtlasTexture? _atlasTexture;
-        private Vector2 _targetPosition = Vector2.Zero;
-        private Node2D? _playerTarget;
+
+        private float _hurtTimer = 0f;
         private float _wanderTimer = 0f;
         private Vector2 _wanderDir = Vector2.Zero;
-
-        public override void _Ready()
-        {
-            LoadMonsterTexture();
-        }
-
-        private void LoadMonsterTexture()
-        {
-            if (CoreEntity?.Rarity == MonsterRarity.PinnacleBoss)
-            {
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/bosses_pack.png")
-                    ?? TextureLoader.LoadTexture("res://Assets/monsters_master_pack.png");
-            }
-            else if (CoreEntity?.Rarity == MonsterRarity.Rare || CoreEntity?.Rarity == MonsterRarity.Champion)
-            {
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/abyssal_void_monsters_pack.png", "white")
-                    ?? TextureLoader.LoadTexture("res://Assets/monsters_master_pack.png");
-            }
-            else
-            {
-                _monstersTexture = TextureLoader.LoadTexture("res://Assets/monsters_creatures_grid.png", "white")
-                    ?? TextureLoader.LoadTexture("res://Assets/monsters_pack.png");
-            }
-        }
+        private float _animTimer = 0f;
 
         public void Initialize(MonsterEntity entity, FixVector2 spawnPos, Node2D? playerTarget = null)
         {
@@ -61,39 +39,111 @@ namespace Mdg.Client.Godot.Scripts.Entities
 
         private void SetupMonsterVisuals()
         {
-            if (CoreEntity == null) return;
+            if (CoreEntity == null || MonsterSprite == null) return;
 
-            LoadMonsterTexture();
+            string nameLower = CoreEntity.Name.ToLowerInvariant();
+            float scaleMultiplier = 1.0f;
 
-            if (_monstersTexture != null && MonsterSprite != null)
+            if (CoreEntity.Rarity == MonsterRarity.PinnacleBoss)
             {
-                float totalW = _monstersTexture.GetWidth();
-                float totalH = _monstersTexture.GetHeight();
-                float cellW = totalW / 4f;
-                float cellH = totalH / 3f;
-
-                // Chọn ô sprite dựa theo tên và loại quái
-                int col = Math.Abs(CoreEntity.Name.GetHashCode()) % 4;
-                int row = Math.Abs(CoreEntity.Name.GetHashCode() / 4) % 3;
-
-                _atlasTexture = new AtlasTexture
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/bosses_pack.png");
+                if (_monstersTexture != null)
                 {
-                    Atlas = _monstersTexture,
-                    Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
-                };
+                    float colW = _monstersTexture.GetWidth() / 4f;
+                    float rowH = _monstersTexture.GetHeight() / 4f;
+                    int row = 0;
+                    if (nameLower.Contains("cryomancer") || nameLower.Contains("vael") || nameLower.Contains("frost")) row = 1;
+                    else if (nameLower.Contains("ignis") || nameLower.Contains("tyrant") || nameLower.Contains("magma") || nameLower.Contains("fire")) row = 2;
+                    else if (nameLower.Contains("drake") || nameLower.Contains("dragon") || nameLower.Contains("storm")) row = 3;
+                    else row = 0; // Malakor, Void Inquisitor
 
-                MonsterSprite.Texture = _atlasTexture;
-                MonsterSprite.Modulate = Colors.White;
+                    _atlasTexture = new AtlasTexture
+                    {
+                        Atlas = _monstersTexture,
+                        Region = new Rect2(0, row * rowH, colW, rowH)
+                    };
+                    MonsterSprite.Texture = _atlasTexture;
+                    MonsterSprite.Scale = new Vector2(0.65f, 0.65f);
+                    scaleMultiplier = 1.7f;
+                }
             }
-
-            // Thiết lập tỷ lệ và màu sắc theo Rarity
-            float scaleMultiplier = CoreEntity.Rarity switch
+            else if (nameLower.Contains("spectre") || nameLower.Contains("chaos") || nameLower.Contains("tentacle") || nameLower.Contains("stalker") || nameLower.Contains("void"))
             {
-                MonsterRarity.Champion => 1.15f,
-                MonsterRarity.Rare => 1.3f,
-                MonsterRarity.PinnacleBoss => 1.6f,
-                _ => 1.0f
-            };
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/abyssal_void_monsters_pack.png", "white");
+                if (_monstersTexture != null)
+                {
+                    float colW = _monstersTexture.GetWidth() / 4f;
+                    float rowH = _monstersTexture.GetHeight() / 4f;
+                    int row = 0;
+                    if (nameLower.Contains("chaos") || nameLower.Contains("eye")) row = 1;
+                    else if (nameLower.Contains("tentacle")) row = 2;
+                    else if (nameLower.Contains("stalker")) row = 3;
+                    else row = 0;
+
+                    _atlasTexture = new AtlasTexture
+                    {
+                        Atlas = _monstersTexture,
+                        Region = new Rect2(0, row * rowH, colW, rowH)
+                    };
+                    MonsterSprite.Texture = _atlasTexture;
+                    MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
+                    scaleMultiplier = 1.25f;
+                }
+            }
+            else if (nameLower.Contains("drake") || nameLower.Contains("salamander") || nameLower.Contains("serpent") || nameLower.Contains("roc"))
+            {
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/elemental_beasts_pack.png", "white");
+                if (_monstersTexture != null)
+                {
+                    float colW = _monstersTexture.GetWidth() / 4f;
+                    float rowH = _monstersTexture.GetHeight() / 4f;
+                    int row = 0;
+                    if (nameLower.Contains("salamander")) row = 1;
+                    else if (nameLower.Contains("serpent")) row = 2;
+                    else if (nameLower.Contains("roc")) row = 3;
+                    else row = 0;
+
+                    _atlasTexture = new AtlasTexture
+                    {
+                        Atlas = _monstersTexture,
+                        Region = new Rect2(0, row * rowH, colW, rowH)
+                    };
+                    MonsterSprite.Texture = _atlasTexture;
+                    MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
+                    scaleMultiplier = 1.2f;
+                }
+            }
+            else
+            {
+                // Aethelis Monsters Pack (4 cols x 2 rows, black background)
+                _monstersTexture = TextureLoader.LoadTexture("res://Assets/aethelis_monsters_pack.jpg", "black")
+                    ?? TextureLoader.LoadTexture("res://Assets/monsters_creatures_grid.png", "white");
+
+                if (_monstersTexture != null)
+                {
+                    float colW = _monstersTexture.GetWidth() / 4f;
+                    float rowH = _monstersTexture.GetHeight() / 2f;
+                    int col = 0, row = 0;
+
+                    if (nameLower.Contains("imp") || nameLower.Contains("cinder")) { col = 0; row = 0; }
+                    else if (nameLower.Contains("wraith") || nameLower.Contains("spectre")) { col = 1; row = 0; }
+                    else if (nameLower.Contains("skeleton") || nameLower.Contains("undead")) { col = 2; row = 0; }
+                    else if (nameLower.Contains("wolf") || nameLower.Contains("hound")) { col = 3; row = 0; }
+                    else if (nameLower.Contains("scorpion") || nameLower.Contains("golem")) { col = 0; row = 1; }
+                    else if (nameLower.Contains("goblin")) { col = 1; row = 1; }
+                    else if (nameLower.Contains("spider")) { col = 2; row = 1; }
+                    else { col = 3; row = 1; } // Dreadknight
+
+                    _atlasTexture = new AtlasTexture
+                    {
+                        Atlas = _monstersTexture,
+                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
+                    };
+                    MonsterSprite.Texture = _atlasTexture;
+                    MonsterSprite.Scale = new Vector2(0.48f, 0.48f);
+                    scaleMultiplier = CoreEntity.Rarity == MonsterRarity.Champion ? 1.15f : (CoreEntity.Rarity == MonsterRarity.Rare ? 1.3f : 1.0f);
+                }
+            }
 
             Scale = new Vector2(scaleMultiplier, scaleMultiplier);
 
@@ -108,23 +158,50 @@ namespace Mdg.Client.Godot.Scripts.Entities
                     _ => Colors.Transparent
                 };
             }
+        }
+
+        public void UpdateHealthDisplay()
+        {
+            if (CoreEntity == null) return;
+
+            if (HealthBar != null)
+            {
+                HealthBar.MaxValue = CoreEntity.MaxHealth;
+                HealthBar.Value = CoreEntity.CurrentHealth;
+            }
 
             if (NameLabel != null)
             {
-                string tag = CoreEntity.Rarity != MonsterRarity.Normal ? $" [{CoreEntity.Rarity}]" : "";
-                NameLabel.Text = $"{CoreEntity.Name}{tag}";
+                string rarityPrefix = CoreEntity.Rarity switch
+                {
+                    MonsterRarity.Champion => "⚔️ [Champion] ",
+                    MonsterRarity.Rare => "⭐ [Rare] ",
+                    MonsterRarity.PinnacleBoss => "👑 [BOSS] ",
+                    _ => ""
+                };
+
+                NameLabel.Text = $"{rarityPrefix}{CoreEntity.Name}";
                 NameLabel.Modulate = CoreEntity.Rarity switch
                 {
-                    MonsterRarity.Champion => new Color(0.3f, 0.7f, 1f),
-                    MonsterRarity.Rare => new Color(1f, 0.88f, 0.3f),
+                    MonsterRarity.Champion => new Color(0.35f, 0.75f, 1f),
+                    MonsterRarity.Rare => new Color(1f, 0.85f, 0.2f),
                     MonsterRarity.PinnacleBoss => new Color(1f, 0.25f, 0.25f),
-                    _ => Colors.White
+                    _ => new Color(0.9f, 0.9f, 0.9f)
                 };
             }
+        }
 
-            if (StaggerBar != null)
+        public void TakeHitVisualFeedback(bool isCrit)
+        {
+            _hurtTimer = 0.15f;
+            UpdateHealthDisplay();
+
+            if (MonsterSprite != null)
             {
-                StaggerBar.Visible = CoreEntity.Rarity == MonsterRarity.PinnacleBoss;
+                var tween = CreateTween();
+                Color hitColor = isCrit ? new Color(1f, 0.9f, 0.2f) : new Color(1f, 0.2f, 0.2f);
+                tween.TweenProperty(MonsterSprite, "modulate", hitColor, 0.05f);
+                tween.TweenProperty(MonsterSprite, "modulate", Colors.White, 0.1f);
             }
         }
 
@@ -132,93 +209,65 @@ namespace Mdg.Client.Godot.Scripts.Entities
         {
             if (CoreEntity == null || !CoreEntity.IsAlive) return;
 
-            // AI di chuyển: Nếu người chơi ở gần (< 400px), đuổi theo người chơi; nếu không thì lượn lờ ngẫu nhiên
-            if (_playerTarget != null && IsInstanceValid(_playerTarget))
+            if (_hurtTimer > 0f)
             {
-                float dist = GlobalPosition.DistanceTo(_playerTarget.GlobalPosition);
-                if (dist < 450f && dist > 40f)
-                {
-                    Vector2 dir = (AcademicAimDirection(_playerTarget.GlobalPosition)).Normalized();
-                    Velocity = dir * 110f;
-                    MoveAndSlide();
+                _hurtTimer -= (float)delta;
+            }
 
-                    if (MonsterSprite != null && dir.X != 0)
-                    {
-                        MonsterSprite.FlipH = dir.X < 0;
-                    }
-                }
-                else
+            // AI di chuyển
+            ProcessMonsterAI((float)delta);
+        }
+
+        private void ProcessMonsterAI(float delta)
+        {
+            if (_playerTarget == null || !IsInstanceValid(_playerTarget)) return;
+
+            float distToPlayer = GlobalPosition.DistanceTo(_playerTarget.GlobalPosition);
+
+            // Bán kính phát hiện 450px
+            if (distToPlayer < 450f && distToPlayer > 35f)
+            {
+                Vector2 dir = (_playerTarget.GlobalPosition - GlobalPosition).Normalized();
+                Velocity = dir * 90f;
+                MoveAndSlide();
+
+                if (MonsterSprite != null && dir.X != 0)
                 {
-                    Wander((float)delta);
+                    MonsterSprite.FlipH = dir.X < 0;
+                    _animTimer += delta * 10f;
+                    MonsterSprite.Position = new Vector2(0, MathF.Sin(_animTimer) * 2f);
                 }
             }
             else
             {
-                Wander((float)delta);
-            }
+                _wanderTimer -= delta;
+                if (_wanderTimer <= 0f)
+                {
+                    _wanderTimer = (float)GD.RandRange(2.0, 5.0);
+                    _wanderDir = new Vector2((float)GD.RandRange(-1.0, 1.0), (float)GD.RandRange(-1.0, 1.0)).Normalized();
+                }
 
-            // Xoay vòng Aura quái tinh anh/boss
-            if (AuraRing != null && AuraRing.Visible)
-            {
-                AuraRing.Rotation += (float)delta * 1.5f;
-            }
-        }
-
-        private Vector2 AcademicAimDirection(Vector2 target)
-        {
-            return target - GlobalPosition;
-        }
-
-        private void Wander(float delta)
-        {
-            _wanderTimer -= delta;
-            if (_wanderTimer <= 0f)
-            {
-                var rand = new Random();
-                _wanderDir = new Vector2((float)(rand.NextDouble() * 2 - 1), (float)(rand.NextDouble() * 2 - 1)).Normalized();
-                _wanderTimer = (float)(rand.NextDouble() * 3 + 2);
-            }
-
-            Velocity = _wanderDir * 35f;
-            MoveAndSlide();
-        }
-
-        public void UpdateHealthDisplay()
-        {
-            if (CoreEntity != null && HealthBar != null)
-            {
-                HealthBar.MaxValue = CoreEntity.MaxHealth;
-                HealthBar.Value = CoreEntity.CurrentHealth;
-            }
-        }
-
-        public void TakeHitVisualFeedback(bool isCrit)
-        {
-            UpdateHealthDisplay();
-
-            if (MonsterSprite != null)
-            {
-                var flashColor = isCrit ? new Color(2f, 0.4f, 0.4f) : new Color(1.8f, 1.8f, 1.8f);
-                MonsterSprite.Modulate = flashColor;
-
-                var tween = CreateTween();
-                tween.TweenProperty(MonsterSprite, "modulate", Colors.White, 0.15f);
+                Velocity = _wanderDir * 25f;
+                MoveAndSlide();
             }
         }
 
         public void PlayDeathAnimation()
         {
             SetPhysicsProcess(false);
-            if (HealthBar != null) HealthBar.Visible = false;
-            if (NameLabel != null) NameLabel.Visible = false;
-            if (AuraRing != null) AuraRing.Visible = false;
-
-            var tween = CreateTween();
-            tween.SetParallel(true);
-            tween.TweenProperty(this, "scale", new Vector2(0.1f, 0.1f), 0.35f);
-            tween.TweenProperty(this, "modulate:a", 0.0f, 0.35f);
-            tween.SetParallel(false);
-            tween.TweenCallback(Callable.From(QueueFree));
+            if (MonsterSprite != null)
+            {
+                var tween = CreateTween();
+                tween.SetParallel(true);
+                tween.TweenProperty(MonsterSprite, "modulate:a", 0.0f, 0.35f);
+                tween.TweenProperty(MonsterSprite, "scale", MonsterSprite.Scale * 1.3f, 0.35f);
+                tween.SetParallel(false);
+                tween.TweenCallback(Callable.From(QueueFree));
+            }
+            else
+            {
+                QueueFree();
+            }
         }
     }
 }

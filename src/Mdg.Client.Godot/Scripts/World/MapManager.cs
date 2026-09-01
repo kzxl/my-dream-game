@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using Mdg.Client.Godot.Scripts.Common;
+using Mdg.Client.Godot.Scripts.Entities;
 using Mdg.Core.Common.Math;
 using Mdg.Core.Features.Combat;
 using Mdg.Core.Features.Maps;
@@ -14,6 +15,7 @@ namespace Mdg.Client.Godot.Scripts.World
         [Export] public PackedScene? ShrineScene { get; set; }
         [Export] public PackedScene? GatheringNodeScene { get; set; }
         [Export] public PackedScene? NpcScene { get; set; }
+        [Export] public PackedScene? DummyScene { get; set; }
 
         public ZoneMapDto? CurrentMap { get; private set; }
         public string CurrentZoneId { get; private set; } = "SanctuaryHaven";
@@ -74,12 +76,53 @@ namespace Mdg.Client.Godot.Scripts.World
             // Sinh NPCs
             SpawnNpcs();
 
+            // Sinh Training Dummies (ở làng Haven)
+            SpawnDummies();
+
+            // Sinh Props trang trí (Cây cối, đống lửa, hòm rương)
+            SpawnProps();
+
             // Yêu cầu vẽ lại Tilemap
             QueueRedraw();
 
             OnBannerRequested?.Invoke(CurrentMap.Name, CurrentMap.Subtitle);
 
             return CurrentMap;
+        }
+
+        private void SpawnDummies()
+        {
+            if (CurrentMap == null || _environmentObjectsContainer == null || DummyScene == null) return;
+
+            foreach (var dDto in CurrentMap.Dummies)
+            {
+                var dummyNode = DummyScene.Instantiate<TrainingDummy>();
+                _environmentObjectsContainer.AddChild(dummyNode);
+                dummyNode.Setup(dDto.Name, new Vector2((float)dDto.X, (float)dDto.Y));
+            }
+        }
+
+        private void SpawnProps()
+        {
+            if (CurrentMap == null || _environmentObjectsContainer == null) return;
+
+            foreach (var propDto in CurrentMap.Props)
+            {
+                var spr = new Sprite2D();
+                if (propDto.Type.Contains("tree"))
+                {
+                    spr.Texture = _natureTexture;
+                    spr.Scale = new Vector2(0.6f, 0.6f);
+                }
+                else
+                {
+                    spr.Texture = _propsTexture;
+                    spr.Scale = new Vector2(0.5f, 0.5f);
+                }
+
+                spr.Position = new Vector2((float)propDto.X, (float)propDto.Y);
+                _environmentObjectsContainer.AddChild(spr);
+            }
         }
 
         private void ClearOldZone()

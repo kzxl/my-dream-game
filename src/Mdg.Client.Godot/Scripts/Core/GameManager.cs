@@ -62,7 +62,7 @@ namespace Mdg.Client.Godot.Scripts.Core
             InitializeMapAndZone();
             SpawnPlayer();
             SpawnCompanion();
-            SpawnInitialMonsters();
+            SpawnMonstersForCurrentZone();
         }
 
         private void InitializeCoreSystems()
@@ -104,8 +104,8 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
             LocalPlayer.Position = new FixVector2((float)targetX, (float)targetY);
 
-            ClearMonsters();
-            SpawnInitialMonsters();
+            // Sinh quái vật chính xác theo ZoneMap
+            SpawnMonstersForCurrentZone();
 
             AudioManager.Instance?.PlayPortal();
             Hud?.SetCombatStatus($"🌀 Đã dịch chuyển đến [{targetZone}]!");
@@ -151,47 +151,95 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
         }
 
-        private void SpawnInitialMonsters()
+        private void SpawnMonstersForCurrentZone()
         {
-            var spawnConfigs = new[]
+            ClearMonsters();
+
+            if (Map?.CurrentMap == null) return;
+
+            var spawners = Map.CurrentMap.MonsterSpawns;
+            if (spawners == null || spawners.Count == 0)
             {
-                (Name: "Sylvan Stalker", Rarity: MonsterRarity.Normal, Pos: new Vector2(1300, 1400), BaseHp: 120f, BaseDmg: 15f),
-                (Name: "Void Creeper", Rarity: MonsterRarity.Normal, Pos: new Vector2(1700, 1420), BaseHp: 150f, BaseDmg: 18f),
-                (Name: "Abyssal Brute", Rarity: MonsterRarity.Champion, Pos: new Vector2(1200, 1700), BaseHp: 220f, BaseDmg: 25f),
-                (Name: "Celestial Goliath", Rarity: MonsterRarity.Rare, Pos: new Vector2(1800, 1750), BaseHp: 320f, BaseDmg: 35f),
-                (Name: "Malakor, Void Inquisitor", Rarity: MonsterRarity.PinnacleBoss, Pos: new Vector2(1500, 1100), BaseHp: 800f, BaseDmg: 55f),
-            };
+                // Thị trấn an toàn (Sanctuary Haven) -> Không có quái vật hoang dã
+                Hud?.UpdateMonstersAlive(0);
+                return;
+            }
 
-            foreach (var cfg in spawnConfigs)
+            var rand = new Random();
+
+            foreach (var sp in spawners)
             {
-                var monster = new MonsterEntity(cfg.Name, cfg.Rarity, cfg.BaseHp, cfg.BaseDmg);
-                var monsterPos = new FixVector2(cfg.Pos.X, cfg.Pos.Y);
-
-                if (cfg.Rarity == MonsterRarity.Rare || cfg.Rarity == MonsterRarity.PinnacleBoss)
+                if (sp.Type == "boss")
                 {
-                    monster.AddAffix(MonsterAffixType.AetherWard);
-                    monster.AddAffix(MonsterAffixType.MagmaConduit);
-                }
-
-                if (cfg.Rarity == MonsterRarity.PinnacleBoss)
-                {
-                    _activeBossEntity = monster;
+                    var boss = new MonsterEntity("Malakor, Void Inquisitor", MonsterRarity.PinnacleBoss, 800f, 55f);
+                    boss.AddAffix(MonsterAffixType.AetherWard);
+                    boss.AddAffix(MonsterAffixType.MagmaConduit);
+                    _activeBossEntity = boss;
                     _bossCurrentStagger = 0f;
                     _isBossStaggered = false;
-                    Hud?.ShowBossHud(monster.Name, monster.CurrentHealth, monster.MaxHealth, 0f);
-                }
+                    Hud?.ShowBossHud(boss.Name, boss.CurrentHealth, boss.MaxHealth, 0f);
 
-                if (MonsterScene != null)
+                    if (MonsterScene != null)
+                    {
+                        var mView = MonsterScene.Instantiate<MonsterView>();
+                        AddChild(mView);
+                        mView.Initialize(boss, new FixVector2((float)sp.X, (float)sp.Y), PlayerView);
+                        _monsters[boss.Id] = (boss, mView);
+                    }
+                }
+                else
                 {
-                    var mView = MonsterScene.Instantiate<MonsterView>();
-                    AddChild(mView);
-                    mView.Initialize(monster, monsterPos, PlayerView);
-                    _monsters[monster.Id] = (monster, mView);
+                    // Sinh thủ lĩnh bầy đàn (Champion / Rare)
+                    string mName = GetMonsterDisplayName(sp.Type);
+                    var leaderRarity = rand.NextDouble() < 0.35 ? MonsterRarity.Rare : MonsterRarity.Champion;
+                    float leaderHp = (sp.Type == "golem" || sp.Type == "spectre") ? 320f : 200f;
+                    var leader = new MonsterEntity(mName, leaderRarity, leaderHp, 28f);
+                    leader.AddAffix(MonsterAffixType.AetherWard);
+
+                    if (MonsterScene != null)
+                    {
+                        var lView = MonsterScene.Instantiate<MonsterView>();
+                        AddChild(lView);
+                        lView.Initialize(leader, new FixVector2((float)sp.X, (float)sp.Y), PlayerView);
+                        _monsters[leader.Id] = (leader, lView);
+
+                        // Sinh các quái vật tay sai đi kèm trong bầy
+                        int minionCount = Math.Max(2, sp.Count - 1);
+                        for (int i = 0; i < minionCount; i++)
+                        {
+                            float offsetX = (float)GD.RandRange(-65, 65);
+                            float offsetY = (float)GD.RandRange(-65, 65);
+                            var minion = new MonsterEntity(mName, MonsterRarity.Normal, leaderHp * 0.55f, 16f);
+                            var minionView = MonsterScene.Instantiate<MonsterView>();
+                            AddChild(minionView);
+                            minionView.Initialize(minion, new FixVector2((float)sp.X + offsetX, (float)sp.Y + offsetY), PlayerView);
+                            _monsters[minion.Id] = (minion, minionView);
+                        }
+                    }
                 }
             }
 
             Hud?.UpdateMonstersAlive(_monsters.Count);
         }
+
+        private static string GetMonsterDisplayName(string type) => type switch
+        {
+            "wolf" => "Shadow Direwolf",
+            "goblin" => "Goblin Raider",
+            "skeleton" => "Skeleton Guard",
+            "undead_knight" => "Undead Dreadknight",
+            "frost_golem" => "Glacial Frost Golem",
+            "fire_imp" => "Infernal Fire Imp",
+            "magma_golem" => "Magma Behemoth",
+            "void_spectre" => "Abyssal Shadow Spectre",
+            "chaos_eye" => "Void Eye of Chaos",
+            "tentacle_fiend" => "Dark Tentacle Fiend",
+            "horror_stalker" => "Cosmic Horror Stalker",
+            "storm_drake" => "Storm Drake Dragon",
+            "fire_salamander" => "Molten Fire Salamander",
+            "crystal_serpent" => "Frost Crystal Serpent",
+            _ => "Toxic Slime"
+        };
 
         private void ClearMonsters()
         {
@@ -529,6 +577,36 @@ namespace Mdg.Client.Godot.Scripts.Core
                 if (FixVector2.DistanceSquared(center, monsterPos) <= radiusSq)
                 {
                     damagedMonsters.Add((entity, view));
+                }
+            }
+
+            // Tương tác tấn công bù nhìn Dummy trong thị trấn
+            var dummies = GetTree().GetNodesInGroup("Dummy");
+            foreach (Node node in dummies)
+            {
+                if (node is TrainingDummy dummy && IsInstanceValid(dummy))
+                {
+                    float distSq = dummy.GlobalPosition.DistanceSquaredTo(new Vector2(center.X, center.Y));
+                    if (distSq <= radiusSq)
+                    {
+                        float dmg = 0f;
+                        foreach (var p in payload.Portions) dmg += p.Amount;
+                        if (dmg <= 0f) dmg = 50f;
+
+                        bool isCrit = (float)GD.RandRange(0, 100) <= payload.CritChance;
+                        if (isCrit) dmg *= payload.CritMultiplier / 100f;
+
+                        dummy.TakeHit(dmg, isCrit);
+                        AudioManager.Instance?.PlayHit(isCrit);
+
+                        if (FloatingTextScene != null)
+                        {
+                            var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
+                            AddChild(fct);
+                            fct.Position = dummy.GlobalPosition + new Vector2((float)GD.RandRange(-15, 15), -25);
+                            fct.Setup($"{MathF.Ceiling(dmg)}" + (isCrit ? " CRIT!" : ""), isCrit ? new Color(1f, 0.9f, 0.2f) : Colors.White);
+                        }
+                    }
                 }
             }
 

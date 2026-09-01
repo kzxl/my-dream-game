@@ -1,0 +1,53 @@
+[gd_scene load_steps=3 format=3 uid="uid://d0t1trainingdummy"]
+
+[ext_resource type="Script" path="res://Scripts/Entities/TrainingDummy.cs" id="1_dum"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_dum"]
+radius = 16.0
+height = 36.0
+
+[node name="TrainingDummy" type="CharacterBody2D" node_paths=PackedStringArray("DummySprite", "NameLabel", "HealthBar") groups=["Dummy", "Hittable"]]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("1_dum")
+DummySprite = NodePath("DummySprite")
+NameLabel = NodePath("NameLabel")
+HealthBar = NodePath("HealthBar")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 4)
+shape = SubResource("CapsuleShape2D_dum")
+
+[node name="DummySprite" type="Sprite2D" parent="."]
+position = Vector2(0, -6)
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -24.0
+offset_top = -32.0
+offset_right = 24.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 0
+show_percentage = false
+
+[node name="NameLabel" type="Label" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -48.0
+offset_right = 60.0
+offset_bottom = -34.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.95, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = "🎯 Training Dummy"
+horizontal_alignment = 1
