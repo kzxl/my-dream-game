@@ -50,16 +50,17 @@ namespace Mdg.Client.Godot.Scripts.Combat
         {
             if (ProjectileSprite == null) return;
 
-            string fileName = ProjectileType switch
+            if (ProjectileType == "fireball")
             {
-                "fireball" => "spell_fireball.png",
-                "frost" => "spell_frost_orb.png",
-                "arcane" => "spell_arcane_bolt.png",
-                _ => "spell_slash.png"
-            };
+                ProjectileSprite.Texture = TextureLoader.LoadTexture("res://Assets/PixelCrawler/Environment/Structures/Stations/Bonfire/Fire_01-Sheet.png");
+            }
+            else
+            {
+                ProjectileSprite.Texture = TextureLoader.LoadTexture("res://Assets/PixelCrawler/Weapons/Wood/Wood.png")
+                    ?? TextureLoader.LoadTexture("res://Assets/PixelCrawler/Weapons/Bone/Bone.png");
+            }
 
-            ProjectileSprite.Texture = TextureLoader.LoadIndividual("Spells", fileName);
-            ProjectileSprite.Scale = new Vector2(0.55f, 0.55f);
+            ProjectileSprite.Scale = new Vector2(1.2f, 1.2f);
             ProjectileSprite.Modulate = ProjectileType switch
             {
                 "fireball" => new Color(1f, 0.45f, 0.2f),

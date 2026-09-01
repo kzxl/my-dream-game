@@ -65,28 +65,8 @@ namespace Mdg.Client.Godot.Scripts.Entities
         {
             if (PlayerSprite == null) return;
 
-            bool isFemale = Gender == "Female";
-            string fileName = "hero_novice_male.png";
-
-            if (ClassSpec == "Vanguard")
-            {
-                fileName = isFemale ? "hero_vanguard_female.png" : "hero_vanguard_male.png";
-            }
-            else if (ClassSpec == "Arcanist")
-            {
-                fileName = isFemale ? "hero_arcanist_female.png" : "hero_arcanist_male.png";
-            }
-            else if (ClassSpec == "ShadowRogue")
-            {
-                fileName = isFemale ? "hero_shadowrogue_female.png" : "hero_shadowrogue_male.png";
-            }
-            else
-            {
-                fileName = isFemale ? "hero_novice_female.png" : "hero_novice_male.png";
-            }
-
-            PlayerSprite.Texture = TextureLoader.LoadIndividual("Heroes", fileName);
-            PlayerSprite.Scale = new Vector2(0.45f, 0.45f);
+            PlayerSprite.Texture = TextureLoader.LoadHeroTexture(ClassSpec, Gender);
+            PlayerSprite.Scale = new Vector2(1.5f, 1.5f);
             PlayerSprite.Modulate = Colors.White;
         }
 

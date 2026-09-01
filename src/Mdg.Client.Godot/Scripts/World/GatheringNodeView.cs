@@ -74,26 +74,23 @@ namespace Mdg.Client.Godot.Scripts.World
             if (_nodeSprite == null) return;
 
             string keyLower = (NodeId + " " + NodeName + " " + YieldItemId + " " + ProfessionType).ToLowerInvariant();
-            string fileName = "node_iron_ore.png";
 
             if (ProfessionType == "herbalism" || keyLower.Contains("herb") || keyLower.Contains("lotus") || keyLower.Contains("flower") || keyLower.Contains("bloom"))
             {
-                if (keyLower.Contains("silver") || keyLower.Contains("dream")) fileName = "node_silverleaf.png";
-                else if (keyLower.Contains("blood") || keyLower.Contains("thistle")) fileName = "node_bloodthistle.png";
-                else if (keyLower.Contains("lotus") || keyLower.Contains("celestial")) fileName = "node_lotus.png";
-                else fileName = "node_peacebloom.png";
+                _nodeSprite.Texture = TextureLoader.LoadTexture("res://Assets/PixelCrawler/Environment/Props/Static/Vegetation.png");
+            }
+            else if (keyLower.Contains("aether") || keyLower.Contains("crystal"))
+            {
+                _nodeSprite.Texture = TextureLoader.LoadTexture("res://Assets/PixelCrawler/Environment/Props/Static/Esoteric.png");
             }
             else
             {
-                if (keyLower.Contains("silver") || keyLower.Contains("mithril")) fileName = "node_silver_ore.png";
-                else if (keyLower.Contains("gold") || keyLower.Contains("adamantite")) fileName = "node_gold_ore.png";
-                else if (keyLower.Contains("aether") || keyLower.Contains("crystal")) fileName = "node_aether_crystal.png";
-                else fileName = "node_iron_ore.png";
+                _nodeSprite.Texture = TextureLoader.LoadTexture("res://Assets/PixelCrawler/Environment/Props/Static/Resources.png")
+                    ?? TextureLoader.LoadTexture("res://Assets/PixelCrawler/Environment/Props/Static/Rocks.png");
             }
 
-            _nodeSprite.Texture = TextureLoader.LoadIndividual("Gathering", fileName);
-            _nodeSprite.Scale = new Vector2(0.55f, 0.55f);
-            _nodeSprite.Offset = new Vector2(0, -16);
+            _nodeSprite.Scale = new Vector2(1.5f, 1.5f);
+            _nodeSprite.Offset = new Vector2(0, -10);
         }
 
         public override void _Process(double delta)

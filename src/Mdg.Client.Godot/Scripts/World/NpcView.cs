@@ -46,41 +46,9 @@ namespace Mdg.Client.Godot.Scripts.World
         {
             if (_npcSprite == null) return;
 
-            string nameLower = (NpcName + " " + NpcTitle).ToLowerInvariant();
-            string fileName = "npc_priestess.png";
-
-            if (nameLower.Contains("smith") || nameLower.Contains("doran") || nameLower.Contains("lisbeth"))
-            {
-                fileName = "npc_lisbeth.png"; // Thợ rèn Lisbeth
-            }
-            else if (nameLower.Contains("merchant") || nameLower.Contains("trader") || nameLower.Contains("shop"))
-            {
-                fileName = "npc_merchant.png"; // Thương gia Haven
-            }
-            else if (nameLower.Contains("elder") || nameLower.Contains("verin") || nameLower.Contains("sage") || nameLower.Contains("aethel"))
-            {
-                fileName = "npc_elder_verin.png"; // Trưởng lão Verin
-            }
-            else if (nameLower.Contains("alchemist") || nameLower.Contains("elina") || nameLower.Contains("potion"))
-            {
-                fileName = "npc_alchemist_elina.png"; // Nhà giả kim Elina
-            }
-            else if (nameLower.Contains("hunter") || nameLower.Contains("captain") || nameLower.Contains("valen"))
-            {
-                fileName = "npc_hunter_valen.png"; // Thuyền trưởng thợ săn Valen
-            }
-            else if (nameLower.Contains("lore") || nameLower.Contains("astromancer") || nameLower.Contains("lyra"))
-            {
-                fileName = "npc_lorekeeper_lyra.png"; // Học giả chiêm tinh Lyra
-            }
-            else if (nameLower.Contains("guard") || nameLower.Contains("kaelen") || nameLower.Contains("vault") || nameLower.Contains("stash"))
-            {
-                fileName = "npc_guard_kaelen.png"; // Thủ kho Kaelen
-            }
-
-            _npcSprite.Texture = TextureLoader.LoadIndividual("Npcs", fileName);
-            _npcSprite.Scale = new Vector2(0.5f, 0.5f);
-            _npcSprite.Offset = new Vector2(0, -18);
+            _npcSprite.Texture = TextureLoader.LoadNpcTexture(NpcName + " " + NpcTitle);
+            _npcSprite.Scale = new Vector2(1.5f, 1.5f);
+            _npcSprite.Offset = new Vector2(0, -10);
         }
 
         public override void _Process(double delta)

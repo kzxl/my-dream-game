@@ -33,17 +33,7 @@ namespace Mdg.Client.Godot.Scripts.UI
             // Nạp ảnh chân dung NPC
             if (NpcAvatar != null)
             {
-                string nameLower = (npcName + " " + npcTitle).ToLowerInvariant();
-                string fileName = "npc_priestess.png";
-                if (nameLower.Contains("smith") || nameLower.Contains("lisbeth")) fileName = "npc_lisbeth.png";
-                else if (nameLower.Contains("merchant")) fileName = "npc_merchant.png";
-                else if (nameLower.Contains("elder") || nameLower.Contains("verin")) fileName = "npc_elder_verin.png";
-                else if (nameLower.Contains("alchemist") || nameLower.Contains("elina")) fileName = "npc_alchemist_elina.png";
-                else if (nameLower.Contains("hunter") || nameLower.Contains("valen")) fileName = "npc_hunter_valen.png";
-                else if (nameLower.Contains("lore") || nameLower.Contains("lyra")) fileName = "npc_lorekeeper_lyra.png";
-                else if (nameLower.Contains("guard") || nameLower.Contains("kaelen")) fileName = "npc_guard_kaelen.png";
-
-                NpcAvatar.Texture = TextureLoader.LoadIndividual("Npcs", fileName);
+                NpcAvatar.Texture = TextureLoader.LoadNpcTexture(npcName + " " + npcTitle);
             }
 
             BuildActions(npcName, npcTitle, npcType);

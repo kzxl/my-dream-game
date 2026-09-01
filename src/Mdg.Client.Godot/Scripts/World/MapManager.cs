@@ -21,10 +21,8 @@ namespace Mdg.Client.Godot.Scripts.World
         public string CurrentZoneId { get; private set; } = "SanctuaryHaven";
 
         private Texture2D? _terrainTexture;
+        private Texture2D? _wallTexture;
         private Texture2D? _waterTexture;
-        private Texture2D? _treesTexture;
-        private Texture2D? _foliageTexture;
-        private Texture2D? _propsTexture;
 
         private Node2D? _environmentObjectsContainer;
         private Node2D? _collisionContainer;
@@ -51,15 +49,9 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void LoadTextures()
         {
-            TextureLoader.EnsureAssetsExtracted();
-
-            _terrainTexture = TextureLoader.LoadTexture("res://Assets/aethelis_terrain_tileset.jpg");
-            _waterTexture = TextureLoader.LoadTexture("res://Assets/aethelis_water_liquid_tileset.jpg");
-            _treesTexture = TextureLoader.LoadTexture("res://Assets/aethelis_trees_master_pack.jpg", "black")
-                ?? TextureLoader.LoadTexture("res://Assets/nature_props_master_pack.png", "black");
-            _foliageTexture = TextureLoader.LoadTexture("res://Assets/nature_props_master_pack.png", "black");
-            _propsTexture = TextureLoader.LoadTexture("res://Assets/props_interactive_grid.png", "black")
-                ?? TextureLoader.LoadTexture("res://Assets/props_pack.png", "black");
+            _terrainTexture = TextureLoader.LoadFloorsTileset();
+            _wallTexture = TextureLoader.LoadWallTileset();
+            _waterTexture = TextureLoader.LoadWaterTileset();
         }
 
         public ZoneMapDto LoadZone(string zoneId, double? spawnX = null, double? spawnY = null)
@@ -125,55 +117,16 @@ namespace Mdg.Client.Godot.Scripts.World
 
                 if (IsTreeProp(type))
                 {
-                    string fileName = "tree_oak.png";
-                    if (type.Contains("pine") || type.Contains("snow")) fileName = "tree_pine.png";
-                    else if (type.Contains("aether") || type.Contains("mystic")) fileName = "tree_aether.png";
-                    else if (type.Contains("volcanic") || type.Contains("basalt")) fileName = "tree_volcanic.png";
-                    else if (type.Contains("autumn") || type.Contains("maple")) fileName = "tree_autumn.png";
-                    else if (type.Contains("mushroom")) fileName = "tree_giant_mushroom.png";
-                    else if (type.Contains("willow")) fileName = "tree_willow.png";
-                    else if (type.Contains("cherry") || type.Contains("sakura")) fileName = "tree_cherry.png";
-
-                    spr.Texture = TextureLoader.LoadIndividual("Trees", fileName);
-                    spr.Scale = new Vector2(0.85f, 0.85f);
-                    spr.Offset = new Vector2(0, -35);
-                }
-                else if (IsFloraProp(type))
-                {
-                    string fileName = "flora_flowers_red.png";
-                    if (type.Contains("blue")) fileName = "flora_flowers_blue.png";
-                    else if (type.Contains("gold")) fileName = "flora_flowers_gold.png";
-                    else if (type.Contains("purple") || type.Contains("mana")) fileName = "flora_mana_bloom.png";
-                    else if (type.Contains("bush")) fileName = "flora_bush.png";
-                    else if (type.Contains("tall_grass") || type.Contains("fern")) fileName = "flora_tall_grass.png";
-                    else if (type.Contains("glow")) fileName = "flora_mushroom_glow.png";
-                    else if (type.Contains("cyan")) fileName = "flora_mushroom_cyan.png";
-                    else if (type.Contains("clover")) fileName = "flora_clover.png";
-                    else if (type.Contains("lily")) fileName = "flora_water_lily.png";
-                    else if (type.Contains("wildflowers")) fileName = "flora_wildflowers.png";
-
-                    spr.Texture = TextureLoader.LoadIndividual("Flora", fileName);
-                    spr.Scale = new Vector2(0.55f, 0.55f);
-                    spr.Offset = new Vector2(0, -10);
+                    int variant = (int)(propDto.X + propDto.Y);
+                    spr.Texture = TextureLoader.LoadTreeTexture(variant);
+                    spr.Scale = new Vector2(1.5f, 1.5f);
+                    spr.Offset = new Vector2(0, -25);
                 }
                 else
                 {
-                    string fileName = "prop_chest.png";
-                    if (type.Contains("gold")) fileName = "prop_chest_gold.png";
-                    else if (type.Contains("crystal")) fileName = "prop_chest_crystal.png";
-                    else if (type.Contains("waypoint")) fileName = "prop_waypoint.png";
-                    else if (type.Contains("barrel")) fileName = "prop_barrel.png";
-                    else if (type.Contains("vase") || type.Contains("pots")) fileName = "prop_vase.png";
-                    else if (type.Contains("lever")) fileName = "prop_lever.png";
-                    else if (type.Contains("campfire") || type.Contains("fire")) fileName = "prop_campfire.png";
-                    else if (type.Contains("torch")) fileName = "prop_torch.png";
-                    else if (type.Contains("pile")) fileName = "prop_gold_pile.png";
-                    else if (type.Contains("gargoyle")) fileName = "prop_gargoyle.png";
-                    else if (type.Contains("gate")) fileName = "prop_iron_gate.png";
-
-                    spr.Texture = TextureLoader.LoadIndividual("Props", fileName);
-                    spr.Scale = new Vector2(0.55f, 0.55f);
-                    spr.Offset = new Vector2(0, -15);
+                    spr.Texture = TextureLoader.LoadPropTexture(type);
+                    spr.Scale = new Vector2(1.5f, 1.5f);
+                    spr.Offset = new Vector2(0, -10);
                 }
 
                 spr.Position = new Vector2((float)propDto.X, (float)propDto.Y);
@@ -352,11 +305,6 @@ namespace Mdg.Client.Godot.Scripts.World
             int height = grid.Count;
             int width = height > 0 ? grid[0].Count : 0;
 
-            float terCellW = _terrainTexture != null ? _terrainTexture.GetWidth() / 4f : 256f;
-            float terCellH = _terrainTexture != null ? _terrainTexture.GetHeight() / 4f : 256f;
-            float watCellW = _waterTexture != null ? _waterTexture.GetWidth() / 4f : 256f;
-            float watCellH = _waterTexture != null ? _waterTexture.GetHeight() / 4f : 256f;
-
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
@@ -366,11 +314,12 @@ namespace Mdg.Client.Godot.Scripts.World
 
                     switch (tile)
                     {
-                        case 0: // Sàn cỏ tự nhiên
+                        case 0: // Sàn cỏ / đất tự nhiên (Floors)
                             if (_terrainTexture != null)
                             {
-                                int varCol = (x + y) % 3;
-                                var srcRect = new Rect2(varCol * terCellW, 0, terCellW, terCellH);
+                                int varCol = (x + y) % 4;
+                                int varRow = (x ^ y) % 4;
+                                var srcRect = new Rect2(varCol * 16, varRow * 16, 16, 16);
                                 DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else
@@ -379,14 +328,14 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 1: // Tường đá / vách núi
-                            if (_terrainTexture != null)
+                        case 1: // Tường đá / vách núi (Walls)
+                        case 10:
+                        case 15:
+                            if (_wallTexture != null)
                             {
-                                var srcRect = new Rect2(0, 3 * terCellH, terCellW, terCellH);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
-                                // Viền nổi 3D
-                                DrawRect(new Rect2(x * tileSize, y * tileSize, tileSize, 3), new Color(1f, 1f, 1f, 0.15f));
-                                DrawRect(new Rect2(x * tileSize, y * tileSize + tileSize - 4, tileSize, 4), new Color(0f, 0f, 0f, 0.35f));
+                                int varCol = (x + y) % 4;
+                                var srcRect = new Rect2(varCol * 16, 16, 16, 16);
+                                DrawTextureRectRegion(_wallTexture, destRect, srcRect);
                             }
                             else
                             {
@@ -394,11 +343,11 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 2: // Nước sâu (Azure Fluid)
+                        case 2: // Nước (Water)
                             if (_waterTexture != null)
                             {
-                                int animCol = (x + y) % 4;
-                                var srcRect = new Rect2(animCol * watCellW, 0, watCellW, watCellH);
+                                int varCol = (x + y) % 4;
+                                var srcRect = new Rect2(varCol * 16, 0, 16, 16);
                                 DrawTextureRectRegion(_waterTexture, destRect, srcRect);
                             }
                             else
@@ -411,8 +360,8 @@ namespace Mdg.Client.Godot.Scripts.World
                         case 4: // Quảng trường (Plaza)
                             if (_terrainTexture != null)
                             {
-                                int col = (x ^ y) % 2;
-                                var srcRect = new Rect2(col * terCellW, 2 * terCellH, terCellW, terCellH);
+                                int varCol = (x + y) % 4;
+                                var srcRect = new Rect2(varCol * 16, 64, 16, 16);
                                 DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else
@@ -422,10 +371,11 @@ namespace Mdg.Client.Godot.Scripts.World
                             break;
 
                         case 5: // Dung nham (Lava)
-                            if (_waterTexture != null)
+                            if (_terrainTexture != null)
                             {
-                                var srcRect = new Rect2(watCellW, 3 * watCellH, watCellW, watCellH);
-                                DrawTextureRectRegion(_waterTexture, destRect, srcRect);
+                                int varCol = (x + y) % 4;
+                                var srcRect = new Rect2(varCol * 16, 128, 16, 16);
+                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else
                             {
@@ -434,10 +384,11 @@ namespace Mdg.Client.Godot.Scripts.World
                             break;
 
                         case 7: // Băng tuyết (Glacial Ice)
-                            if (_waterTexture != null)
+                            if (_terrainTexture != null)
                             {
-                                var srcRect = new Rect2(3 * watCellW, 3 * watCellH, watCellW, watCellH);
-                                DrawTextureRectRegion(_waterTexture, destRect, srcRect);
+                                int varCol = (x + y) % 4;
+                                var srcRect = new Rect2(varCol * 16, 192, 16, 16);
+                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else
                             {
@@ -445,36 +396,10 @@ namespace Mdg.Client.Godot.Scripts.World
                             }
                             break;
 
-                        case 10: // Cột đá cổ đại
-                            if (_terrainTexture != null)
-                            {
-                                var srcRect = new Rect2(terCellW, 3 * terCellH, terCellW, terCellH);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
-                            }
-                            else
-                            {
-                                DrawRect(destRect, new Color(0.1f, 0.12f, 0.16f));
-                            }
-                            break;
-
-                        case 14: // Bụi rậm ngụy trang (Camouflage Bush)
-                            if (_terrainTexture != null)
-                            {
-                                var srcRect = new Rect2(0, 0, terCellW, terCellH);
-                                DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
-                                DrawCircle(new Vector2(x * tileSize + tileSize / 2f, y * tileSize + tileSize / 2f), tileSize / 2.5f, new Color(0.18f, 0.55f, 0.25f, 0.85f));
-                            }
-                            break;
-
-                        case 15: // Tường phá hủy (Destructible Wall)
-                            DrawRect(destRect, new Color(0.28f, 0.22f, 0.18f));
-                            DrawRect(new Rect2(x * tileSize + 3, y * tileSize + 3, tileSize - 6, tileSize - 6), new Color(1f, 0.85f, 0.2f), false, 1.5f);
-                            break;
-
                         default:
                             if (_terrainTexture != null)
                             {
-                                var srcRect = new Rect2(0, 0, terCellW, terCellH);
+                                var srcRect = new Rect2(0, 0, 16, 16);
                                 DrawTextureRectRegion(_terrainTexture, destRect, srcRect);
                             }
                             else

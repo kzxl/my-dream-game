@@ -80,59 +80,18 @@ namespace Mdg.Client.Godot.Scripts.Entities
         {
             if (CoreEntity == null || MonsterSprite == null) return;
 
-            string nameLower = CoreEntity.Name.ToLowerInvariant();
-            float scaleMultiplier = 1.0f;
-            string fileName = "monster_goblin.png";
+            MonsterSprite.Texture = TextureLoader.LoadMonsterTexture(CoreEntity.Name, CoreEntity.Rarity);
+            MonsterSprite.Offset = new Vector2(0, -10);
 
-            if (CoreEntity.Rarity == MonsterRarity.PinnacleBoss)
+            float scaleMultiplier = CoreEntity.Rarity switch
             {
-                if (nameLower.Contains("cryomancer") || nameLower.Contains("vael") || nameLower.Contains("frost")) fileName = "boss_vael.png";
-                else if (nameLower.Contains("ignis") || nameLower.Contains("tyrant") || nameLower.Contains("magma") || nameLower.Contains("fire")) fileName = "boss_ignis.png";
-                else if (nameLower.Contains("drake") || nameLower.Contains("dragon") || nameLower.Contains("storm")) fileName = "boss_drake.png";
-                else fileName = "boss_malakor.png";
+                MonsterRarity.PinnacleBoss => 2.2f,
+                MonsterRarity.Rare => 1.7f,
+                MonsterRarity.Champion => 1.5f,
+                _ => 1.35f
+            };
 
-                MonsterSprite.Scale = new Vector2(0.65f, 0.65f);
-                scaleMultiplier = 1.7f;
-            }
-            else if (nameLower.Contains("spectre") || nameLower.Contains("chaos") || nameLower.Contains("tentacle") || nameLower.Contains("stalker") || nameLower.Contains("void"))
-            {
-                if (nameLower.Contains("chaos") || nameLower.Contains("eye")) fileName = "monster_chaos_eye.png";
-                else if (nameLower.Contains("tentacle")) fileName = "monster_tentacle_fiend.png";
-                else if (nameLower.Contains("stalker") || nameLower.Contains("horror")) fileName = "monster_horror_stalker.png";
-                else fileName = "monster_void_spectre.png";
-
-                MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
-                scaleMultiplier = 1.25f;
-            }
-            else if (nameLower.Contains("drake") || nameLower.Contains("salamander") || nameLower.Contains("serpent") || nameLower.Contains("roc"))
-            {
-                if (nameLower.Contains("salamander")) fileName = "monster_fire_salamander.png";
-                else if (nameLower.Contains("serpent")) fileName = "monster_crystal_serpent.png";
-                else if (nameLower.Contains("roc")) fileName = "monster_thunder_roc.png";
-                else fileName = "monster_storm_drake.png";
-
-                MonsterSprite.Scale = new Vector2(0.5f, 0.5f);
-                scaleMultiplier = 1.2f;
-            }
-            else
-            {
-                if (nameLower.Contains("imp") || nameLower.Contains("cinder")) fileName = "monster_fire_imp.png";
-                else if (nameLower.Contains("wraith")) fileName = "monster_void_wraith.png";
-                else if (nameLower.Contains("skeleton") || nameLower.Contains("undead")) fileName = "monster_skeleton.png";
-                else if (nameLower.Contains("wolf") || nameLower.Contains("hound")) fileName = "monster_wolf.png";
-                else if (nameLower.Contains("scorpion") || nameLower.Contains("golem")) fileName = "monster_scorpion.png";
-                else if (nameLower.Contains("goblin")) fileName = "monster_goblin.png";
-                else if (nameLower.Contains("spider")) fileName = "monster_spider.png";
-                else fileName = "monster_dreadknight.png";
-
-                MonsterSprite.Scale = new Vector2(0.48f, 0.48f);
-                scaleMultiplier = CoreEntity.Rarity == MonsterRarity.Champion ? 1.15f : (CoreEntity.Rarity == MonsterRarity.Rare ? 1.3f : 1.0f);
-            }
-
-            MonsterSprite.Texture = TextureLoader.LoadIndividual("Monsters", fileName);
-            MonsterSprite.Offset = new Vector2(0, -15);
-
-            Scale = new Vector2(scaleMultiplier, scaleMultiplier);
+            MonsterSprite.Scale = new Vector2(scaleMultiplier, scaleMultiplier);
 
             if (AuraRing != null)
             {
