@@ -216,5 +216,13 @@ namespace Mdg.Client.Godot.Scripts.Common
         public static Texture2D? LoadFloorsTileset() => LoadTexture("res://Assets/PixelCrawler/Environment/Tilesets/Floors_Tiles.png");
         public static Texture2D? LoadWallTileset() => LoadTexture("res://Assets/PixelCrawler/Environment/Tilesets/Wall_Tiles.png");
         public static Texture2D? LoadWaterTileset() => LoadTexture("res://Assets/PixelCrawler/Environment/Tilesets/Water_tiles.png");
+
+        // TopDownBasic Pack Loaders
+        public static Texture2D? LoadGrassTileset() => LoadTexture("res://Assets/TopDownBasic/TX Tileset Grass.png");
+        public static Texture2D? LoadStoneGroundTileset() => LoadTexture("res://Assets/TopDownBasic/TX Tileset Stone Ground.png");
+        public static Texture2D? LoadTopDownWallTileset() => LoadTexture("res://Assets/TopDownBasic/TX Tileset Wall.png");
+        public static Texture2D? LoadTopDownPlantTexture() => LoadTexture("res://Assets/TopDownBasic/TX Plant with Shadow.png") ?? LoadTexture("res://Assets/TopDownBasic/TX Plant.png");
+        public static Texture2D? LoadTopDownPropsTexture() => LoadTexture("res://Assets/TopDownBasic/TX Props with Shadow.png") ?? LoadTexture("res://Assets/TopDownBasic/TX Props.png");
+        public static Texture2D? LoadTopDownStructTexture() => LoadTexture("res://Assets/TopDownBasic/TX Struct.png");
     }
 }
