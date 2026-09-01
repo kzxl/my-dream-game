@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using Mdg.Client.Adapter.Bridges;
+using Mdg.Client.Godot.Scripts.Audio;
 using Mdg.Client.Godot.Scripts.Combat;
 using Mdg.Client.Godot.Scripts.Common;
 using Mdg.Client.Godot.Scripts.Entities;
@@ -98,6 +99,7 @@ namespace Mdg.Client.Godot.Scripts.Core
             ClearMonsters();
             SpawnInitialMonsters();
 
+            AudioManager.Instance?.PlayPortal();
             Hud?.SetCombatStatus($"🌀 Đã dịch chuyển đến [{targetZone}]!");
         }
 
@@ -437,6 +439,8 @@ namespace Mdg.Client.Godot.Scripts.Core
                 tuple.View.TakeHitVisualFeedback(e.IsCrit);
             }
 
+            AudioManager.Instance?.PlayHit(e.IsCrit);
+
             if (FloatingTextScene != null)
             {
                 var fct = FloatingTextScene.Instantiate<FloatingCombatText>();
@@ -475,6 +479,7 @@ namespace Mdg.Client.Godot.Scripts.Core
 
                 if (_monsters.Count == 0)
                 {
+                    AudioManager.Instance?.PlayLevelUp();
                     Hud?.SetCombatStatus("🎉 CHIẾN THẮNG! Đã quét sạch quái vật vùng đất Aethelis!");
                 }
             }
@@ -487,6 +492,8 @@ namespace Mdg.Client.Godot.Scripts.Core
             var lootNode = GroundLootScene.Instantiate<GroundLootView>();
             AddChild(lootNode);
             lootNode.Position = pos + new Vector2((float)GD.RandRange(-20, 20), (float)GD.RandRange(-20, 20));
+
+            AudioManager.Instance?.PlayLootDrop(monster.Rarity.ToString());
 
             var rand = new Random();
             int gold = rand.Next(15, 60);
