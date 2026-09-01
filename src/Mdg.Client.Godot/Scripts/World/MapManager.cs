@@ -29,8 +29,14 @@ namespace Mdg.Client.Godot.Scripts.World
         private Node2D? _environmentObjectsContainer;
         private Node2D? _collisionContainer;
 
+        public List<PortalView> Portals { get; } = new();
+        public List<ShrineView> Shrines { get; } = new();
+        public List<GatheringNodeView> GatheringNodes { get; } = new();
+        public List<NpcView> Npcs { get; } = new();
+
         public event Action<string, double, double>? OnZoneChanged;
         public event Action<string, string>? OnBannerRequested;
+        public event Action<NpcView>? OnNpcInteracted;
 
         public override void _Ready()
         {
@@ -186,6 +192,11 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private void ClearOldZone()
         {
+            Portals.Clear();
+            Shrines.Clear();
+            GatheringNodes.Clear();
+            Npcs.Clear();
+
             if (_environmentObjectsContainer != null)
             {
                 foreach (Node child in _environmentObjectsContainer.GetChildren())
@@ -250,6 +261,8 @@ namespace Mdg.Client.Godot.Scripts.World
                 {
                     OnZoneChanged?.Invoke(tgtZone, tgtPos.X, tgtPos.Y);
                 };
+
+                Portals.Add(portalNode);
             }
         }
 
@@ -267,6 +280,8 @@ namespace Mdg.Client.Godot.Scripts.World
 
                     var color = new Color(poi.Color);
                     shrineNode.Setup(poi.Id, poi.Name, poi.BuffType, (float)poi.BuffDuration, color);
+
+                    Shrines.Add(shrineNode);
                 }
             }
         }
@@ -304,6 +319,8 @@ namespace Mdg.Client.Godot.Scripts.World
                     {
                         nodeObj.Setup($"tree_{i}", "Gỗ Thần Cổ Đại", "mining", 1, "mat_elder_wood", new Color(0.85f, 0.6f, 0.3f), 1.0f);
                     }
+
+                    GatheringNodes.Add(nodeObj);
                 }
             }
         }
@@ -320,6 +337,9 @@ namespace Mdg.Client.Godot.Scripts.World
 
                 var color = new Color(npcDto.Color);
                 npcNode.Setup(npcDto.Name, npcDto.Title, color, $"Chào mừng bạn đến với {CurrentMap.Name}. Hãy cẩn trọng quái vật ngoài cổng thành!");
+
+                npcNode.OnNpcInteracted += (n) => OnNpcInteracted?.Invoke(n);
+                Npcs.Add(npcNode);
             }
         }
 

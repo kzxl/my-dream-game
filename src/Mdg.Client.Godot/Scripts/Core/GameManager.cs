@@ -74,6 +74,7 @@ namespace Mdg.Client.Godot.Scripts.Core
             SpawnCompanion();
             SpawnMonstersForCurrentZone();
             SetupDefeatModal();
+            SetupModalsAndWidgets();
             UpdateProgressionUI();
         }
 
@@ -112,6 +113,65 @@ namespace Mdg.Client.Godot.Scripts.Core
             }
         }
 
+        private void SetupModalsAndWidgets()
+        {
+            if (Hud == null || LocalPlayer == null) return;
+
+            Hud.InventoryModal?.Setup(LocalPlayer);
+            Hud.SkillsModal?.Setup(_skillPoints);
+            if (Hud.SkillsModal != null)
+            {
+                Hud.SkillsModal.OnSkillLevelUpRequested += (sk) =>
+                {
+                    Hud?.SetCombatStatus($"⭐ Đã thăng cấp kỹ năng: [{sk}]!");
+                };
+            }
+
+            Hud.ForgeModal?.Setup(LocalPlayer);
+            Hud.DevotionModal?.Setup(LocalPlayer);
+
+            if (Hud.WorldMapModal != null)
+            {
+                Hud.WorldMapModal.OnZoneSelected += (zoneId) =>
+                {
+                    HandleZoneChanged(zoneId, 300, 300);
+                };
+            }
+
+            if (Hud.NpcDialogModal != null)
+            {
+                Hud.NpcDialogModal.OnOpenForgeRequested += () => Hud.ForgeModal?.Toggle();
+                Hud.NpcDialogModal.OnOpenBestiaryRequested += () => Hud.CompendiumModal?.Toggle();
+                Hud.NpcDialogModal.OnOpenWorldMapRequested += () => Hud.WorldMapModal?.Toggle();
+            }
+
+            if (Map != null)
+            {
+                Map.OnNpcInteracted += (npc) =>
+                {
+                    Hud?.NpcDialogModal?.OpenDialog(npc.NpcName, npc.NpcTitle, npc.DialogText, npc.NpcTitle);
+                };
+            }
+
+            UpdateMinimapRadar();
+        }
+
+        private void UpdateMinimapRadar()
+        {
+            if (Hud?.MinimapWidget == null || PlayerView == null || Map == null) return;
+
+            var monsterViews = new List<MonsterView>();
+            foreach (var kvp in _monsters)
+            {
+                if (kvp.Value.View != null)
+                {
+                    monsterViews.Add(kvp.Value.View);
+                }
+            }
+
+            Hud.MinimapWidget.BindWorldEntities(PlayerView, monsterViews, Map.Portals, Map.Shrines, Map.GatheringNodes);
+        }
+
         private void HandleZoneChanged(string targetZone, double targetX, double targetY)
         {
             if (Map == null || LocalPlayer == null) return;
@@ -127,6 +187,7 @@ namespace Mdg.Client.Godot.Scripts.Core
 
             // Sinh quái vật chính xác theo ZoneMap
             SpawnMonstersForCurrentZone();
+            UpdateMinimapRadar();
 
             AudioManager.Instance?.PlayPortal();
             Hud?.SetCombatStatus($"🌀 Đã dịch chuyển đến [{targetZone}]!");
@@ -904,7 +965,11 @@ namespace Mdg.Client.Godot.Scripts.Core
 
                 GainExp(expGained);
 
-                // 2. Rơi vật phẩm / vàng khi quái vật bị hạ gục
+                // Ghi nhận tiến trình Bestiary Codex & Cập nhật Radar
+                Hud?.CompendiumModal?.RecordMonsterKill(tuple.Entity.Name);
+                UpdateMinimapRadar();
+
+                // 2. Rơi vật phẩm chuẩn ARPG khi quái vật bị hạ gục
                 SpawnGroundLoot(deathPos, tuple.Entity);
 
                 if (_monsters.Count == 0)

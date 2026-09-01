@@ -10,13 +10,13 @@ namespace Mdg.Client.Godot.Scripts.UI
     public partial class InventoryModal : Control
     {
         [Export] public GridContainer? BackpackGrid { get; set; }
-        [Export] public Label? GoldLabel { get; set; }
-        [Export] public Label? SparksLabel { get; set; }
+        [Export] public GridContainer? EquipmentGrid { get; set; }
         [Export] public Control? ItemTooltip { get; set; }
         [Export] public Label? TooltipName { get; set; }
         [Export] public Label? TooltipType { get; set; }
         [Export] public Label? TooltipStats { get; set; }
         [Export] public Label? TooltipMods { get; set; }
+        [Export] public Label? StatsSummaryLabel { get; set; }
 
         public bool IsOpen => Visible;
         private Character? _character;
@@ -25,7 +25,6 @@ namespace Mdg.Client.Godot.Scripts.UI
         {
             Visible = false;
             if (ItemTooltip != null) ItemTooltip.Visible = false;
-            BuildBackpackSlots();
         }
 
         public void Setup(Character character)
@@ -47,98 +46,166 @@ namespace Mdg.Client.Godot.Scripts.UI
             }
         }
 
-        private void BuildBackpackSlots()
+        public void RefreshUI()
         {
-            if (BackpackGrid == null) return;
+            if (_character == null) return;
+
+            RenderBackpack();
+            RenderEquipment();
+            RenderStatsSummary();
+        }
+
+        private void RenderBackpack()
+        {
+            if (BackpackGrid == null || _character == null) return;
 
             foreach (Node child in BackpackGrid.GetChildren())
             {
                 child.QueueFree();
             }
 
-            // Tạo 32 ô túi đồ
+            // 32 ô túi đồ
             for (int i = 0; i < 32; i++)
             {
-                int slotIndex = i;
-                var btn = new Button
+                int index = i;
+                ItemEntity? item = (index < _character.Inventory.Count) ? _character.Inventory[index] : null;
+
+                var slotBtn = new Button
                 {
                     CustomMinimumSize = new Vector2(48, 48),
-                    Text = slotIndex switch
-                    {
-                        0 => "⚔️",
-                        1 => "🛡️",
-                        2 => "👢",
-                        3 => "🧪",
-                        4 => "📜",
-                        _ => ""
-                    }
+                    Text = item != null ? item.Icon : "",
+                    TooltipText = ""
                 };
 
-                btn.MouseEntered += () => ShowSlotTooltip(slotIndex);
-                btn.MouseExited += HideTooltip;
-                btn.Pressed += () => OnSlotClicked(slotIndex);
+                if (item != null)
+                {
+                    slotBtn.Modulate = GetRarityColor(item.Rarity);
+                    slotBtn.MouseEntered += () => ShowItemTooltip(item);
+                    slotBtn.MouseExited += HideTooltip;
+                    slotBtn.Pressed += () => OnBackpackSlotClicked(item);
+                }
 
-                BackpackGrid.AddChild(btn);
+                BackpackGrid.AddChild(slotBtn);
             }
         }
 
-        public void RefreshUI()
+        private void RenderEquipment()
         {
-            if (GoldLabel != null) GoldLabel.Text = "🪙 1,500";
-            if (SparksLabel != null) SparksLabel.Text = "✨ 24";
+            if (EquipmentGrid == null || _character == null) return;
+
+            foreach (Node child in EquipmentGrid.GetChildren())
+            {
+                child.QueueFree();
+            }
+
+            var slots = new[]
+            {
+                (ItemSlot.Helm, "👑 Nón"),
+                (ItemSlot.BodyArmor, "🥋 Áo Giáp"),
+                (ItemSlot.MainHand, "🗡️ Vũ Khí Chính"),
+                (ItemSlot.OffHand, "🛡️ Khiên/Vũ Khí Phụ"),
+                (ItemSlot.Amulet, "📿 Dây Chuyền"),
+                (ItemSlot.Ring, "💍 Nhẫn")
+            };
+
+            foreach (var (slot, label) in slots)
+            {
+                _character.EquippedItems.TryGetValue(slot, out var item);
+
+                var slotBtn = new Button
+                {
+                    CustomMinimumSize = new Vector2(56, 56),
+                    Text = item != null ? $"{item.Icon}\n{slot}" : $"[{label}]",
+                    ClipText = true
+                };
+
+                if (item != null)
+                {
+                    slotBtn.Modulate = GetRarityColor(item.Rarity);
+                    slotBtn.MouseEntered += () => ShowItemTooltip(item);
+                    slotBtn.MouseExited += HideTooltip;
+                    slotBtn.Pressed += () =>
+                    {
+                        _character.UnequipItem(slot);
+                        RefreshUI();
+                    };
+                }
+
+                EquipmentGrid.AddChild(slotBtn);
+            }
         }
 
-        private void ShowSlotTooltip(int slotIndex)
+        private void RenderStatsSummary()
+        {
+            if (StatsSummaryLabel == null || _character == null) return;
+
+            float life = _character.Stats.GetValue(StatType.MaxLife);
+            float mana = _character.Stats.GetValue(StatType.MaxMana);
+            float es = _character.Stats.GetValue(StatType.MaxEnergyShield);
+            float armor = _character.Stats.GetValue(StatType.Armor);
+            float evasion = _character.Stats.GetValue(StatType.Evasion);
+            float physDmg = _character.Stats.GetValue(StatType.PhysicalDamage);
+            float critChance = _character.Stats.GetValue(StatType.CriticalStrikeChance);
+            float critMulti = _character.Stats.GetValue(StatType.CriticalStrikeMultiplier);
+
+            StatsSummaryLabel.Text = $"❤️ Máu: {life:0} | 💧 Mana: {mana:0} | 🛡️ Khiên ES: {es:0}\n" +
+                                     $"⚔️ Sát thương: {physDmg:0} | ⚡ Bạo kích: {critChance:0}% (x{critMulti / 100f:0.0})\n" +
+                                     $"🛡️ Giáp: {armor:0} | 💨 Né tránh: {evasion:0}";
+        }
+
+        private void OnBackpackSlotClicked(ItemEntity item)
+        {
+            if (_character == null) return;
+
+            if (item.Slot != ItemSlot.None)
+            {
+                // Trang bị món đồ vào người
+                _character.EquipItem(item);
+                RefreshUI();
+            }
+            else if (item.Rarity == ItemRarity.Consumable)
+            {
+                // Sử dụng bình thuốc / cuộn giấy
+                _character.Heal(120f, null!, 0);
+                _character.Inventory.Remove(item);
+                RefreshUI();
+            }
+        }
+
+        private void ShowItemTooltip(ItemEntity item)
         {
             if (ItemTooltip == null) return;
 
-            string name = slotIndex switch
-            {
-                0 => "Thanh Kiếm Aethelis Rực Lửa",
-                1 => "Khiên Hộ Vệ Thần Thánh",
-                2 => "Giày Tốc Biến Phong Thần",
-                3 => "Bình Máu Thánh",
-                4 => "Cuộn Giấy Hồi Sinh",
-                _ => ""
-            };
+            var rarityColor = GetRarityColor(item.Rarity);
 
-            if (string.IsNullOrEmpty(name))
+            if (TooltipName != null)
             {
-                ItemTooltip.Visible = false;
-                return;
+                TooltipName.Text = $"{item.Icon} {item.Name}";
+                TooltipName.Modulate = rarityColor;
             }
 
-            string type = slotIndex switch
+            if (TooltipType != null)
             {
-                0 => "Vũ khí chính - Rare Two-Hand Sword",
-                1 => "Trang bị phòng thủ - Rare Shield",
-                2 => "Giày - Magic Boots",
-                3 => "Bình thuốc - Consumable",
-                4 => "Vật phẩm phụ trợ - Scroll",
-                _ => "Item"
-            };
+                string socketStr = item.Sockets > 0 ? $" | 🔗 {item.Sockets} Sockets ({item.SocketLinks} Linked)" : "";
+                TooltipType.Text = $"[{item.Rarity}] {item.BaseType} (iLvl {item.ItemLevel}){socketStr}";
+                TooltipType.Modulate = new Color(0.8f, 0.8f, 0.8f);
+            }
 
-            string stats = slotIndex switch
+            if (TooltipStats != null)
             {
-                0 => "+45 Sát thương Vật lý\n+15% Tốc độ đánh",
-                1 => "+60 Giáp\n+25% Kháng tất cả nguyên tố",
-                2 => "+15% Tốc độ di chuyển",
-                3 => "Hồi phục 150 Máu trong 3 giây",
-                4 => "Hồi sinh tại chỗ khi tử trận",
-                _ => ""
-            };
+                var statList = new List<string>();
+                foreach (var kvp in item.StatBonuses)
+                {
+                    statList.Add($"• +{kvp.Value} {kvp.Key}");
+                }
+                TooltipStats.Text = statList.Count > 0 ? string.Join("\n", statList) : "Không có chỉ số cơ bản";
+            }
 
-            string mods = slotIndex switch
+            if (TooltipMods != null)
             {
-                0 => "🔥 +25 Sát thương Lửa\n⚡ +10% Tỉ lệ bạo kích",
-                1 => "🛡️ +40 Khiên Năng Lượng (Energy Shield)",
-                _ => ""
-            };
-
-            if (TooltipName != null) TooltipName.Text = name;
-            if (TooltipType != null) TooltipType.Text = type;
-            if (TooltipStats != null) TooltipStats.Text = stats;
-            if (TooltipMods != null) TooltipMods.Text = mods;
+                TooltipMods.Text = item.ExplicitMods.Count > 0 ? string.Join("\n", item.ExplicitMods) : "Không có thuộc tính phụ";
+                TooltipMods.Modulate = new Color(0.4f, 0.85f, 1f);
+            }
 
             ItemTooltip.Visible = true;
         }
@@ -148,9 +215,15 @@ namespace Mdg.Client.Godot.Scripts.UI
             if (ItemTooltip != null) ItemTooltip.Visible = false;
         }
 
-        private void OnSlotClicked(int slotIndex)
+        private static Color GetRarityColor(ItemRarity rarity) => rarity switch
         {
-            // Trang bị hoặc sử dụng vật phẩm
-        }
+            ItemRarity.Unique => new Color(0.95f, 0.45f, 0.15f),
+            ItemRarity.Set => new Color(0.1f, 0.9f, 0.4f),
+            ItemRarity.Rare => new Color(1f, 0.85f, 0.2f),
+            ItemRarity.Magic => new Color(0.35f, 0.65f, 1f),
+            ItemRarity.Currency => new Color(1f, 0.85f, 0.35f),
+            ItemRarity.Consumable => new Color(0.4f, 0.9f, 0.9f),
+            _ => new Color(0.85f, 0.85f, 0.85f)
+        };
     }
 }

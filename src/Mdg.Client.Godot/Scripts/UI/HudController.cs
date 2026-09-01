@@ -26,13 +26,16 @@ namespace Mdg.Client.Godot.Scripts.UI
         [Export] public ProgressBar? BossHpBar { get; set; }
         [Export] public ProgressBar? BossStaggerBar { get; set; }
 
-        // Modals
+        // Modals & Widgets
         [Export] public InventoryModal? InventoryModal { get; set; }
         [Export] public SkillsModal? SkillsModal { get; set; }
         [Export] public ForgeModal? ForgeModal { get; set; }
+        [Export] public DevotionModal? DevotionModal { get; set; }
         [Export] public CompendiumModal? CompendiumModal { get; set; }
         [Export] public WorldMapModal? WorldMapModal { get; set; }
         [Export] public DefeatModal? DefeatModal { get; set; }
+        [Export] public NpcDialogModal? NpcDialogModal { get; set; }
+        [Export] public MinimapWidget? MinimapWidget { get; set; }
 
         public override void _Ready()
         {
@@ -46,6 +49,9 @@ namespace Mdg.Client.Godot.Scripts.UI
 
             var btnForge = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnForge");
             if (btnForge != null) btnForge.Pressed += () => ForgeModal?.Toggle();
+
+            var btnDevotion = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnDevotion");
+            if (btnDevotion != null) btnDevotion.Pressed += () => DevotionModal?.Toggle();
 
             var btnComp = GetNodeOrNull<Button>("Root/TopRightNav/VBox/BtnComp");
             if (btnComp != null) btnComp.Pressed += () => CompendiumModal?.Toggle();
@@ -65,12 +71,14 @@ namespace Mdg.Client.Godot.Scripts.UI
                         InventoryModal?.Toggle();
                         break;
                     case Key.K:
+                    case Key.P:
                         SkillsModal?.Toggle();
                         break;
-                    case Key.B:
-                        ForgeModal?.Toggle();
+                    case Key.V:
+                        DevotionModal?.Toggle();
                         break;
-                    case Key.Y:
+                    case Key.B:
+                    case Key.L:
                         CompendiumModal?.Toggle();
                         break;
                     case Key.M:
@@ -88,8 +96,10 @@ namespace Mdg.Client.Godot.Scripts.UI
             if (InventoryModal != null) InventoryModal.Visible = false;
             if (SkillsModal != null) SkillsModal.Visible = false;
             if (ForgeModal != null) ForgeModal.Visible = false;
+            if (DevotionModal != null) DevotionModal.Visible = false;
             if (CompendiumModal != null) CompendiumModal.Visible = false;
             if (WorldMapModal != null) WorldMapModal.Visible = false;
+            if (NpcDialogModal != null) NpcDialogModal.Visible = false;
         }
 
         public void UpdatePlayerStats(Character player)

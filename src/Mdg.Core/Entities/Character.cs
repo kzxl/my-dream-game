@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using Mdg.Core.Common.Events;
 using Mdg.Core.Common.Math;
 using Mdg.Core.Events.DomainEvents;
 using Mdg.Core.Features.Buffs;
 using Mdg.Core.Features.Combat;
 using Mdg.Core.Features.Inventory;
+using Mdg.Core.Features.Items;
 using Mdg.Core.Features.Skills;
 using Mdg.Core.Features.Stats;
 
@@ -43,6 +45,9 @@ namespace Mdg.Core.Entities
         public BuffManager Buffs { get; }
         public SkillManager Skills { get; }
         public EquipmentManager Equipment { get; }
+
+        public List<ItemEntity> Inventory { get; } = new();
+        public Dictionary<ItemSlot, ItemEntity> EquippedItems { get; } = new();
 
         public float CurrentLife { get; protected set; }
         public float CurrentMana { get; protected set; }
@@ -128,6 +133,56 @@ namespace Mdg.Core.Entities
             if (amount <= 0f) return;
             float maxMana = Stats.GetValue(StatType.MaxMana);
             CurrentMana = MathF.Min(maxMana, CurrentMana + amount);
+        }
+
+        public bool EquipItem(ItemEntity item)
+        {
+            if (item == null || item.Slot == ItemSlot.None) return false;
+
+            if (EquippedItems.TryGetValue(item.Slot, out var oldItem))
+            {
+                Inventory.Add(oldItem);
+                RemoveItemStats(oldItem);
+            }
+
+            Inventory.Remove(item);
+            EquippedItems[item.Slot] = item;
+            ApplyItemStats(item);
+            return true;
+        }
+
+        public bool UnequipItem(ItemSlot slot)
+        {
+            if (!EquippedItems.TryGetValue(slot, out var item)) return false;
+
+            EquippedItems.Remove(slot);
+            Inventory.Add(item);
+            RemoveItemStats(item);
+            return true;
+        }
+
+        private void ApplyItemStats(ItemEntity item)
+        {
+            foreach (var kvp in item.StatBonuses)
+            {
+                if (Enum.TryParse<StatType>(kvp.Key, true, out var statType))
+                {
+                    float curr = Stats.GetValue(statType);
+                    Stats.SetBaseValue(statType, curr + kvp.Value);
+                }
+            }
+        }
+
+        private void RemoveItemStats(ItemEntity item)
+        {
+            foreach (var kvp in item.StatBonuses)
+            {
+                if (Enum.TryParse<StatType>(kvp.Key, true, out var statType))
+                {
+                    float curr = Stats.GetValue(statType);
+                    Stats.SetBaseValue(statType, Math.Max(0, curr - kvp.Value));
+                }
+            }
         }
 
         public void Heal(float amount, IEventBus eventBus, long currentTick)

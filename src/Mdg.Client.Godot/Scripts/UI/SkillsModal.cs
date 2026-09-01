@@ -1,23 +1,56 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 namespace Mdg.Client.Godot.Scripts.UI
 {
     public partial class SkillsModal : Control
     {
         [Export] public VBoxContainer? SkillsListContainer { get; set; }
+        [Export] public Label? SpAvailableLabel { get; set; }
 
         public bool IsOpen => Visible;
+        public event Action<string>? OnSkillLevelUpRequested;
+
+        private int _availableSp = 0;
+        private readonly Dictionary<string, int> _skillLevels = new()
+        {
+            ["slash"] = 1,
+            ["fireball"] = 1,
+            ["frost"] = 1,
+            ["meteor"] = 1,
+            ["dash"] = 1
+        };
 
         public override void _Ready()
         {
             Visible = false;
-            PopulateSkills();
+        }
+
+        public void Setup(int availableSp)
+        {
+            _availableSp = availableSp;
+            RefreshUI();
         }
 
         public void Toggle()
         {
             Visible = !Visible;
+            if (Visible)
+            {
+                RefreshUI();
+            }
+        }
+
+        public void RefreshUI()
+        {
+            if (SpAvailableLabel != null)
+            {
+                SpAvailableLabel.Text = $"⭐ Điểm Kỹ Năng Hiện Có: {_availableSp} SP";
+                SpAvailableLabel.Modulate = _availableSp > 0 ? new Color(1f, 0.85f, 0.2f) : new Color(0.7f, 0.7f, 0.7f);
+            }
+
+            PopulateSkills();
         }
 
         private void PopulateSkills()
@@ -31,34 +64,46 @@ namespace Mdg.Client.Godot.Scripts.UI
 
             var skills = new[]
             {
-                (Key: "slash", Name: "⚔️ Chém Kiếm Quét (Slash Cleave)", Rank: "Rank S", Level: "Lv. 15", Exp: 85, Desc: "Nhát chém sát thương vật lý hình quạt gây 45 ST."),
-                (Key: "fireball", Name: "🔥 Hỏa Cầu (Pyro Fireball)", Rank: "Rank A", Level: "Lv. 12", Exp: 60, Desc: "Phóng hỏa cầu nổ diện rộng bán kính 110px gây 75 ST Lửa."),
-                (Key: "frost", Name: "❄️ Sóng Băng (Frost Nova)", Rank: "Rank B", Level: "Lv. 8", Exp: 40, Desc: "Giải phóng vụ nổ băng lan tỏa làm đông cứng và gây 55 ST Băng."),
-                (Key: "meteor", Name: "☄️ Thiên Thạch (Meteor Strike)", Rank: "Rank C", Level: "Lv. 5", Exp: 20, Desc: "Triệu hồi sao băng giáng xuống gây 140 ST Lửa diện rộng."),
-                (Key: "dash", Name: "💨 Lướt Tốc Biến (Aether Dash)", Rank: "Rank S", Level: "Lv. 20", Exp: 100, Desc: "Lướt nhanh 160px thoát khỏi vòng vây kẻ địch.")
+                (Key: "slash", Name: "⚔️ Chém Kiếm Quét (Slash Cleave)", BaseDmg: 45, DmgType: "Vật lý", Desc: "Nhát chém hình quạt quét 95px về hướng con trỏ chuột."),
+                (Key: "fireball", Name: "🔥 Hỏa Cầu (Pyro Fireball)", BaseDmg: 75, DmgType: "Lửa", Desc: "Bắn cầu lửa phát nổ diện rộng 110px gây sát thương Lửa."),
+                (Key: "frost", Name: "❄️ Sóng Băng (Frost Nova)", BaseDmg: 55, DmgType: "Băng", Desc: "Giải phóng sóng băng 160px và ĐÓNG BĂNG toàn bộ quái vật 1.5s."),
+                (Key: "meteor", Name: "☄️ Thiên Thạch (Meteor Strike)", BaseDmg: 140, DmgType: "Lửa", Desc: "Triệu hồi thiên thạch giáng xuống sau 0.35s gây nổ 140px cực lớn."),
+                (Key: "dash", Name: "💨 Lướt Tốc Biến (Aether Dash)", BaseDmg: 0, DmgType: "Né tránh", Desc: "Lướt nhanh 180px thoát khỏi vòng vây kẻ địch.")
             };
 
             foreach (var sk in skills)
             {
+                int lvl = _skillLevels.GetValueOrDefault(sk.Key, 1);
+                int dmg = sk.BaseDmg + (lvl - 1) * 15;
+
                 var panel = new PanelContainer { CustomMinimumSize = new Vector2(0, 70) };
                 var hbox = new HBoxContainer();
 
+                string dmgText = sk.BaseDmg > 0 ? $" | ST: {dmg} {sk.DmgType}" : "";
                 var lblInfo = new Label
                 {
-                    Text = $"{sk.Name} — [{sk.Rank}] — {sk.Level}\n{sk.Desc}",
+                    Text = $"{sk.Name} — [Cấp {lvl}]{dmgText}\n{sk.Desc}",
                     SizeFlagsHorizontal = SizeFlags.ExpandFill
                 };
                 lblInfo.AddThemeFontSizeOverride("font_size", 12);
 
                 var btnUpgrade = new Button
                 {
-                    Text = "⭐ Nâng Cấp",
-                    CustomMinimumSize = new Vector2(100, 36)
+                    Text = _availableSp > 0 ? "⭐ Nâng Cấp (1 SP)" : "Hết SP",
+                    Disabled = _availableSp <= 0,
+                    CustomMinimumSize = new Vector2(140, 36)
                 };
 
+                string skillKey = sk.Key;
                 btnUpgrade.Pressed += () =>
                 {
-                    lblInfo.Text = $"{sk.Name} — [Đã Thăng Cấp ⭐] — {sk.Level}\n{sk.Desc}";
+                    if (_availableSp > 0)
+                    {
+                        _availableSp--;
+                        _skillLevels[skillKey] = lvl + 1;
+                        OnSkillLevelUpRequested?.Invoke(skillKey);
+                        RefreshUI();
+                    }
                 };
 
                 hbox.AddChild(lblInfo);
