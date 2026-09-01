@@ -41,8 +41,13 @@ namespace Mdg.Client.Godot.Scripts.World
             }
         }
 
+        private float _animTimer = 0f;
+
         public override void _Process(double delta)
         {
+            _animTimer += (float)delta;
+            QueueRedraw();
+
             // Hiệu ứng xoay tròn cổng không gian
             if (_portalSprite != null)
             {
@@ -54,6 +59,20 @@ namespace Mdg.Client.Godot.Scripts.World
             {
                 TriggerPortal();
             }
+        }
+
+        public override void _Draw()
+        {
+            float pulse = (MathF.Sin(_animTimer * 4f) + 1f) * 0.5f;
+
+            // Vòng ngoài
+            DrawCircle(Vector2.Zero, 30f + pulse * 4f, new Color(0.4f, 0.2f, 0.9f, 0.35f));
+            DrawArc(Vector2.Zero, 28f + pulse * 2f, 0, Mathf.Tau, 24, new Color(0.2f, 0.75f, 1f, 0.8f), 2.5f);
+
+            // Vòng trong xoay
+            float innerAngle = _animTimer * 3f;
+            DrawArc(Vector2.Zero, 18f, innerAngle, innerAngle + Mathf.Pi * 1.5f, 16, new Color(1f, 0.85f, 0.3f, 0.9f), 3.0f);
+            DrawCircle(Vector2.Zero, 10f, new Color(1f, 1f, 1f, 0.75f));
         }
 
         private void OnBodyEntered(Node2D body)

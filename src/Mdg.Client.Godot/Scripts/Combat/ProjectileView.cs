@@ -30,11 +30,7 @@ namespace Mdg.Client.Godot.Scripts.Combat
             _spellsTexture = TextureLoader.LoadTexture("res://Assets/spells_fx_master_pack.png")
                 ?? TextureLoader.LoadTexture("res://Assets/spells_fx_pack.png");
 
-            if (ProjectileSprite != null && _spellsTexture != null)
-            {
-                ProjectileSprite.Texture = _spellsTexture;
-                ProjectileSprite.Scale = new Vector2(0.45f, 0.45f);
-            }
+            UpdateProjectileVisuals();
         }
 
         public void Setup(string type, Vector2 startPos, Vector2 direction, DamagePayload payload, float explosionRadius, Action<Vector2, float, DamagePayload> onExplode)
@@ -47,17 +43,37 @@ namespace Mdg.Client.Godot.Scripts.Combat
             _onExplosionCallback = onExplode;
 
             Rotation = VelocityDir.Angle();
+            UpdateProjectileVisuals();
+        }
 
-            if (ProjectileSprite != null)
+        private void UpdateProjectileVisuals()
+        {
+            if (ProjectileSprite == null || _spellsTexture == null) return;
+
+            float totalW = _spellsTexture.GetWidth();
+            float totalH = _spellsTexture.GetHeight();
+            float cellW = totalW / 4f;
+            float cellH = totalH / 4f;
+
+            int col = 0, row = 0;
+            if (ProjectileType == "fireball") { col = 0; row = 0; }
+            else if (ProjectileType == "frost") { col = 1; row = 0; }
+            else if (ProjectileType == "arcane") { col = 2; row = 0; }
+            else { col = 3; row = 0; }
+
+            ProjectileSprite.Texture = new AtlasTexture
             {
-                ProjectileSprite.Modulate = type switch
-                {
-                    "fireball" => new Color(1f, 0.45f, 0.2f),
-                    "frost" => new Color(0.2f, 0.8f, 1f),
-                    "arcane" => new Color(0.8f, 0.3f, 1f),
-                    _ => Colors.White
-                };
-            }
+                Atlas = _spellsTexture,
+                Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
+            };
+            ProjectileSprite.Scale = new Vector2(0.55f, 0.55f);
+            ProjectileSprite.Modulate = ProjectileType switch
+            {
+                "fireball" => new Color(1f, 0.45f, 0.2f),
+                "frost" => new Color(0.2f, 0.8f, 1f),
+                "arcane" => new Color(0.8f, 0.3f, 1f),
+                _ => Colors.White
+            };
         }
 
         public override void _PhysicsProcess(double delta)

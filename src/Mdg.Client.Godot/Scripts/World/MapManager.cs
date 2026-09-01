@@ -22,7 +22,8 @@ namespace Mdg.Client.Godot.Scripts.World
 
         private Texture2D? _terrainTexture;
         private Texture2D? _waterTexture;
-        private Texture2D? _natureTexture;
+        private Texture2D? _treesTexture;
+        private Texture2D? _foliageTexture;
         private Texture2D? _propsTexture;
 
         private Node2D? _environmentObjectsContainer;
@@ -46,8 +47,11 @@ namespace Mdg.Client.Godot.Scripts.World
         {
             _terrainTexture = TextureLoader.LoadTexture("res://Assets/aethelis_terrain_tileset.jpg");
             _waterTexture = TextureLoader.LoadTexture("res://Assets/aethelis_water_liquid_tileset.jpg");
-            _natureTexture = TextureLoader.LoadTexture("res://Assets/nature_props_master_pack.png", "black");
-            _propsTexture = TextureLoader.LoadTexture("res://Assets/props_pack.png", "black");
+            _treesTexture = TextureLoader.LoadTexture("res://Assets/aethelis_trees_master_pack.jpg", "black")
+                ?? TextureLoader.LoadTexture("res://Assets/nature_props_master_pack.png", "black");
+            _foliageTexture = TextureLoader.LoadTexture("res://Assets/nature_props_master_pack.png", "black");
+            _propsTexture = TextureLoader.LoadTexture("res://Assets/props_interactive_grid.png", "black")
+                ?? TextureLoader.LoadTexture("res://Assets/props_pack.png", "black");
         }
 
         public ZoneMapDto LoadZone(string zoneId, double? spawnX = null, double? spawnY = null)
@@ -109,21 +113,101 @@ namespace Mdg.Client.Godot.Scripts.World
             foreach (var propDto in CurrentMap.Props)
             {
                 var spr = new Sprite2D();
-                if (propDto.Type.Contains("tree"))
+                string type = propDto.Type.ToLowerInvariant();
+
+                if (IsTreeProp(type) && _treesTexture != null)
                 {
-                    spr.Texture = _natureTexture;
-                    spr.Scale = new Vector2(0.6f, 0.6f);
+                    // Master Trees Pack (4 cols x 3 rows)
+                    float colW = _treesTexture.GetWidth() / 4f;
+                    float rowH = _treesTexture.GetHeight() / 3f;
+                    int col = 0, row = 0;
+
+                    if (type.Contains("pine") || type.Contains("snow")) { col = 1; row = 0; }
+                    else if (type.Contains("aether") || type.Contains("mystic")) { col = 2; row = 0; }
+                    else if (type.Contains("volcanic") || type.Contains("basalt")) { col = 3; row = 0; }
+                    else if (type.Contains("autumn") || type.Contains("maple")) { col = 0; row = 1; }
+                    else if (type.Contains("mushroom")) { col = 1; row = 1; }
+                    else if (type.Contains("willow")) { col = 2; row = 1; }
+                    else if (type.Contains("cherry") || type.Contains("sakura")) { col = 3; row = 2; }
+                    else { col = 0; row = 0; } // ancient oak
+
+                    spr.Texture = new AtlasTexture
+                    {
+                        Atlas = _treesTexture,
+                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
+                    };
+                    spr.Scale = new Vector2(0.85f, 0.85f);
+                    spr.Offset = new Vector2(0, -35);
                 }
-                else
+                else if (IsFloraProp(type) && _foliageTexture != null)
                 {
-                    spr.Texture = _propsTexture;
-                    spr.Scale = new Vector2(0.5f, 0.5f);
+                    // Foliage & Flora Pack (4 cols x 4 rows)
+                    float colW = _foliageTexture.GetWidth() / 4f;
+                    float rowH = _foliageTexture.GetHeight() / 4f;
+                    int col = 0, row = 0;
+
+                    if (type.Contains("blue")) { col = 1; row = 0; }
+                    else if (type.Contains("gold")) { col = 2; row = 0; }
+                    else if (type.Contains("purple") || type.Contains("mana")) { col = 3; row = 0; }
+                    else if (type.Contains("bush")) { col = 0; row = 1; }
+                    else if (type.Contains("tall_grass") || type.Contains("fern")) { col = 2; row = 1; }
+                    else if (type.Contains("glow")) { col = 0; row = 2; }
+                    else if (type.Contains("cyan")) { col = 1; row = 2; }
+                    else if (type.Contains("clover")) { col = 2; row = 2; }
+                    else if (type.Contains("lily")) { col = 3; row = 2; }
+                    else if (type.Contains("wildflowers")) { col = 3; row = 3; }
+                    else { col = 0; row = 0; } // flowers_red
+
+                    spr.Texture = new AtlasTexture
+                    {
+                        Atlas = _foliageTexture,
+                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
+                    };
+                    spr.Scale = new Vector2(0.55f, 0.55f);
+                    spr.Offset = new Vector2(0, -10);
+                }
+                else if (_propsTexture != null)
+                {
+                    // Interactive Props Pack (4 cols x 4 rows)
+                    float colW = _propsTexture.GetWidth() / 4f;
+                    float rowH = _propsTexture.GetHeight() / 4f;
+                    int col = 0, row = 0;
+
+                    if (type.Contains("gold")) { col = 1; row = 0; }
+                    else if (type.Contains("crystal")) { col = 2; row = 0; }
+                    else if (type.Contains("waypoint")) { col = 3; row = 0; }
+                    else if (type.Contains("barrel")) { col = 0; row = 1; }
+                    else if (type.Contains("vase") || type.Contains("pots")) { col = 1; row = 1; }
+                    else if (type.Contains("lever")) { col = 2; row = 1; }
+                    else if (type.Contains("campfire") || type.Contains("fire")) { col = 3; row = 1; }
+                    else if (type.Contains("torch")) { col = 0; row = 2; }
+                    else if (type.Contains("pile")) { col = 1; row = 2; }
+                    else if (type.Contains("gargoyle")) { col = 2; row = 2; }
+                    else if (type.Contains("gate")) { col = 3; row = 2; }
+                    else { col = 0; row = 0; } // chest
+
+                    spr.Texture = new AtlasTexture
+                    {
+                        Atlas = _propsTexture,
+                        Region = new Rect2(col * colW, row * rowH, colW, rowH)
+                    };
+                    spr.Scale = new Vector2(0.55f, 0.55f);
+                    spr.Offset = new Vector2(0, -15);
                 }
 
                 spr.Position = new Vector2((float)propDto.X, (float)propDto.Y);
                 _environmentObjectsContainer.AddChild(spr);
             }
         }
+
+        private static bool IsTreeProp(string type) =>
+            type.Contains("tree") || type.Contains("pine") || type.Contains("oak") ||
+            type.Contains("willow") || type.Contains("mushroom") || type.Contains("cherry");
+
+        private static bool IsFloraProp(string type) =>
+            type.Contains("flower") || type.Contains("bush") || type.Contains("grass") ||
+            type.Contains("clover") || type.Contains("lily") || type.Contains("fern") ||
+            type.Contains("bloom") || type.Contains("moss");
 
         private void ClearOldZone()
         {

@@ -39,11 +39,7 @@ namespace Mdg.Client.Godot.Scripts.World
             _nodeTexture = TextureLoader.LoadTexture("res://Assets/gathering_nodes_pack.jpg", "black")
                 ?? TextureLoader.LoadTexture("res://Assets/props_interactive_grid.png", "black");
 
-            if (_nodeSprite != null && _nodeTexture != null)
-            {
-                _nodeSprite.Texture = _nodeTexture;
-                _nodeSprite.Scale = new Vector2(0.4f, 0.4f);
-            }
+            UpdateNodeVisuals();
 
             if (_progressBar != null)
             {
@@ -69,12 +65,46 @@ namespace Mdg.Client.Godot.Scripts.World
                 _nodeSprite.Modulate = color;
             }
 
-            if (_progressBar != null)
+            UpdateNodeVisuals();
+            UpdateDisplay();
+        }
+
+        private void UpdateNodeVisuals()
+        {
+            if (_nodeSprite == null || _nodeTexture == null) return;
+
+            float totalW = _nodeTexture.GetWidth();
+            float totalH = _nodeTexture.GetHeight();
+            float cellW = totalW / 4f;
+            float cellH = totalH / 2f;
+
+            int col = 0, row = 0;
+            string keyLower = (NodeId + " " + NodeName + " " + YieldItemId + " " + ProfessionType).ToLowerInvariant();
+
+            if (ProfessionType == "herbalism" || keyLower.Contains("herb") || keyLower.Contains("lotus") || keyLower.Contains("flower") || keyLower.Contains("bloom"))
             {
-                _progressBar.MaxValue = ChannelTime;
+                row = 1;
+                if (keyLower.Contains("silver") || keyLower.Contains("dream")) col = 1;
+                else if (keyLower.Contains("blood") || keyLower.Contains("thistle")) col = 2;
+                else if (keyLower.Contains("lotus") || keyLower.Contains("celestial")) col = 3;
+                else col = 0; // peacebloom
+            }
+            else
+            {
+                row = 0;
+                if (keyLower.Contains("silver") || keyLower.Contains("mithril")) col = 1;
+                else if (keyLower.Contains("gold") || keyLower.Contains("adamantite")) col = 2;
+                else if (keyLower.Contains("aether") || keyLower.Contains("crystal")) col = 3;
+                else col = 0; // iron ore
             }
 
-            UpdateDisplay();
+            _nodeSprite.Texture = new AtlasTexture
+            {
+                Atlas = _nodeTexture,
+                Region = new Rect2(col * cellW, row * cellH, cellW, cellH)
+            };
+            _nodeSprite.Scale = new Vector2(0.55f, 0.55f);
+            _nodeSprite.Offset = new Vector2(0, -16);
         }
 
         public override void _Process(double delta)

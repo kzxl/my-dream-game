@@ -115,6 +115,21 @@ namespace Mdg.Core.Entities
             return hit;
         }
 
+        public bool SpendMana(float amount)
+        {
+            if (amount <= 0f) return true;
+            if (CurrentMana < amount) return false;
+            CurrentMana -= amount;
+            return true;
+        }
+
+        public void RestoreMana(float amount)
+        {
+            if (amount <= 0f) return;
+            float maxMana = Stats.GetValue(StatType.MaxMana);
+            CurrentMana = MathF.Min(maxMana, CurrentMana + amount);
+        }
+
         public void Heal(float amount, IEventBus eventBus, long currentTick)
         {
             if (!IsAlive || amount <= 0f) return;

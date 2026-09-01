@@ -30,12 +30,7 @@ namespace Mdg.Client.Godot.Scripts.World
             _shrineTexture = TextureLoader.LoadTexture("res://Assets/shrines_monoliths_pack.jpg", "black")
                 ?? TextureLoader.LoadTexture("res://Assets/props_interactive_grid.png", "black");
 
-            if (_shrineSprite != null && _shrineTexture != null)
-            {
-                _shrineSprite.Texture = _shrineTexture;
-                _shrineSprite.Scale = new Vector2(0.45f, 0.45f);
-            }
-
+            UpdateShrineVisuals();
             UpdateDisplay();
         }
 
@@ -46,12 +41,46 @@ namespace Mdg.Client.Godot.Scripts.World
             BuffType = buffType;
             BuffDuration = duration;
 
-            if (_shrineSprite != null)
+            UpdateShrineVisuals();
+            UpdateDisplay();
+        }
+
+        private void UpdateShrineVisuals()
+        {
+            if (_shrineSprite == null || _shrineTexture == null) return;
+
+            float totalW = _shrineTexture.GetWidth();
+            float totalH = _shrineTexture.GetHeight();
+            float cellW = totalW / 4f;
+            float cellH = totalH;
+
+            int col = 0;
+            string keyLower = (ShrineId + " " + ShrineName + " " + BuffType).ToLowerInvariant();
+
+            if (keyLower.Contains("monolith") || keyLower.Contains("void"))
             {
-                _shrineSprite.Modulate = color;
+                col = 2; // Corrupted Void Monolith
+            }
+            else if (keyLower.Contains("cave") || keyLower.Contains("sub"))
+            {
+                col = 3; // Sub Cave Entrance
+            }
+            else if (keyLower.Contains("solar") || keyLower.Contains("might") || keyLower.Contains("haven") || keyLower.Contains("sanctuary"))
+            {
+                col = 1; // Solar Altar
+            }
+            else
+            {
+                col = 0; // Tempest & Frost Shrine
             }
 
-            UpdateDisplay();
+            _shrineSprite.Texture = new AtlasTexture
+            {
+                Atlas = _shrineTexture,
+                Region = new Rect2(col * cellW, 0, cellW, cellH)
+            };
+            _shrineSprite.Scale = new Vector2(0.55f, 0.55f);
+            _shrineSprite.Offset = new Vector2(0, -22);
         }
 
         public override void _Process(double delta)

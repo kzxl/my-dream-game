@@ -127,9 +127,26 @@ namespace Mdg.Client.Godot.Scripts.Entities
             }
         }
 
+        private float _slashCd = 0f;
+        private float _fireballCd = 0f;
+        private float _frostCd = 0f;
+        private float _meteorCd = 0f;
+        private float _dashCd = 0f;
+
         public override void _PhysicsProcess(double delta)
         {
             if (CorePlayer == null || _gameManager == null) return;
+
+            // Giảm hồi chiêu kỹ năng
+            float dt = (float)delta;
+            if (_slashCd > 0f) _slashCd -= dt;
+            if (_fireballCd > 0f) _fireballCd -= dt;
+            if (_frostCd > 0f) _frostCd -= dt;
+            if (_meteorCd > 0f) _meteorCd -= dt;
+            if (_dashCd > 0f) _dashCd -= dt;
+
+            // Hồi phục Mana tự nhiên (+15 Mana/giây)
+            CorePlayer.RestoreMana(15f * dt);
 
             // 1. Thu thập input di chuyển
             var inputDir = Input.GetVector("move_left", "move_right", "move_up", "move_down");
@@ -152,7 +169,7 @@ namespace Mdg.Client.Godot.Scripts.Entities
                     else if (inputDir.X > 0) PlayerSprite.FlipH = false;
 
                     // Hiệu ứng bước đi nhịp nhàng (bobbing)
-                    _animTimer += (float)delta * 12f;
+                    _animTimer += dt * 12f;
                     float bobOffset = MathF.Sin(_animTimer) * 2.5f;
                     PlayerSprite.Position = new Vector2(0, bobOffset);
                 }
@@ -178,23 +195,74 @@ namespace Mdg.Client.Godot.Scripts.Entities
 
             if (Input.IsActionJustPressed("attack_primary"))
             {
-                _gameManager.CastPlayerSkill("slash", mousePos, aimDirection);
+                if (_slashCd <= 0f)
+                {
+                    _slashCd = 0.32f;
+                    OrientFacing(aimDirection);
+                    _gameManager.CastPlayerSkill("slash", mousePos, aimDirection);
+                }
             }
             else if (Input.IsActionJustPressed("skill_fireball"))
             {
-                _gameManager.CastPlayerSkill("fireball", mousePos, aimDirection);
+                const float cost = 15f;
+                if (_fireballCd <= 0f)
+                {
+                    if (CorePlayer.SpendMana(cost))
+                    {
+                        _fireballCd = 0.6f;
+                        OrientFacing(aimDirection);
+                        _gameManager.CastPlayerSkill("fireball", mousePos, aimDirection);
+                    }
+                    else
+                    {
+                        _gameManager.Hud?.SetCombatStatus("⚠️ Không đủ Mana để bắn Fireball! (Cần 15 MP)");
+                    }
+                }
             }
             else if (Input.IsActionJustPressed("skill_frostnova"))
             {
-                _gameManager.CastPlayerSkill("frost", GlobalPosition, aimDirection);
+                const float cost = 25f;
+                if (_frostCd <= 0f)
+                {
+                    if (CorePlayer.SpendMana(cost))
+                    {
+                        _frostCd = 2.2f;
+                        _gameManager.CastPlayerSkill("frost", GlobalPosition, aimDirection);
+                    }
+                    else
+                    {
+                        _gameManager.Hud?.SetCombatStatus("⚠️ Không đủ Mana để giải phóng Frost Nova! (Cần 25 MP)");
+                    }
+                }
             }
             else if (Input.IsActionJustPressed("skill_meteor"))
             {
-                _gameManager.CastPlayerSkill("meteor", mousePos, aimDirection);
+                const float cost = 35f;
+                if (_meteorCd <= 0f)
+                {
+                    if (CorePlayer.SpendMana(cost))
+                    {
+                        _meteorCd = 3.5f;
+                        OrientFacing(aimDirection);
+                        _gameManager.CastPlayerSkill("meteor", mousePos, aimDirection);
+                    }
+                    else
+                    {
+                        _gameManager.Hud?.SetCombatStatus("⚠️ Không đủ Mana để triệu hồi Meteor Strike! (Cần 35 MP)");
+                    }
+                }
             }
             else if (Input.IsActionJustPressed("skill_dash"))
             {
-                _gameManager.CastPlayerSkill("dash", GlobalPosition + aimDirection * 180f, aimDirection);
+                const float cost = 10f;
+                if (_dashCd <= 0f)
+                {
+                    if (CorePlayer.SpendMana(cost))
+                    {
+                        _dashCd = 1.2f;
+                        _gameManager.CastPlayerSkill("dash", GlobalPosition + aimDirection * 180f, aimDirection);
+                    }
+                }
             }
             else if (Input.IsActionJustPressed("flask_1"))
             {
@@ -211,6 +279,14 @@ namespace Mdg.Client.Godot.Scripts.Entities
             else if (Input.IsActionJustPressed("flask_4"))
             {
                 _gameManager.UsePlayerFlask(4);
+            }
+        }
+
+        private void OrientFacing(Vector2 aimDir)
+        {
+            if (PlayerSprite != null && aimDir != Vector2.Zero)
+            {
+                PlayerSprite.FlipH = aimDir.X < 0;
             }
         }
     }

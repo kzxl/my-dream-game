@@ -28,6 +28,7 @@ namespace Mdg.Client.Godot.Scripts.Entities
         private AtlasTexture? _atlasTexture;
 
         private float _hurtTimer = 0f;
+        private float _freezeTimer = 0f;
         private float _attackCooldownTimer = 0f;
         private float _wanderTimer = 0f;
         private Vector2 _wanderDir = Vector2.Zero;
@@ -243,6 +244,15 @@ namespace Mdg.Client.Godot.Scripts.Entities
             }
         }
 
+        public void Freeze(float duration)
+        {
+            _freezeTimer = duration;
+            if (MonsterSprite != null)
+            {
+                MonsterSprite.Modulate = new Color(0.2f, 0.85f, 1f);
+            }
+        }
+
         public override void _PhysicsProcess(double delta)
         {
             if (CoreEntity == null || !CoreEntity.IsAlive) return;
@@ -250,6 +260,16 @@ namespace Mdg.Client.Godot.Scripts.Entities
             if (_hurtTimer > 0f)
             {
                 _hurtTimer -= (float)delta;
+            }
+
+            if (_freezeTimer > 0f)
+            {
+                _freezeTimer -= (float)delta;
+                if (_freezeTimer <= 0f && MonsterSprite != null)
+                {
+                    MonsterSprite.Modulate = Colors.White;
+                }
+                return; // Khi bị đóng băng: không di chuyển, không tấn công
             }
 
             // AI di chuyển

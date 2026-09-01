@@ -519,6 +519,20 @@ namespace Mdg.Client.Godot.Scripts.Core
 
             TriggerCameraShake(0.2f, 3f);
 
+            // Đóng băng (Freeze) các quái vật trong bán kính 160px
+            float radiusSq = 160f * 160f;
+            foreach (var kvp in _monsters)
+            {
+                var (entity, view) = kvp.Value;
+                if (entity.IsAlive && IsInstanceValid(view))
+                {
+                    if (view.GlobalPosition.DistanceSquaredTo(PlayerView.GlobalPosition) <= radiusSq)
+                    {
+                        view.Freeze(1.5f);
+                    }
+                }
+            }
+
             EventBus.Publish(new SkillExecutedEvent
             {
                 CasterId = LocalPlayer.Id,
@@ -533,24 +547,39 @@ namespace Mdg.Client.Godot.Scripts.Core
         {
             if (LocalPlayer == null || PlayerView == null) return;
 
-            float fireDmg = 140f;
-            var payload = new DamagePayload
-            {
-                AttackerId = LocalPlayer.Id,
-                AccuracyRating = 600f,
-                CritChance = 35f,
-                CritMultiplier = 200f
-            };
-            payload.AddPortion(DamageType.Fire, fireDmg);
-
+            // 1. Vẽ vòng cảnh báo tác động dưới chân mục tiêu
             if (SkillEffectScene != null)
             {
-                var vfx = SkillEffectScene.Instantiate<SkillEffectView>();
-                AddChild(vfx);
-                vfx.Setup("meteor", targetPos, 140f, new Color(1f, 0.3f, 0.1f), 0.45f);
+                var warnVfx = SkillEffectScene.Instantiate<SkillEffectView>();
+                AddChild(warnVfx);
+                warnVfx.Setup("dash", targetPos, 140f, new Color(1f, 0.3f, 0.1f, 0.4f), 0.35f);
             }
 
-            TriggerCameraShake(0.3f, 7f);
+            // 2. Sau 0.35s thiên thạch rơi xuống phát nổ
+            GetTree().CreateTimer(0.35).Timeout += () =>
+            {
+                if (!IsInstanceValid(this) || LocalPlayer == null) return;
+
+                float fireDmg = 140f;
+                var payload = new DamagePayload
+                {
+                    AttackerId = LocalPlayer.Id,
+                    AccuracyRating = 600f,
+                    CritChance = 35f,
+                    CritMultiplier = 200f
+                };
+                payload.AddPortion(DamageType.Fire, fireDmg);
+
+                if (SkillEffectScene != null)
+                {
+                    var expVfx = SkillEffectScene.Instantiate<SkillEffectView>();
+                    AddChild(expVfx);
+                    expVfx.Setup("meteor", targetPos, 140f, new Color(1f, 0.35f, 0.1f), 0.45f);
+                }
+
+                TriggerCameraShake(0.35f, 7f);
+                ApplyAreaDamage(targetPos.ToFixVector2(), 140f, payload, 90f);
+            };
 
             EventBus.Publish(new SkillExecutedEvent
             {
@@ -558,8 +587,6 @@ namespace Mdg.Client.Godot.Scripts.Core
                 SkillId = "meteor_strike",
                 TargetPosition = new FixVector2(targetPos.X, targetPos.Y)
             });
-
-            ApplyAreaDamage(targetPos.ToFixVector2(), 140f, payload, 90f);
         }
 
         private void ExecuteDash(Vector2 aimDir)
